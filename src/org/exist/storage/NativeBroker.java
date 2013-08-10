@@ -2949,6 +2949,10 @@ public class NativeBroker extends DBBroker {
         return nextDocId;
     }
 
+    public void reindexXMLResource(Txn transaction, DocumentImpl doc) {
+    	reindexXMLResource(transaction, doc, NodeProcessor.MODE_STORE);
+    }
+    
     /**
      * Reindex the nodes in the document. This method will either reindex all
      * descendant nodes of the passed node, or all nodes below some level of
