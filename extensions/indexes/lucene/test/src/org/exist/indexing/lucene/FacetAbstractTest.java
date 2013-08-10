@@ -227,6 +227,7 @@ public class FacetAbstractTest {
         
         @Override
         public void found(DocumentImpl document, float score) {
+        	System.out.println("score " + score + " : " + document);
             count++;
         }
         

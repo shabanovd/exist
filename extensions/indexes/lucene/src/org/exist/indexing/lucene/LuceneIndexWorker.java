@@ -109,7 +109,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     
     private Analyzer analyzer;
 
+    @Deprecated //use LuceneUtil.FIELD_DOC_ID
     public static final String FIELD_DOC_ID = "docId";
+    @Deprecated //use LuceneUtil.FIELD_DOC_URI
     public static final String FIELD_DOC_URI = "docUri";
 
     private final byte[] buf = new byte[1024];
@@ -263,7 +265,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             writer = index.getWriter();
             BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
             NumericUtils.intToPrefixCoded(docId, 0, bytes);
-            Term dt = new Term(FIELD_DOC_ID, bytes);
+            Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
             writer.deleteDocuments(dt);
         } catch (IOException e) {
             LOG.warn("Error while removing lucene index: " + e.getMessage(), e);
@@ -278,7 +280,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             writer = index.getWriter();
             String uri = currentDoc.getURI().toString();
-            Term dt = new Term(FIELD_DOC_URI, uri);
+            Term dt = new Term(LuceneUtil.FIELD_DOC_URI, uri);
             writer.deleteDocuments(dt);
         } catch (IOException e) {
             LOG.warn("Error while removing lucene index: " + e.getMessage(), e);
@@ -298,7 +300,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 DocumentImpl doc = i.next();
                 BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
                 NumericUtils.intToPrefixCoded(doc.getDocId(), 0, bytes);
-                Term dt = new Term(FIELD_DOC_ID, bytes);
+                Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
                 writer.deleteDocuments(dt);
             }
         } catch (IOException e) {
@@ -327,7 +329,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
             BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
             NumericUtils.intToPrefixCoded(currentDoc.getDocId(), 0, bytes);
-            Term dt = new Term(FIELD_DOC_ID, bytes);
+            Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
             TermQuery tq = new TermQuery(dt);
             for (NodeId nodeId : nodesToRemove) {
                 // store the node id
@@ -554,17 +556,17 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         	pendingDoc = new Document();
         	
         	// Set DocId
-        	NumericDocValuesField fDocId = new NumericDocValuesField(FIELD_DOC_ID, currentDoc.getDocId());
+        	NumericDocValuesField fDocId = new NumericDocValuesField(LuceneUtil.FIELD_DOC_ID, currentDoc.getDocId());
 
             pendingDoc.add(fDocId);
 
-            IntField fDocIdIdx = new IntField(FIELD_DOC_ID, currentDoc.getDocId(), Field.Store.NO);
+            IntField fDocIdIdx = new IntField(LuceneUtil.FIELD_DOC_ID, currentDoc.getDocId(), Field.Store.NO);
             pendingDoc.add(fDocIdIdx);
 
             // For binary documents the doc path needs to be stored
             String uri = currentDoc.getURI().toString();
 
-            Field fDocUri = new Field(FIELD_DOC_URI, uri, Field.Store.YES, Field.Index.NOT_ANALYZED);
+            Field fDocUri = new Field(LuceneUtil.FIELD_DOC_URI, uri, Field.Store.YES, Field.Index.NOT_ANALYZED);
             pendingDoc.add(fDocUri);
         }
         
@@ -662,7 +664,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     Document doc = reader.document(docNum);
 
                     // Get URI field of document
-                    String fDocUri = doc.get(FIELD_DOC_URI);
+                    String fDocUri = doc.get(LuceneUtil.FIELD_DOC_URI);
 
                     // Get score
                     float score = scorer.score();
@@ -749,7 +751,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public String getFieldContent(int docId, String field) throws IOException {
         BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
         NumericUtils.intToPrefixCoded(docId, 0, bytes);
-        Term dt = new Term(FIELD_DOC_ID, bytes);
+        Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
 
     	IndexReader reader = null;
         try {
@@ -772,7 +774,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public boolean hasIndex(int docId) throws IOException {
         BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
         NumericUtils.intToPrefixCoded(docId, 0, bytes);
-        Term dt = new Term(FIELD_DOC_ID, bytes);
+        Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
 
         IndexReader reader = null;
         try {
@@ -858,7 +860,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         @Override
         public void setNextReader(AtomicReaderContext atomicReaderContext) throws IOException {
             this.reader = atomicReaderContext.reader();
-            this.docIdValues = this.reader.getNumericDocValues(FIELD_DOC_ID);
+            this.docIdValues = this.reader.getNumericDocValues(LuceneUtil.FIELD_DOC_ID);
             this.nodeIdValues = this.reader.getBinaryDocValues(LuceneUtil.FIELD_NODE_ID);
         }
 
@@ -945,7 +947,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             reader = index.getReader();
             for (FieldInfo info: MultiFields.getMergedFieldInfos(reader)) {
-                if (!FIELD_DOC_ID.equals(info.name)) {
+                if (!LuceneUtil.FIELD_DOC_ID.equals(info.name)) {
                     QName name = LuceneUtil.decodeQName(info.name, index.getBrokerPool().getSymbols());
                     if (name != null && (qname == null || matchQName(qname, name)))
                         indexes.add(name);
@@ -1022,7 +1024,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 String field = LuceneUtil.encodeQName(qname, index.getBrokerPool().getSymbols());
                 List<AtomicReaderContext> leaves = reader.leaves();
                 for (AtomicReaderContext context : leaves) {
-                    NumericDocValues docIdValues = context.reader().getNumericDocValues(FIELD_DOC_ID);
+                    NumericDocValues docIdValues = context.reader().getNumericDocValues(LuceneUtil.FIELD_DOC_ID);
                     BinaryDocValues nodeIdValues = context.reader().getBinaryDocValues(LuceneUtil.FIELD_NODE_ID);
                     Bits liveDocs = context.reader().getLiveDocs();
                     Terms terms = context.reader().terms(field);
@@ -1131,10 +1133,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             writer = index.getWriter();
             // docId and nodeId are stored as doc value
-            NumericDocValuesField fDocId = new NumericDocValuesField(FIELD_DOC_ID, 0);
+            NumericDocValuesField fDocId = new NumericDocValuesField(LuceneUtil.FIELD_DOC_ID, 0);
             BinaryDocValuesField fNodeId = new BinaryDocValuesField(LuceneUtil.FIELD_NODE_ID, new BytesRef(8));
             // docId also needs to be indexed
-            IntField fDocIdIdx = new IntField(FIELD_DOC_ID, 0, IntField.TYPE_NOT_STORED);
+            IntField fDocIdIdx = new IntField(LuceneUtil.FIELD_DOC_ID, 0, IntField.TYPE_NOT_STORED);
 
             final List<Field> metas = new ArrayList<Field>();
             final List<CategoryPath> paths = new ArrayList<CategoryPath>();

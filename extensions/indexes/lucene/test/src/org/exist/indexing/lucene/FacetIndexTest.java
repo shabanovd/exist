@@ -33,14 +33,24 @@ import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.QName;
 import org.exist.storage.DBBroker;
 import org.junit.Test;
 
 public class FacetIndexTest extends FacetAbstractTest {
+	
+	private final static String CREATED = "created";
+	private final static String STATUS = "status";
 
     protected static String XUPDATE_START =
         "<xu:modifications version=\"1.0\" xmlns:xu=\"http://www.xmldb.org/xupdate\">";
@@ -81,12 +91,26 @@ public class FacetIndexTest extends FacetAbstractTest {
 
     private static Map<String, String> metas1 = new HashMap<String, String>();
     static {
-        metas1.put("status", "draft");
+        metas1.put(STATUS, "draft");
+        metas1.put(CREATED, "20130803");
     }
 
     private static Map<String, String> metas2 = new HashMap<String, String>();
     static {
-        metas2.put("status", "final");
+        metas2.put(STATUS, "final");
+        metas2.put(CREATED, "20130805");
+    }
+
+    private static Map<String, String> metas3 = new HashMap<String, String>();
+    static {
+        metas3.put(STATUS, "draft");
+        metas3.put(CREATED, "20130807");
+    }
+
+    private static Map<String, String> metas4 = new HashMap<String, String>();
+    static {
+        metas4.put(STATUS, "final");
+        metas4.put(CREATED, "20130811");
     }
 
     private void checkFacet(List<FacetResult> facets) {
@@ -135,7 +159,7 @@ public class FacetIndexTest extends FacetAbstractTest {
             final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
             
             FacetSearchParams fsp = new FacetSearchParams(
-                new CountFacetRequest(new CategoryPath("status"), 10)
+                new CountFacetRequest(new CategoryPath(STATUS), 10)
 //                new CountFacetRequest(new CategoryPath("Author"), 10)
             );
             
@@ -244,6 +268,95 @@ public class FacetIndexTest extends FacetAbstractTest {
 //            seq = xquery.execute("/article[ft:query(., 'ignore')]", null, AccessContext.TEST);
 //            assertNotNull(seq);
 //            assertEquals(0, seq.getItemCount());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            db.release(broker);
+        }
+    }
+    
+    private void checkFacet2(List<FacetResult> facets) {
+        assertEquals(1, facets.size());
+        
+        FacetResult facet = facets.get(0);
+        assertEquals(1, facet.getNumValidDescendants());
+        FacetResultNode node = facet.getFacetResultNode();
+        assertEquals(0.0, node.value, 0.0001);
+        assertEquals("status", node.label.toString());
+        
+        List<FacetResultNode> subResults = node.subResults;
+        assertEquals(1, subResults.size());
+        
+        node = subResults.get(0);
+        assertEquals(2.0, node.value, 0.0001);
+        assertEquals("status/draft", node.label.toString());
+    }
+
+    @Test
+    public void sorting() {
+        System.out.println("Test sorting queries ...");
+        DocumentSet docs = configureAndStore(COLLECTION_CONFIG5, 
+                new Resource[] {
+                    new Resource("test1.xml", XML5, metas1),
+                    new Resource("test2.xml", XML5, metas2),
+                    new Resource("test3.xml", XML5, metas3),
+                    new Resource("test4.xml", XML5, metas4),
+                });
+        
+        DBBroker broker = null;
+        try {
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+            assertNotNull(broker);
+
+            final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
+            
+            FacetSearchParams fsp = new FacetSearchParams(
+                new CountFacetRequest(new CategoryPath(STATUS), 10)
+//                new CountFacetRequest(new CategoryPath("Author"), 10)
+            );
+            
+            Sort sort = new Sort(new SortField(CREATED, SortField.Type.STRING, true));
+            
+            CountDocuments cb = new CountDocuments();
+            
+            List<QName> qnames = worker.getDefinedIndexes(null);
+            
+            BooleanQuery bq = new  BooleanQuery();
+
+            //set filter-like on meta
+            bq.add(new TermQuery(new Term(STATUS, "draft")), BooleanClause.Occur.MUST);
+            
+            String searchText = "paragraph";
+            for (QName qname : qnames) {
+            	final String field = LuceneUtil.encodeQName(qname, db.getSymbols());
+            	
+            	//System.out.println(qname);
+            	
+            	bq.add(new PrefixQuery(new Term(field, searchText)), BooleanClause.Occur.SHOULD);
+            }
+
+            List<FacetResult> results = QueryDocuments.query(worker, docs, bq, fsp, cb, 5, sort);
+            
+            assertEquals(2, cb.count);
+            
+            for (FacetResult result : results) {
+            	System.out.println(result);
+            }
+            
+            checkFacet2(results);
+            
+            System.out.println("================");
+            
+            cb.count = 0;
+
+            sort = new Sort(new SortField(CREATED, SortField.Type.STRING, false));
+            
+            results = QueryDocuments.query(worker, docs, bq, fsp, cb, 5, sort);
+            
+            assertEquals(2, cb.count);
+            
+            checkFacet2(results);
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());
