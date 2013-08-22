@@ -61,8 +61,28 @@ public class SourceFactory {
     {
         Source source = null;
         
+        /* resource: */
+        boolean isLocationFromClassLoader = location.startsWith(ClassLoaderSource.PROTOCOL);
+
+        if(isLocationFromClassLoader || contextPath.startsWith(ClassLoaderSource.PROTOCOL))
+        {
+        	if(isLocationFromClassLoader)
+        	{
+        		source = new ClassLoaderSource(location);
+        	}
+        	else
+        	{
+        		// Pretend it is a file on the local system so we can resolve it easily with URL() class.
+
+        		String conPathNoProtocol = contextPath.replace(ClassLoaderSource.PROTOCOL, "file://");
+        		String resolvedURL = new URL(new URL(conPathNoProtocol), location).toString();
+        		resolvedURL = resolvedURL.replaceFirst("file://", ClassLoaderSource.PROTOCOL);
+        		source = new ClassLoaderSource(resolvedURL);
+        	}
+        }
+        
         /* file:// or location without scheme is assumed to be a file */
-        if(location.startsWith("file:") || location.indexOf(':') == Constants.STRING_NOT_FOUND)
+        else if(location.startsWith("file:") || location.indexOf(':') == Constants.STRING_NOT_FOUND)
         {
             location = location.replaceAll("^(file:)?/*(.*)$", "$2");
 
@@ -144,12 +164,6 @@ public class SourceFactory {
 			}
         }
         
-        /* resource: */
-        else if(location.startsWith(ClassLoaderSource.PROTOCOL))
-        {
-            source = new ClassLoaderSource(location);
-        }
-
         /* any other URL */
         else
         {
