@@ -231,6 +231,8 @@ public class QueryDocuments {
         FieldComparator<?>[] comparators;
         final int[] reverseMul;
         final FieldValueHitQueue<MyEntry> queue;
+        
+        int maxDoc = 0;
     	
     	public ComparatorCollector(
 			final FieldValueHitQueue<MyEntry> queue,
@@ -260,15 +262,24 @@ public class QueryDocuments {
 
             	matchingDocs.add(new MatchingDocs(context, bits, totalHits, scores));
             }
-            bits = new FixedBitSet(queue.size());
+            bits = new FixedBitSet(maxDoc);//0x7FFFFFFF);//queue.size());
             totalHits = 0;
             scores = new float[64]; // some initial size
             
-            MyEntry entry;
+            final MyEntry[] entries = new MyEntry[queue.size()];
+            for (int i = queue.size() - 1; i >= 0; i--)
+              entries[i] = queue.pop();
             
-    		while ((entry = queue.pop()) != null) {
+            
+            for (int i = 0; i < entries.length; i++) {
+            	final MyEntry entry = entries[i];
     			collect(entry.doc, entry.document, entry.score);
-    		}
+            }
+
+//        	MyEntry entry;
+//    		while ((entry = queue.pop()) != null) {
+//    			collect(entry.doc, entry.document, entry.score);
+//    		}
 
     		super.finish();
     	}
@@ -294,6 +305,9 @@ public class QueryDocuments {
             DocumentImpl storedDocument = docs.getDoc(docId);
             if (storedDocument == null)
                 return;	
+            
+            if (maxDoc < doc)
+            	maxDoc = doc;
             
             docbits.add(storedDocument);
           
