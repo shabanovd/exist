@@ -29,12 +29,10 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import org.exist.Indexer;
-import org.exist.TestUtils;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.MutableDocumentSet;
 import org.exist.storage.BrokerPool;
@@ -203,7 +201,7 @@ public class FacetAbstractTest {
 
     @AfterClass
     public static void stopDB() {
-        TestUtils.cleanupDB();
+//        TestUtils.cleanupDB();
         BrokerPool.stopAll(false);
         db = null;
         root = null;
@@ -221,16 +219,26 @@ public class FacetAbstractTest {
         }
     }
     
-    protected class CountDocuments implements SearchCallback<DocumentImpl> {
+    protected class Counter<T> implements SearchCallback<T> {
 
         int count = 0;
+        int total = 0;
         
         @Override
-        public void found(DocumentImpl document, float score) {
-        	System.out.println("score " + score + " : " + document);
+        public void found(T element, float score) {
+        	System.out.println("score " + score + " : " + element);
             count++;
         }
+
+		@Override
+		public void totalHits(Integer number) {
+			total = number;
+		}
         
+		public void reset() {
+			count = 0;
+			total = 0;
+		}
     }
 }
 

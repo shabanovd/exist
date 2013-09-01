@@ -28,35 +28,24 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldValueHitQueue;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.PriorityQueue;
 import org.exist.Database;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
@@ -171,7 +160,7 @@ public class QueryDocuments {
     
     private static class DocumentHitCollector extends QueryFacetCollector {
 
-        private final SearchCallback<DocumentImpl> callback;
+        protected final SearchCallback<DocumentImpl> callback;
 
         private DocumentHitCollector(
                 final DocumentSet docs, 
@@ -224,6 +213,11 @@ public class QueryDocuments {
 
             callback.found(storedDocument, score);
         }
+
+		@Override
+		protected SearchCallback<DocumentImpl> getCallback() {
+			return callback;
+		}
     }
     
     private static class ComparatorCollector extends DocumentHitCollector {
@@ -262,24 +256,27 @@ public class QueryDocuments {
 
             	matchingDocs.add(new MatchingDocs(context, bits, totalHits, scores));
             }
-            bits = new FixedBitSet(maxDoc);//0x7FFFFFFF);//queue.size());
+            bits = new FixedBitSet(maxDoc + 1);//0x7FFFFFFF);//queue.size());
             totalHits = 0;
             scores = new float[64]; // some initial size
             
-            final MyEntry[] entries = new MyEntry[queue.size()];
-            for (int i = queue.size() - 1; i >= 0; i--)
-              entries[i] = queue.pop();
-            
-            
-            for (int i = 0; i < entries.length; i++) {
-            	final MyEntry entry = entries[i];
-    			collect(entry.doc, entry.document, entry.score);
-            }
-
-//        	MyEntry entry;
-//    		while ((entry = queue.pop()) != null) {
+//            final MyEntry[] entries = new MyEntry[queue.size()];
+//            for (int i = queue.size() - 1; i >= 0; i--)
+//              entries[i] = queue.pop();
+//            
+//            
+//            for (int i = 0; i < entries.length; i++) {
+//            	final MyEntry entry = entries[i];
 //    			collect(entry.doc, entry.document, entry.score);
-//    		}
+//            }
+
+            System.out.println(maxDoc);
+            callback.totalHits(queue.size());
+            
+        	MyEntry entry;
+    		while ((entry = queue.pop()) != null) {
+    			collect(entry.doc, entry.document, entry.score);
+    		}
 
     		super.finish();
     	}
@@ -305,9 +302,6 @@ public class QueryDocuments {
             DocumentImpl storedDocument = docs.getDoc(docId);
             if (storedDocument == null)
                 return;	
-            
-            if (maxDoc < doc)
-            	maxDoc = doc;
             
             docbits.add(storedDocument);
           
@@ -385,8 +379,13 @@ public class QueryDocuments {
 	    int docBase;
 	    
 	    final void add(int slot, int doc, float score, DocumentImpl document) {
-	        bottom = queue.add(new MyEntry(slot, docBase + doc, score, document, context));
+	    	final int doca = docBase + doc;
+
+	        bottom = queue.add(new MyEntry(slot, doca, score, document, context));
 	        queueFull = totalHits == numHits;
+	        
+            if (maxDoc < doca)
+            	maxDoc = doca;
 	      }
     	
     }

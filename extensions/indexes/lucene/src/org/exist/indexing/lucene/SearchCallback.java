@@ -26,6 +26,15 @@ package org.exist.indexing.lucene;
  *
  */
 public interface SearchCallback<T> {
+	
+    /**
+     * This method may be called two time 'before elements' and 'after elements'.
+     * 
+     * In case of 'before element' call order of elements is reversed.
+     * 
+     * @param number
+     */
+    public void totalHits(Integer number);
 
     public void found(T element, float score);
 

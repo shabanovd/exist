@@ -25,15 +25,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -42,9 +47,14 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.Version;
+import org.exist.dom.DefaultDocumentSet;
+import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
+import org.exist.dom.MutableDocumentSet;
 import org.exist.dom.QName;
 import org.exist.storage.DBBroker;
+import org.exist.xmldb.XmldbURI;
 import org.junit.Test;
 
 public class FacetIndexTest extends FacetAbstractTest {
@@ -163,17 +173,18 @@ public class FacetIndexTest extends FacetAbstractTest {
 //                new CountFacetRequest(new CategoryPath("Author"), 10)
             );
             
-            CountDocuments cb = new CountDocuments();
+            Counter<DocumentImpl> cb = new Counter<DocumentImpl>();
             
             List<QName> qnames = new ArrayList<QName>();
             qnames.add(new QName("head", ""));
             List<FacetResult> results = QueryDocuments.query(worker, docs, qnames, "title", fsp, null, cb);
             
             assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
             
             checkFacet(results);
             
-            cb.count = 0;
+            cb.reset();
 
             //Lucene query
             QName qname = new QName("head", "");
@@ -192,10 +203,11 @@ public class FacetIndexTest extends FacetAbstractTest {
             results = QueryDocuments.query(worker, docs, query, fsp, cb);
             
             assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
             
             checkFacet(results);
 
-            cb.count = 0;
+            cb.reset();
             
             //check document filtering
             qnames = new ArrayList<QName>();
@@ -207,10 +219,11 @@ public class FacetIndexTest extends FacetAbstractTest {
             }
             
             assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
             
             checkFacet(results);
             
-            cb.count = 0;
+            cb.reset();
 
 
 //            seq = xquery.execute("/article[ft:query(p, 'highlighted')]", null, AccessContext.TEST);
@@ -318,7 +331,7 @@ public class FacetIndexTest extends FacetAbstractTest {
             
             Sort sort = new Sort(new SortField(CREATED, SortField.Type.STRING, true));
             
-            CountDocuments cb = new CountDocuments();
+            Counter<DocumentImpl> cb = new Counter<DocumentImpl>();
             
             List<QName> qnames = worker.getDefinedIndexes(null);
             
@@ -339,6 +352,7 @@ public class FacetIndexTest extends FacetAbstractTest {
             List<FacetResult> results = QueryDocuments.query(worker, docs, bq, fsp, cb, 5, sort);
             
             assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
             
             for (FacetResult result : results) {
             	System.out.println(result);
@@ -348,21 +362,131 @@ public class FacetIndexTest extends FacetAbstractTest {
             
             System.out.println("================");
             
-            cb.count = 0;
+            cb.reset();
 
             sort = new Sort(new SortField(CREATED, SortField.Type.STRING, false));
             
             results = QueryDocuments.query(worker, docs, bq, fsp, cb, 5, sort);
             
             assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
             
             checkFacet2(results);
+
+            System.out.println("================");
+            
+            cb.reset();
+
+            sort = new Sort(new SortField(CREATED, SortField.Type.STRING, false));
+            
+            results = QueryDocuments.query(worker, docs, bq, fsp, cb, 1, sort);
+            
+            assertEquals(1, cb.count);
+            assertEquals(1, cb.total);
+            
+            //checkFacet2(results);
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());
         } finally {
             db.release(broker);
         }
+    }
+    
+    @Test
+    public void test() {
+        System.out.println("Test sorting queries ...");
+        
+        final ArrayList<DocumentImpl> myHits = new ArrayList<DocumentImpl>();
+        
+        Counter<DocumentImpl> cb = new Counter<DocumentImpl>() {
+            @Override
+            public void found(DocumentImpl document, float score) {
+            	super.found(document, score);
+                myHits.add( document );
+                //System.out.println("Found! uri (IN TEST QUERY): " + doc.getURI().toASCIIString() + " " + v);
+            }
+            
+            public void reset() {
+            	super.reset();
+            	
+            	myHits.clear();
+            }
+        };
+        
+        DBBroker broker = null;
+        try {
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+            assertNotNull(broker);
+
+            final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
+            
+            FacetSearchParams fsp = new FacetSearchParams(
+                    new CountFacetRequest(new CategoryPath("__status"), 100)
+            );
+
+            MutableDocumentSet docs = new DefaultDocumentSet(1031);
+
+            broker.getCollection(XmldbURI.xmldbUriFor("/db")).allDocs(broker, docs, true);
+
+            List<QName> qNames = new ArrayList<QName>();
+            qNames = worker.getDefinedIndexes(qNames);
+
+
+            // Parse the query with no default field:
+            Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_44);
+
+            String[] fields = new String[qNames.size()];
+            int i = 0;
+            for (QName qName : qNames) {
+                fields[i] = LuceneUtil.encodeQName(qName, db.getSymbols());
+                i++;
+            }
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, fields, analyzer);
+            Query query = parser.parse("a*");
+
+
+            // WORKS:
+            List<FacetResult> results = QueryDocuments.query(worker, docs, query, fsp, cb);
+            System.out.println("Hits: "+myHits.size());
+            debug(results);
+            
+            cb.reset();
+
+            // Default sort (by relevance) :
+            results = QueryDocuments.query(worker, docs, query, fsp, cb, 
+            		200, 
+            		new org.apache.lucene.search.Sort()
+            		);
+            
+            System.out.println("Hits: "+myHits.size());
+            debug(results);
+
+            cb.reset();
+
+            // Sort by status:
+            results = QueryDocuments.query(worker, docs, query, fsp, cb, 
+            		200, 
+            		new org.apache.lucene.search.Sort(
+            				new SortField("__status", SortField.Type.STRING, true)
+    				));
+            System.out.println("Hits: "+myHits.size());
+            debug(results);
+
+            cb.reset();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            db.release(broker);
+        }
+    }
+    
+    private void debug(List<FacetResult> results) {
+	    for (FacetResult result : results) {
+	    	System.out.println(result);
+	    }
     }
 }
 

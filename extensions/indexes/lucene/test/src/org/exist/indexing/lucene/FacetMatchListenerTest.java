@@ -163,6 +163,7 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
             results = QueryNodes.query(worker, docs, qnames, 1, "mixed", fsp, null, cb);
             
             assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
             
             for (int i = 0; i < 2; i++) {
                 result = queryResult2String(broker, cb.set.get(0));
@@ -173,12 +174,13 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
 
             checkFacet(results);
 
-            cb.count = 0;
+            cb.reset();
             
             //query with facet filter
             results = QueryNodes.query(worker, docs, qnames, 1, "mixed AND status:final", fsp, null, cb);
             
             assertEquals(1, cb.count);
+            assertEquals(1, cb.total);
             
             result = queryResult2String(broker, cb.set.get(0));
             System.out.println("RESULT: " + result);
@@ -187,7 +189,7 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
 
             checkFacet2(results);
             
-            cb.count = 0;
+            cb.reset();
 
 //            seq = xquery.execute("//para[ft:query(., '+nested +inner +elements')]", null, AccessContext.TEST);
 //            assertNotNull(seq);
@@ -243,17 +245,21 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
         return serializer.serialize(node);
     }
     
-    protected class CountAndCollect implements SearchCallback<NodeProxy> {
+    protected class CountAndCollect extends Counter<NodeProxy> {
         
         NodeSet set = new NewArrayNodeSet();
 
-        int count = 0;
-        
         @Override
         public void found(NodeProxy node, float score) {
-            count++;
+        	super.found(node, score);
             
             set.add(node);
+        }
+        
+        public void reset() {
+        	super.reset();
+        	
+        	set = new NewArrayNodeSet();
         }
         
     }

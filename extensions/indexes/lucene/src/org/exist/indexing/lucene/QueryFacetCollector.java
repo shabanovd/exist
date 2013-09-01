@@ -145,7 +145,10 @@ public abstract class QueryFacetCollector extends Collector {
         scores = null;
         context = null;
       }
+      getCallback().totalHits(totalHits);
     }
+    
+    protected abstract SearchCallback<?> getCallback();
 
     @Override
     public boolean acceptsDocsOutOfOrder() {

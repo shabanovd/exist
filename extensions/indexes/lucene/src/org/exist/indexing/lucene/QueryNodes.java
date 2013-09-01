@@ -218,5 +218,10 @@ public class QueryNodes {
                 e.printStackTrace();
             }
         }
+
+		@Override
+		protected SearchCallback<NodeProxy> getCallback() {
+			return callback;
+		}
     }
 }
