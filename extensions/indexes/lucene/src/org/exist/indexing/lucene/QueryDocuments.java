@@ -270,7 +270,7 @@ public class QueryDocuments {
 //    			collect(entry.doc, entry.document, entry.score);
 //            }
 
-            System.out.println(maxDoc);
+            //System.out.println(maxDoc);
             callback.totalHits(queue.size());
             
         	MyEntry entry;

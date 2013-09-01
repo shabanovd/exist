@@ -83,6 +83,14 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         TYPE_NODE_ID.setStoreTermVectors(false);
         TYPE_NODE_ID.setTokenized(true);
     }
+    
+    private static final org.apache.lucene.document.FieldType defaultFT = new org.apache.lucene.document.FieldType();
+	
+    static {
+    	defaultFT.setIndexed(true);
+    	defaultFT.setStored(false);
+    	defaultFT.setStoreTermVectors(true);
+    }
 
     static final Logger LOG = Logger.getLogger(LuceneIndexWorker.class);
     
@@ -568,6 +576,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
             Field fDocUri = new Field(LuceneUtil.FIELD_DOC_URI, uri, Field.Store.YES, Field.Index.NOT_ANALYZED);
             pendingDoc.add(fDocUri);
+            
+            
         }
         
         // Iterate over all found fields and write the data.
@@ -632,10 +642,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             searcher = index.getSearcher();
             
             // Get analyzer : to be retrieved from configuration
-            final Analyzer searchAnalyzer = new StandardAnalyzer(Version.LUCENE_43);
+            final Analyzer searchAnalyzer = new StandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE);
 
             // Setup query Version, default field, analyzer
-            final QueryParser parser = new QueryParser(Version.LUCENE_43, "", searchAnalyzer);
+            final QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, "", searchAnalyzer);
             final Query query = parser.parse(queryText);
                        
             // extract all used fields from query
@@ -1146,7 +1156,22 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 public void metadata(QName key, Object value) {
                     if (value instanceof String) {
                         String name = key.getLocalName();//LuceneUtil.encodeQName(key, index.getBrokerPool().getSymbols());
-                        Field fld = new Field(name, value.toString(), Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES);
+
+                        org.exist.indexing.lucene.FieldType fieldConfig = config.getFieldType(name);
+                        
+                        org.apache.lucene.document.FieldType ft = null;
+						if (fieldConfig != null)
+                        	ft  = fieldConfig.getFieldType();
+						
+						if (ft == null) {
+							ft = defaultFT;
+						}
+                    	
+                        Field fld = new Field(name, value.toString(), ft);
+                        
+                        if (fieldConfig != null && fieldConfig.getBoost() > 0)
+                            fld.setBoost(fieldConfig.getBoost());
+                        
                         metas.add(fld);
                         //System.out.println(" "+name+" = "+value.toString());
                         

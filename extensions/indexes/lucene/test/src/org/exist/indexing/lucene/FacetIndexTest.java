@@ -98,6 +98,28 @@ public class FacetIndexTest extends FacetAbstractTest {
             "       </lucene>" +
             "   </index>" +
             "</collection>";
+    
+    private static String COLLECTION_CONFIG6 =
+            "<collection xmlns='http://exist-db.org/collection-config/1.0'>" +
+            "   <index xmlns:tei='http://www.tei-c.org/ns/1.0'>" +
+            "       <fulltext default='none' attributes='no'>" +
+            "       </fulltext>" +
+            "       <lucene>" +
+            "           <text qname='article'>" +
+            "               <ignore qname='note'/>" +
+            "               <inline qname='s'/>" +
+            "           </text>" +
+            "           <text qname='p'>" +
+            "               <ignore qname='note'/>" +
+            "               <inline qname='s'/>" +
+            "           </text>" +
+            "           <text qname='head'/>" +
+            "           <ignore qname='note1'/>" +
+            "           <inline qname='s2'/>" +
+            "           <fieldType id='"+STATUS+"' store='no' tokenized='no'/>" +
+            "       </lucene>" +
+            "   </index>" +
+            "</collection>";
 
     private static Map<String, String> metas1 = new HashMap<String, String>();
     static {
@@ -121,6 +143,18 @@ public class FacetIndexTest extends FacetAbstractTest {
     static {
         metas4.put(STATUS, "final");
         metas4.put(CREATED, "20130811");
+    }
+
+    private static Map<String, String> metas5 = new HashMap<String, String>();
+    static {
+        metas5.put(STATUS, "in review");
+        metas5.put(CREATED, "20130901");
+    }
+
+    private static Map<String, String> metas6 = new HashMap<String, String>();
+    static {
+        metas6.put(STATUS, "in draft");
+        metas6.put(CREATED, "20130901");
     }
 
     private void checkFacet(List<FacetResult> facets) {
@@ -394,8 +428,113 @@ public class FacetIndexTest extends FacetAbstractTest {
     }
     
     @Test
-    public void test() {
-        System.out.println("Test sorting queries ...");
+    public void testOrder() {
+        System.out.println("Test order ...");
+        
+        configureAndStore(COLLECTION_CONFIG6, 
+                new Resource[] {
+                    new Resource("test1.xml", XML5, metas1),
+                    new Resource("test2.xml", XML5, metas2),
+                    new Resource("test3.xml", XML5, metas3),
+                    new Resource("test4.xml", XML5, metas4),
+                    new Resource("test5.xml", XML5, metas5),
+                    new Resource("test6.xml", XML5, metas6),
+                });
+        
+        final ArrayList<DocumentImpl> myHits = new ArrayList<DocumentImpl>();
+        
+        Counter<DocumentImpl> cb = new Counter<DocumentImpl>() {
+            @Override
+            public void found(DocumentImpl document, float score) {
+            	super.found(document, score);
+                myHits.add( document );
+                //System.out.println("Found! uri (IN TEST QUERY): " + document.getURI().toASCIIString() + " " + score);
+            }
+            
+            public void reset() {
+            	super.reset();
+            	
+            	myHits.clear();
+            }
+        };
+        
+        DBBroker broker = null;
+        try {
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+            assertNotNull(broker);
+
+            final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
+            
+            FacetSearchParams fsp = new FacetSearchParams(
+                new CountFacetRequest(new CategoryPath(STATUS), 100)
+            );
+
+            MutableDocumentSet docs = new DefaultDocumentSet(1031);
+            broker.getCollection(XmldbURI.xmldbUriFor("/db")).allDocs(broker, docs, true);
+
+            List<QName> qNames = new ArrayList<QName>();
+            qNames = worker.getDefinedIndexes(qNames);
+
+
+            // Parse the query with no default field:
+            Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_44);
+
+            String[] fields = new String[qNames.size()];
+            int i = 0;
+            for (QName qName : qNames) {
+                fields[i] = LuceneUtil.encodeQName(qName, db.getSymbols());
+                i++;
+            }
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, fields, analyzer);
+            Query query = parser.parse("a*");
+
+
+            // Sort by status & creation date:
+            List<FacetResult> results = QueryDocuments.query(worker, docs, query, fsp, cb, 
+            		200, 
+            		new org.apache.lucene.search.Sort(
+            				new SortField(STATUS, SortField.Type.STRING, true),
+            				new SortField(CREATED, SortField.Type.STRING, true)
+    				));
+            System.out.println("Hits: "+myHits.size());
+            debug(results);
+            
+            String[] mustBe = new String[] {
+            		"/db/test/test1.xml",
+            		"/db/test/test3.xml",
+            		"/db/test/test2.xml",
+            		"/db/test/test4.xml",
+            		"/db/test/test6.xml",
+            		"/db/test/test5.xml",
+            		};
+            
+            for (int index = 0; index < myHits.size(); index++) {
+        		assertEquals("at index "+index, mustBe[index], myHits.get(index).getURI().toString());
+            }
+
+            cb.reset();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            db.release(broker);
+        }
+    }
+    
+    @Test
+    public void testsPossibleNPE() {
+        System.out.println("Test NPE ...");
+        
+        
+        configureAndStore(COLLECTION_CONFIG5, 
+                new Resource[] {
+                    new Resource("test1.xml", XML5, metas1),
+                    new Resource("test2.xml", XML5, metas2),
+                    new Resource("test3.xml", XML5, metas3),
+                    new Resource("test4.xml", XML5, metas4),
+                    new Resource("test5.xml", XML5, metas5),
+                });
         
         final ArrayList<DocumentImpl> myHits = new ArrayList<DocumentImpl>();
         
@@ -422,11 +561,10 @@ public class FacetIndexTest extends FacetAbstractTest {
             final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
             
             FacetSearchParams fsp = new FacetSearchParams(
-                    new CountFacetRequest(new CategoryPath("__status"), 100)
+                    new CountFacetRequest(new CategoryPath(STATUS), 100)
             );
 
             MutableDocumentSet docs = new DefaultDocumentSet(1031);
-
             broker.getCollection(XmldbURI.xmldbUriFor("/db")).allDocs(broker, docs, true);
 
             List<QName> qNames = new ArrayList<QName>();
@@ -468,7 +606,7 @@ public class FacetIndexTest extends FacetAbstractTest {
             results = QueryDocuments.query(worker, docs, query, fsp, cb, 
             		200, 
             		new org.apache.lucene.search.Sort(
-            				new SortField("__status", SortField.Type.STRING, true)
+            				new SortField(STATUS, SortField.Type.STRING, true)
     				));
             System.out.println("Hits: "+myHits.size());
             debug(results);

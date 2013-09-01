@@ -18,6 +18,7 @@ public class FieldType {
 	private final static String ANALYZER_ID_ATTR = "analyzer";
 	private final static String BOOST_ATTRIB = "boost";
 	private final static String STORE_ATTRIB = "store";
+	private final static String TOKENIZED_ATTR = "tokenized";
 	
 	private String id = null;
 	
@@ -29,6 +30,9 @@ public class FieldType {
 	private float boost = -1;
     
 	private Field.Store store = null;
+	
+	private boolean isStore = false;
+	private boolean isTokenized = true;
 	
     public FieldType(Element config, AnalyzerConfig analyzers) throws DatabaseConfigurationException {
         
@@ -62,7 +66,13 @@ public class FieldType {
         
         String storeAttr = config.getAttribute(STORE_ATTRIB);
         if (storeAttr != null && storeAttr.length() > 0) {
-        	store = storeAttr.equalsIgnoreCase("yes") ? Field.Store.YES : Field.Store.NO;
+        	isStore = storeAttr.equalsIgnoreCase("yes");
+        	store = isStore ? Field.Store.YES : Field.Store.NO;
+        }
+
+        String tokenizedAttr = config.getAttribute(TOKENIZED_ATTR);
+        if (tokenizedAttr != null && tokenizedAttr.length() > 0) {
+        	isTokenized = tokenizedAttr.equalsIgnoreCase("yes");
         }
     }
     
@@ -84,5 +94,23 @@ public class FieldType {
 	
 	public Field.Store getStore() {
 		return store;
+	}
+
+	public boolean isTokenized() {
+		return isTokenized;
+	}
+	
+	public org.apache.lucene.document.FieldType getFieldType() {
+		final org.apache.lucene.document.FieldType ft = new org.apache.lucene.document.FieldType();
+		
+		ft.setStored(isStore);
+		
+		ft.setTokenized(isTokenized);
+		
+		ft.setStoreTermVectors(true);
+		
+		ft.setIndexed(true);
+		
+		return ft;
 	}
 }
