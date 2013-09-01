@@ -100,16 +100,19 @@ public class FieldType {
 		return isTokenized;
 	}
 	
+	org.apache.lucene.document.FieldType ft = null;
+	
 	public org.apache.lucene.document.FieldType getFieldType() {
-		final org.apache.lucene.document.FieldType ft = new org.apache.lucene.document.FieldType();
+		if (ft == null) {
+			org.apache.lucene.document.FieldType _ft = new org.apache.lucene.document.FieldType();
 		
-		ft.setStored(isStore);
-		
-		ft.setTokenized(isTokenized);
-		
-		ft.setStoreTermVectors(true);
-		
-		ft.setIndexed(true);
+			_ft.setStored(isStore);
+			_ft.setTokenized(isTokenized);
+			_ft.setStoreTermVectors(true);
+			_ft.setIndexed(true);
+			
+			ft = _ft;
+		}
 		
 		return ft;
 	}

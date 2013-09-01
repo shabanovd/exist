@@ -22,18 +22,14 @@
 package org.exist.xquery.modules.lucene;
 
 import org.apache.log4j.Logger;
-
-import org.exist.dom.BinaryDocument;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.QName;
-
 import org.exist.indexing.StreamListener;
 import org.exist.indexing.lucene.LuceneIndex;
 import org.exist.indexing.lucene.LuceneIndexWorker;
-
+import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.xmldb.XmldbURI;
-
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -102,8 +98,10 @@ public class Index extends BasicFunction {
 
         DocumentImpl doc = null;
         try {
+        	final DBBroker broker = context.getBroker();
+        	
         	// Retrieve Lucene
-            LuceneIndexWorker index = (LuceneIndexWorker) context.getBroker()
+            LuceneIndexWorker index = (LuceneIndexWorker) broker
                     .getIndexController().getWorkerByIndexId(LuceneIndex.ID);
             
         	if (isCalledAs("index")) {
@@ -121,6 +119,8 @@ public class Index extends BasicFunction {
 	            boolean flush = args.length == 2 || args[2].effectiveBooleanValue();
 	
 	            // Note: code order is important here,
+	            broker.getIndexController().setDocument(doc, StreamListener.STORE);
+	            
 	            index.setDocument(doc, StreamListener.STORE);
 	            index.setMode(StreamListener.STORE);
 	

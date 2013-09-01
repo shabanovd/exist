@@ -378,11 +378,11 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
     
     //DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     
-    public synchronized TaxonomyWriter getTaxonomyWriter() throws IOException {
+    public synchronized TaxonomyWriter getTaxonomyWriter() {
         return cachedTaxonomyWriter;
     }
 
-    public synchronized TaxonomyReader getTaxonomyReader() throws IOException {
+    public synchronized TaxonomyReader getTaxonomyReader() {
         return cachedTaxonomyReader;
     }
 

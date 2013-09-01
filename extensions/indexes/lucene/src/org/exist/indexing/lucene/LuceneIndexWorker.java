@@ -89,7 +89,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     static {
     	defaultFT.setIndexed(true);
     	defaultFT.setStored(false);
+    	defaultFT.setOmitNorms(true);
     	defaultFT.setStoreTermVectors(true);
+    	defaultFT.setTokenized(true);
     }
 
     static final Logger LOG = Logger.getLogger(LuceneIndexWorker.class);
@@ -543,8 +545,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      * </pre>
      * 
      * @param descriptor SOLR styled data 
+     * 
+     * @throws IOException 
      */
-    public void indexNonXML(NodeValue descriptor) {
+    public void indexNonXML(NodeValue descriptor) throws IOException {
         // Verify input
         if (!descriptor.getNode().getLocalName().contentEquals("doc")) {
             // throw exception
@@ -577,7 +581,21 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             Field fDocUri = new Field(LuceneUtil.FIELD_DOC_URI, uri, Field.Store.YES, Field.Index.NOT_ANALYZED);
             pendingDoc.add(fDocUri);
             
+            final List<Field> metas = new ArrayList<Field>();
+            final List<CategoryPath> paths = new ArrayList<CategoryPath>();
             
+            collectMetas(metas, paths);
+            
+            TaxonomyWriter taxoWriter = index.getTaxonomyWriter();
+            FacetFields facetFields = new FacetFields(taxoWriter);
+            
+            for (Field meta : metas) {
+            	pendingDoc.add(meta);
+            }
+            if (!paths.isEmpty()) {
+                facetFields.addFields(pendingDoc, paths);
+            }
+
         }
         
         // Iterate over all found fields and write the data.
@@ -1136,6 +1154,38 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
     
+    private void collectMetas(final List<Field> metas, final List<CategoryPath> paths) {
+
+        broker.getIndexController().streamMetas(new MetaStreamListener() {
+            @Override
+            public void metadata(QName key, Object value) {
+                if (value instanceof String) {
+                    String name = key.getLocalName();//LuceneUtil.encodeQName(key, index.getBrokerPool().getSymbols());
+
+                    org.exist.indexing.lucene.FieldType fieldConfig = config.getFieldType(name);
+                    
+                    org.apache.lucene.document.FieldType ft = null;
+					if (fieldConfig != null)
+                    	ft  = fieldConfig.getFieldType();
+					
+					if (ft == null) {
+						ft = defaultFT;
+					}
+                	
+                    Field fld = new Field(name, value.toString(), ft);
+                    
+                    if (fieldConfig != null && fieldConfig.getBoost() > 0)
+                        fld.setBoost(fieldConfig.getBoost());
+                    
+                    metas.add(fld);
+                    //System.out.println(" "+name+" = "+value.toString());
+                    
+                    paths.add(new CategoryPath(name, value.toString()));
+                }
+            }
+        });
+    }
+    
     private void write() {
         if (nodesToWrite == null || nodesToWrite.size() == 0)
             return;
@@ -1150,35 +1200,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
             final List<Field> metas = new ArrayList<Field>();
             final List<CategoryPath> paths = new ArrayList<CategoryPath>();
-
-            broker.getIndexController().streamMetas(new MetaStreamListener() {
-                @Override
-                public void metadata(QName key, Object value) {
-                    if (value instanceof String) {
-                        String name = key.getLocalName();//LuceneUtil.encodeQName(key, index.getBrokerPool().getSymbols());
-
-                        org.exist.indexing.lucene.FieldType fieldConfig = config.getFieldType(name);
-                        
-                        org.apache.lucene.document.FieldType ft = null;
-						if (fieldConfig != null)
-                        	ft  = fieldConfig.getFieldType();
-						
-						if (ft == null) {
-							ft = defaultFT;
-						}
-                    	
-                        Field fld = new Field(name, value.toString(), ft);
-                        
-                        if (fieldConfig != null && fieldConfig.getBoost() > 0)
-                            fld.setBoost(fieldConfig.getBoost());
-                        
-                        metas.add(fld);
-                        //System.out.println(" "+name+" = "+value.toString());
-                        
-                        paths.add(new CategoryPath(name, value.toString()));
-                    }
-                }
-            });
+            
+            collectMetas(metas, paths);
             
             TaxonomyWriter taxoWriter = index.getTaxonomyWriter();
             FacetFields facetFields = new FacetFields(taxoWriter);
