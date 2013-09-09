@@ -94,9 +94,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     	defaultFT.setTokenized(true);
     }
 
-    static final Logger LOG = Logger.getLogger(LuceneIndexWorker.class);
+    public static final Logger LOG = Logger.getLogger(LuceneIndexWorker.class);
     
-    protected LuceneIndex index;
+    public final LuceneIndex index;
     
     private LuceneMatchListener matchListener = null;
 

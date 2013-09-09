@@ -201,8 +201,7 @@ public class QueryDocuments {
 
             bits.set(doc);
             if (totalHits >= scores.length) {
-                float[] newScores = new float[ArrayUtil.oversize(
-                        totalHits + 1, 4)];
+                float[] newScores = new float[ArrayUtil.oversize(totalHits + 1, 4)];
                 System.arraycopy(scores, 0, newScores, 0, totalHits);
                 scores = newScores;
             }
@@ -211,7 +210,7 @@ public class QueryDocuments {
 
             // XXX: understand: check permissions here? No, it may slowdown, better to check final set
 
-            callback.found(storedDocument, score);
+            callback.found(reader, doc, storedDocument, score);
         }
 
 		@Override
@@ -260,16 +259,6 @@ public class QueryDocuments {
             totalHits = 0;
             scores = new float[64]; // some initial size
             
-//            final MyEntry[] entries = new MyEntry[queue.size()];
-//            for (int i = queue.size() - 1; i >= 0; i--)
-//              entries[i] = queue.pop();
-//            
-//            
-//            for (int i = 0; i < entries.length; i++) {
-//            	final MyEntry entry = entries[i];
-//    			collect(entry.doc, entry.document, entry.score);
-//            }
-
             //System.out.println(maxDoc);
             callback.totalHits(queue.size());
             
@@ -356,10 +345,10 @@ public class QueryDocuments {
 	    	
 	    	super.setNextReader(context);
 	    	
-	      this.docBase = context.docBase;
-	      for (int i = 0; i < comparators.length; i++) {
-	          queue.setComparator(i, comparators[i].setNextReader(context));
-	      }
+	    	this.docBase = context.docBase;
+	    	for (int i = 0; i < comparators.length; i++) {
+	    		queue.setComparator(i, comparators[i].setNextReader(context));
+	    	}
 	    }
 	    
 	    @Override
@@ -387,7 +376,6 @@ public class QueryDocuments {
             if (maxDoc < doca)
             	maxDoc = doca;
 	      }
-    	
     }
     
     private static class MyEntry extends Entry {

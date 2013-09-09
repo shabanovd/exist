@@ -37,6 +37,7 @@ import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -445,8 +446,8 @@ public class FacetIndexTest extends FacetAbstractTest {
         
         Counter<DocumentImpl> cb = new Counter<DocumentImpl>() {
             @Override
-            public void found(DocumentImpl document, float score) {
-            	super.found(document, score);
+            public void found(AtomicReader reader, int docNum, DocumentImpl document, float score) {
+            	super.found(reader, docNum, document, score);
                 myHits.add( document );
                 //System.out.println("Found! uri (IN TEST QUERY): " + document.getURI().toASCIIString() + " " + score);
             }
@@ -540,8 +541,8 @@ public class FacetIndexTest extends FacetAbstractTest {
         
         Counter<DocumentImpl> cb = new Counter<DocumentImpl>() {
             @Override
-            public void found(DocumentImpl document, float score) {
-            	super.found(document, score);
+            public void found(AtomicReader reader, int docNum, DocumentImpl document, float score) {
+            	super.found(reader, docNum, document, score);
                 myHits.add( document );
                 //System.out.println("Found! uri (IN TEST QUERY): " + doc.getURI().toASCIIString() + " " + v);
             }

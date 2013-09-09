@@ -21,6 +21,8 @@
  */
 package org.exist.indexing.lucene;
 
+import org.apache.lucene.index.AtomicReader;
+
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
@@ -36,6 +38,6 @@ public interface SearchCallback<T> {
      */
     public void totalHits(Integer number);
 
-    public void found(T element, float score);
+    public void found(AtomicReader reader, int docNum, T element, float score);
 
 }

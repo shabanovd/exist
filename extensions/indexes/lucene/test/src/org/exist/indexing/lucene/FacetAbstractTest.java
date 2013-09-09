@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.*;
 import java.util.Map.Entry;
 
+import org.apache.lucene.index.AtomicReader;
 import org.exist.Indexer;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfigurationManager;
@@ -225,7 +226,7 @@ public class FacetAbstractTest {
         int total = 0;
         
         @Override
-        public void found(T element, float score) {
+        public void found(AtomicReader reader, int docNum, T element, float score) {
         	System.out.println("score " + score + " : " + element);
             count++;
         }

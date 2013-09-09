@@ -26,6 +26,7 @@ import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.index.AtomicReader;
 import org.custommonkey.xmlunit.XMLAssert;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.NewArrayNodeSet;
@@ -37,12 +38,14 @@ import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.NodeValue;
+
 import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import javax.xml.transform.OutputKeys;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -250,8 +253,8 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
         NodeSet set = new NewArrayNodeSet();
 
         @Override
-        public void found(NodeProxy node, float score) {
-        	super.found(node, score);
+        public void found(AtomicReader reader, int docNum, NodeProxy node, float score) {
+        	super.found(reader, docNum, node, score);
             
             set.add(node);
         }
