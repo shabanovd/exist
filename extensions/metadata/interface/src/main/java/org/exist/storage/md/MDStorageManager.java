@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2012 The eXist Project
+ *  Copyright (C) 2012-2013 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -41,6 +41,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
 import org.exist.storage.MetaStorage;
 import org.exist.storage.md.xquery.MetadataModule;
+import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xquery.XQueryContext;
 import org.xml.sax.Attributes;
@@ -96,6 +97,14 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 
 		db.getDocumentTriggers().add(new DocumentEvents());
 		db.getCollectionTriggers().add(new CollectionEvents());
+		
+		//XXX: configuration is not loaded
+//		try {
+//			db.getIndexManager().registerIndex(new ExtractorIndex());
+//		} catch (DatabaseConfigurationException e) {
+//			e.printStackTrace();
+//			throw new PermissionDeniedException(e);
+//		}
 		
 		Map<String, Class<?>> map = (Map<String, Class<?>>) db.getConfiguration().getProperty(XQueryContext.PROPERTY_BUILT_IN_MODULES);
         map.put(
