@@ -141,6 +141,7 @@ public abstract class QueryFacetCollector extends Collector {
     		  throw new RuntimeException();
 
     	  matchingDocs.add(new MatchingDocs(context, bits, totalHits, scores));
+    	  
         bits = null;
         scores = null;
         context = null;

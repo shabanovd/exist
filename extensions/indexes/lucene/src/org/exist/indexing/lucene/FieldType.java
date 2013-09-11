@@ -32,7 +32,7 @@ public class FieldType {
 	private Field.Store store = null;
 	
 	private boolean isStore = false;
-	private boolean isTokenized = true;
+	private boolean isTokenized = false;
 	
     public FieldType(Element config, AnalyzerConfig analyzers) throws DatabaseConfigurationException {
         

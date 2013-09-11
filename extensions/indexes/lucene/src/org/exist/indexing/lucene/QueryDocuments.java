@@ -270,10 +270,12 @@ public class QueryDocuments {
     		super.finish();
     	}
     	
-		final void updateBottom(int doc, float score) {
+		final void updateBottom(int doc, float score, DocumentImpl document) {
 			// bottom.score is already set to Float.NaN in add().
-			bottom.doc = docBase + doc;
+			bottom.doc = docNumber(docBase, doc);
 			bottom.score = score;
+			bottom.document = document;
+			bottom.context = context;
 			bottom = queue.updateTop();
 		}
 		
@@ -318,7 +320,7 @@ public class QueryDocuments {
 	            comparators[i].copy(bottom.slot, doc);
 	          }
 
-	          updateBottom(doc, score);
+	          updateBottom(doc, score, storedDocument);
 
 	          for (int i = 0; i < comparators.length; i++) {
 	            comparators[i].setBottom(bottom.slot);
@@ -363,19 +365,24 @@ public class QueryDocuments {
 	    
 	    ///
 	    final int numHits;
-	    FieldValueHitQueue.Entry bottom = null;
+	    MyEntry bottom = null;
 	    boolean queueFull;
 	    int docBase;
 	    
 	    final void add(int slot, int doc, float score, DocumentImpl document) {
-	    	final int doca = docBase + doc;
-
-	        bottom = queue.add(new MyEntry(slot, doca, score, document, context));
+	        bottom = queue.add(new MyEntry(slot, docNumber(docBase, doc), score, document, context));
 	        queueFull = totalHits == numHits;
-	        
-            if (maxDoc < doca)
-            	maxDoc = doca;
-	      }
+	    }
+	    
+		private int docNumber(int docBase, int doc) {
+			final int doca = docBase + doc;
+			
+			if (maxDoc < doca)
+				maxDoc = doca;
+			
+			return doca;
+		}
+
     }
     
     private static class MyEntry extends Entry {

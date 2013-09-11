@@ -1233,7 +1233,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 else
                 	contentField = LuceneUtil.encodeQName(pending.qname, index.getBrokerPool().getSymbols());
 
-                Field fld = new Field(contentField, pending.text.toString(), Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES);
+                Field fld = new Field(contentField, pending.text.toString(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES);
                 if (pending.idxConf.getBoost() > 0)
                     fld.setBoost(pending.idxConf.getBoost());
 

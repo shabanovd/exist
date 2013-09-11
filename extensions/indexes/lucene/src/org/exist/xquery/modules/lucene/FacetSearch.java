@@ -23,7 +23,9 @@ package org.exist.xquery.modules.lucene;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -36,13 +38,16 @@ import org.apache.lucene.facet.search.FacetResult;
 import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.exist.Database;
 import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentImpl;
+import org.exist.dom.Match;
 import org.exist.dom.MutableDocumentSet;
 import org.exist.dom.NodeProxy;
 import org.exist.dom.QName;
@@ -96,10 +101,10 @@ public class FacetSearch extends BasicFunction {
     		new FunctionParameterSequenceType("max-hits", Type.INTEGER, Cardinality.EXACTLY_ONE, "max hits");
 
     private static final FunctionParameterSequenceType FACET = 
-    		new FunctionParameterSequenceType("facet-request", Type.NODE, Cardinality.EXACTLY_ONE, "facet request");
+    		new FunctionParameterSequenceType("facet-request", Type.NODE, Cardinality.ONE_OR_MORE, "facet request");
 
     private static final FunctionParameterSequenceType SORT = 
-    		new FunctionParameterSequenceType("sort-criteria", Type.NODE, Cardinality.EXACTLY_ONE, "sort criteria");
+    		new FunctionParameterSequenceType("sort-criteria", Type.NODE, Cardinality.ONE_OR_MORE, "sort criteria");
 
     private static final FunctionParameterSequenceType HIGHLIGHT = 
     		new FunctionParameterSequenceType("highlight", Type.BOOLEAN, Cardinality.EXACTLY_ONE, "highlight matcher(s)");
@@ -224,15 +229,42 @@ public class FacetSearch extends BasicFunction {
             // Get analyzer : to be retrieved from configuration
             final Analyzer searchAnalyzer = new StandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE);
 
-            // Setup query Version, default field, analyzer
-            final QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, "", searchAnalyzer);
+            final Set<String> fieldsToLoad = new HashSet<String>();
+            
+            final QueryParser parser;
+            if (queryText.startsWith("ALL:")) {
+            	
+            	Database db = index.getBrokerPool();
+            	
+            	List<QName> qnames = indexWorker.getDefinedIndexes(null);
+            	
+            	String[] names = new String[qnames.size()];
+            	
+            	int i = 0;
+            	for (QName qname : qnames) {
+            		final String field = LuceneUtil.encodeQName(qname, db.getSymbols());
+            		
+            		names[i++] = field;
+            		fieldsToLoad.add(field);
+            	}
+            	
+            	parser = new MultiFieldQueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, names, searchAnalyzer);
+            
+            	queryText = queryText.substring(4);
+            } else {
+                // Setup query Version, default field, analyzer
+                parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, "", searchAnalyzer);
+            }
+            
             final Query query = parser.parse(queryText);
                        
             final MemTreeBuilder builder = new MemTreeBuilder();
             builder.startDocument();
-
+            
             // start root element
             final int nodeNr = builder.startElement("", "results", "results", null);
+            
+            builder.namespaceNode("exist", "http://exist.sourceforge.net/NS/exist");
             
             MutableDocumentSet docs = new DefaultDocumentSet(1031);
             for (String uri : toBeMatchedURIs) {
@@ -243,9 +275,20 @@ public class FacetSearch extends BasicFunction {
             
             List<FacetResult> results = null;
             if (highlight) {
-                // extract all used fields from query
-                final String[] fields = LuceneUtil.extractFields(query, searcher.getIndexReader());
-
+            	
+            	final String[] fields;
+            	if (fieldsToLoad.isEmpty()) {
+            		// extract all used fields from query
+            		fields = LuceneUtil.extractFields(query, searcher.getIndexReader());
+            	} else {
+            		
+            		for (String field : LuceneUtil.extractFields(query, searcher.getIndexReader())) {
+            			fieldsToLoad.add(field);
+            		}
+            		
+            		fields = fieldsToLoad.toArray(new String[fieldsToLoad.size()]);
+            	}
+                
                 final PlainTextHighlighter highlighter = new PlainTextHighlighter(query, searcher.getIndexReader());
 
 	            SearchCallback<NodeProxy> cb = new SearchCallback<NodeProxy>() {
@@ -260,7 +303,7 @@ public class FacetSearch extends BasicFunction {
 					@Override
 					public void found(AtomicReader reader, int docNum, NodeProxy element, float score) {
 						try {
-							Document doc = reader.document(docNum);
+							Document doc = reader.document(docNum, fieldsToLoad);
 							String fDocUri = element.getDocument().getURI().toString();
 							
 		                    // setup attributes
@@ -270,19 +313,24 @@ public class FacetSearch extends BasicFunction {
 		
 		                    // write element and attributes
 		                    builder.startElement("", "search", "search", attribs);
-		                    for (String field : fields) {
-		                        String[] fieldContent = doc.getValues(field);
-		                        attribs.clear();
-		                        attribs.addAttribute("", "name", "name", "CDATA", field);
-		                        for (String content : fieldContent) {
-		                            List<Offset> offsets = highlighter.getOffsets(content, searchAnalyzer);
-		                            if (offsets != null) {
-		                                builder.startElement("", "field", "field", attribs);
-		                                highlighter.highlight(content, offsets, builder);
-		                                builder.endElement();
-		                            }
-		                        }
-		                    }
+		                    
+		                    Match match = element.getMatches();
+                            for (String field : fields) {
+                                String[] fieldContent = doc.getValues(field);
+                                attribs.clear();
+                                attribs.addAttribute("", "name", "name", "CDATA", field);
+                                for (String content : fieldContent) {
+                                    List<Offset> offsets = highlighter.getOffsets(content, searchAnalyzer);
+                                    if (offsets != null) {
+                                    	for (Offset offset : offsets) {
+                                    		match.addOffset(offset.startOffset(), offset.endOffset() - offset.startOffset());
+                                    	}
+                                    }
+                                }
+                            }
+                            element.setMatches(match);
+
+		                    	builder.addReferenceNode(element);
 		                    builder.endElement();
 		
 		                    // clean attributes
@@ -368,7 +416,6 @@ public class FacetSearch extends BasicFunction {
 	            // finish facet element
 	            builder.endElement();
             }
-            
             
             // finish root element
             builder.endElement();

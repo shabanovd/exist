@@ -35,7 +35,9 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.FieldComparator;
@@ -198,19 +200,18 @@ public class QueryNodes {
 
 		protected final SearchCallback<NodeProxy> callback;
 
-		private NodeHitCollector(
-
-		final Database db, final LuceneIndexWorker worker, final Query query,
-
-		final QName qname, final int contextId,
-
-		final DocumentSet docs, final SearchCallback<NodeProxy> callback,
-
-		final FacetSearchParams searchParams,
-
-		final TaxonomyReader taxonomyReader) {
-
-			super(docs, searchParams, taxonomyReader);
+		private NodeHitCollector(final Database db, final LuceneIndexWorker worker, 
+				
+				final Query query,
+	
+				final QName qname, final int contextId,
+		
+				final DocumentSet docs, final SearchCallback<NodeProxy> callback,
+		
+				final FacetSearchParams searchParams,
+				final TaxonomyReader taxonomyReader) {
+	
+				super(docs, searchParams, taxonomyReader);
 
 			this.db = db;
 			this.worker = worker;
@@ -226,8 +227,7 @@ public class QueryNodes {
 		public void setNextReader(AtomicReaderContext atomicReaderContext)
 				throws IOException {
 			super.setNextReader(atomicReaderContext);
-			nodeIdValues = this.reader
-					.getBinaryDocValues(LuceneUtil.FIELD_NODE_ID);
+			nodeIdValues = this.reader.getBinaryDocValues(LuceneUtil.FIELD_NODE_ID);
 		}
 
 		@Override
@@ -239,20 +239,6 @@ public class QueryNodes {
 				DocumentImpl storedDocument = docs.getDoc(docId);
 				if (storedDocument == null)
 					return;
-
-				if (!docbits.contains(docId)) {
-					docbits.add(storedDocument);
-
-					bits.set(doc);
-					if (totalHits >= scores.length) {
-						float[] newScores = new float[ArrayUtil.oversize(
-								totalHits + 1, 4)];
-						System.arraycopy(scores, 0, newScores, 0, totalHits);
-						scores = newScores;
-					}
-					scores[totalHits] = score;
-					totalHits++;
-				}
 
 				// XXX: understand: check permissions here? No, it may slowdown,
 				// better to check final set
@@ -270,17 +256,32 @@ public class QueryNodes {
 			}
 		}
 
-		public void collect(int doc, DocumentImpl storedDocument,
-				NodeId nodeId, float score) {
+		public void collect(int doc, DocumentImpl storedDocument, NodeId nodeId, float score) {
 
+			if (!docbits.contains(storedDocument.getDocId())) {
+				docbits.add(storedDocument);
+
+				bits.set(doc);
+				if (totalHits >= scores.length) {
+					float[] newScores = new float[ArrayUtil.oversize(totalHits + 1, 4)];
+					System.arraycopy(scores, 0, newScores, 0, totalHits);
+					scores = newScores;
+				}
+				scores[totalHits] = score;
+				totalHits++;
+			}
+            
 			NodeProxy storedNode = new NodeProxy(storedDocument, nodeId);
 			if (qname != null)
 				storedNode
-						.setNodeType(qname.getNameType() == ElementValue.ATTRIBUTE ? Node.ATTRIBUTE_NODE
-								: Node.ELEMENT_NODE);
+					.setNodeType(
+						qname.getNameType() == ElementValue.ATTRIBUTE ? 
+							Node.ATTRIBUTE_NODE : Node.ELEMENT_NODE);
 
 			LuceneMatch match = worker.new LuceneMatch(contextId, nodeId, query);
 			match.setScore(score);
+			//XXX: match.addOffset(offset, length);
+			
 			storedNode.addMatch(match);
 			callback.found(reader, doc, storedNode, score);
 			// resultSet.add(storedNode, sizeHint);
@@ -334,16 +335,14 @@ public class QueryNodes {
 				if (context == null)
 					throw new RuntimeException();
 
-				matchingDocs.add(new MatchingDocs(context, bits, totalHits,
-						scores));
+				matchingDocs.add(new MatchingDocs(context, bits, totalHits, scores));
 			}
 			bits = new FixedBitSet(maxDoc + 1);// 0x7FFFFFFF);//queue.size());
 			totalHits = 0;
 			scores = new float[64]; // some initial size
 
-			// System.out.println(maxDoc);
 			callback.totalHits(queue.size());
-
+			
 			MyEntry entry;
 			while ((entry = queue.pop()) != null) {
 				collect(entry.doc, entry.document, entry.node, entry.score);
@@ -352,10 +351,14 @@ public class QueryNodes {
 			super.finish();
 		}
 
-		final void updateBottom(int doc, float score) {
+		final void updateBottom(int doc, float score, DocumentImpl document) {
 			// bottom.score is already set to Float.NaN in add().
-			bottom.doc = docBase + doc;
+			bottom.doc = docNumber(docBase, doc);
 			bottom.score = score;
+			bottom.document = document;
+			bottom.node = getNodeId(doc);
+			bottom.context = context;
+			
 			bottom = queue.updateTop();
 		}
 
@@ -365,21 +368,20 @@ public class QueryNodes {
 				final float score = scorer.score();
 
 				int docId = (int) this.docIdValues.get(doc);
-				if (docbits.contains(docId))
-					return;
+//				if (docbits.contains(docId))
+//					return;
 
 				DocumentImpl storedDocument = docs.getDoc(docId);
 				if (storedDocument == null)
 					return;
 
-				docbits.add(storedDocument);
+//				docbits.add(storedDocument);
 
 				++totalHits;
 				if (queueFull) {
 					// Fastmatch: return if this hit is not competitive
 					for (int i = 0;; i++) {
-						final int c = reverseMul[i]
-								* comparators[i].compareBottom(doc);
+						final int c = reverseMul[i] * comparators[i].compareBottom(doc);
 						if (c < 0) {
 							// Definitely not competitive.
 							return;
@@ -400,7 +402,7 @@ public class QueryNodes {
 						comparators[i].copy(bottom.slot, doc);
 					}
 
-					updateBottom(doc, score);
+					updateBottom(doc, score, storedDocument);
 
 					for (int i = 0; i < comparators.length; i++) {
 						comparators[i].setBottom(bottom.slot);
@@ -426,8 +428,7 @@ public class QueryNodes {
 		}
 
 		@Override
-		public void setNextReader(AtomicReaderContext context)
-				throws IOException {
+		public void setNextReader(AtomicReaderContext context) throws IOException {
 
 			super.setNextReader(context);
 
@@ -449,27 +450,41 @@ public class QueryNodes {
 
 		// /
 		final int numHits;
-		FieldValueHitQueue.Entry bottom = null;
+		MyEntry bottom = null;
 		boolean queueFull;
 		int docBase;
 
 		final void add(int slot, int doc, float score, DocumentImpl document) {
+			bottom = queue.add(
+				new MyEntry(
+					slot, 
+					docNumber(docBase, doc), 
+					score, 
+					document, 
+					getNodeId(doc), 
+					context)
+				);
+			queueFull = totalHits == numHits;
+		}
+		
+		private NodeId getNodeId(int doc) {
 			BytesRef ref = new BytesRef(buf);
 
 			this.nodeIdValues.get(doc, ref);
 			int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-			NodeId nodeId = db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
-
+			return db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+		}
+		
+		private int docNumber(int docBase, int doc) {
 			final int doca = docBase + doc;
-
-			bottom = queue.add(new MyEntry(slot, doca, score, document, nodeId, context));
-			queueFull = totalHits == numHits;
-
+			
 			if (maxDoc < doca)
 				maxDoc = doca;
+			
+			return doca;
 		}
 	}
-
+	
 	private static class MyEntry extends Entry {
 
 		AtomicReaderContext context;
@@ -480,7 +495,7 @@ public class QueryNodes {
 		public MyEntry(int slot, int doc, float score, DocumentImpl document,
 				NodeId node, AtomicReaderContext context) {
 			super(slot, doc, score);
-
+			
 			this.context = context;
 
 			this.document = document;
