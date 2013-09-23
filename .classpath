@@ -31,6 +31,8 @@
 	<classpathentry kind="src" path="tools/ircbot/src"/>
 	<classpathentry kind="src" path="tools/requestlog/src"/>
 	<classpathentry kind="src" path="extensions/commands/src"/>
+	<classpathentry kind="src" path="extensions/metadata/interface/src/main/java"/>
+	<classpathentry kind="src" path="extensions/metadata/sleepycat/src/main/java"/>
 	<classpathentry kind="lib" path="lib/core/pkg-repo.jar"/>
 	<classpathentry kind="lib" path="lib/core/jEdit-syntax.jar"/>
 	<classpathentry kind="lib" path="lib/core/cglib-nodep-2.2.jar"/>
@@ -60,6 +62,8 @@
 	<classpathentry kind="lib" path="extensions/exquery/restxq/lib/exquery-restxq-api-1.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="extensions/exquery/restxq/lib/exquery-restxq-1.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/core/clj-ds-0.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/user/je-5.0.58.jar"/>
+	<classpathentry kind="lib" path="lib/user/uuid-3.3.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/core/antlr-2.7.7.jar"/>
 	<classpathentry kind="lib" path="lib/core/excalibur-cli-1.0.jar"/>
@@ -107,9 +111,6 @@
 	<classpathentry kind="lib" path="lib/core/commons-codec-1.7.jar"/>
 	<classpathentry kind="lib" path="lib/core/gnu-crypto-2.0.1-min.jar"/>
 	<classpathentry kind="lib" path="lib/optional/commons-net-2.2.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-analyzers-3.6.1.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-core-3.6.1.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queries-3.6.1.jar"/>
 	<classpathentry kind="lib" path="tools/jetty/lib/existdb-favicon.jar"/>
 	<classpathentry kind="lib" path="tools/jetty/lib/jetty-continuation-8.1.9.v20130131.jar"/>
 	<classpathentry kind="lib" path="tools/jetty/lib/jetty-http-8.1.9.v20130131.jar"/>
@@ -140,5 +141,11 @@
 	<classpathentry kind="lib" path="lib/optional/httpclient-cache-4.2.3.jar"/>
 	<classpathentry kind="lib" path="lib/optional/httpcore-4.2.2.jar"/>
 	<classpathentry kind="lib" path="lib/optional/httpmime-4.2.3.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-analyzers-common-4.4.0.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-core-4.4.0.jar" sourcepath="extensions/indexes/lucene/lib/lucene-4.4.0.zip"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-facet-4.4.0.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-highlighter-4.4.0.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queries-4.4.0.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queryparser-4.4.0.jar"/>
 	<classpathentry kind="output" path="test/classes"/>
 </classpath>
