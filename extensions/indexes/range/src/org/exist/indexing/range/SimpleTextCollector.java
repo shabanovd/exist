@@ -11,9 +11,17 @@ import java.util.List;
 
 public class SimpleTextCollector implements TextCollector {
 
+    private boolean includeNested = true;
+    private RangeIndexConfigElement config = null;
     private XMLString buf = new XMLString();
+    private int wsTreatment = XMLString.SUPPRESS_NONE;
+    private boolean caseSensitive = true;
 
-    public SimpleTextCollector() {
+    public SimpleTextCollector(RangeIndexConfigElement config, boolean includeNested, int wsTreatment, boolean caseSensitive) {
+        this.config = config;
+        this.includeNested = includeNested;
+        this.wsTreatment = wsTreatment;
+        this.caseSensitive = caseSensitive;
     }
 
     public SimpleTextCollector(String content) {
@@ -30,7 +38,9 @@ public class SimpleTextCollector implements TextCollector {
 
     @Override
     public void characters(CharacterDataImpl text, NodePath path) {
-        buf.append(text.getXMLString());
+        if (includeNested || config.match(path)) {
+            buf.append(text.getXMLString());
+        }
     }
 
     @Override
@@ -45,7 +55,7 @@ public class SimpleTextCollector implements TextCollector {
     @Override
     public List<Field> getFields() {
         List<Field> fields = new ArrayList<Field>(1);
-        fields.add(new Field(buf));
+        fields.add(new Field(buf, wsTreatment, caseSensitive));
         return fields;
     }
 }
