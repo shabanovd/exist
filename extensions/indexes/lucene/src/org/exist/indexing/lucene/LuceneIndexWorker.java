@@ -1285,9 +1285,12 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     private class LuceneStreamListener extends AbstractStreamListener {
+    	
+    	int level = 0;
 
         @Override
         public void startElement(Txn transaction, ElementImpl element, NodePath path) {
+            level++;
             if (mode == STORE && config != null) {
                 if (contentStack != null && !contentStack.isEmpty()) {
                     for (TextExtractor extractor : contentStack) {
@@ -1299,9 +1302,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     if (contentStack == null) contentStack = new Stack<TextExtractor>();
                     while (configIter.hasNext()) {
                         LuceneIndexConfig configuration = configIter.next();
-                        if (configuration.match(path)) {
+                        if (configuration.match(path) && !configuration.isAttrPattern()) {
                             TextExtractor extractor = new DefaultTextExtractor();
-                            extractor.configure(config, configuration);
+                            extractor.configure(config, configuration, level);
                             contentStack.push(extractor);
                         }
                     }
@@ -1323,23 +1326,27 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     if (mode == REMOVE_SOME_NODES) {
                         nodesToRemove.add(element.getNodeId());
                     } else {
-                        while (configIter.hasNext()) {
-                            LuceneIndexConfig configuration = configIter.next();
-                            if (configuration.match(path)) {
-                                TextExtractor extractor = contentStack.pop();
-                                indexText(element.getNodeId(), element.getQName(), 
-                                    path, extractor.getIndexConfig(), extractor.getText());
+                    	while (!contentStack.isEmpty()) {
+                            TextExtractor extractor = contentStack.peek();
+                            if (extractor.getInitLevel() == level) {
+                            	contentStack.pop();
+                            	
+                            	indexText(element.getNodeId(), element.getQName(), 
+                            			path, extractor.getIndexConfig(), extractor.getText());
+                            } else {
+                            	break;
                             }
                         }
                     }
                 }
             }
+            level--;
             super.endElement(transaction, element, path);
         }
 
         @Override
         public void attribute(Txn transaction, AttrImpl attrib, NodePath path) {
-            path.addComponent(attrib.getQName());
+        	path.addComponent(attrib.getQName());
             Iterator<LuceneIndexConfig> configIter = null;
             if (config != null)
                 configIter = config.getConfig(path);
@@ -1350,14 +1357,33 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     while (configIter.hasNext()) {
                         LuceneIndexConfig configuration = configIter.next();
                         if (configuration.match(path)) {
-                            indexText(attrib.getNodeId(), attrib.getQName(), path,
-                                configuration, attrib.getValue());
+                            indexText(attrib.getNodeId(), attrib.getQName(), path, configuration, attrib.getValue());
                         }
                     }
                 }
             }
             path.removeLastComponent();
-            super.attribute(transaction, attrib, path);
+
+            Iterator<LuceneIndexConfig> pattrnConfigIter = null;
+            if (config != null)
+            	pattrnConfigIter = config.getConfig(path);
+
+            if (mode != REMOVE_ALL_NODES && pattrnConfigIter != null) {
+                while (pattrnConfigIter.hasNext()) {
+                    LuceneIndexConfig configuration = pattrnConfigIter.next();
+                    if (configuration.isAttrPattern() && configuration.match(path, attrib)) {
+                    	
+                    	TextExtractor extractor = contentStack.isEmpty() ? null : contentStack.peek();
+                    	
+                    	if (extractor == null || extractor.getInitLevel() != level) {
+                    		extractor = new DefaultTextExtractor();
+                            extractor.configure(config, configuration, level);
+                            contentStack.push(extractor);
+                    	}
+                    }
+                }
+            }
+        	super.attribute(transaction, attrib, path);
         }
 
         @Override

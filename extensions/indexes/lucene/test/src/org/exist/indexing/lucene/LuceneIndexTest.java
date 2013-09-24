@@ -102,6 +102,13 @@ public class LuceneIndexTest {
         "   von ruhigem Dasein versunken, daß meine Kunst darunter leidet.</p>" +
         "</section>";
 
+    private static String XML8 =
+            "<a>" +
+            "   <b class=' class title '>AAA</b>" +
+            "   <c class=' element title '>AAA</c>" +
+            "   <b class=' element '>AAA</b>" +
+            "</a>";
+
     private static String COLLECTION_CONFIG1 =
         "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
     	"	<index>" +
@@ -190,6 +197,18 @@ public class LuceneIndexTest {
             "       <lucene>" +
             "           <text qname=\"b\"/>" +
             "           <text qname=\"c\" boost=\"2.0\"/>" +
+            "       </lucene>" +
+            "   </index>" +
+            "</collection>";
+
+    private static String COLLECTION_CONFIG7 =
+            "<collection xmlns='http://exist-db.org/collection-config/1.0'>" +
+            "   <index xmlns:tei='http://www.tei-c.org/ns/1.0'>" +
+            "       <fulltext default='none' attributes='no'>" +
+            "       </fulltext>" +
+            "       <lucene>" +
+            "           <text qname='b' attribute='class=.*title.*'/>" +
+            "           <text qname='c' attribute='class=.*title.*' boost=\"2.0\"/>" +
             "       </lucene>" +
             "   </index>" +
             "</collection>";
@@ -382,6 +401,29 @@ public class LuceneIndexTest {
             assertNotNull(seq);
             assertEquals(3, seq.getItemCount());
             assertEquals("c", seq.getStringValue());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            pool.release(broker);
+        }
+    }
+
+    @Test
+    public void attributePattern() {
+        configureAndStore(COLLECTION_CONFIG7, XML8, "test.xml");
+        DBBroker broker = null;
+        try {
+            broker = pool.get(pool.getSecurityManager().getSystemSubject());
+            assertNotNull(broker);
+
+            XQuery xquery = broker.getXQueryService();
+            assertNotNull(xquery);
+            Sequence seq = xquery.execute("for $a in ft:query((//b|//c), 'AAA') " +
+                    "order by ft:score($a) descending return $a/local-name(.)", null, AccessContext.TEST);
+            assertNotNull(seq);
+            assertEquals(2, seq.getItemCount());
+            assertEquals("c [2]b [1]", seq.toString());
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());

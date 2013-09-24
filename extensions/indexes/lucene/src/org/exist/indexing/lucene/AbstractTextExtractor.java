@@ -28,16 +28,23 @@ public abstract class AbstractTextExtractor implements TextExtractor {
 
     protected LuceneConfig config;
     protected LuceneIndexConfig idxConfig;
+    protected int initLevel = 0;
 
     protected XMLString buffer = new XMLString();
 
-    public void configure(LuceneConfig config, LuceneIndexConfig idxConfig) {
+    public void configure(LuceneConfig config, LuceneIndexConfig idxConfig, int level) {
         this.config = config;
         this.idxConfig = idxConfig;
+        
+        initLevel = level;
     }
 
     public LuceneIndexConfig getIndexConfig() {
     	return idxConfig;
+    }
+    
+    public int getInitLevel() {
+    	return initLevel;
     }
 
     public XMLString getText() {

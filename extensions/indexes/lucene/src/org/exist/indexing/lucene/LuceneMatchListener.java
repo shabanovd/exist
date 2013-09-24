@@ -167,7 +167,7 @@ public class LuceneMatchListener extends AbstractMatchListener {
         LuceneIndexConfig idxConf = config.getConfig(path).next();
         
         TextExtractor extractor = new DefaultTextExtractor();
-        extractor.configure(config, idxConf);
+        extractor.configure(config, idxConf, 0);
         OffsetList offsets = new OffsetList();
         int level = 0;
         int textOffset = 0;

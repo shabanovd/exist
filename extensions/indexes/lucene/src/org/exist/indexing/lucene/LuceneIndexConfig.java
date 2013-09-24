@@ -1,6 +1,7 @@
 package org.exist.indexing.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.exist.dom.AttrImpl;
 import org.exist.dom.QName;
 import org.exist.storage.ElementValue;
 import org.exist.storage.NodePath;
@@ -10,25 +11,31 @@ import org.w3c.dom.Node;
 
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class LuceneIndexConfig {
 
     private final static String N_INLINE = "inline";
     private final static String N_IGNORE = "ignore";
 
-    private static final String QNAME_ATTR = "qname";
-    private static final String MATCH_ATTR = "match";
+    private final static String QNAME_ATTR = "qname";
+    private final static String MATCH_ATTR = "match";
 
     private final static String IGNORE_ELEMENT = "ignore";
     private final static String INLINE_ELEMENT = "inline";
-	private static final String FIELD_ATTR = "field";
-	private static final String TYPE_ATTR = "type";
+	private final static String FIELD_ATTR = "field";
+	private final static String TYPE_ATTR = "type";
+
+	private final static String PATTERN_ATTR = "attribute";
 
     private String name = null;
 
     private NodePath path = null;
 
     private boolean isQNameIndex = false;
+    private boolean isAttrPatternIndex = false;
 
     private Map<QName, String> specialNodes = null;
 
@@ -36,12 +43,29 @@ public class LuceneIndexConfig {
     
     private FieldType type = null;
     
+    private QName attrName = null;
+    private Pattern attrValuePattern = null;
+    
     public LuceneIndexConfig(Element config, Map<String, String> namespaces, AnalyzerConfig analyzers,
     			Map<String, FieldType> fieldTypes) throws DatabaseConfigurationException {
         if (config.hasAttribute(QNAME_ATTR)) {
             QName qname = parseQName(config, namespaces);
             path = new NodePath(qname);
             isQNameIndex = true;
+            
+            if (config.hasAttribute(PATTERN_ATTR)) {
+            	String pattern = config.getAttribute(PATTERN_ATTR);
+            	int pos = pattern.indexOf("=");
+            	if (pos > 0) {
+            		attrName = parseQName(pattern.substring(0, pos), namespaces);
+            		try {
+            			attrValuePattern = Pattern.compile(pattern.substring(pos+1));
+            		} catch (PatternSyntaxException e) {
+            			throw new DatabaseConfigurationException(config.toString(), e);
+            		}
+            		isAttrPatternIndex = true;
+            	}
+            }
         } else {
             String matchPath = config.getAttribute(MATCH_ATTR);
             try {
@@ -144,6 +168,10 @@ public class LuceneIndexConfig {
     public boolean isInlineNode(QName qname) {
         return specialNodes != null && specialNodes.get(qname) == N_INLINE;
     }
+    
+    public boolean isAttrPattern() {
+    	return isAttrPatternIndex;
+    }
 
     public static QName parseQName(Element config, Map<String, String> namespaces) throws DatabaseConfigurationException {
         String name = config.getAttribute(QNAME_ATTR);
@@ -181,12 +209,33 @@ public class LuceneIndexConfig {
     }
 
     public boolean match(NodePath other) {
-    	if (isQNameIndex)
+    	if (isQNameIndex) {
     		return other.getLastComponent().equalsSimple(path.getLastComponent());
+    	}
         return path.match(other);
     }
 
-	@Override
+    public boolean match(NodePath other, AttrImpl attrib) {
+    	if (isQNameIndex) {
+    		if (isAttrPatternIndex) {
+    			if (attrib != null && attrValuePattern != null) { //log error?
+    				if (other.getLastComponent().equalsSimple(path.getLastComponent())) {
+    					
+    					if (attrib.getQName().equalsSimple(attrName)) {
+    						
+    						Matcher m = attrValuePattern.matcher(attrib.getValue());
+    						return m.matches();
+    					}
+    					
+    				}
+    			}
+    		}
+    	}
+		return false;
+    }
+
+
+    @Override
 	public String toString() {
 		return path.toString();
 	}
