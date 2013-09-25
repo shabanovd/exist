@@ -207,7 +207,7 @@ public class LuceneIndexTest {
             "       <fulltext default='none' attributes='no'>" +
             "       </fulltext>" +
             "       <lucene>" +
-            "           <text qname='b' attribute='class=.*title.*'/>" +
+            "           <text match='//*' attribute='class=.*title.*'/>" +
             "           <text qname='c' attribute='class=.*title.*' boost=\"2.0\"/>" +
             "       </lucene>" +
             "   </index>" +
@@ -423,7 +423,8 @@ public class LuceneIndexTest {
                     "order by ft:score($a) descending return $a/local-name(.)", null, AccessContext.TEST);
             assertNotNull(seq);
             assertEquals(2, seq.getItemCount());
-            assertEquals("c [2]b [1]", seq.toString());
+            assertEquals("c", seq.itemAt(0).getStringValue());
+            assertEquals("b", seq.itemAt(1).getStringValue());
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());

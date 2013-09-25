@@ -29,6 +29,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
@@ -260,12 +261,15 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             }
             nextMatch = nextMatch.getNextMatch();
         }
+        
         if (!needToFilter)
             return null;
+        
         if (matchListener == null)
             matchListener = new LuceneMatchListener(index, broker, proxy);
         else
             matchListener.reset(broker, proxy);
+        
         return matchListener;
     }
 
@@ -1186,6 +1190,17 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         });
     }
     
+    private static final org.apache.lucene.document.FieldType offsetsType = new org.apache.lucene.document.FieldType(TextField.TYPE_STORED);
+    static {
+		offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+		offsetsType.setStored(true);
+		offsetsType.setIndexed(true);   
+		offsetsType.setStoreTermVectors(true);
+		offsetsType.setStoreTermVectorOffsets(true);
+		offsetsType.setStoreTermVectorPositions(true);
+		offsetsType.setStoreTermVectorPayloads(true);
+    }
+    
     private void write() {
         if (nodesToWrite == null || nodesToWrite.size() == 0)
             return;
@@ -1233,7 +1248,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 else
                 	contentField = LuceneUtil.encodeQName(pending.qname, index.getBrokerPool().getSymbols());
 
-                Field fld = new Field(contentField, pending.text.toString(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES);
+                Field fld = new Field(contentField, pending.text.toString(), offsetsType);
                 if (pending.idxConf.getBoost() > 0)
                     fld.setBoost(pending.idxConf.getBoost());
 

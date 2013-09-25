@@ -478,7 +478,7 @@ public class FacetIndexTest extends FacetAbstractTest {
 
 
             // Parse the query with no default field:
-            Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_44);
+            Analyzer analyzer = new StandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE);
 
             String[] fields = new String[qNames.size()];
             int i = 0;
@@ -573,7 +573,7 @@ public class FacetIndexTest extends FacetAbstractTest {
 
 
             // Parse the query with no default field:
-            Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_44);
+            Analyzer analyzer = new StandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE);
 
             String[] fields = new String[qNames.size()];
             int i = 0;

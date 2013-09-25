@@ -46,26 +46,17 @@ public class LuceneIndexConfig {
     private QName attrName = null;
     private Pattern attrValuePattern = null;
     
-    public LuceneIndexConfig(Element config, Map<String, String> namespaces, AnalyzerConfig analyzers,
-    			Map<String, FieldType> fieldTypes) throws DatabaseConfigurationException {
+    public LuceneIndexConfig(
+    		Element config, 
+    		Map<String, String> namespaces, 
+    		AnalyzerConfig analyzers,
+    		Map<String, FieldType> fieldTypes
+    		) throws DatabaseConfigurationException {
+    	
         if (config.hasAttribute(QNAME_ATTR)) {
             QName qname = parseQName(config, namespaces);
             path = new NodePath(qname);
             isQNameIndex = true;
-            
-            if (config.hasAttribute(PATTERN_ATTR)) {
-            	String pattern = config.getAttribute(PATTERN_ATTR);
-            	int pos = pattern.indexOf("=");
-            	if (pos > 0) {
-            		attrName = parseQName(pattern.substring(0, pos), namespaces);
-            		try {
-            			attrValuePattern = Pattern.compile(pattern.substring(pos+1));
-            		} catch (PatternSyntaxException e) {
-            			throw new DatabaseConfigurationException(config.toString(), e);
-            		}
-            		isAttrPatternIndex = true;
-            	}
-            }
         } else {
             String matchPath = config.getAttribute(MATCH_ATTR);
             try {
@@ -77,6 +68,25 @@ public class LuceneIndexConfig {
 				throw new DatabaseConfigurationException("Lucene module: invalid qname in configuration: " + e.getMessage());
 			}
         }
+
+        if (config.hasAttribute(PATTERN_ATTR)) {
+        	String pattern = config.getAttribute(PATTERN_ATTR);
+        	int pos = pattern.indexOf("=");
+        	if (pos > 0) {
+        		attrName = parseQName(pattern.substring(0, pos), namespaces);
+        		try {
+        			attrValuePattern = Pattern.compile(pattern.substring(pos+1));
+        		} catch (PatternSyntaxException e) {
+        			throw new DatabaseConfigurationException(config.toString(), e);
+        		}
+        		isAttrPatternIndex = true;
+        	} else {
+    			throw new DatabaseConfigurationException("Valid pattern 'attribute-name=pattern', but get '"+config.toString()+"'");
+        	}
+        } else {
+    		isAttrPatternIndex = false;
+        }
+
         String name = config.getAttribute(FIELD_ATTR);
         if (name != null && name.length() > 0)
         	setName(name);
@@ -216,20 +226,23 @@ public class LuceneIndexConfig {
     }
 
     public boolean match(NodePath other, AttrImpl attrib) {
-    	if (isQNameIndex) {
-    		if (isAttrPatternIndex) {
-    			if (attrib != null && attrValuePattern != null) { //log error?
-    				if (other.getLastComponent().equalsSimple(path.getLastComponent())) {
-    					
-    					if (attrib.getQName().equalsSimple(attrName)) {
-    						
-    						Matcher m = attrValuePattern.matcher(attrib.getValue());
-    						return m.matches();
-    					}
-    					
-    				}
-    			}
-    		}
+		if (isAttrPatternIndex) {
+			if (attrib != null && attrValuePattern != null) { //log error?
+				if ((isQNameIndex && other.getLastComponent().equalsSimple(path.getLastComponent())) || path.match(other)) {
+					
+					if (attrib.getQName().equalsSimple(attrName)) {
+						
+						Matcher m = attrValuePattern.matcher(attrib.getValue());
+						return m.matches();
+					}
+					
+				}
+			}
+		} else {
+	    	if (isQNameIndex) {
+	    		return other.getLastComponent().equalsSimple(path.getLastComponent());
+	    	}
+	        return path.match(other);
     	}
 		return false;
     }
