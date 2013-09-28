@@ -42,6 +42,10 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
     public NativeStructuralIndex() {
         //Nothing to do
     }
+    
+    public String getIndexId() {
+    	return ID;
+    }
 
     @Override
     public void configure(BrokerPool pool, String dataDir, Element config) throws DatabaseConfigurationException {

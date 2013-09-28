@@ -52,6 +52,10 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
     public NGramIndex() {
         //Nothing to do
     }
+    
+    public String getIndexId() {
+    	return ID;
+    }
 
     @Override
     public void configure(BrokerPool pool, String dataDir, Element config) throws DatabaseConfigurationException {

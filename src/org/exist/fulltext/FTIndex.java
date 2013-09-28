@@ -60,6 +60,10 @@ public class FTIndex extends AbstractIndex implements RawBackupSupport {
     public FTIndex() {
         //Nothing to do
     }
+    
+    public String getIndexId() {
+    	return ID;
+    }
 
     @Override
     public void configure(BrokerPool pool, String dataDir, Element config) throws DatabaseConfigurationException {

@@ -68,6 +68,10 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
     public LuceneIndex() {
         //Nothing special to do
     }
+    
+    public String getIndexId() {
+    	return ID;
+    }
 
     public String getDirName() {
         return DIR_NAME;

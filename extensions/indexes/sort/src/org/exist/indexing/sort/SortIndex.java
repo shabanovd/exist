@@ -41,6 +41,10 @@ public class SortIndex extends AbstractIndex implements RawBackupSupport {
     
     public SortIndex() {
     }
+    
+    public String getIndexId() {
+    	return ID;
+    }
 
     @Override
     public void open() throws DatabaseConfigurationException {
