@@ -28,7 +28,10 @@ import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.AtomicReader;
 import org.custommonkey.xmlunit.XMLAssert;
+import org.exist.collections.Collection;
+import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentSet;
+import org.exist.dom.MutableDocumentSet;
 import org.exist.dom.NewArrayNodeSet;
 import org.exist.dom.NodeProxy;
 import org.exist.dom.NodeSet;
@@ -36,6 +39,9 @@ import org.exist.dom.QName;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
+import org.exist.util.serializer.SAXSerializer;
+import org.exist.util.serializer.SerializerPool;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.NodeValue;
 
@@ -46,6 +52,7 @@ import org.xml.sax.SAXException;
 
 import javax.xml.transform.OutputKeys;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -237,6 +244,61 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
             db.release(broker);
         }
     }
+    
+    //@Test
+	public void testName() throws Exception {
+    	final DBBroker _broker;
+        DBBroker broker = null;
+        try {
+        	_broker = broker = db.get(db.getSecurityManager().getSystemSubject());
+        	
+        	MutableDocumentSet docs = new DefaultDocumentSet(1031);
+
+            Collection collection = broker.getCollection(
+        		XmldbURI.xmldbUriFor("/db/system/config/db/organizations/test-org/repositories")
+    		);
+            collection.allDocs(broker, docs, true);
+	        
+	        final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
+	
+	        List<FacetResult> results;
+	        String result;
+	
+	        FacetSearchParams fsp = new FacetSearchParams(
+                new CountFacetRequest(new CategoryPath("status"), 10)
+	        );
+	        
+	        SearchCallback<NodeProxy> cb = new SearchCallback<NodeProxy>() {
+
+				@Override
+				public void totalHits(Integer number) {
+				}
+
+				@Override
+				public void found(AtomicReader reader, int docNum, NodeProxy element, float score) {
+					try {
+						System.out.println(
+							queryResult2String(_broker, 10, element)
+						);
+					} catch (SAXException | XPathException e) {
+						e.printStackTrace();
+					}
+				}
+	        	
+	        };
+	        
+//	        List<QName> qnames = new ArrayList<QName>();
+//	        qnames.add(new QName("para", ""));
+	
+	        //query without facet filter
+	        results = QueryNodes.query(worker, docs, null, 1, "admin*", fsp, null, cb);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        fail(e.getMessage());
+	    } finally {
+	    	db.release(broker);
+	    }
+	}
 
     private String queryResult2String(DBBroker broker, NodeValue node) throws SAXException, XPathException {
         Properties props = new Properties();
@@ -266,5 +328,40 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
         }
         
     }
-
+    
+    private String queryResult2String(DBBroker broker, int chunkOffset, NodeProxy proxy) throws SAXException, XPathException {
+        Properties props = new Properties();
+        props.setProperty(OutputKeys.INDENT, "no");
+        
+        Serializer serializer = broker.getSerializer();
+        serializer.reset();
+        
+        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex());
+        highlighter.reset(broker, 5, proxy);
+        
+        final StringWriter writer = new StringWriter();
+        
+        SerializerPool serializerPool = SerializerPool.getInstance();
+        SAXSerializer xmlout = (SAXSerializer) serializerPool.borrowObject(SAXSerializer.class);
+        try {
+        	//setup pipes
+			xmlout.setOutput(writer, props);
+			
+			highlighter.setNextInChain(xmlout);
+			
+			serializer.setReceiver(highlighter);
+			
+			//serialize
+	        serializer.toReceiver(proxy, false, true);
+	        
+	        //get result
+	        return writer.toString();
+        } finally {
+        	serializerPool.returnObject(xmlout);
+        }
+    }
+    
+    private LuceneIndex getLuceneIndex() {
+        return (LuceneIndex) db.getIndexManager().getIndexById(LuceneIndex.ID);
+    }
 }
