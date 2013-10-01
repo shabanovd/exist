@@ -182,6 +182,10 @@ public abstract class AbstractRealm implements Realm, Configurable {
             for(final Iterator<DocumentImpl> i = collectionAccounts.iterator(broker); i.hasNext(); ) {
                 final DocumentImpl doc = i.next();
                 final Configuration conf = Configurator.parse(doc);
+                if (conf == null) {
+                	SecurityManagerImpl.LOG.error("Account information was not loaded from '"+doc.getFileURI());
+                	continue;
+                }
                 final String name = conf.getProperty("name");
                 
                 usersByName.modifyE(new PrincipalDbModifyE<Account, ConfigurationException>(){
