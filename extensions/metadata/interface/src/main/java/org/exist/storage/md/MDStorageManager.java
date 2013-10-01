@@ -180,7 +180,11 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	        return;
 	    
 //		System.out.println("backup collection "+colection.getURI());
-		backup(md.getMetas(collection.getURI()), attrs);
+	    Metas ms = md.getMetas(collection.getURI());
+	    if (ms != null)
+	    	backup(ms, attrs);
+	    else
+	    	LOG.error("Collection '"+collection.getURI()+"' have no metas");
 	}
 
 	@Override
@@ -202,7 +206,12 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	        return;
 	    
 //		System.out.println("backup document "+document.getURI());
-		backup(md.getMetas(document), attrs);
+	    Metas ms = md.getMetas(document);
+	    if (ms != null)
+	    	backup(ms, attrs);
+	    else
+	    	LOG.error("Document '"+document.getURI()+"' have no metas");
+	    	
 	}
 
 	@Override
