@@ -1163,7 +1163,13 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         broker.getIndexController().streamMetas(new MetaStreamListener() {
             @Override
             public void metadata(QName key, Object value) {
+            	if (value == null)
+            		return;
+            	
                 if (value instanceof String) {
+                	if (((String) value).isEmpty())
+                		return;
+                	
                     String name = key.getLocalName();//LuceneUtil.encodeQName(key, index.getBrokerPool().getSymbols());
 
                     org.exist.indexing.lucene.FieldType fieldConfig = config.getFieldType(name);
@@ -1176,7 +1182,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 						ft = defaultFT;
 					}
                 	
-                    Field fld = new Field(name, value.toString(), ft);
+                    Field fld = new Field(name, (String)value, ft);
                     
                     if (fieldConfig != null && fieldConfig.getBoost() > 0)
                         fld.setBoost(fieldConfig.getBoost());
@@ -1184,7 +1190,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     metas.add(fld);
                     //System.out.println(" "+name+" = "+value.toString());
                     
-                    paths.add(new CategoryPath(name, value.toString()));
+                    paths.add(new CategoryPath(name, (String)value));
                 }
             }
         });
