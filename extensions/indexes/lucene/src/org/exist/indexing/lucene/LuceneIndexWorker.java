@@ -52,6 +52,7 @@ import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
+import org.exist.xquery.value.DateTimeValue;
 import org.exist.xquery.value.IntegerValue;
 import org.exist.xquery.value.NodeValue;
 import org.w3c.dom.Element;
@@ -119,7 +120,12 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private int maxCachedNodesSize = 4096 * 1024;
     
     private Analyzer analyzer;
-
+    
+    private List<Field> metas = new ArrayList<Field>();
+    private List<CategoryPath> paths = new ArrayList<CategoryPath>();
+    
+    boolean indexed = false;
+    
     @Deprecated //use LuceneUtil.FIELD_DOC_ID
     public static final String FIELD_DOC_ID = "docId";
     @Deprecated //use LuceneUtil.FIELD_DOC_URI
@@ -175,6 +181,14 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
     public void setDocument(DocumentImpl document, int newMode) {
         currentDoc = document;
+        
+        indexed = false;
+        
+        metas = new ArrayList<Field>();
+        paths = new ArrayList<CategoryPath>();
+        
+        collectMetas(metas, paths);
+        
         //config = null;
         contentStack = null;
         IndexSpec indexConf = document.getCollection().getIndexConfiguration(broker);
@@ -185,7 +199,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             	// so we can safely work with it.
             	config = new LuceneConfig(config);
         }
-        mode = newMode;
+        setMode(newMode);
     }
 
     public void setMode(int mode) {
@@ -1137,20 +1151,40 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      * @param content
      */
     protected void indexText(NodeId nodeId, QName qname, NodePath path, LuceneIndexConfig config, CharSequence content) {
-        PendingDoc pending = new PendingDoc(nodeId, qname, path, content, config);
+        indexed = true;
+    	PendingDoc pending = new PendingDoc(nodeId, qname, path, content, config);
         nodesToWrite.add(pending);
-        cachedNodesSize += content.length();
+        if (content != null)
+        	cachedNodesSize += content.length();
         if (cachedNodesSize > maxCachedNodesSize)
             write();
     }
 
     private class PendingDoc {
+    	DocumentImpl document;
+    	
+        List<Field> _metas;
+        List<CategoryPath> _paths;
+    	
         NodeId nodeId;
         CharSequence text;
         QName qname;
         LuceneIndexConfig idxConf;
 
+        private PendingDoc() {
+            this.document = currentDoc;
+            this._metas = metas;
+            this._paths = paths;
+            this.nodeId = null;
+            this.qname = null;
+            this.text = null;
+            this.idxConf = null;
+        }
+
         private PendingDoc(NodeId nodeId, QName qname, NodePath path, CharSequence text, LuceneIndexConfig idxConf) {
+            this.document = currentDoc;
+            this._metas = metas;
+            this._paths = paths;
             this.nodeId = nodeId;
             this.qname = qname;
             this.text = text;
@@ -1194,6 +1228,30 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 }
             }
         });
+        
+        String url = currentDoc.getFileURI().toString();
+        
+        Field fld = new Field("eXist:path", url, defaultFT);
+        metas.add(fld);
+
+        paths.add(new CategoryPath("eXist:path", url));
+
+        DocumentMetadata metadata = currentDoc.getMetadata();
+
+        fld = new Field("eXist:meta-type", metadata.getMimeType(), defaultFT);
+        metas.add(fld);
+        
+        Date date = new Date(metadata.getCreated());
+		DateTimeValue value = new DateTimeValue(date);
+
+		fld = new Field("eXist:created", value.toString(), defaultFT);
+        metas.add(fld);
+        
+        date = new Date(metadata.getLastModified());
+		value = new DateTimeValue(date);
+
+		fld = new Field("eXist:last-modified", value.toString(), defaultFT);
+        metas.add(fld);
     }
     
     private static final org.apache.lucene.document.FieldType offsetsType = new org.apache.lucene.document.FieldType(TextField.TYPE_STORED);
@@ -1210,6 +1268,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private void write() {
         if (nodesToWrite == null || nodesToWrite.size() == 0)
             return;
+        
         IndexWriter writer = null;
         try {
             writer = index.getWriter();
@@ -1219,61 +1278,65 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             // docId also needs to be indexed
             IntField fDocIdIdx = new IntField(LuceneUtil.FIELD_DOC_ID, 0, IntField.TYPE_NOT_STORED);
 
-            final List<Field> metas = new ArrayList<Field>();
-            final List<CategoryPath> paths = new ArrayList<CategoryPath>();
-            
-            collectMetas(metas, paths);
-            
+//            final List<Field> metas = new ArrayList<Field>();
+//            final List<CategoryPath> paths = new ArrayList<CategoryPath>();
+//            
+//            collectMetas(metas, paths);
+//            
             TaxonomyWriter taxoWriter = index.getTaxonomyWriter();
             FacetFields facetFields = new FacetFields(taxoWriter);
 
             for (PendingDoc pending : nodesToWrite) {
                 final Document doc = new Document();
-                fDocId.setLongValue(currentDoc.getDocId());
+                fDocId.setLongValue(pending.document.getDocId());
                 doc.add(fDocId);
 
                 // store the node id
-                int nodeIdLen = pending.nodeId.size();
-                byte[] data = new byte[nodeIdLen + 2];
-                ByteConversion.shortToByte((short) pending.nodeId.units(), data, 0);
-                pending.nodeId.serialize(data, 2);
-                fNodeId.setBytesValue(data);
-                doc.add(fNodeId);
+                if (pending.nodeId != null) {
+	                int nodeIdLen = pending.nodeId.size();
+	                byte[] data = new byte[nodeIdLen + 2];
+	                ByteConversion.shortToByte((short) pending.nodeId.units(), data, 0);
+	                pending.nodeId.serialize(data, 2);
+	                fNodeId.setBytesValue(data);
+	                doc.add(fNodeId);
+	
+	                // add separate index for node id
+	                BinaryTokenStream bts = new BinaryTokenStream(new BytesRef(data));
+	                Field fNodeIdIdx = new Field(LuceneUtil.FIELD_NODE_ID, bts, TYPE_NODE_ID);
+	                doc.add(fNodeIdIdx);
+                }
 
-                // add separate index for node id
-                BinaryTokenStream bts = new BinaryTokenStream(new BytesRef(data));
-                Field fNodeIdIdx = new Field(LuceneUtil.FIELD_NODE_ID, bts, TYPE_NODE_ID);
-                doc.add(fNodeIdIdx);
+                if (pending.text != null) {
+	                String contentField;
+	                // the text content is indexed in a field using either
+	                // the qname of the element or attribute or the field
+	                // name defined in the configuration
+	                if (pending.idxConf.isNamed())
+	                	contentField = pending.idxConf.getName();
+	                else
+	                	contentField = LuceneUtil.encodeQName(pending.qname, index.getBrokerPool().getSymbols());
+	
+	                Field fld = new Field(contentField, pending.text.toString(), offsetsType);
+	                if (pending.idxConf.getBoost() > 0)
+	                    fld.setBoost(pending.idxConf.getBoost());
+	
+	                else if (config.getBoost() > 0)
+	                    fld.setBoost(config.getBoost());
+	
+	                doc.add(fld);
+                }
 
-                String contentField;
-                // the text content is indexed in a field using either
-                // the qname of the element or attribute or the field
-                // name defined in the configuration
-                if (pending.idxConf.isNamed())
-                	contentField = pending.idxConf.getName();
-                else
-                	contentField = LuceneUtil.encodeQName(pending.qname, index.getBrokerPool().getSymbols());
-
-                Field fld = new Field(contentField, pending.text.toString(), offsetsType);
-                if (pending.idxConf.getBoost() > 0)
-                    fld.setBoost(pending.idxConf.getBoost());
-
-                else if (config.getBoost() > 0)
-                    fld.setBoost(config.getBoost());
-
-                doc.add(fld);
-
-                fDocIdIdx.setIntValue(currentDoc.getDocId());
+                fDocIdIdx.setIntValue(pending.document.getDocId());
                 doc.add(fDocIdIdx);
                 
-                for (Field meta : metas) {
+                for (Field meta : pending._metas) {
                     doc.add(meta);
                 }
-                if (!paths.isEmpty()) {
-                    facetFields.addFields(doc, paths);
+                if (!pending._paths.isEmpty()) {
+                    facetFields.addFields(doc, pending._paths);
                 }
                 
-                if (pending.idxConf.getAnalyzer() == null)
+                if (pending.idxConf == null || pending.idxConf.getAnalyzer() == null)
                     writer.addDocument(doc);
                 else {
                     writer.addDocument(doc, pending.idxConf.getAnalyzer());
@@ -1287,7 +1350,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             cachedNodesSize = 0;
         }
     }
-
     /**
      * Optimize the Lucene index by merging all segments into a single one. This
      * may take a while and write operations will be blocked during the optimize.
@@ -1311,7 +1373,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         @Override
         public void startElement(Txn transaction, ElementImpl element, NodePath path) {
-            level++;
             if (mode == STORE && config != null) {
                 if (contentStack != null && !contentStack.isEmpty()) {
                     for (TextExtractor extractor : contentStack) {
@@ -1323,6 +1384,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     if (contentStack == null) contentStack = new Stack<TextExtractor>();
                     while (configIter.hasNext()) {
                         LuceneIndexConfig configuration = configIter.next();
+                        
                         if (configuration.match(path) && !configuration.isAttrPattern()) {
                             TextExtractor extractor = new DefaultTextExtractor();
                             extractor.configure(config, configuration, level);
@@ -1331,6 +1393,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     }
                 }
             }
+            level++;
             super.startElement(transaction, element, path);
         }
 
@@ -1362,6 +1425,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 }
             }
             level--;
+            
+            if (level == 0 && !indexed) {
+            	indexText(null, null, null, null, null);
+            }
             super.endElement(transaction, element, path);
         }
 

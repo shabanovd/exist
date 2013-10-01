@@ -257,12 +257,12 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
             Collection collection = broker.getCollection(
         		XmldbURI.xmldbUriFor("/db/system/config/db/organizations/test-org/repositories")
     		);
+            assertNotNull(collection);
             collection.allDocs(broker, docs, true);
 	        
 	        final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
 	
 	        List<FacetResult> results;
-	        String result;
 	
 	        FacetSearchParams fsp = new FacetSearchParams(
                 new CountFacetRequest(new CategoryPath("status"), 10)
@@ -280,14 +280,14 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
 						System.out.println(
 							queryResult2String(_broker, 10, element)
 						);
-					} catch (SAXException e) {
-						e.printStackTrace();
-					} catch (XPathException e) {
+					} catch (Throwable e) {
 						e.printStackTrace();
 					}
 				}
 	        	
 	        };
+	        
+	        System.out.println("RUN QUERY");
 	        
 //	        List<QName> qnames = new ArrayList<QName>();
 //	        qnames.add(new QName("para", ""));
@@ -338,8 +338,8 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
         Serializer serializer = broker.getSerializer();
         serializer.reset();
         
-        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex());
-        highlighter.reset(broker, 5, proxy);
+        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex(), 5);
+        highlighter.reset(broker, proxy);
         
         final StringWriter writer = new StringWriter();
         

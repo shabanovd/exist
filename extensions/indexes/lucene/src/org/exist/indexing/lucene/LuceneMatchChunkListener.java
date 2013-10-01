@@ -28,7 +28,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.PhraseQuery;
-import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.dom.*;
 import org.exist.indexing.AbstractMatchListener;
@@ -75,8 +74,9 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     
     private int chunkOffset = 0;
 
-    public LuceneMatchChunkListener(LuceneIndex index) {
+    public LuceneMatchChunkListener(LuceneIndex index, int chunkOffset) {
         this.index = index;
+        this.chunkOffset = chunkOffset;
     }
 
     public boolean hasMatches(NodeProxy proxy) {
@@ -89,11 +89,13 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         }
         return false;
     }
+    
+    public void setChunkOffset(int value) {
+    	chunkOffset = value;
+    }
 
-    protected void reset(DBBroker broker, int chunkOffset, NodeProxy proxy) throws SAXException {
+    public void reset(DBBroker broker, NodeProxy proxy) throws SAXException {
         this.broker = broker;
-        
-        this.chunkOffset = chunkOffset;
         
         this.match = proxy.getMatches();
         

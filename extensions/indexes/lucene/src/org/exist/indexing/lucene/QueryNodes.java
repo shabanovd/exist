@@ -35,11 +35,14 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldValueHitQueue;
 import org.apache.lucene.search.IndexSearcher;
@@ -173,6 +176,7 @@ public class QueryNodes {
 
 				Query query = parser.parse(queryStr);
 
+				collector.field = field;
 				collector.qname = qname;
 				collector.query = query;
 
@@ -195,6 +199,7 @@ public class QueryNodes {
 		private final LuceneIndexWorker worker;
 		private Query query;
 
+		private String field = null;
 		private QName qname;
 		private final int contextId;
 
@@ -277,6 +282,47 @@ public class QueryNodes {
 					.setNodeType(
 						qname.getNameType() == ElementValue.ATTRIBUTE ? 
 							Node.ATTRIBUTE_NODE : Node.ELEMENT_NODE);
+			
+			
+//			if (field != null) {
+//				try {
+//					Terms termVector = reader.getTermVector(doc, field);
+//					//Terms termVector = reader.terms(field);
+//					if (termVector != null) {
+//						if (termVector.hasOffsets()) {
+//							TermsEnum term = termVector.iterator(null);
+//							
+//							BytesRef byteref;
+//						    while ((byteref = term.next()) != null) {
+//						    	
+//						    	System.out.println(byteref.utf8ToString());
+//						    	
+//						        DocsAndPositionsEnum docPosEnum = term.docsAndPositions(null, null);//, DocsAndPositionsEnum.FLAG_OFFSETS);
+//
+//						        if (docPosEnum.advance(doc) != DocIdSetIterator.NO_MORE_DOCS) {
+//							        int freq=docPosEnum.freq();
+//							        for(int i=0; i<freq; i++){
+//							            int position=docPosEnum.nextPosition();
+//							            int start=docPosEnum.startOffset();
+//							            int end=docPosEnum.endOffset();
+//							            //Store start, end and position in an a list
+//							            
+//							            System.out.println(position+" = "+start+" : "+end);
+//							        }
+//						        }
+//					        }
+//						}
+//					}
+//					
+//					System.out.println("=====================");
+
+//					Terms terms = reader.terms(field);
+//					TermsEnum termsEnum = terms.iterator(TermsEnum.EMPTY);
+//					BytesRef term;
+//				    while((term=termsEnum.next())!=null){
+//				} catch (IOException e) {
+//				}
+//			}
 
 			LuceneMatch match = worker.new LuceneMatch(contextId, nodeId, query);
 			match.setScore(score);

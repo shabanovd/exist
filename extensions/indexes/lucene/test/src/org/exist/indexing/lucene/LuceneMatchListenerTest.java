@@ -25,10 +25,10 @@ import org.custommonkey.xmlunit.NamespaceContext;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
 import org.custommonkey.xmlunit.XMLAssert;
 import org.custommonkey.xmlunit.XMLUnit;
-import org.exist.TestUtils;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.IndexInfo;
+import org.exist.dom.NodeProxy;
 import org.exist.security.xacml.AccessContext;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -39,19 +39,25 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
 import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
+import org.exist.util.serializer.SAXSerializer;
+import org.exist.util.serializer.SerializerPool;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.junit.AfterClass;
+
 import static org.junit.Assert.*;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import javax.xml.transform.OutputKeys;
+
 import java.io.File;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Properties;
 
@@ -117,6 +123,8 @@ public class LuceneMatchListenerTest {
 
     private static String MATCH_START = "<exist:match xmlns:exist=\"http://exist.sourceforge.net/NS/exist\">";
     private static String MATCH_END = "</exist:match>";
+    
+    private static String CUTOFF = "<exist:cutoff xmlns:exist=\"http://exist.sourceforge.net/NS/exist\"/>";
 
     private static BrokerPool pool;
 
@@ -304,6 +312,112 @@ public class LuceneMatchListenerTest {
             pool.release(broker);
         }
     }
+    
+    @Test
+    public void chunk1Tests() {
+        DBBroker broker = null;
+        try {
+            configureAndStore(CONF2, XML);
+
+            broker = pool.get(pool.getSecurityManager().getSystemSubject());
+
+            XQuery xquery = broker.getXQueryService();
+            assertNotNull(xquery);
+
+            Sequence seq = xquery.execute("ft:facet-search('/db', 'ALL:admin*', 1000, fn:false(), (<count num='10'>__status</count>), (<sort>__status</sort>))", null, AccessContext.TEST);
+            assertNotNull(seq);
+            //assertEquals(1, seq.getItemCount());
+            
+            for (NodeProxy proxy : seq.toNodeSet()) {
+            	System.out.println(queryResult2String(broker, 5, proxy));
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            pool.release(broker);
+        }
+    }
+    
+    @Test
+    public void chunkTests() {
+        DBBroker broker = null;
+        try {
+            configureAndStore(CONF2, XML);
+
+            broker = pool.get(pool.getSecurityManager().getSystemSubject());
+
+            XQuery xquery = broker.getXQueryService();
+            assertNotNull(xquery);
+
+            Sequence seq = xquery.execute("//para[ft:query(., 'mixed')]", null, AccessContext.TEST);
+            assertNotNull(seq);
+            assertEquals(1, seq.getItemCount());
+            String result = queryResult2String(broker, 5, (NodeProxy)seq.itemAt(0));
+            System.out.println("RESULT: " + result);
+            XMLAssert.assertEquals(
+        		"<para>" 
+					+ CUTOFF + "with <hi>"
+						+ MATCH_START + "mixed" + MATCH_END
+					+ "</hi> cont" + CUTOFF
+				+"</para>",
+				result);
+            
+            
+
+//            seq = xquery.execute("//para[ft:query(., 'mixed')]", null, AccessContext.TEST);
+//            assertNotNull(seq);
+//            assertEquals(1, seq.getItemCount());
+//            result = queryResult2String(broker, 100, seq);
+//            System.out.println("RESULT: " + result);
+//            XMLAssert.assertEquals("<para>some paragraph with <hi>" + MATCH_START + "mixed" +
+//                    MATCH_END + "</hi> content.</para>", result);
+//
+//            seq = xquery.execute("//para[ft:query(., '+nested +inner +elements')]", null, AccessContext.TEST);
+//            assertNotNull(seq);
+//            assertEquals(1, seq.getItemCount());
+//            result = queryResult2String(broker, seq);
+//            System.out.println("RESULT: " + result);
+//            XMLAssert.assertEquals("<para>another paragraph with <note><hi>" + MATCH_START + "nested" +
+//                    MATCH_END + "</hi> " + MATCH_START +
+//                    "inner" + MATCH_END + "</note> " + MATCH_START + "elements" + MATCH_END + ".</para>", result);
+//
+//            seq = xquery.execute("//para[ft:query(term, 'term')]", null, AccessContext.TEST);
+//            assertNotNull(seq);
+//            assertEquals(1, seq.getItemCount());
+//            result = queryResult2String(broker, seq);
+//            System.out.println("RESULT: " + result);
+//            XMLAssert.assertEquals("<para>a third paragraph with <term>" + MATCH_START + "term" + MATCH_END +
+//                    "</term>.</para>", result);
+//
+//            seq = xquery.execute("//para[ft:query(., '+double +match')]", null, AccessContext.TEST);
+//            assertNotNull(seq);
+//            assertEquals(1, seq.getItemCount());
+//            result = queryResult2String(broker, seq);
+//            System.out.println("RESULT: " + result);
+//            XMLAssert.assertEquals("<para>" + MATCH_START + "double" + MATCH_END + " " +
+//                    MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " +
+//                    MATCH_START + "match" + MATCH_END + "</para>", result);
+//
+//            seq = xquery.execute(
+//                    "for $para in //para[ft:query(., '+double +match')] return\n" +
+//                            "   <hit>{$para}</hit>", null, AccessContext.TEST);
+//            assertNotNull(seq);
+//            assertEquals(1, seq.getItemCount());
+//            result = queryResult2String(broker, seq);
+//            System.out.println("RESULT: " + result);
+//            XMLAssert.assertEquals("<hit><para>" + MATCH_START + "double" + MATCH_END + " " +
+//                    MATCH_START + "match" + MATCH_END + " " + MATCH_START + "double" + MATCH_END + " " +
+//                    MATCH_START + "match" + MATCH_END + "</para></hit>", result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            pool.release(broker);
+        }
+    }
+
 
     @BeforeClass
     public static void startDB() {
@@ -346,7 +460,7 @@ public class LuceneMatchListenerTest {
 
     @AfterClass
     public static void closeDB() {
-        TestUtils.cleanupDB();
+        //TestUtils.cleanupDB();
         BrokerPool.stopAll(false);
         pool = null;
     }
@@ -390,5 +504,41 @@ public class LuceneMatchListenerTest {
         serializer.reset();
         serializer.setProperties(props);
         return serializer.serialize((NodeValue) seq.itemAt(0));
+    }
+    
+    private String queryResult2String(DBBroker broker, int chunkOffset, NodeProxy proxy) throws SAXException, XPathException {
+        Properties props = new Properties();
+        props.setProperty(OutputKeys.INDENT, "no");
+        
+        Serializer serializer = broker.getSerializer();
+        serializer.reset();
+        
+        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex(), 5);
+        highlighter.reset(broker, proxy);
+
+        final StringWriter writer = new StringWriter();
+        
+        SerializerPool serializerPool = SerializerPool.getInstance();
+        SAXSerializer xmlout = (SAXSerializer) serializerPool.borrowObject(SAXSerializer.class);
+        try {
+        	//setup pipes
+			xmlout.setOutput(writer, props);
+			
+			highlighter.setNextInChain(xmlout);
+			
+			serializer.setReceiver(highlighter);
+			
+			//serialize
+	        serializer.toReceiver(proxy, false, true);
+	        
+	        //get result
+	        return writer.toString();
+        } finally {
+        	serializerPool.returnObject(xmlout);
+        }
+    }
+    
+    private LuceneIndex getLuceneIndex() {
+        return (LuceneIndex) pool.getIndexManager().getIndexById(LuceneIndex.ID);
     }
 }
