@@ -196,8 +196,8 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	    Metas ms = md.getMetas(collection.getURI());
 	    if (ms != null)
 	    	backup(ms, serializer);
-	    else
-	    	LOG.error("Collection '"+collection.getURI()+"' have no metas");
+//	    else
+//	    	LOG.error("Collection '"+collection.getURI()+"' have no metas");
 	}
 
 	@Override
@@ -223,8 +223,8 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	    Metas ms = md.getMetas(document);
 	    if (ms != null)
 	    	backup(ms, serializer);
-	    else
-	    	LOG.error("Document '"+document.getURI()+"' have no metas");
+//	    else
+//	    	LOG.error("Document '"+document.getURI()+"' have no metas");
 	}
 
 	//restore methods
