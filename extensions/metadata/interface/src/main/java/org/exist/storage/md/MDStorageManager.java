@@ -41,7 +41,6 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
 import org.exist.storage.MetaStorage;
 import org.exist.storage.md.xquery.MetadataModule;
-import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xquery.XQueryContext;
 import org.xml.sax.Attributes;
@@ -150,6 +149,7 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	}
 
 	private void backup(Metas ms, SAXSerializer serializer) throws SAXException {
+		
 		List<Meta> sub = ms.metas();
 		for (Meta m : sub) {
 
@@ -189,7 +189,11 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	        return;
 	    
 //		System.out.println("backup collection "+colection.getURI());
-		backup(md.getMetas(collection.getURI()), serializer);
+	    Metas ms = md.getMetas(collection.getURI());
+	    if (ms != null)
+	    	backup(ms, serializer);
+	    else
+	    	LOG.error("Collection '"+collection.getURI()+"' have no metas");
 	}
 
 	@Override
@@ -207,7 +211,11 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	        return;
 	    
 //		System.out.println("backup document "+document.getURI());
-		backup(md.getMetas(document), serializer);
+	    Metas ms = md.getMetas(document);
+	    if (ms != null)
+	    	backup(ms, serializer);
+	    else
+	    	LOG.error("Document '"+document.getURI()+"' have no metas");
 	}
 
 	//restore methods
