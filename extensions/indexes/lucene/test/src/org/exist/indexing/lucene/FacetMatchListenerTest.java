@@ -280,7 +280,9 @@ public class FacetMatchListenerTest extends FacetAbstractTest {
 						System.out.println(
 							queryResult2String(_broker, 10, element)
 						);
-					} catch (SAXException | XPathException e) {
+					} catch (SAXException e) {
+						e.printStackTrace();
+					} catch (XPathException e) {
 						e.printStackTrace();
 					}
 				}
