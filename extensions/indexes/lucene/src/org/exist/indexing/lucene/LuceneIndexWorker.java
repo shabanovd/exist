@@ -52,7 +52,6 @@ import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
-import org.exist.xquery.value.DateTimeValue;
 import org.exist.xquery.value.IntegerValue;
 import org.exist.xquery.value.NodeValue;
 import org.w3c.dom.Element;
@@ -1245,10 +1244,15 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         
         String url = currentDoc.getFileURI().toString();
         
-        Field fld = new Field("eXist:path", url, metaFT);
+        Field fld = new Field("eXist:file-name", url, metaFT);
         metas.add(fld);
 
-        paths.add(new CategoryPath("eXist:path", url));
+        url = currentDoc.getURI().toString();
+        
+        fld = new Field("eXist:file-path", url, metaFT);
+        metas.add(fld);
+
+        paths.add(new CategoryPath("eXist:file-path", url));
 
         DocumentMetadata metadata = currentDoc.getMetadata();
 
