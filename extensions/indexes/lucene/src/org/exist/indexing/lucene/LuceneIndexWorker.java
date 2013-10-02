@@ -63,6 +63,8 @@ import org.xml.sax.helpers.AttributesImpl;
 import java.io.IOException;
 import java.util.*;
 
+import javax.xml.bind.DatatypeConverter;
+
 /**
  * Class for handling all Lucene operations.
  *
@@ -96,6 +98,16 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     	defaultFT.setTokenized(true);
     }
 
+    private static final org.apache.lucene.document.FieldType metaFT = new org.apache.lucene.document.FieldType();
+	
+    static {
+    	metaFT.setIndexed(true);
+    	metaFT.setStored(false);
+    	metaFT.setOmitNorms(true);
+    	metaFT.setStoreTermVectors(false);
+    	metaFT.setTokenized(false);
+    }
+
     public static final Logger LOG = Logger.getLogger(LuceneIndexWorker.class);
     
     public final LuceneIndex index;
@@ -112,7 +124,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private LuceneConfig config;
     private Stack<TextExtractor> contentStack = null;
     private Set<NodeId> nodesToRemove = null;
-    private List<PendingDoc> nodesToWrite = null;
+    private List<PendingDoc> nodesToWrite = new ArrayList<PendingDoc>();
     private Document pendingDoc = null;
     
     private int cachedNodesSize = 0;
@@ -125,6 +137,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private List<CategoryPath> paths = new ArrayList<CategoryPath>();
     
     boolean indexed = false;
+    
+    private final TimeZone GMT = TimeZone.getTimeZone("GMT+0:00");
     
     @Deprecated //use LuceneUtil.FIELD_DOC_ID
     public static final String FIELD_DOC_ID = "docId";
@@ -1231,33 +1245,33 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         
         String url = currentDoc.getFileURI().toString();
         
-        Field fld = new Field("eXist:path", url, defaultFT);
+        Field fld = new Field("eXist:path", url, metaFT);
         metas.add(fld);
 
         paths.add(new CategoryPath("eXist:path", url));
 
         DocumentMetadata metadata = currentDoc.getMetadata();
 
-        fld = new Field("eXist:meta-type", metadata.getMimeType(), defaultFT);
+        fld = new Field("eXist:meta-type", metadata.getMimeType(), metaFT);
         metas.add(fld);
         
-        Date date = new Date(metadata.getCreated());
-		DateTimeValue value = new DateTimeValue(date);
+		GregorianCalendar date = new GregorianCalendar(GMT);
 
-		fld = new Field("eXist:created", value.toString(), defaultFT);
+		date.setTimeInMillis(metadata.getCreated());
+
+		fld = new Field("eXist:created", DatatypeConverter.printDateTime(date), metaFT);
         metas.add(fld);
         
-        date = new Date(metadata.getLastModified());
-		value = new DateTimeValue(date);
+		date.setTimeInMillis(metadata.getLastModified());
 
-		fld = new Field("eXist:last-modified", value.toString(), defaultFT);
+		fld = new Field("eXist:last-modified", DatatypeConverter.printDateTime(date), metaFT);
         metas.add(fld);
     }
     
     private static final org.apache.lucene.document.FieldType offsetsType = new org.apache.lucene.document.FieldType(TextField.TYPE_STORED);
     static {
 		offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-		offsetsType.setStored(true);
+		offsetsType.setStored(false);
 		offsetsType.setIndexed(true);   
 		offsetsType.setStoreTermVectors(true);
 		offsetsType.setStoreTermVectorOffsets(true);
@@ -1399,6 +1413,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         @Override
         public void endElement(Txn transaction, ElementImpl element, NodePath path) {
+            level--;
             if (config != null) {
                 if (mode == STORE && contentStack != null && !contentStack.isEmpty()) {
                     for (TextExtractor extractor : contentStack) {
@@ -1424,7 +1439,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     }
                 }
             }
-            level--;
             
             if (level == 0 && !indexed) {
             	indexText(null, null, null, null, null);
