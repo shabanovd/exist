@@ -114,7 +114,11 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         nodesWithMatch = new TreeMap<NodeId, Offset>();
         
         scanMatches( proxy, getPath(proxy) );
+        
+        firstElement = null;
     }
+    
+    StoredNode firstElement = null;
     
     Stack<NodeId> stack = new Stack<NodeId>();
 
@@ -133,15 +137,16 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 //        }
     	
     	NodeId nodeId = getCurrentNode().getNodeId();
-//    	System.out.println("node = "+nodeId);
+//    	System.out.println("\nnode = "+nodeId);
     	
     	for (NodeId nId : nodesWithMatch.keySet()) {
     		int relation = nId.computeRelation(nodeId);
-//    		System.out.println(" "+nId + " " + relation);
+//    		System.out.println("match: "+nId + " " + relation);
 
-    		if (relation == NodeId.IS_CHILD || relation == NodeId.IS_SELF) {
+    		if (relation > 0) {
     			stack.push(nodeId);
     			
+    			addNS(attribs);
     			super.startElement(qname, attribs);
     			
     			return;
@@ -153,12 +158,13 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     		NodeId nId = offsets.ids[i];
     		
     		int relation = nId.computeRelation(nodeId);
-//    		System.out.println(" "+nId + " " + relation);
+//    		System.out.println("offsets: "+nId + " " + relation);
     		
-    		if (relation == NodeId.IS_CHILD) {
+    		if (relation > 0) {
     			
     			stack.push(nodeId);
     			
+    			addNS(attribs);
     			super.startElement(qname, attribs);
     			
     			return;
@@ -167,10 +173,25 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     	
         //super.startElement(qname, attribs);
     }
+
+    private void addNS(AttrList attribs) throws SAXException {
+    	if (firstElement == null) {
+    		//attribs.addAttribute(new QName("score", Namespaces.EXIST_NS, "exist"), "");
+    		
+    		super.startPrefixMapping("exist", Namespaces.EXIST_NS);
+    		
+    		firstElement = getCurrentNode();
+    	}
+    }
     
     @Override
     public void endElement(QName qname) throws SAXException {
-    	NodeId nodeId = getCurrentNode().getNodeId();
+    	if (firstElement == getCurrentNode()) {
+    		super.endPrefixMapping("exist");
+    		firstElement = null;
+    	}
+
+		NodeId nodeId = getCurrentNode().getNodeId();
     	
     	if (!stack.isEmpty() && stack.peek().equals(nodeId)) {
     		stack.pop();
@@ -195,11 +216,19 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 	        	if (!offsets.ids[i].equals(nodeId))
 	        		break;
 	        	
-	        	int s = offsets.starts[i] - offsets.offsets[i];
-	        	int e = offsets.ends[i] - offsets.offsets[i];
+	        	int s;
+	        	if (offsets.starts[i] == offsets.offsets[i]) {
+	        		s = offsets.starts[i] - offsets.offsets[i];
+	        		
+	        	} else {
+	        		s = offsets.starts[i] - offsets.offsets[i] - 1;
+	        	}
+	        	int e = offsets.ends[i] - offsets.offsets[i] + 1;
+	        	if (e > seq.length())
+	        		e = seq.length();
 	
 	        	while (offset != null) {
-	        		if (e < offset.startOffset) {
+	        		if (e <= offset.startOffset) {
 	        			break;
 	        		}
 	        		
@@ -375,7 +404,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
                                     
                                     offsets.exclude(offsetAttr.startOffset(), offsetAttr.endOffset());
                                     
-                                    int idx = offsets.getIndex(offsetAttr.startOffset());
+                                    int idx = offsets.getLastIndex(offsetAttr.startOffset());
                                     
                                     NodeId nodeId = offsets.ids[idx];
                                     Offset offset = nodesWithMatch.get(nodeId);
@@ -409,7 +438,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
                         
                         offsets.exclude(offsetAttr.startOffset(), offsetAttr.endOffset());
                         
-                        int idx = offsets.getIndex(offsetAttr.startOffset());
+                        int idx = offsets.getLastIndex(offsetAttr.startOffset());
                         NodeId nodeId = offsets.ids[idx];
                         
                         int startOffset = offsetAttr.startOffset() - offsets.offsets[idx];
@@ -441,21 +470,27 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             LOG.warn("Problem found while serializing XML: " + e.getMessage(), e);
         }
         
+        System.out.println("Debug");
+        
+        for (int i = 0; i < offsets.len; i++) {
+        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+        }
+
         offsets.chunking();
         
-//        System.out.println("Debug");
-//        
-//        for (int i = 0; i < offsets.len; i++) {
-//        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
-//        }
+        System.out.println("after chunking");
+        
+        for (int i = 0; i < offsets.len; i++) {
+        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+        }
         
         offsets.cleanup();
         
-//        System.out.println("after cleanup");
-//        
-//        for (int i = 0; i < offsets.len; i++) {
-//        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
-//        }
+        System.out.println("after cleanup");
+        
+        for (int i = 0; i < offsets.len; i++) {
+        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+        }
     }
 
     private NodePath getPath(NodeProxy proxy) {
@@ -533,7 +568,26 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             return -1;
         }
 
-        int getIndex(int offset) {
+        int getFirstIndex(int offset) {
+            for (int i = 0; i < len; i++) {
+                if (offsets[i] <= offset && (i + 1 == len || offsets[i + 1] > offset)) {
+
+                	for (int j = i - 1; j >= -1; j--) {
+                		if (j == -1)
+                			return 0;
+                		
+                		if (offsets[i] != offsets[j]) {
+                			return j + 1;
+                		}
+                	}
+                	
+                    return i;
+                }
+            }
+            return -1;
+        }
+		
+        int getLastIndex(int offset) {
             for (int i = 0; i < len; i++) {
                 if (offsets[i] <= offset && (i + 1 == len || offsets[i + 1] > offset)) {
                     return i;
@@ -541,8 +595,18 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             }
             return -1;
         }
-		
+
+        int getIndex(int pos) {
+            for (int i = 0; i < len; i++) {
+                if (starts[i] <= pos && ends[i] >= pos) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         void exclude(int startOffset, int endOffset) {
+        	System.out.println("");
         	for (int i = 0; i < len; i++) {
 				if (startOffset == starts[i] && endOffset == ends[i]) {
     				
@@ -595,8 +659,15 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             			if (starts[i] != -1) {
             				if (ends[i] > start) {
             					if (starts[i] < start) {
-            						starts[i] = start;
+            						if (pos != 0 && starts[i] <= pos && ends[i] >= pos) {
+            							//starts[i] = start;
+            							
+            						} else {
+            							starts[i] = start;
+            						}
             					}
+            				} else if (starts[i] <= pos && ends[i] >= pos) {
+            					ends[i] = pos;
             				} else {
             					starts[i] = -1;
             					ends[i] = -1;
@@ -664,11 +735,6 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 //        		resize(len*2);
 //        	}
         	
-            int[] tempOffsets = new int[offsets.length];
-            
-            System.arraycopy(offsets, 0, tempOffsets, 0, pos);
-            System.arraycopy(offsets, pos, tempOffsets, pos+1, len);
-            
             offsets = split(offsets, pos);
             
             starts = split(starts, pos);
@@ -682,8 +748,8 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         int[] split(int[] array, int pos) {
             int[] tempOffsets = new int[array.length+1];
             
-            System.arraycopy(array, 0, tempOffsets, 0, pos);
-            System.arraycopy(array, pos, tempOffsets, pos+1, len);
+            System.arraycopy(array, 0, tempOffsets, 0, pos+1);
+            System.arraycopy(array, pos+1, tempOffsets, pos+2, len);
             
             return tempOffsets;
         }
@@ -691,8 +757,8 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         NodeId[] split(NodeId[] array, int pos) {
         	NodeId[] tempOffsets = new NodeId[array.length+1];
             
-            System.arraycopy(array, 0, tempOffsets, 0, pos);
-            System.arraycopy(array, pos, tempOffsets, pos+1, len);
+            System.arraycopy(array, 0, tempOffsets, 0, pos+1);
+            System.arraycopy(array, pos+1, tempOffsets, pos+2, len);
             
             return tempOffsets;
         }
