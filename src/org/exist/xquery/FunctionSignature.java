@@ -251,7 +251,10 @@ public class FunctionSignature {
             }
         }
         buf.append(") ");
-        buf.append(returnType.toString());
+        if (returnType == null)
+        	buf.append("NO-RETURN-TYPE");
+        else
+        	buf.append(returnType.toString());
         
         return buf.toString();
     }
