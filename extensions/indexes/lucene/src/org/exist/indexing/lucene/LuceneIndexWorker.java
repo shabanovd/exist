@@ -1219,7 +1219,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 	
                     String name = key.getLocalName();//LuceneUtil.encodeQName(key, index.getBrokerPool().getSymbols());
 
-                    org.exist.indexing.lucene.FieldType fieldConfig = config.getFieldType(name);
+                    org.exist.indexing.lucene.FieldType fieldConfig = null;
+                    if (config != null)
+                    	fieldConfig = config.getFieldType(name);
                     
                     org.apache.lucene.document.FieldType ft = null;
 					if (fieldConfig != null)
@@ -1338,7 +1340,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 	                if (pending.idxConf.getBoost() > 0)
 	                    fld.setBoost(pending.idxConf.getBoost());
 	
-	                else if (config.getBoost() > 0)
+	                else if (config != null && config.getBoost() > 0)
 	                    fld.setBoost(config.getBoost());
 	
 	                doc.add(fld);
