@@ -22,10 +22,14 @@
 package org.exist.xquery.modules.lucene;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
+
+import javax.xml.transform.OutputKeys;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -47,22 +51,24 @@ import org.apache.lucene.search.SortField;
 import org.exist.Database;
 import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentImpl;
-import org.exist.dom.Match;
 import org.exist.dom.MutableDocumentSet;
 import org.exist.dom.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.indexing.IndexController;
 import org.exist.indexing.lucene.LuceneIndex;
 import org.exist.indexing.lucene.LuceneIndexWorker;
+import org.exist.indexing.lucene.LuceneMatchChunkListener;
 import org.exist.indexing.lucene.LuceneUtil;
 import org.exist.indexing.lucene.PlainTextHighlighter;
 import org.exist.indexing.lucene.QueryDocuments;
 import org.exist.indexing.lucene.QueryNodes;
 import org.exist.indexing.lucene.SearchCallback;
-import org.exist.indexing.lucene.PlainTextHighlighter.Offset;
 import org.exist.memtree.MemTreeBuilder;
 import org.exist.memtree.NodeImpl;
 import org.exist.storage.DBBroker;
+import org.exist.storage.serializers.Serializer;
+import org.exist.util.serializer.SAXSerializer;
+import org.exist.util.serializer.SerializerPool;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -79,6 +85,7 @@ import org.exist.xquery.value.SequenceIterator;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
 /**
@@ -289,8 +296,6 @@ public class FacetSearch extends BasicFunction {
             		fields = fieldsToLoad.toArray(new String[fieldsToLoad.size()]);
             	}
                 
-                final PlainTextHighlighter highlighter = new PlainTextHighlighter(query, searcher.getIndexReader());
-
 	            SearchCallback<NodeProxy> cb = new SearchCallback<NodeProxy>() {
 	            	
 	            	int total = -1;
@@ -302,48 +307,27 @@ public class FacetSearch extends BasicFunction {
 	
 					@Override
 					public void found(AtomicReader reader, int docNum, NodeProxy element, float score) {
-						try {
-							Document doc = reader.document(docNum, fieldsToLoad);
-							String fDocUri = element.getDocument().getURI().toString();
-							
-		                    // setup attributes
-		                    AttributesImpl attribs = new AttributesImpl();
-		                    attribs.addAttribute("", "uri", "uri", "CDATA", fDocUri);
-		                    attribs.addAttribute("", "score", "score", "CDATA", ""+score);
-		
-		                    // write element and attributes
-		                    builder.startElement("", "search", "search", attribs);
-		                    
-		                    Match match = element.getMatches();
-                            for (String field : fields) {
-                                String[] fieldContent = doc.getValues(field);
-                                attribs.clear();
-                                attribs.addAttribute("", "name", "name", "CDATA", field);
-                                for (String content : fieldContent) {
-                                    List<Offset> offsets = highlighter.getOffsets(content, searchAnalyzer);
-                                    if (offsets != null) {
-                                    	for (Offset offset : offsets) {
-                                    		match.addOffset(offset.startOffset(), offset.endOffset() - offset.startOffset());
-                                    	}
-                                    }
-                                }
-                            }
-                            element.setMatches(match);
-
-		                    	builder.addReferenceNode(element);
-		                    builder.endElement();
-		
-		                    // clean attributes
-		                    attribs.clear();
-		                    
-						} catch (IOException e) {
-							e.printStackTrace();
+//						try {
+//							System.out.println("");
+//							System.out.println( queryResult2String(broker, 10, element) );
+//						} catch (Throwable e) {
+//							e.printStackTrace();
+//						}
+						
+						String fDocUri = element.getDocument().getURI().toString();
+						
+	                    // setup attributes
+	                    AttributesImpl attribs = new AttributesImpl();
+	                    attribs.addAttribute("", "uri", "uri", "CDATA", fDocUri);
+	                    attribs.addAttribute("", "score", "score", "CDATA", ""+score);
 	
-						} finally {
-	//	                    if (storedDoc != null) {
-	//	                        storedDoc.getUpdateLock().release(Lock.READ_LOCK);
-	//	                    }
-		                }
+	                    // write element and attributes
+	                    builder.startElement("", "search", "search", attribs);
+	                    	builder.addReferenceNode(element);
+	                    builder.endElement();
+	
+	                    // clean attributes
+	                    //attribs.clear();
 					}
 				};
 				
@@ -509,5 +493,40 @@ public class FacetSearch extends BasicFunction {
 
         return new Sort(sortFields.toArray(new SortField[sortFields.size()]));
     }
+ 
+    private String queryResult2String(DBBroker broker, int chunkOffset, NodeProxy proxy) throws SAXException, XPathException {
+        Properties props = new Properties();
+        props.setProperty(OutputKeys.INDENT, "no");
+        
+        Serializer serializer = broker.getSerializer();
+        serializer.reset();
+        
+        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex(broker), chunkOffset);
+        highlighter.reset(broker, proxy);
+        
+        final StringWriter writer = new StringWriter();
+        
+        SerializerPool serializerPool = SerializerPool.getInstance();
+        SAXSerializer xmlout = (SAXSerializer) serializerPool.borrowObject(SAXSerializer.class);
+        try {
+        	//setup pipes
+			xmlout.setOutput(writer, props);
+			
+			highlighter.setNextInChain(xmlout);
+			
+			serializer.setReceiver(highlighter);
+			
+			//serialize
+	        serializer.toReceiver(proxy, false, true);
+	        
+	        //get result
+	        return writer.toString();
+        } finally {
+        	serializerPool.returnObject(xmlout);
+        }
+    }
     
+    private LuceneIndex getLuceneIndex(DBBroker broker) {
+        return (LuceneIndex) broker.getDatabase().getIndexManager().getIndexById(LuceneIndex.ID);
+    }
 }
