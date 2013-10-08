@@ -90,10 +90,8 @@ public class IndexInfo {
         if(entityResolver != null) {
             reader.setEntityResolver(entityResolver);
         }
-        final LexicalHandler lexicalHandler = triggersVisitor == null ?
-            indexer : triggersVisitor.getLexicalInputHandler();
-        final ContentHandler contentHandler = triggersVisitor == null ?
-            indexer : triggersVisitor.getInputHandler();
+        LexicalHandler lexicalHandler = triggersVisitor == null ? indexer : triggersVisitor.getLexicalInputHandler();
+        ContentHandler contentHandler = triggersVisitor == null ? indexer : triggersVisitor.getInputHandler();
         reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, lexicalHandler);
         reader.setContentHandler(contentHandler);
         reader.setErrorHandler(indexer);

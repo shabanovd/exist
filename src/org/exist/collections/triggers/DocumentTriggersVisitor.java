@@ -299,18 +299,20 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
             
     @Override
     public void setOutputHandler(ContentHandler outputHandler) {
-        
-        ContentHandler prevOutputHandler = outputHandler;
-        
-        try {
-            for(final DocumentTrigger trigger : getTriggers()) {
-                prevOutputHandler = new ContentHandlerWrapper(prevOutputHandler, trigger);
-            }
-        } catch(final TriggerException te) {
-            LOG.error(te.getMessage(), te);
-        }
-        
-        this.outputHandler = prevOutputHandler;
+
+        this.outputHandler = outputHandler;
+    	
+//        ContentHandler prevOutputHandler = outputHandler;
+//        
+//        try {
+//            for(final DocumentTrigger trigger : getTriggers()) {
+//                prevOutputHandler = new ContentHandlerWrapper(prevOutputHandler, trigger);
+//            }
+//        } catch(final TriggerException te) {
+//            LOG.error(te.getMessage(), te);
+//        }
+//        
+//        this.outputHandler = prevOutputHandler;
     }
     
     private LexicalHandler lexicalHandler;
@@ -322,17 +324,19 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
 
     @Override
     public void setLexicalOutputHandler(LexicalHandler lexicalHandler) {
-        LexicalHandler prevLexicalHandler = lexicalHandler;
-        
-        try {
-            for(final DocumentTrigger trigger : getTriggers()) {
-                prevLexicalHandler = new LexicalHandlerWrapper(prevLexicalHandler, trigger);
-            }
-        } catch(final TriggerException te) {
-            LOG.error(te.getMessage(), te);
-        }
-        
-        this.lexicalHandler = prevLexicalHandler;
+        this.lexicalHandler = lexicalHandler;
+
+//        LexicalHandler prevLexicalHandler = lexicalHandler;
+//        
+//        try {
+//            for(final DocumentTrigger trigger : getTriggers()) {
+//                prevLexicalHandler = new LexicalHandlerWrapper(prevLexicalHandler, trigger);
+//            }
+//        } catch(final TriggerException te) {
+//            LOG.error(te.getMessage(), te);
+//        }
+//        
+//        this.lexicalHandler = prevLexicalHandler;
     }
 
     //TODO check this 

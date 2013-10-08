@@ -1391,19 +1391,19 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
         setCollectionConfigEnabled(true);
         broker.deleteObservers();
         
-        if(info.isCreating()) {
-            db.getDocumentTrigger().afterCreateDocument(broker, transaction, document);
-        } else {
-            db.getDocumentTrigger().afterUpdateDocument(broker, transaction, document);
-        }
-        
-        if(isTriggersEnabled() && isCollectionConfigEnabled() && info.getTriggersVisitor() != null) {
+//        if(info.isCreating()) {
+//            db.getDocumentTrigger().afterCreateDocument(broker, transaction, document);
+//        } else {
+//            db.getDocumentTrigger().afterUpdateDocument(broker, transaction, document);
+//        }
+//        
+//        if(isTriggersEnabled() && isCollectionConfigEnabled() && info.getTriggersVisitor() != null) {
             if(info.isCreating()) {
                 info.getTriggersVisitor().afterCreateDocument(broker, transaction, document);
             } else {
                 info.getTriggersVisitor().afterUpdateDocument(broker, transaction, document);
             }
-        }
+//        }
         
         db.getNotificationService().notifyUpdate(document, (info.isCreating() ? UpdateListener.ADD : UpdateListener.UPDATE));
         //Is it a collection configuration file ?
@@ -1625,38 +1625,40 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 //confMgr.invalidateAll(getURI());
                 setCollectionConfigEnabled(false);
             }
+            
+            final List triggers = new ArrayList();
+            
+            DocumentTriggersVisitor trigger = new DocumentTriggersVisitor(broker, null) {
+            	protected List getTriggers() throws TriggerException {
+            		return triggers;
+            	}
+            };
 
             DocumentTriggersVisitor masterTriggers = (DocumentTriggersVisitor) db.getDocumentTrigger();
-
-            if(oldDoc == null) {
-            	masterTriggers.beforeCreateDocument(broker, transaction, getURI().append(docUri));
-            } else {
-            	masterTriggers.beforeUpdateDocument(broker, transaction, oldDoc);
-            }
-
-            masterTriggers.setOutputHandler(indexer);
-            masterTriggers.setLexicalOutputHandler(indexer);
-            masterTriggers.setValidating(true);
+            //triggers.add(indexer);
+            if (masterTriggers != null)
+            	triggers.add(masterTriggers);
             
         	DocumentTriggersVisitor configTriggers = null;
             if(isTriggersEnabled() && isCollectionConfigEnabled()) {
             	configTriggers = getConfiguration(broker).getDocumentTriggerProxies().instantiateVisitor(broker);
             	
-                configTriggers.setOutputHandler(masterTriggers);
-                configTriggers.setLexicalOutputHandler(masterTriggers);
-                configTriggers.setValidating(true);
-                
-                if(oldDoc == null) {
-                	configTriggers.beforeCreateDocument(broker, transaction, getURI().append(docUri));
-                } else {
-                	configTriggers.beforeUpdateDocument(broker, transaction, oldDoc);
-                }
-                
-                info.setTriggersVisitor(configTriggers);
-            } else {
-                info.setTriggersVisitor(masterTriggers);
+            	if (configTriggers != null)
+            		triggers.add(configTriggers);
             }
             
+            trigger.setOutputHandler(indexer);
+            trigger.setLexicalOutputHandler(indexer);
+            trigger.setValidating(true);
+            
+            if(oldDoc == null) {
+            	trigger.beforeCreateDocument(broker, transaction, getURI().append(docUri));
+            } else {
+            	trigger.beforeUpdateDocument(broker, transaction, oldDoc);
+            }
+            
+            info.setTriggersVisitor(trigger);
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Scanning document " + getURI().append(docUri));
             }
@@ -1704,11 +1706,13 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 document.setDocId(broker.getNextResourceId(transaction, this));
                 addDocument(transaction, broker, document);
             }
+            
             indexer.setValidating(false);
-        	masterTriggers.setValidating(false);
-            if(configTriggers != null) {
-            	configTriggers.setValidating(false);
-            }
+            trigger.setValidating(false);
+//        	masterTriggers.setValidating(false);
+//            if(configTriggers != null) {
+//            	configTriggers.setValidating(false);
+//            }
             return info;
         } finally {
             if (oldDoc != null && oldDocLocked) {

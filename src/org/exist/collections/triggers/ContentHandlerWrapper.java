@@ -35,7 +35,12 @@ public class ContentHandlerWrapper implements ContentHandler {
     private final ContentHandler output;
     
     public ContentHandlerWrapper(ContentHandler output, DocumentTrigger trigger) {
-        this.output = output;
+    	if (trigger instanceof ContentHandler) {
+			this.output = (ContentHandler) trigger;
+		} else {
+	        this.output = output;
+		}
+    	
         trigger.setOutputHandler(output);
     }
 
