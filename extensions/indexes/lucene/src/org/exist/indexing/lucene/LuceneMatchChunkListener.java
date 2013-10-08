@@ -149,7 +149,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     		if (relation > 0) {
     			stack.push(nodeId);
     			
-    			addNS(attribs);
+    			addNS();
     			super.startElement(qname, attribs);
     			cutted = false;
     			
@@ -168,7 +168,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     			
     			stack.push(nodeId);
     			
-    			addNS(attribs);
+    			addNS();
     			super.startElement(qname, attribs);
     			cutted = false;
     			
@@ -179,7 +179,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         //super.startElement(qname, attribs);
     }
 
-    private void addNS(AttrList attribs) throws SAXException {
+    private void addNS() throws SAXException {
     	if (firstElement == null) {
     		//attribs.addAttribute(new QName("score", Namespaces.EXIST_NS, "exist"), "");
     		
@@ -214,6 +214,8 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 
         int index = offsets.getIndex(nodeId);
         
+        boolean wasMatch = false;
+        
         boolean outStart = true;
         boolean outEnd = true;
         
@@ -245,6 +247,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 	                super.startElement(MATCH_ELEMENT, null);
 	                super.characters(seq.subSequence(offset.startOffset, end));
 	                super.endElement(MATCH_ELEMENT);
+	                wasMatch = true;
 	                cutted = false;
 	                
 	                outStart = false;
@@ -274,6 +277,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             super.startElement(MATCH_ELEMENT, null);
             super.characters(seq.subSequence(offset.startOffset, end));
             super.endElement(MATCH_ELEMENT);
+            wasMatch = true;
             cutted = false;
             
             if (end == seq.length())
@@ -282,7 +286,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             offset = offset.next;
     	}
     	
-    	if (outEnd)
+    	if (wasMatch && outEnd)
     		cut();
     }
     
@@ -293,7 +297,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 	        cutted = true;
     	}
     }
-    
+
     private NodeId nodeId(EmbeddedXMLStreamReader reader) {
     	return (NodeId) reader.getProperty(ExtendedXMLStreamReader.PROPERTY_NODE_ID);
     }
@@ -482,27 +486,27 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             LOG.warn("Problem found while serializing XML: " + e.getMessage(), e);
         }
         
-//        System.out.println("Debug");
-//        
-//        for (int i = 0; i < offsets.len; i++) {
-//        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
-//        }
+        System.out.println("Debug");
+        
+        for (int i = 0; i < offsets.len; i++) {
+        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+        }
 
         offsets.chunking();
         
-//        System.out.println("after chunking");
-//        
-//        for (int i = 0; i < offsets.len; i++) {
-//        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
-//        }
+        System.out.println("after chunking");
+        
+        for (int i = 0; i < offsets.len; i++) {
+        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+        }
         
         offsets.cleanup();
         
-//        System.out.println("after cleanup");
-//        
-//        for (int i = 0; i < offsets.len; i++) {
-//        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
-//        }
+        System.out.println("after cleanup");
+        
+        for (int i = 0; i < offsets.len; i++) {
+        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+        }
     }
 
     private NodePath getPath(NodeProxy proxy) {
@@ -679,7 +683,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 	            							starts[i] = start;
 	            						}
 	            					}
-	            				} else if (starts[i] <= pos && ends[i] >= pos) {
+	            				} else if (pos != 0 && starts[i] <= pos && ends[i] >= pos) {
 	            					ends[i] = pos;
 	            				} else {
 	            					starts[i] = -1;
