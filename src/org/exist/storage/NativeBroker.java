@@ -2727,7 +2727,11 @@ public class NativeBroker extends DBBroker {
                     @Override
                     public Object start() {
                         final StoredNode node = (StoredNode)document.getFirstChild();
-                        domDb.removeAll(transaction, node.getInternalAddress());
+                        if (node != null) {
+                        	domDb.removeAll(transaction, node.getInternalAddress());
+                        } else {
+                            LOG.error("removeDocument() - no root element!");
+                        }
                         return null;
                     }
                 }.run();
