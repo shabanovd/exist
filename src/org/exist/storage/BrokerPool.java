@@ -1948,6 +1948,21 @@ public class BrokerPool implements Database {
                         }
                     }
                 }
+
+                //TODO : replace the following code by get()/release() statements ?
+                // WM: deadlock risk if not all brokers returned properly.
+                DBBroker broker = null;
+                try {
+                    broker = createBroker();
+                    inactiveBrokers.remove(broker);
+                } catch (final EXistException e) {
+                    LOG.warn("could not create instance for shutdown. Giving up.");
+                }
+
+                if (broker != null) {
+                	broker.flush();
+                }
+                
                 LOG.debug("Calling shutdown ...");
                 
             	if (pluginManager != null)
@@ -1963,22 +1978,6 @@ public class BrokerPool implements Database {
                 } catch (final DBException e) {
                     LOG.warn("Error during index shutdown: " + e.getMessage(), e);
                 }
-
-                //TODO : replace the following code by get()/release() statements ?
-                // WM: deadlock risk if not all brokers returned properly.
-                DBBroker broker = null;
-                if (inactiveBrokers.isEmpty())
-                    try {
-                        broker = createBroker();
-                    } catch (final EXistException e) {
-                        LOG.warn("could not create instance for shutdown. Giving up.");
-                    }
-                else
-                    //TODO : this broker is *not* marked as active and may be reused by another process !
-                    //TODO : use get() then release the broker ?
-                    // WM: deadlock risk if not all brokers returned properly.
-                	//TODO: always createBroker? -dmitriy
-                    {broker = inactiveBrokers.peek();}
 
                 //TOUNDERSTAND (pb) : shutdown() is called on only *one* broker ?
                 // WM: yes, the database files are shared, so only one broker is needed to close them for all
