@@ -166,7 +166,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
     public Object configure(IndexController controller, NodeList configNodes, Map<String, String> namespaces) throws DatabaseConfigurationException {
         LOG.debug("Configuring lucene index...");
-        config = new LuceneConfig(configNodes, namespaces);
+        config = LuceneConfigXML.parseConfig(configNodes, namespaces);
         return config;
     }
 

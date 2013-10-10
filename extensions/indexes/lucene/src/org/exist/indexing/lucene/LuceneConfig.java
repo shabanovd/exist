@@ -7,48 +7,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.exist.dom.QName;
-import org.exist.indexing.lucene.analyzers.NoDiacriticsStandardAnalyzer;
 import org.exist.storage.NodePath;
-import org.exist.util.DatabaseConfigurationException;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 public class LuceneConfig {
 
-	private final static Logger LOG = Logger.getLogger(LuceneConfig.class);
+	protected final static Logger LOG = Logger.getLogger(LuceneConfig.class);
 	
-    private final static String CONFIG_ROOT = "lucene";
-    private final static String INDEX_ELEMENT = "text";
-    private final static String ANALYZER_ELEMENT = "analyzer";
-    protected final static String FIELD_TYPE_ELEMENT = "fieldType";
-    private static final String INLINE_ELEMENT = "inline";
-    private static final String IGNORE_ELEMENT = "ignore";
-    private final static String BOOST_ATTRIB = "boost";
-    private static final String DIACRITICS = "diacritics";
-
-    private Map<QName, LuceneIndexConfig> paths = new TreeMap<QName, LuceneIndexConfig>();
-    private List<LuceneIndexConfig> wildcardPaths = new ArrayList<LuceneIndexConfig>();
-    private Map<String, LuceneIndexConfig> namedIndexes = new TreeMap<String, LuceneIndexConfig>();
+	protected Map<QName, LuceneIndexConfig> paths = new TreeMap<QName, LuceneIndexConfig>();
+	protected List<LuceneIndexConfig> wildcardPaths = new ArrayList<LuceneIndexConfig>();
+	protected Map<String, LuceneIndexConfig> namedIndexes = new TreeMap<String, LuceneIndexConfig>();
     
-    private Map<String, FieldType> fieldTypes = new HashMap<String, FieldType>();
+	protected Map<String, FieldType> fieldTypes = new HashMap<String, FieldType>();
     
-    private Set<QName> inlineNodes = null;
-    private Set<QName> ignoreNodes = null;
+	protected Set<QName> inlineNodes = null;
+	protected Set<QName> ignoreNodes = null;
 
     private PathIterator iterator = new PathIterator();
     
-    private float boost = -1;
+    protected float boost = -1;
 
-    private AnalyzerConfig analyzers = new AnalyzerConfig();
+    protected AnalyzerConfig analyzers = new AnalyzerConfig();
 
-    public LuceneConfig(NodeList configNodes, Map<String, String> namespaces) throws DatabaseConfigurationException {
-        parseConfig(configNodes, namespaces);
+    public LuceneConfig() {
     }
 
     /**
@@ -163,92 +147,6 @@ public class LuceneConfig {
     
     public FieldType getFieldType(String name){
         return fieldTypes.get(name);
-    }
-
-    /**
-     * Parse a configuration entry. The main configuration entries for this index
-     * are the &lt;text&gt; elements. They may be enclosed by a &lt;lucene&gt; element.
-     *
-     * @param configNodes
-     * @param namespaces
-     * @throws org.exist.util.DatabaseConfigurationException
-     */
-    protected void parseConfig(NodeList configNodes, Map<String, String> namespaces) throws DatabaseConfigurationException {
-        Node node;
-        for(int i = 0; i < configNodes.getLength(); i++) {
-            node = configNodes.item(i);
-            if(node.getNodeType() == Node.ELEMENT_NODE) {
-                try {
-					if (CONFIG_ROOT.equals(node.getLocalName())) {
-					    Element elem = (Element) node;
-					    if (elem.hasAttribute(BOOST_ATTRIB)) {
-					        String value = elem.getAttribute(BOOST_ATTRIB);
-					        try {
-					            boost = Float.parseFloat(value);
-					        } catch (NumberFormatException e) {
-					            throw new DatabaseConfigurationException("Invalid value for 'boost' attribute in " +
-					                "lucene index config: float expected, got " + value);
-					        }
-					    }
-                        if (elem.hasAttribute(DIACRITICS)) {
-                            String value = elem.getAttribute(DIACRITICS);
-                            if (value.equalsIgnoreCase("no")) {
-                                analyzers.setDefaultAnalyzer(new NoDiacriticsStandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE));
-                            }
-                        }
-					    parseConfig(node.getChildNodes(), namespaces);
-                        
-					} else if (ANALYZER_ELEMENT.equals(node.getLocalName())) {
-					    analyzers.addAnalyzer((Element) node);
-                        
-					} else if (FIELD_TYPE_ELEMENT.equals(node.getLocalName())) {
-						FieldType type = new FieldType((Element) node, analyzers);
-						fieldTypes.put(type.getId(), type);
-                        
-					} else if (INDEX_ELEMENT.equals(node.getLocalName())) {
-						// found an index definition
-					    Element elem = (Element) node;
-						LuceneIndexConfig config = new LuceneIndexConfig(elem, namespaces, analyzers, fieldTypes);
-						// if it is a named index, add it to the namedIndexes map
-						if (config.getName() != null) {
-                            namedIndexes.put(config.getName(), config);
-                        }
-
-						// register index either by QName or path
-						if (config.getNodePath().hasWildcard()) {
-							wildcardPaths.add(config);
-						} else {
-						    LuceneIndexConfig idxConf = paths.get(config.getNodePath().getLastComponent());
-						    if (idxConf == null) {
-                                paths.put(config.getNodePath().getLastComponent(), config);
-                            }
-						    else {
-                                idxConf.add(config);
-                            }
-						}
-                        
-					} else if (INLINE_ELEMENT.equals(node.getLocalName())) {
-					    Element elem = (Element) node;
-					    QName qname = LuceneIndexConfig.parseQName(elem, namespaces);
-					    if (inlineNodes == null) {
-                            inlineNodes = new TreeSet<QName>();
-                        }
-					    inlineNodes.add(qname);
-                        
-					} else if (IGNORE_ELEMENT.equals(node.getLocalName())) {
-					    Element elem = (Element) node;
-					    QName qname = LuceneIndexConfig.parseQName(elem, namespaces);
-					    if (ignoreNodes == null) {
-                            ignoreNodes = new TreeSet<QName>();
-                        }
-					    ignoreNodes.add(qname);
-					}
-                    
-                } catch (DatabaseConfigurationException e) {
-					LOG.warn("Invalid lucene configuration element: " + e.getMessage());
-				}
-            }
-        }
     }
 
     private class PathIterator implements Iterator<LuceneIndexConfig> {
