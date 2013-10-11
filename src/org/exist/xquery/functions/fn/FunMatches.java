@@ -60,10 +60,10 @@ import java.util.regex.PatternSyntaxException;
  */
 public class FunMatches extends Function implements Optimizable, IndexUseReporter {
 
-	protected static final String FUNCTION_DESCRIPTION_1_PARAM =
+	public static final String FUNCTION_DESCRIPTION_1_PARAM =
 		"The function returns true if $input matches the regular expression " +
 		"supplied as $pattern, if present; otherwise, it returns false.\n\n";
-	protected static final String FUNCTION_DESCRIPTION_2_PARAM =
+	public static final String FUNCTION_DESCRIPTION_2_PARAM =
 		"The function returns true if $input matches the regular expression " +
 		"supplied as $pattern as influenced by the value of $flags, if present; " +
 		"otherwise, it returns false.\n\n" +
@@ -83,19 +83,19 @@ public class FunMatches extends Function implements Optimizable, IndexUseReporte
         "specification - this method allows zero or more items for the string argument.\n\n" +
 		"An error is raised [err:FORX0002] if the value of $pattern is invalid " +
 		"according to the rules described in section 7.6.1 Regular Expression Syntax.\n\n";
-	protected static final String FUNCTION_DESCRIPTION_2_PARAM_2 =
+	public static final String FUNCTION_DESCRIPTION_2_PARAM_2 =
 		"An error is raised [err:FORX0001] if the value of $flags is invalid " +
 		"according to the rules described in section 7.6.1 Regular Expression Syntax.";
 	
-	protected static final String FUNCTION_DESCRIPTION_REGEX =
+	public static final String FUNCTION_DESCRIPTION_REGEX =
 		"If $input is the empty sequence, it is interpreted as the zero-length string.\n\n" +
 		"Note:\n\n" +
 		"The text:matches-regex() variants of the fn:matches() functions are identical except that they avoid the translation of the specified regular expression from XPath2 to Java syntax. " +
 		"That is, the regular expression is evaluated as is, and must be valid according to Java regular expression syntax, rather than the more restrictive XPath2 syntax.";
 
-	protected static final FunctionParameterSequenceType INPUT_ARG = new FunctionParameterSequenceType("input", Type.STRING, Cardinality.ZERO_OR_MORE, "The input string");
-	protected static final FunctionParameterSequenceType PATTERN_ARG = new FunctionParameterSequenceType("pattern", Type.STRING, Cardinality.EXACTLY_ONE, "The pattern");
-	protected static final FunctionParameterSequenceType FLAGS_ARG = new FunctionParameterSequenceType("flags", Type.STRING, Cardinality.EXACTLY_ONE, "The flags");
+	public static final FunctionParameterSequenceType INPUT_ARG = new FunctionParameterSequenceType("input", Type.STRING, Cardinality.ZERO_OR_MORE, "The input string");
+	public static final FunctionParameterSequenceType PATTERN_ARG = new FunctionParameterSequenceType("pattern", Type.STRING, Cardinality.EXACTLY_ONE, "The pattern");
+	public static final FunctionParameterSequenceType FLAGS_ARG = new FunctionParameterSequenceType("flags", Type.STRING, Cardinality.EXACTLY_ONE, "The flags");
 
 	public final static FunctionSignature signatures[] = {
 		new FunctionSignature(
@@ -115,22 +115,6 @@ public class FunMatches extends Function implements Optimizable, IndexUseReporte
 		
 	// The following alternative functions are located in the text namespace! If the indexes of the signatures change then change TextModule as well!
 		
-	public final static FunctionSignature text_signatures[] = {
-		new FunctionSignature(
-			new QName("matches-regex", TextModule.NAMESPACE_URI, TextModule.PREFIX),
-			FUNCTION_DESCRIPTION_1_PARAM + FUNCTION_DESCRIPTION_REGEX,
-			new SequenceType[] { INPUT_ARG, PATTERN_ARG },
-			new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "true if the pattern is a match, false otherwise")
-		),
-		new FunctionSignature(
-			new QName("matches-regex", TextModule.NAMESPACE_URI, TextModule.PREFIX),
-			FUNCTION_DESCRIPTION_2_PARAM + FUNCTION_DESCRIPTION_REGEX +
-            FUNCTION_DESCRIPTION_2_PARAM_2,
-			new SequenceType[] { INPUT_ARG, PATTERN_ARG, FLAGS_ARG },
-			new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "true if the pattern is a match, false otherwise")
-		)
-	};
-	
 	protected Matcher matcher = null;
 	protected Pattern pat = null;
 	

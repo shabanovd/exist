@@ -23,9 +23,16 @@ package org.exist.xquery.functions.text;
 
 import java.util.List;
 import java.util.Map;
+
+import org.exist.dom.QName;
 import org.exist.xquery.AbstractInternalModule;
+import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionDef;
+import org.exist.xquery.FunctionSignature;
 import org.exist.xquery.functions.fn.FunMatches;
+import org.exist.xquery.value.FunctionReturnSequenceType;
+import org.exist.xquery.value.SequenceType;
+import org.exist.xquery.value.Type;
 
 
 /**
@@ -41,7 +48,23 @@ public class TextModule extends AbstractInternalModule {
     public static final String PREFIX = "text";
     public final static String INCLUSION_DATE = "2004-03-01";
     public final static String RELEASED_IN_VERSION = "pre eXist-1.0";
-
+    
+	public final static FunctionSignature FunMatches_signatures[] = {
+		new FunctionSignature(
+			new QName("matches-regex", TextModule.NAMESPACE_URI, TextModule.PREFIX),
+			FunMatches.FUNCTION_DESCRIPTION_1_PARAM + FunMatches.FUNCTION_DESCRIPTION_REGEX,
+			new SequenceType[] { FunMatches.INPUT_ARG, FunMatches.PATTERN_ARG },
+			new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "true if the pattern is a match, false otherwise")
+		),
+		new FunctionSignature(
+			new QName("matches-regex", TextModule.NAMESPACE_URI, TextModule.PREFIX),
+			FunMatches.FUNCTION_DESCRIPTION_2_PARAM + FunMatches.FUNCTION_DESCRIPTION_REGEX +
+            FunMatches.FUNCTION_DESCRIPTION_2_PARAM_2,
+			new SequenceType[] { FunMatches.INPUT_ARG, FunMatches.PATTERN_ARG, FunMatches.FLAGS_ARG },
+			new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "true if the pattern is a match, false otherwise")
+		)
+	};
+	
     public static final FunctionDef[] functions = {
         new FunctionDef(FuzzyMatchAll.signature, FuzzyMatchAll.class),
         new FunctionDef(FuzzyMatchAny.signature, FuzzyMatchAny.class),
@@ -67,8 +90,8 @@ public class TextModule extends AbstractInternalModule {
         new FunctionDef(MatchRegexp.signatures[3], MatchRegexp.class),
         new FunctionDef(FilterNested.signature, FilterNested.class),
 	
-		new FunctionDef(FunMatches.text_signatures[0], FunMatches.class),
-        new FunctionDef(FunMatches.text_signatures[1], FunMatches.class)
+		new FunctionDef(FunMatches_signatures[0], FunMatches.class),
+        new FunctionDef(FunMatches_signatures[1], FunMatches.class)
     };
     
     /**
