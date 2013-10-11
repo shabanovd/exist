@@ -27,8 +27,6 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.exist.dom.NodeSet;
 import org.exist.dom.QName;
-import org.exist.storage.DBBroker;
-import org.exist.storage.analysis.Tokenizer;
 import org.exist.xquery.AnalyzeContextInfo;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.Dependency;
@@ -113,13 +111,14 @@ public class FtIndexLookup extends Function {
         final NodeSet hits[] = new NodeSet[terms.length];
         final NodeSet contextSet = contextSequence.toNodeSet();
         for (int k = 0; k < terms.length; k++) {
-            hits[k] =
-                    context.getBroker().getTextEngine().getNodesContaining(
-                            context,
-                            contextSet.getDocumentSet(),
-                            null, NodeSet.DESCENDANT, null,
-                            terms[k],
-                            DBBroker.MATCH_EXACT);
+    		//XXX: refactoring required!
+//            hits[k] =
+//                    context.getBroker().getTextEngine().getNodesContaining(
+//                            context,
+//                            contextSet.getDocumentSet(),
+//                            null, NodeSet.DESCENDANT, null,
+//                            terms[k],
+//                            DBBroker.MATCH_EXACT);
             hits[k] = getArgument(0).eval(hits[k]).toNodeSet();
         }
         
@@ -134,15 +133,16 @@ public class FtIndexLookup extends Function {
     
     protected String[] getSearchTerms(String searchString) {
         final List<String> tokens = new ArrayList<String>();
-        final Tokenizer tokenizer =
-            context.getBroker().getTextEngine().getTokenizer();
-        tokenizer.setText(searchString);
-        org.exist.storage.analysis.TextToken token;
-        String word;
-        while (null != (token = tokenizer.nextToken(true))) {
-            word = token.getText();
-            tokens.add(word);
-        }
+		//XXX: refactoring required!
+//        final Tokenizer tokenizer =
+//            context.getBroker().getTextEngine().getTokenizer();
+//        tokenizer.setText(searchString);
+//        org.exist.storage.analysis.TextToken token;
+//        String word;
+//        while (null != (token = tokenizer.nextToken(true))) {
+//            word = token.getText();
+//            tokens.add(word);
+//        }
         String[] terms = new String[tokens.size()];
         terms = tokens.toArray(terms);
         return terms;

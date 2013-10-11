@@ -23,7 +23,6 @@ package org.exist.performance.actions;
 
 import org.w3c.dom.Element;
 import org.exist.EXistException;
-import org.exist.storage.TextSearchEngine;
 import org.exist.xmldb.EXistResource;
 import org.exist.util.DirectoryScanner;
 import org.exist.util.MimeTable;
@@ -132,7 +131,7 @@ public class StoreFromFile extends AbstractAction {
         public void update(Observable o, Object arg) {
             if (System.currentTimeMillis() - timestamp > 20000) {
                 ProgressIndicator ind = (ProgressIndicator) arg;
-                if (!(o instanceof org.exist.storage.ElementIndex || o instanceof TextSearchEngine)) {
+                if (!(o instanceof org.exist.storage.ElementIndex)) { // || o instanceof TextSearchEngine)) {
                     LOG.debug("Stored: " + (int)((ind.getValue() / ind.getMax()) * 100) + " %");
                 }
                 timestamp = System.currentTimeMillis();

@@ -18,12 +18,11 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *  
- *  $Id$
+ *  $Id: FuzzyIndexTerms.java 3063 2006-04-05 20:49:44Z brihaye $
  */
 package org.exist.xquery.functions.text;
 
-import org.exist.dom.DocumentSet;
-import org.exist.dom.NodeSet;
+
 import org.exist.dom.QName;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -39,21 +38,20 @@ import org.exist.xquery.value.Type;
 import org.exist.xquery.value.ValueSequence;
 
 
+
 /**
  * @author Wolfgang Meier (wolfgang@exist-db.org)
  */
-public class FuzzyIndexTerms extends BasicFunction {
+public class Tokenize extends BasicFunction {
 
 	public final static FunctionSignature signature = new FunctionSignature(
-			new QName("fuzzy-index-terms", TextModule.NAMESPACE_URI, TextModule.PREFIX),
-			"Compares the specified argument against the contents of the fulltext index. Returns " +
-            "a sequence of strings which are similar to the argument. Similarity is based on Levenshtein " +
-            "distance. This function may not be useful in its current form and is subject to change.",
+			new QName("make-token", TextModule.NAMESPACE_URI, TextModule.PREFIX),
+			"Split a string into tokens",
 			new SequenceType[]{
-					new FunctionParameterSequenceType("term", Type.STRING, Cardinality.ZERO_OR_ONE, "The term")},
-			new FunctionReturnSequenceType(Type.STRING, Cardinality.ZERO_OR_MORE, "a sequence of strings which are similar to the argument $term"));
+					new FunctionParameterSequenceType("text", Type.STRING, Cardinality.ONE, "The string to tokenize")},
+			new FunctionReturnSequenceType(Type.STRING, Cardinality.ZERO_OR_MORE, "a sequence of tokens"));
 	
-	public FuzzyIndexTerms(XQueryContext context) {
+	public Tokenize(XQueryContext context) {
 		super(context, signature);
 	}
 	
@@ -64,17 +62,16 @@ public class FuzzyIndexTerms extends BasicFunction {
 		throws XPathException {
 		if(args[0].isEmpty())
 			{return Sequence.EMPTY_SEQUENCE;}
-		DocumentSet docs;
-		if(contextSequence instanceof NodeSet)
-			{docs = contextSequence.getDocumentSet();}
-		else
-			{docs = context.getStaticallyKnownDocuments();}
-		final String term = args[0].getStringValue();
-		final String[] matches =
-			context.getBroker().getTextEngine().getIndexTerms(docs, new FuzzyMatcher(term, 0.65));
+		
 		final ValueSequence result = new ValueSequence();
-		for(int i = 0; i < matches.length; i++)
-			result.add(new StringValue(matches[i]));
+		//XXX: refactoring required!
+//		final SimpleTokenizer tokenizer = new SimpleTokenizer();
+//		tokenizer.setText(args[0].getStringValue());
+//		TextToken token = tokenizer.nextToken(false);
+//		while(token != null && token.getType() != TextToken.EOF) {
+//			result.add(new StringValue(token.getText()));
+//			token = tokenizer.nextToken(false);
+//		}
 		return result;
 	}
 }

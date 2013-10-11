@@ -211,25 +211,27 @@ public class LocalIndexQueryService implements IndexQueryService {
 		String end,
 		boolean inclusive)
 		throws XMLDBException {
-    	final Subject preserveSubject = pool.getSubject();
-		DBBroker broker = null;
-		try {
-			broker = pool.get(user);
-			final MutableDocumentSet docs = new DefaultDocumentSet();
-			parent.getCollection().allDocs(broker, docs, inclusive);
-			return broker.getTextEngine().scanIndexTerms(docs, docs.docsToNodeSet(),  start, end);
-		} catch (final PermissionDeniedException e) {
-			throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
-				"permission denied", e);
-		} catch (final EXistException e) {
-			throw new XMLDBException(
-				ErrorCodes.VENDOR_ERROR,
-				"database access error",
-				e);
-		} finally {
-			pool.release(broker);
-			pool.setSubject(preserveSubject);
-		}
+		//XXX: refactoring required!
+		return new Occurrences[0];
+//    	final Subject preserveSubject = pool.getSubject();
+//		DBBroker broker = null;
+//		try {
+//			broker = pool.get(user);
+//			final MutableDocumentSet docs = new DefaultDocumentSet();
+//			parent.getCollection().allDocs(broker, docs, inclusive);
+//			return broker.getTextEngine().scanIndexTerms(docs, docs.docsToNodeSet(),  start, end);
+//		} catch (final PermissionDeniedException e) {
+//			throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
+//				"permission denied", e);
+//		} catch (final EXistException e) {
+//			throw new XMLDBException(
+//				ErrorCodes.VENDOR_ERROR,
+//				"database access error",
+//				e);
+//		} finally {
+//			pool.release(broker);
+//			pool.setSubject(preserveSubject);
+//		}
 	}
 	
 	public Occurrences[] scanIndexTerms(
@@ -237,28 +239,31 @@ public class LocalIndexQueryService implements IndexQueryService {
 			String start,
 			String end)
 			throws XMLDBException {
-    	final Subject preserveSubject = pool.getSubject();
-		DBBroker broker = null;
-		try {
-			broker = pool.get(user);
-			final XQuery xquery = broker.getXQueryService();
-			final Sequence nodes = xquery.execute(xpath, null, parent.getAccessContext());
-			return broker.getTextEngine().scanIndexTerms(nodes.getDocumentSet(), 
-					nodes.toNodeSet(),  start, end);
-		} catch (final EXistException e) {
-			throw new XMLDBException(
-					ErrorCodes.VENDOR_ERROR,
-					"database access error",
-					e);
-		} catch (final XPathException e) {
-			throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
-					e.getMessage(), e);
-		} catch (final PermissionDeniedException e) {
-			throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
-					e.getMessage(), e);
-		} finally {
-			pool.release(broker);
-			pool.setSubject(preserveSubject);
-		}
+		
+		//XXX: refactoring required!
+		return new Occurrences[0];
+//    	final Subject preserveSubject = pool.getSubject();
+//		DBBroker broker = null;
+//		try {
+//			broker = pool.get(user);
+//			final XQuery xquery = broker.getXQueryService();
+//			final Sequence nodes = xquery.execute(xpath, null, parent.getAccessContext());
+//			return broker.getTextEngine().scanIndexTerms(nodes.getDocumentSet(), 
+//					nodes.toNodeSet(),  start, end);
+//		} catch (final EXistException e) {
+//			throw new XMLDBException(
+//					ErrorCodes.VENDOR_ERROR,
+//					"database access error",
+//					e);
+//		} catch (final XPathException e) {
+//			throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
+//					e.getMessage(), e);
+//		} catch (final PermissionDeniedException e) {
+//			throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
+//					e.getMessage(), e);
+//		} finally {
+//			pool.release(broker);
+//			pool.setSubject(preserveSubject);
+//		}
 	}
 }

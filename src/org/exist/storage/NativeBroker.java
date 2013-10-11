@@ -57,8 +57,6 @@ import org.exist.collections.triggers.CollectionTriggersVisitor;
 import org.exist.collections.triggers.DocumentTriggersVisitor;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.*;
-import org.exist.fulltext.FTIndex;
-import org.exist.fulltext.FTIndexWorker;
 import org.exist.indexing.StreamListener;
 import org.exist.indexing.StructuralIndex;
 import org.exist.memtree.DOMIndexer;
@@ -553,16 +551,6 @@ public class NativeBroker extends DBBroker {
     @Override
     public NativeValueIndex getValueIndex() {
         return valueIndex;
-    }
-
-    @Override
-    public TextSearchEngine getTextEngine() {
-        final FTIndexWorker worker = (FTIndexWorker) indexController.getWorkerByIndexId(FTIndex.ID);
-        if (worker == null) {
-            LOG.warn("Fulltext index is not configured. Please check the <modules> section in conf.xml");
-            return null;
-        }
-        return worker.getEngine();
     }
 
     @Override
@@ -3914,8 +3902,7 @@ public class NativeBroker extends DBBroker {
                         {currentPath.removeLastComponent();}
                     break;
                 case Node.TEXT_NODE:
-                    notifyStoreText( (TextImpl)node, currentPath,
-                            fullTextIndex ? NativeTextEngine.DO_NOT_TOKENIZE : NativeTextEngine.TOKENIZE);
+                    notifyStoreText( (TextImpl)node, currentPath, fullTextIndex ? 1 : 0);
                     break;
             }
         }

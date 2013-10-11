@@ -39,7 +39,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import org.exist.storage.ElementIndex;
-import org.exist.storage.TextSearchEngine;
 import org.exist.util.ProgressIndicator;
 
 class UploadDialog extends JFrame {
@@ -267,9 +266,7 @@ class UploadDialog extends JFrame {
 			progress.setIndeterminate(false);
 			final ProgressIndicator ind = (ProgressIndicator) arg;
 			progress.setValue(ind.getPercentage());
-			if (o instanceof TextSearchEngine)
-				{progress.setString(Messages.getString("UploadDialog.17"));} //$NON-NLS-1$
-			else if (o instanceof ElementIndex)
+			if (o instanceof ElementIndex)
 				{progress.setString(Messages.getString("UploadDialog.18"));} //$NON-NLS-1$
 			else
 				{progress.setString(Messages.getString("UploadDialog.19"));} //$NON-NLS-1$

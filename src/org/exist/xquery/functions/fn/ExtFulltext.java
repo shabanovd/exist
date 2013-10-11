@@ -22,16 +22,13 @@
 package org.exist.xquery.functions.fn;
 
 import org.exist.EXistException;
-import org.exist.fulltext.FTIndex;
 import org.exist.collections.Collection;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.ExtArrayNodeSet;
 import org.exist.dom.NodeSet;
 import org.exist.dom.QName;
-import org.exist.storage.DBBroker;
 import org.exist.storage.ElementValue;
 import org.exist.storage.FulltextIndexSpec;
-import org.exist.storage.analysis.Tokenizer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.util.ExpressionDumper;
@@ -190,9 +187,10 @@ public class ExtFulltext extends Function implements Optimizable {
         } else {
             preselectResult = NodeSet.EMPTY_SET;
         }
-        if (context.getProfiler().traceFunctions())
-            {context.getProfiler().traceIndexUsage(context, FTIndex.ID, this,
-                PerformanceStats.OPTIMIZED_INDEX, System.currentTimeMillis() - start);}
+		//XXX: refactoring required!
+//        if (context.getProfiler().traceFunctions())
+//            {context.getProfiler().traceIndexUsage(context, FTIndex.ID, this,
+//                PerformanceStats.OPTIMIZED_INDEX, System.currentTimeMillis() - start);}
         return preselectResult;
     }
 
@@ -223,9 +221,10 @@ public class ExtFulltext extends Function implements Optimizable {
                     contextSequence.toNodeSet() : path.eval(contextSequence).toNodeSet();
                 final String arg = searchTerm.eval(contextSequence).getStringValue();
                 result = evalQuery(arg, nodes).toNodeSet();
-                if (context.getProfiler().traceFunctions())
-                    {context.getProfiler().traceIndexUsage(context, FTIndex.ID, this,
-                        PerformanceStats.BASIC_INDEX, System.currentTimeMillis() - start);}
+        		//XXX: refactoring required!
+//                if (context.getProfiler().traceFunctions())
+//                    {context.getProfiler().traceIndexUsage(context, FTIndex.ID, this,
+//                        PerformanceStats.BASIC_INDEX, System.currentTimeMillis() - start);}
             } else {
                 contextStep.setPreloadedData(contextSequence.getDocumentSet(), preselectResult);
                 result = path.eval(contextSequence).toNodeSet();
@@ -247,9 +246,10 @@ public class ExtFulltext extends Function implements Optimizable {
                 temp = evalQuery(arg, nodes);
                 result.addAll(temp);
             }
-            if (context.getProfiler().traceFunctions())
-                {context.getProfiler().traceIndexUsage(context, FTIndex.ID, this,
-                    PerformanceStats.BASIC_INDEX, System.currentTimeMillis() - start);}
+    		//XXX: refactoring required!
+//            if (context.getProfiler().traceFunctions())
+//                {context.getProfiler().traceIndexUsage(context, FTIndex.ID, this,
+//                    PerformanceStats.BASIC_INDEX, System.currentTimeMillis() - start);}
         }
         preselectResult = null;
         return result;
@@ -323,14 +323,15 @@ public class ExtFulltext extends Function implements Optimizable {
 
     protected String[] getSearchTerms(String searchString) throws EXistException {
         final List<String> tokens = new ArrayList<String>();
-        final Tokenizer tokenizer = context.getBroker().getTextEngine().getTokenizer();
-        tokenizer.setText(searchString);
-        org.exist.storage.analysis.TextToken token;
-        String word;
-        while (null != (token = tokenizer.nextToken(true))) {
-            word = token.getText();
-            tokens.add(word);
-        }
+		//XXX: refactoring required!
+//        final Tokenizer tokenizer = context.getBroker().getTextEngine().getTokenizer();
+//        tokenizer.setText(searchString);
+//        org.exist.storage.analysis.TextToken token;
+//        String word;
+//        while (null != (token = tokenizer.nextToken(true))) {
+//            word = token.getText();
+//            tokens.add(word);
+//        }
         final String[] terms = new String[tokens.size()];
         return tokens.toArray(terms);
     }
@@ -361,10 +362,11 @@ public class ExtFulltext extends Function implements Optimizable {
     protected NodeSet[] getMatches(DocumentSet docs, NodeSet contextSet,
             int axis, QName qname, String[] terms) throws XPathException {
         final NodeSet hits[] = new NodeSet[terms.length];
-        for (int k = 0; k < terms.length; k++) {
-            hits[k] = context.getBroker().getTextEngine().getNodesContaining(
-                context, docs, contextSet, axis, qname, terms[k], DBBroker.MATCH_EXACT);
-        }
+		//XXX: refactoring required!
+//        for (int k = 0; k < terms.length; k++) {
+//            hits[k] = context.getBroker().getTextEngine().getNodesContaining(
+//                context, docs, contextSet, axis, qname, terms[k], DBBroker.MATCH_EXACT);
+//        }
         return hits;
     }
 

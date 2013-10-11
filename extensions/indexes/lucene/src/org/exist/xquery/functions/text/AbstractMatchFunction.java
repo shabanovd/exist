@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.exist.dom.NodeSet;
-import org.exist.storage.analysis.Tokenizer;
 import org.exist.xquery.Constants;
 import org.exist.xquery.FunctionSignature;
 import org.exist.xquery.XPathException;
@@ -64,15 +63,16 @@ public abstract class AbstractMatchFunction extends DeprecatedExtRegexp {
 		final String searchString = getArgument(1).eval(contextSequence)
 				.getStringValue();
 		final List<String> tokens = new ArrayList<String>();
-		final Tokenizer tokenizer = context.getBroker().getTextEngine()
-				.getTokenizer();
-		tokenizer.setText(searchString);
-		org.exist.storage.analysis.TextToken token;
-		String word;
-		while (null != (token = tokenizer.nextToken(true))) {
-			word = token.getText();
-			tokens.add(word);
-		}
+		//XXX: refactoring required!
+//		final Tokenizer tokenizer = context.getBroker().getTextEngine()
+//				.getTokenizer();
+//		tokenizer.setText(searchString);
+//		org.exist.storage.analysis.TextToken token;
+//		String word;
+//		while (null != (token = tokenizer.nextToken(true))) {
+//			word = token.getText();
+//			tokens.add(word);
+//		}
 		return tokens;
 	}
 }

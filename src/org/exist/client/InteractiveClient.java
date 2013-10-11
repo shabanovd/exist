@@ -65,7 +65,6 @@ import java.util.TreeSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.swing.ImageIcon;
-import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.xml.parsers.DocumentBuilder;
@@ -87,7 +86,6 @@ import org.exist.security.Permission;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.ElementIndex;
-import org.exist.storage.TextSearchEngine;
 import org.exist.util.CollectionScanner;
 import org.exist.util.ConfigurationHelper;
 import org.exist.util.DirectoryScanner;
@@ -2783,8 +2781,6 @@ public class InteractiveClient {
             
             if (o instanceof ElementIndex) {
                 elementsProgress.set(ind.getValue(), ind.getMax());
-            } else if (o instanceof TextSearchEngine) {
-                wordsProgress.set(ind.getValue(), ind.getMax());
             } else {
                 parseProgress.set(ind.getValue(), ind.getMax());
             }

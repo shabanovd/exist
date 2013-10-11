@@ -120,54 +120,55 @@ public class IndexTerms extends BasicFunction {
         final FunctionReference ref = (FunctionReference) args[++arg].itemAt(0);
         final int max = ((IntegerValue) args[++arg].itemAt(0)).getInt();
         final Sequence result = new ValueSequence();
-        try {
-            Occurrences occur[] = context.getBroker().getTextEngine().scanIndexTerms(docs, nodes, qnames, start, null);
-            if (args.length == 4) {
-                Occurrences occur2[] = context.getBroker().getTextEngine().scanIndexTerms(docs, nodes, start, null);
-                if (occur == null || occur.length == 0)
-                    {occur = occur2;}
-                else {
-                    Occurrences t[] = new Occurrences[occur.length + occur2.length];
-                    System.arraycopy(occur, 0, t, 0, occur.length);
-                    System.arraycopy(occur2, 0, t, occur.length, occur2.length);
-                    occur = t;
-                }
-            }
-            final int len = (occur.length > max ? max : occur.length);
-            final Sequence params[] = new Sequence[2];
-            ValueSequence data = new ValueSequence();
-
-            final Vector<Integer> list = new Vector<Integer>(len);
-            for (int j = 0; j < len; j++) {
-                if (!list.contains(Integer.valueOf(occur[j].getOccurrences()))) {
-                    list.add(Integer.valueOf(occur[j].getOccurrences()));
-                }
-            }
-            Collections.sort(list);
-            Collections.reverse(list);
-            final HashMap<Integer, Integer> map = new HashMap<Integer, Integer>(list.size() * 2);
-            for (int j = 0; j < list.size(); j++) {
-                map.put(list.get(j), Integer.valueOf(j + 1));
-            }
-
-            for (int j = 0; j < len; j++) {
-                params[0] = new StringValue(occur[j].getTerm().toString());
-                data.add(new IntegerValue(occur[j].getOccurrences(), Type.UNSIGNED_INT));
-                data.add(new IntegerValue(occur[j].getDocuments(), Type.UNSIGNED_INT));
-                data.add(new IntegerValue(j + 1, Type.UNSIGNED_INT));
-                data.add(new IntegerValue((map.get(Integer.valueOf(occur[j].getOccurrences()))).intValue(), Type.UNSIGNED_INT));
-
-                params[1] = data;
-
-                result.addAll(ref.evalFunction(contextSequence, null, params));
-                data.clear();
-            }
+		//XXX: refactoring required!
+//        try {
+//            Occurrences occur[] = context.getBroker().getTextEngine().scanIndexTerms(docs, nodes, qnames, start, null);
+//            if (args.length == 4) {
+//                Occurrences occur2[] = context.getBroker().getTextEngine().scanIndexTerms(docs, nodes, start, null);
+//                if (occur == null || occur.length == 0)
+//                    {occur = occur2;}
+//                else {
+//                    Occurrences t[] = new Occurrences[occur.length + occur2.length];
+//                    System.arraycopy(occur, 0, t, 0, occur.length);
+//                    System.arraycopy(occur2, 0, t, occur.length, occur2.length);
+//                    occur = t;
+//                }
+//            }
+//            final int len = (occur.length > max ? max : occur.length);
+//            final Sequence params[] = new Sequence[2];
+//            ValueSequence data = new ValueSequence();
+//
+//            final Vector<Integer> list = new Vector<Integer>(len);
+//            for (int j = 0; j < len; j++) {
+//                if (!list.contains(Integer.valueOf(occur[j].getOccurrences()))) {
+//                    list.add(Integer.valueOf(occur[j].getOccurrences()));
+//                }
+//            }
+//            Collections.sort(list);
+//            Collections.reverse(list);
+//            final HashMap<Integer, Integer> map = new HashMap<Integer, Integer>(list.size() * 2);
+//            for (int j = 0; j < list.size(); j++) {
+//                map.put(list.get(j), Integer.valueOf(j + 1));
+//            }
+//
+//            for (int j = 0; j < len; j++) {
+//                params[0] = new StringValue(occur[j].getTerm().toString());
+//                data.add(new IntegerValue(occur[j].getOccurrences(), Type.UNSIGNED_INT));
+//                data.add(new IntegerValue(occur[j].getDocuments(), Type.UNSIGNED_INT));
+//                data.add(new IntegerValue(j + 1, Type.UNSIGNED_INT));
+//                data.add(new IntegerValue((map.get(Integer.valueOf(occur[j].getOccurrences()))).intValue(), Type.UNSIGNED_INT));
+//
+//                params[1] = data;
+//
+//                result.addAll(ref.evalFunction(contextSequence, null, params));
+//                data.clear();
+//            }
             if (LOG.isDebugEnabled())
                 {LOG.debug("Returning: " + result.getItemCount());}
             return result;
-        } catch (final PermissionDeniedException e) {
-            throw new XPathException(this, e);
-        }
+//        } catch (final PermissionDeniedException e) {
+//            throw new XPathException(this, e);
+//        }
     }
 
      /**

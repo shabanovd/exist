@@ -5,7 +5,6 @@ $Id$
 package org.exist.storage.report;
 
 import org.exist.storage.IndexStats;
-import org.exist.storage.NativeTextEngine;
 import org.exist.storage.NativeValueIndex;
 import org.exist.storage.dom.DOMFile;
 import org.exist.storage.index.BFile;
@@ -33,9 +32,6 @@ public class Statistics {
         db = (BFile) conf.getProperty(NativeValueIndex.FILE_KEY_IN_CONFIG);
         if(db != null) 
             {indexStats.put(NativeValueIndex.FILE_NAME, new IndexStats(db));}			
-        db = (BFile) conf.getProperty(NativeTextEngine.FILE_KEY_IN_CONFIG);
-        if(db != null)
-            {indexStats.put(NativeTextEngine.FILE_NAME, new IndexStats(db));}
     }
 
 }

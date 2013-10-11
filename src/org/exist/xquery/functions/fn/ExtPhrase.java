@@ -36,9 +36,6 @@ import org.exist.dom.Match;
 import org.exist.dom.NodeProxy;
 import org.exist.dom.NodeSet;
 import org.exist.numbering.NodeId;
-import org.exist.storage.NativeTextEngine;
-import org.exist.storage.analysis.TextToken;
-import org.exist.storage.analysis.Tokenizer;
 import org.exist.util.GlobToRegex;
 import org.exist.xquery.Constants;
 import org.exist.xquery.XPathException;
@@ -78,9 +75,10 @@ public class ExtPhrase extends ExtFulltext {
         if (hits == null)
             {return Sequence.EMPTY_SEQUENCE;}
         boolean hasWildcards = false;
-        for (int i = 0; i < terms.length; i++) {
-            hasWildcards |=	NativeTextEngine.containsWildcards(terms[i]);
-        }
+		//XXX: refactoring required!
+//        for (int i = 0; i < terms.length; i++) {
+//            hasWildcards |=	NativeTextEngine.containsWildcards(terms[i]);
+//        }
         return hasWildcards	? patternMatch(context, terms, hits) : exactMatch(context, terms, hits);
     }
 
@@ -90,90 +88,91 @@ public class ExtPhrase extends ExtFulltext {
      * @param result
      */
     private Sequence exactMatch(XQueryContext context, String[] terms, NodeSet result) {
-        TextToken token;
         final NodeSet r = new ExtArrayNodeSet();
-        final Tokenizer tok = context.getBroker().getTextEngine().getTokenizer();
-        //Define search phrase for matches
-        String matchTerm = "";
-        for (int k = 0; k < terms.length ; k++) {
-            matchTerm = matchTerm + terms[k];
-            if (k != terms.length - 1)
-                {matchTerm = matchTerm + "\\W*";} 
-        }
-        //Iterate on results
-        for (final NodeProxy current : result) {
-            final Vector<NodeId> matchNodeIDs = new Vector<NodeId>();
-            //Get first match
-            Match nextMatch = current.getMatches();
-            //Remove previously found matches on current
-            current.setMatches(null);
-            //Iterate on attach matches, with unicity of related nodeproxy gid
-            String term;
-            while(nextMatch != null) {
-                final NodeId nodeId= nextMatch.getNodeId();
-                //If current node id has not been previously processed
-                if (!matchNodeIDs.contains(nodeId)) {
-                    final NodeProxy mcurrent = new NodeProxy(current.getDocument(), nodeId);
-                    Match match = null;
-                    int firstOffset = -1;
-                    matchNodeIDs.add(nodeId);
-                    final String value = mcurrent.getNodeValue();
-                    tok.setText(value);
-                    int j = 0;
-                    if (j < terms.length)
-                        {term = terms[j];}
-                    else
-                        {break;}
-                    int frequency = 0;
-                    while ((token = tok.nextToken()) != null) {
-                        final String word = token.getText().toLowerCase();
-                        if (word.equalsIgnoreCase(term)) {
-                            j++;
-                            if (j == terms.length) {
-                                //All terms found
-                                if (match == null)
-                                    {match = nextMatch.createInstance(getExpressionId(),
-                                        nodeId, matchTerm);}
-                                if (firstOffset < 0)
-                                    {firstOffset = token.startOffset();}
-                                match.addOffset(firstOffset, token.endOffset() - firstOffset);
-                                frequency++;
-                                //Start again on fist term
-                                j = 0;
-                                term = terms[j];
-                                continue;
-                            } else {
-                                term = terms[j];
-                                if (firstOffset < 0)
-                                    {firstOffset = token.startOffset();}
-                            }
-                        } else if (j > 0 && word.equalsIgnoreCase(terms[0])) {
-                            //First search term found: start again
-                            j = 1;
-                            term = terms[j];
-                            firstOffset = token.startOffset();
-                            continue;
-                        } else {
-                            //Reset
-                            j = 0;
-                            firstOffset = -1;
-                            term = terms[j];
-                        }
-                    }
-                    //If phrase found
-                    if (frequency != 0) {
-                        //Add new match to current
-                        current.addMatch(match);
-                        //Add current to result
-                        r.add(current);
-                        //Reset frequency
-                        frequency=0;
-                    }
-                }
-                //Process next match
-                nextMatch = nextMatch.getNextMatch();
-            }
-        }
+		//XXX: refactoring required!
+//        TextToken token;
+//        final Tokenizer tok = context.getBroker().getTextEngine().getTokenizer();
+//        //Define search phrase for matches
+//        String matchTerm = "";
+//        for (int k = 0; k < terms.length ; k++) {
+//            matchTerm = matchTerm + terms[k];
+//            if (k != terms.length - 1)
+//                {matchTerm = matchTerm + "\\W*";} 
+//        }
+//        //Iterate on results
+//        for (final NodeProxy current : result) {
+//            final Vector<NodeId> matchNodeIDs = new Vector<NodeId>();
+//            //Get first match
+//            Match nextMatch = current.getMatches();
+//            //Remove previously found matches on current
+//            current.setMatches(null);
+//            //Iterate on attach matches, with unicity of related nodeproxy gid
+//            String term;
+//            while(nextMatch != null) {
+//                final NodeId nodeId= nextMatch.getNodeId();
+//                //If current node id has not been previously processed
+//                if (!matchNodeIDs.contains(nodeId)) {
+//                    final NodeProxy mcurrent = new NodeProxy(current.getDocument(), nodeId);
+//                    Match match = null;
+//                    int firstOffset = -1;
+//                    matchNodeIDs.add(nodeId);
+//                    final String value = mcurrent.getNodeValue();
+//                    tok.setText(value);
+//                    int j = 0;
+//                    if (j < terms.length)
+//                        {term = terms[j];}
+//                    else
+//                        {break;}
+//                    int frequency = 0;
+//                    while ((token = tok.nextToken()) != null) {
+//                        final String word = token.getText().toLowerCase();
+//                        if (word.equalsIgnoreCase(term)) {
+//                            j++;
+//                            if (j == terms.length) {
+//                                //All terms found
+//                                if (match == null)
+//                                    {match = nextMatch.createInstance(getExpressionId(),
+//                                        nodeId, matchTerm);}
+//                                if (firstOffset < 0)
+//                                    {firstOffset = token.startOffset();}
+//                                match.addOffset(firstOffset, token.endOffset() - firstOffset);
+//                                frequency++;
+//                                //Start again on fist term
+//                                j = 0;
+//                                term = terms[j];
+//                                continue;
+//                            } else {
+//                                term = terms[j];
+//                                if (firstOffset < 0)
+//                                    {firstOffset = token.startOffset();}
+//                            }
+//                        } else if (j > 0 && word.equalsIgnoreCase(terms[0])) {
+//                            //First search term found: start again
+//                            j = 1;
+//                            term = terms[j];
+//                            firstOffset = token.startOffset();
+//                            continue;
+//                        } else {
+//                            //Reset
+//                            j = 0;
+//                            firstOffset = -1;
+//                            term = terms[j];
+//                        }
+//                    }
+//                    //If phrase found
+//                    if (frequency != 0) {
+//                        //Add new match to current
+//                        current.addMatch(match);
+//                        //Add current to result
+//                        r.add(current);
+//                        //Reset frequency
+//                        frequency=0;
+//                    }
+//                }
+//                //Process next match
+//                nextMatch = nextMatch.getNextMatch();
+//            }
+//        }
         return r;
     }
 
@@ -199,93 +198,94 @@ public class ExtPhrase extends ExtFulltext {
         }
         //Walk through hits 
         final ExtArrayNodeSet r = new ExtArrayNodeSet();
-        final Tokenizer tok = context.getBroker().getTextEngine().getTokenizer();
-        Matcher matcher;
-        for (final NodeProxy current : result) {
-            Match nextMatch;
-            final Vector<NodeId> matchGid = new Vector<NodeId>();
-            //Get first match
-            nextMatch = current.getMatches();
-            //Remove previously found matches on current
-            current.setMatches(null);
-            //Iterate on attach matches, with unicity of related nodeproxy gid
-            while (nextMatch != null) {
-                final Hashtable<String, Match> matchTable = new Hashtable<String, Match>();
-                final NodeId nodeId = nextMatch.getNodeId(); 
-                //If current node id has not been previously processed
-                if (!matchGid.contains(nodeId)) {
-                    final NodeProxy mcurrent = new NodeProxy(current.getDocument(), nodeId);
-                    //Add it in node id array
-                    matchGid.add(nodeId);
-                    final String value = mcurrent.getNodeValue();
-                    tok.setText(value);
-                    int j = 0;
-                    if (j < patterns.length) {
-                        matcher = matchers[j];
-                    } else
-                        {break;}
-                    String matchTerm = null;
-                    TextToken token;
-                    while ((token = tok.nextToken()) != null) {
-                        String word = token.getText().toLowerCase();
-                        matcher.reset(word);
-                        matchers[0].reset(word);
-                        if (matcher.matches()) {
-                            j++;
-                            if (matchTerm == null)
-                                {matchTerm=word;}
-                            else
-                                {matchTerm = matchTerm + "\\W*" + word;}
-                            if (j == patterns.length) {
-                                //All terms found
-                                if (matchTable.containsKey(matchTerm)) {
-                                    //Previously found matchTerm
-                                    final Match match = matchTable.get(matchTerm);
-                                    match.addOffset(token.startOffset(), matchTerm.length());
-                                } else {
-                                    final Match match = nextMatch.createInstance(getExpressionId(),
-                                        nodeId, matchTerm);
-                                    match.addOffset(token.startOffset(), matchTerm.length());
-                                    matchTable.put(matchTerm,match);
-                                }
-                                //Start again on fist term
-                                j = 0;
-                                matcher = matchers[j];
-                                matchTerm = null;
-                                continue;
-                            } else {
-                                matcher = matchers[j];
-                            }
-                        } else if (j > 0 && matchers[0].matches()) {
-                            //First search term found: start again
-                            j = 1;
-                            //Pattern term = patterns[j];
-                            matcher = matchers[j];
-                            matchTerm = word;
-                            continue;
-                        } else {
-                            //Reset
-                            j = 0;
-                            matcher = matchers[j];
-                            matchTerm = null;
-                            continue;
-                        }
-                    }
-                    //One or more match found
-                    if (matchTable.size() != 0) {
-                        final Enumeration<Match> eMatch = matchTable.elements();
-                        while (eMatch.hasMoreElements()){
-                            final Match match = eMatch.nextElement();
-                            current.addMatch(match);
-                        }
-                        //Add current to result
-                        r.add(current);
-                    }
-                }
-                //Process next match
-                nextMatch = nextMatch.getNextMatch();
-            }
-        }
+		//XXX: refactoring required!
+//        final Tokenizer tok = context.getBroker().getTextEngine().getTokenizer();
+//        Matcher matcher;
+//        for (final NodeProxy current : result) {
+//            Match nextMatch;
+//            final Vector<NodeId> matchGid = new Vector<NodeId>();
+//            //Get first match
+//            nextMatch = current.getMatches();
+//            //Remove previously found matches on current
+//            current.setMatches(null);
+//            //Iterate on attach matches, with unicity of related nodeproxy gid
+//            while (nextMatch != null) {
+//                final Hashtable<String, Match> matchTable = new Hashtable<String, Match>();
+//                final NodeId nodeId = nextMatch.getNodeId(); 
+//                //If current node id has not been previously processed
+//                if (!matchGid.contains(nodeId)) {
+//                    final NodeProxy mcurrent = new NodeProxy(current.getDocument(), nodeId);
+//                    //Add it in node id array
+//                    matchGid.add(nodeId);
+//                    final String value = mcurrent.getNodeValue();
+//                    tok.setText(value);
+//                    int j = 0;
+//                    if (j < patterns.length) {
+//                        matcher = matchers[j];
+//                    } else
+//                        {break;}
+//                    String matchTerm = null;
+//                    TextToken token;
+//                    while ((token = tok.nextToken()) != null) {
+//                        String word = token.getText().toLowerCase();
+//                        matcher.reset(word);
+//                        matchers[0].reset(word);
+//                        if (matcher.matches()) {
+//                            j++;
+//                            if (matchTerm == null)
+//                                {matchTerm=word;}
+//                            else
+//                                {matchTerm = matchTerm + "\\W*" + word;}
+//                            if (j == patterns.length) {
+//                                //All terms found
+//                                if (matchTable.containsKey(matchTerm)) {
+//                                    //Previously found matchTerm
+//                                    final Match match = matchTable.get(matchTerm);
+//                                    match.addOffset(token.startOffset(), matchTerm.length());
+//                                } else {
+//                                    final Match match = nextMatch.createInstance(getExpressionId(),
+//                                        nodeId, matchTerm);
+//                                    match.addOffset(token.startOffset(), matchTerm.length());
+//                                    matchTable.put(matchTerm,match);
+//                                }
+//                                //Start again on fist term
+//                                j = 0;
+//                                matcher = matchers[j];
+//                                matchTerm = null;
+//                                continue;
+//                            } else {
+//                                matcher = matchers[j];
+//                            }
+//                        } else if (j > 0 && matchers[0].matches()) {
+//                            //First search term found: start again
+//                            j = 1;
+//                            //Pattern term = patterns[j];
+//                            matcher = matchers[j];
+//                            matchTerm = word;
+//                            continue;
+//                        } else {
+//                            //Reset
+//                            j = 0;
+//                            matcher = matchers[j];
+//                            matchTerm = null;
+//                            continue;
+//                        }
+//                    }
+//                    //One or more match found
+//                    if (matchTable.size() != 0) {
+//                        final Enumeration<Match> eMatch = matchTable.elements();
+//                        while (eMatch.hasMoreElements()){
+//                            final Match match = eMatch.nextElement();
+//                            current.addMatch(match);
+//                        }
+//                        //Add current to result
+//                        r.add(current);
+//                    }
+//                }
+//                //Process next match
+//                nextMatch = nextMatch.getNextMatch();
+//            }
+//        }
         return r;
     }
 

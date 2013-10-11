@@ -4796,16 +4796,17 @@ public class RpcConnection implements RpcAPI {
      */
     private Vector<Vector<Object>> scanIndexTerms(String start, String end, DBBroker broker, DocumentSet docs, NodeSet nodes)
     throws PermissionDeniedException {
-        final Occurrences occurrences[] =
-                broker.getTextEngine().scanIndexTerms(docs, nodes, start, end);
-        final Vector<Vector<Object>> result = new Vector<Vector<Object>>(occurrences.length);
-        Vector<Object> temp;
-        for (int i = 0; i < occurrences.length; i++) {
-            temp = new Vector<Object>(2);
-            temp.addElement(occurrences[i].getTerm().toString());
-            temp.addElement(Integer.valueOf(occurrences[i].getOccurrences()));
-            result.addElement(temp);
-        }
+		//XXX: refactoring required!
+//        final Occurrences occurrences[] =
+//                broker.getTextEngine().scanIndexTerms(docs, nodes, start, end);
+        final Vector<Vector<Object>> result = new Vector<Vector<Object>>(); //occurrences.length);
+//        Vector<Object> temp;
+//        for (int i = 0; i < occurrences.length; i++) {
+//            temp = new Vector<Object>(2);
+//            temp.addElement(occurrences[i].getTerm().toString());
+//            temp.addElement(Integer.valueOf(occurrences[i].getOccurrences()));
+//            result.addElement(temp);
+//        }
         return result;
     }
     

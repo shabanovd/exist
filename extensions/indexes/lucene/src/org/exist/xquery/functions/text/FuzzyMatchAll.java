@@ -85,12 +85,13 @@ public class FuzzyMatchAll extends AbstractMatchFunction {
 				{hits[k] = null;}
 			else {
 				matcher = new FuzzyMatcher(term, threshold);
-				hits[k] =
-					context.getBroker().getTextEngine().getNodes(
-					    context,
-						nodes.getDocumentSet(),
-						nodes, NodeSet.ANCESTOR, null,
-						matcher, term.substring(0, 1));
+				//XXX: refactoring required!
+//				hits[k] =
+//					context.getBroker().getTextEngine().getNodes(
+//					    context,
+//						nodes.getDocumentSet(),
+//						nodes, NodeSet.ANCESTOR, null,
+//						matcher, term.substring(0, 1));
 			}
 		}
 		return mergeResults(hits);

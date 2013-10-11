@@ -422,12 +422,6 @@ public abstract class DBBroker extends Observable {
      */
     public abstract Serializer getSerializer();
 
-    /**
-     * Get the TextSearchEngine associated with this broker. Every subclass of
-     * DBBroker will have it's own implementation of TextSearchEngine.
-     */
-    public abstract TextSearchEngine getTextEngine();
-
     public abstract NativeValueIndex getValueIndex();
 
     public abstract Serializer newSerializer();

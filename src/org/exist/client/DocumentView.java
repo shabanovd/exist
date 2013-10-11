@@ -66,7 +66,6 @@ import javax.xml.transform.OutputKeys;
 
 import org.exist.security.Account;
 import org.exist.storage.ElementIndex;
-import org.exist.storage.TextSearchEngine;
 import org.exist.util.ProgressIndicator;
 import org.exist.xmldb.UserManagementService;
 import org.exist.xmldb.XmldbURI;
@@ -492,9 +491,7 @@ class DocumentView extends JFrame {
 			progress.setIndeterminate(false);
 			final ProgressIndicator ind = (ProgressIndicator) arg;
 			progress.setValue(ind.getPercentage());
-			if (o instanceof TextSearchEngine)
-				{progress.setString("Storing words");} //$NON-NLS-1$
-			else if (o instanceof ElementIndex)
+			if (o instanceof ElementIndex)
 				{progress.setString("Storing elements");} //$NON-NLS-1$
 		}
 	}

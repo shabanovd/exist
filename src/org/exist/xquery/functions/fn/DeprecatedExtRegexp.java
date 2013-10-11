@@ -28,7 +28,6 @@ import org.exist.dom.DocumentSet;
 import org.exist.dom.ExtArrayNodeSet;
 import org.exist.dom.NodeSet;
 import org.exist.dom.QName;
-import org.exist.storage.DBBroker;
 import org.exist.storage.ElementValue;
 import org.exist.storage.FulltextIndexSpec;
 import org.exist.xmldb.XmldbURI;
@@ -329,16 +328,17 @@ public class DeprecatedExtRegexp extends Function implements Optimizable {
     protected NodeSet[] getMatches(DocumentSet docs, NodeSet contextSet, int axis, QName qname, List<String> terms)
     throws XPathException {
         final NodeSet hits[] = new NodeSet[terms.size()];
-        for (int k = 0; k < terms.size(); k++) {
-            hits[k] =
-                    context.getBroker().getTextEngine().getNodesContaining(
-                            context,
-                            docs,
-                            contextSet, axis,
-                            qname, (String) terms.get(k),
-                            DBBroker.MATCH_REGEXP);
-            LOG.debug("Matches for " + terms.get(k) + ": " + hits[k].getLength());
-        }
+		//XXX: refactoring required!
+//        for (int k = 0; k < terms.size(); k++) {
+//            hits[k] =
+//                    context.getBroker().getTextEngine().getNodesContaining(
+//                            context,
+//                            docs,
+//                            contextSet, axis,
+//                            qname, (String) terms.get(k),
+//                            DBBroker.MATCH_REGEXP);
+//            LOG.debug("Matches for " + terms.get(k) + ": " + hits[k].getLength());
+//        }
         return hits;
     }
 

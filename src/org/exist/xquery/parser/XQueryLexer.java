@@ -12,7 +12,6 @@
 	import java.util.Stack;
 	import org.exist.storage.BrokerPool;
 	import org.exist.storage.DBBroker;
-	import org.exist.storage.analysis.Tokenizer;
 	import org.exist.EXistException;
 	import org.exist.dom.DocumentSet;
 	import org.exist.dom.DocumentImpl;

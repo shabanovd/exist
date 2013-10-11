@@ -22,7 +22,6 @@
 package org.exist.backup;
 
 import org.exist.storage.ElementIndex;
-import org.exist.storage.TextSearchEngine;
 import org.exist.util.ProgressIndicator;
 
 import java.awt.Dimension;
@@ -203,9 +202,7 @@ public class RestoreDialog extends JDialog
             final ProgressIndicator ind = (ProgressIndicator)arg;
             progress.setValue( ind.getPercentage() );
 
-            if( o instanceof TextSearchEngine ) {
-                progress.setString( "Storing words" );
-            } else if( o instanceof ElementIndex ) {
+            if( o instanceof ElementIndex ) {
                 progress.setString( "Storing elements" );
             } else {
                 progress.setString( "Storing nodes" );
