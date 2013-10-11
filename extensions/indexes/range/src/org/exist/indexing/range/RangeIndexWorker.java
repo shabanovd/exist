@@ -182,7 +182,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     @Override
     public Object configure(IndexController controller, NodeList configNodes, Map<String, String> namespaces) throws DatabaseConfigurationException {
         LOG.debug("Configuring range index...");
-        return new RangeIndexConfig(configNodes, namespaces);
+        return RangeIndexConfigXML.parse(configNodes, namespaces);
     }
 
     @Override

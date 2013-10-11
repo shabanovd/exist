@@ -29,7 +29,7 @@ public class NodesFilter extends Filter {
         final FixedBitSet result = new FixedBitSet(reader.maxDoc());
         final Fields fields = reader.fields();
         Terms terms = fields.terms(RangeIndexWorker.FIELD_ID);
-        int count = 0;
+//        int count = 0;
         if (terms != null) {
             TermsEnum termsEnum = terms.iterator(null);
             DocsEnum docs = null;
@@ -46,7 +46,7 @@ public class NodesFilter extends Filter {
                             while (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                                 int id = docs.docID();
                                 result.set(id);
-                                count++;
+//                                count++;
                             }
                         } else {
                             break;
@@ -60,15 +60,15 @@ public class NodesFilter extends Filter {
         return result;
     }
 
-    private static boolean startsWith(byte[] key, int offset, int length, byte[] prefix) {
-        if (length < prefix.length) {
-            return false;
-        }
-        for (int i = 0; i < prefix.length; i++) {
-            if (key[offset + i] != prefix[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
+//    private static boolean startsWith(byte[] key, int offset, int length, byte[] prefix) {
+//        if (length < prefix.length) {
+//            return false;
+//        }
+//        for (int i = 0; i < prefix.length; i++) {
+//            if (key[offset + i] != prefix[i]) {
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
 }

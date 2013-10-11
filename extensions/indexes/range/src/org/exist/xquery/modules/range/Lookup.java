@@ -33,7 +33,6 @@ import org.exist.xquery.value.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Lookup extends Function implements Optimizable {
@@ -292,7 +291,7 @@ public class Lookup extends Function implements Optimizable {
             }
 //            LOG.info("eval plain took " + (System.currentTimeMillis() - start));
         } else {
-            long start = System.currentTimeMillis();
+//            long start = System.currentTimeMillis();
             contextStep.setPreloadedData(preselectResult.getDocumentSet(), preselectResult);
             result = getArgument(0).eval(contextSequence).toNodeSet();
             //LOG.info("eval took " + (System.currentTimeMillis() - start));
