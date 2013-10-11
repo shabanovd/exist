@@ -11,8 +11,6 @@ import org.exist.dom.NodeProxy;
 import org.exist.dom.NodeSet;
 import org.exist.dom.NodeSetIterator;
 import org.exist.indexing.lucene.LuceneUtil;
-import org.exist.numbering.NodeId;
-import org.exist.util.ByteConversion;
 
 import java.io.IOException;
 

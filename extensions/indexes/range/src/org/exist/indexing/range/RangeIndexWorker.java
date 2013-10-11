@@ -78,7 +78,6 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
     private final RangeIndex index;
     private final DBBroker broker;
-    private IndexController controller;
     private DocumentImpl currentDoc;
     private int mode = 0;
     private List<RangeIndexDoc> nodesToWrite;
@@ -182,8 +181,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
     @Override
     public Object configure(IndexController controller, NodeList configNodes, Map<String, String> namespaces) throws DatabaseConfigurationException {
-        this.controller = controller;
-        LOG.debug("Configuring lucene index...");
+        LOG.debug("Configuring range index...");
         return new RangeIndexConfig(configNodes, namespaces);
     }
 

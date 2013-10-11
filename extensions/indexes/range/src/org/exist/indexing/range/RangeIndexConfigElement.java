@@ -6,7 +6,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.exist.dom.QName;
-import org.exist.indexing.lucene.LuceneIndexConfig;
+import org.exist.indexing.lucene.LuceneConfigXML;
 import org.exist.storage.NodePath;
 import org.exist.util.Collations;
 import org.exist.util.DatabaseConfigurationException;
@@ -40,7 +40,7 @@ public class RangeIndexConfigElement {
                 throw new DatabaseConfigurationException("Range index module: invalid qname in configuration: " + e.getMessage());
             }
         } else if (node.hasAttribute("qname")) {
-            QName qname = LuceneIndexConfig.parseQName(node, namespaces);
+            QName qname = LuceneConfigXML.parseQName(node, namespaces);
             path = new NodePath(NodePath.SKIP);
             path.addComponent(qname);
             isQNameIndex = true;

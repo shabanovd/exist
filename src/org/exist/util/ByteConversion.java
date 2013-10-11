@@ -71,9 +71,9 @@ public class ByteConversion {
     /**
      * Read a short value from the specified byte array, starting at start.
      *
-     * @deprecated reads the lowest byte first. will be replaced with
-     * {@link #byteToShortH(byte[], int)} for consistency.
      */
+//    * @deprecated reads the lowest byte first. will be replaced with
+//    * {@link #byteToShortH(byte[], int)} for consistency.
     public final static short byteToShort( final byte[] data, final int start ) {
         return (short) ( ( ( data[start + 1] & 0xff ) << 8 ) |
             ( data[start] & 0xff ) );
@@ -173,14 +173,13 @@ public class ByteConversion {
      * Write a short value to the specified byte array. The first byte is written
      * into the location specified by start.
      *
-     * @deprecated this version of the method writes the lowest byte first. It will be replaced
-     * by {@link #shortToByteH(short, byte[], int)} for consistency.
-     *
      * @param  v the value
      * @param  data  the byte array to write into
      * @param  start  the offset
      * @return   the byte array
      */
+//    * @deprecated this version of the method writes the lowest byte first. It will be replaced
+//    * by {@link #shortToByteH(short, byte[], int)} for consistency.
     public final static byte[] shortToByte( final short v, final byte[] data, final int start ) {
         data[start] = (byte) ( ( v >>> 0 ) & 0xff );
         data[start + 1] = (byte) ( ( v >>> 8 ) & 0xff );

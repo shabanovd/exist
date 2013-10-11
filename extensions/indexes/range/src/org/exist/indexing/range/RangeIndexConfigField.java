@@ -1,7 +1,7 @@
 package org.exist.indexing.range;
 
 import org.exist.dom.QName;
-import org.exist.indexing.lucene.LuceneIndexConfig;
+import org.exist.indexing.lucene.LuceneConfigXML;
 import org.exist.storage.NodePath;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.XMLString;
@@ -40,7 +40,7 @@ public class RangeIndexConfigField {
                 throw new DatabaseConfigurationException("Range index module: invalid qname in configuration: " + e.getMessage());
             }
         } else if (elem.hasAttribute("qname")) {
-            QName qname = LuceneIndexConfig.parseQName(elem, namespaces);
+            QName qname = LuceneConfigXML.parseQName(elem, namespaces);
             path = new NodePath(qname);
             relPath = path;
             isQNameIndex = true;
