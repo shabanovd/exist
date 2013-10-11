@@ -44,7 +44,6 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.Type;
-import org.exist.xquery.functions.text.TextModule;
 
 import java.util.List;
 import java.util.regex.Matcher;
