@@ -45,17 +45,6 @@ public class CollectionEvents implements CollectionTrigger {
 	}
 
 	@Override
-	public void prepare(int event, DBBroker broker, Txn txn,
-			Collection collection, Collection newCollection)
-			throws TriggerException {
-	}
-
-	@Override
-	public void finish(int event, DBBroker broker, Txn txn,
-			Collection collection, Collection newCollection) {
-	}
-
-	@Override
 	public void beforeCreateCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
 //		System.out.println("beforeCreateCollection "+uri);
 	}

@@ -27,10 +27,14 @@ import org.exist.storage.DBBroker;
  *
  * @author aretter
  */
-public class DocumentTriggerProxies extends AbstractTriggerProxies<DocumentTrigger, DocumentTriggerProxy, DocumentTriggersVisitor> {
+public class DocumentTriggerProxies extends AbstractTriggerProxies<DocumentTrigger> {
 
     @Override
-    public DocumentTriggersVisitor instantiateVisitor(DBBroker broker) {
-        return new DocumentTriggersVisitor(broker, this);
+    public DocumentTriggersVisitor instantiateVisitor(DBBroker broker) throws TriggerException {
+    	DocumentTriggersVisitor visitor = new DocumentTriggersVisitor(this);
+    	
+    	visitor.configure(broker, null, null);
+    	
+        return visitor;
     }
 }

@@ -22,30 +22,37 @@
 package org.exist.collections.triggers;
 
 import java.util.List;
+import java.util.Map;
+
+import org.exist.collections.Collection;
 import org.exist.storage.DBBroker;
 
 /**
  *
  * @author aretter
  */
-public abstract class AbstractTriggersVisitor<T extends Trigger, P extends AbstractTriggerProxies> implements TriggersVisitor {
-    private final DBBroker broker;
-    private final P proxies;
-    private List<T> triggers;
+public abstract class AbstractTriggersVisitor<T extends Trigger> implements TriggersVisitor<T> {
     
-    public AbstractTriggersVisitor(DBBroker broker, P proxies) {
-        this.broker = broker;
+    private final AbstractTriggerProxies<T> proxies;
+    private List<T> triggers = null;
+    
+    public AbstractTriggersVisitor(AbstractTriggerProxies<T> proxies) {
         this.proxies = proxies;
     }
     
-    public void init() throws TriggerException {
+    public AbstractTriggersVisitor(List<T> triggers) {
+    	proxies = null;
+        this.triggers = triggers;
+    }
+
+    @Override
+    public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
         triggers = proxies.instantiateTriggers(broker);
     }
-    
-    /**
-     * lazy instantiated
-     */
+
     protected List<T> getTriggers() {
+    	if (triggers == null)
+    		System.out.println("");
         return triggers;
     }
 }

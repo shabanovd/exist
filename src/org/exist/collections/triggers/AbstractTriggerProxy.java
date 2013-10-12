@@ -24,6 +24,7 @@ package org.exist.collections.triggers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import org.exist.collections.Collection;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
@@ -35,7 +36,7 @@ import org.exist.xmldb.XmldbURI;
  */
 public abstract class AbstractTriggerProxy<T extends Trigger> implements TriggerProxy<T> {
 
-    private final Class<T> clazz;
+    private final Class<? extends T> clazz;
     private Map<String, List<? extends Object>> parameters;
     
     /**
@@ -45,17 +46,17 @@ public abstract class AbstractTriggerProxy<T extends Trigger> implements Trigger
     private final XmldbURI collectionConfigurationURI;
 
     public AbstractTriggerProxy(Class<? extends T> clazz, XmldbURI collectionConfigurationURI) {
-        this.clazz = (Class<T>)clazz;
+        this.clazz = clazz;
         this.collectionConfigurationURI = collectionConfigurationURI;
     }
     
     public AbstractTriggerProxy(Class<? extends T> clazz, XmldbURI collectionConfigurationURI, Map<String, List<? extends Object>> parameters) {
-        this.clazz = (Class<T>)clazz;
+        this.clazz = clazz;
         this.collectionConfigurationURI = collectionConfigurationURI;
         this.parameters = parameters;
     }
 
-    protected Class<T> getClazz() {
+    protected Class<? extends T> getClazz() {
         return clazz;
     }
     
@@ -72,7 +73,7 @@ public abstract class AbstractTriggerProxy<T extends Trigger> implements Trigger
         return parameters;
     }
     
-    protected T newInstance(DBBroker broker) throws TriggerException {
+    public T newInstance(DBBroker broker) throws TriggerException {
         try {
             final T trigger = getClazz().newInstance();
 
@@ -94,7 +95,8 @@ public abstract class AbstractTriggerProxy<T extends Trigger> implements Trigger
         }
     }
     
-    public static List<TriggerProxy> newInstance(Class c, XmldbURI collectionConfigurationURI, Map<String, List<? extends Object>> parameters) throws TriggerException {
+    @SuppressWarnings("unchecked")
+	public static List<TriggerProxy> newInstance(Class<? extends Trigger> c, XmldbURI collectionConfigurationURI, Map<String, List<? extends Object>> parameters) throws TriggerException {
         
         final List<TriggerProxy> proxies = new ArrayList<TriggerProxy>();
         

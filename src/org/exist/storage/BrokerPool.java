@@ -2141,8 +2141,8 @@ public class BrokerPool implements Database {
 		return collectionTriggers;
 	}
 	
-	private DocumentTriggersVisitor docsTriggersVisitor = new DocumentTriggersVisitor(null, new DocumentTriggers());
-	private CollectionTriggersVisitor colsTriggersVisitor = new CollectionTriggersVisitor(null, new CollectionTriggers());
+	private DocumentTriggersVisitor docsTriggersVisitor = new DocumentTriggersVisitor(documentTriggers);
+	private CollectionTriggersVisitor colsTriggersVisitor = new CollectionTriggersVisitor(collectionTriggers);
 
 	@Override
 	public DocumentTrigger getDocumentTrigger() {
@@ -2156,24 +2156,14 @@ public class BrokerPool implements Database {
 	
 	class DocumentTriggers extends DocumentTriggerProxies {
 
-		@Override
-	    public DocumentTriggersVisitor instantiateVisitor(DBBroker broker) {
-	        return new DocumentTriggersVisitor(broker, this);
-	    }
-
-		protected List<DocumentTrigger> instantiateTriggers(DBBroker broker) throws TriggerException {
+		protected List<DocumentTrigger> instantiateTriggers(DBBroker broker) {
 	        return getDocumentTriggers();
 	    }
 	}
 
 	class CollectionTriggers extends CollectionTriggerProxies {
 
-		@Override
-	    public CollectionTriggersVisitor instantiateVisitor(DBBroker broker) {
-	        return new CollectionTriggersVisitor(broker, this);
-	    }
-
-		protected List<CollectionTrigger> instantiateTriggers(DBBroker broker) throws TriggerException {
+		protected List<CollectionTrigger> instantiateTriggers(DBBroker broker) {
 	        return getCollectionTriggers();
 	    }
 	}

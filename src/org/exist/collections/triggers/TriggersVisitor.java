@@ -27,6 +27,6 @@ package org.exist.collections.triggers;
  */
 
 
-public interface TriggersVisitor extends Trigger {
+public interface TriggersVisitor<T extends Trigger> extends Trigger {
     
 }

@@ -22,7 +22,7 @@
 package org.exist.collections.triggers;
 
 import java.util.List;
-import java.util.Map;
+
 import org.apache.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.storage.DBBroker;
@@ -33,35 +33,20 @@ import org.exist.xmldb.XmldbURI;
  *
  * @author aretter
  */
-public class CollectionTriggersVisitor extends AbstractTriggersVisitor<CollectionTrigger, CollectionTriggerProxies> implements CollectionTrigger {
+public class CollectionTriggersVisitor extends AbstractTriggersVisitor<CollectionTrigger> implements CollectionTrigger {
 
     protected final static Logger LOG = Logger.getLogger(CollectionTriggersVisitor.class);
     
-    public CollectionTriggersVisitor(DBBroker broker, CollectionTriggerProxies proxies) {
-        super(broker, proxies);
+    public CollectionTriggersVisitor(CollectionTriggerProxies proxies) {
+        super(proxies);
+    }
+
+    public CollectionTriggersVisitor(List<CollectionTrigger> triggers) {
+        super(triggers);
     }
     
     private void log(Exception e) {
     	LOG.error(e.getMessage(), e);
-    }
-
-    @Override
-    public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
-        //ignore triggers are already configured by this stage!
-    }
-
-    @Override
-    public void prepare(int event, DBBroker broker, Txn txn, Collection collection, Collection newCollection) throws TriggerException {
-        for(final CollectionTrigger trigger : getTriggers()) {
-            trigger.prepare(event, broker, txn, collection, newCollection);
-        }
-    }
-
-    @Override
-    public void finish(int event, DBBroker broker, Txn txn, Collection collection, Collection newCollection) {
-        for(final CollectionTrigger trigger : getTriggers()) {
-            trigger.finish(event, broker, txn, collection, newCollection);
-        }
     }
 
     @Override

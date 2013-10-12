@@ -22,9 +22,8 @@
 package org.exist.collections.triggers;
 
 import java.util.List;
-import java.util.Map;
+
 import org.apache.log4j.Logger;
-import org.exist.collections.Collection;
 import org.exist.dom.DocumentImpl;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
@@ -39,23 +38,22 @@ import org.xml.sax.ext.LexicalHandler;
  *
  * @author aretter
  */
-public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTrigger, DocumentTriggerProxies> implements DocumentTrigger {
+public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTrigger> implements DocumentTrigger {
 
     protected final static Logger LOG = Logger.getLogger(DocumentTriggersVisitor.class);
     
-    public DocumentTriggersVisitor(DBBroker broker, DocumentTriggerProxies proxies) {
-        super(broker, proxies);
+    public DocumentTriggersVisitor(DocumentTriggerProxies proxies) {
+        super(proxies);
+    }
+    
+    public DocumentTriggersVisitor(List<DocumentTrigger> triggers) {
+        super(triggers);
     }
     
     private void log(Exception e) {
     	LOG.error(e.getMessage(), e);
     }
     
-    @Override
-    public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
-        //ignore triggers are already configured by this stage!
-    }
-
     @Override
     public void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
         for(final DocumentTrigger trigger : getTriggers()) {

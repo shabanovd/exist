@@ -1628,11 +1628,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             
             final List<DocumentTrigger> triggers = new ArrayList<DocumentTrigger>();
             
-            DocumentTriggersVisitor trigger = new DocumentTriggersVisitor(broker, null) {
-            	protected List<DocumentTrigger> getTriggers() {
-            		return triggers;
-            	}
-            };
+            DocumentTriggersVisitor trigger = new DocumentTriggersVisitor(triggers);
 
             DocumentTriggersVisitor masterTriggers = (DocumentTriggersVisitor) db.getDocumentTrigger();
             //triggers.add(indexer);
