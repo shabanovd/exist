@@ -21,13 +21,13 @@
  */
 package org.exist.storage;
 
+import static org.junit.Assert.*;
+
 import java.io.*;
 import java.util.Date;
 import java.util.Iterator;
 
-import junit.framework.TestCase;
-import junit.textui.TestRunner;
-
+import org.exist.CommonMethods;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
@@ -37,21 +37,24 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
-import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
 import org.exist.util.LockException;
 import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
+import org.junit.Test;
 
-public class RecoverBinaryTest2 extends TestCase {
+public class RecoverBinaryTest2 extends CommonMethods {
 
-    public static void main(String[] args) {
-        TestRunner.run(RecoverBinaryTest2.class);
-    }
-    
     private static String directory = "webapp/resources";
     
     //private static File dir = new File(directory);
+    
+    @Test
+	public void test() throws Exception {
+		testStore();
+		testRead();
+		testRead2();
+	}
     
     public void testStore() {
         BrokerPool.FORCE_CORRUPTION = true;
@@ -186,21 +189,5 @@ public class RecoverBinaryTest2 extends TestCase {
                 }
             }
         }
-    }
-    
-    protected BrokerPool startDB() {
-        try {
-            Configuration config = new Configuration();
-            BrokerPool.configure(1, 5, config);
-            return BrokerPool.getInstance();
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail(e.getMessage());
-        }
-        return null;
-    }
-
-    protected void tearDown() {
-        BrokerPool.stopAll(false);
     }
 }

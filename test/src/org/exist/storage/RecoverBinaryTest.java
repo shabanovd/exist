@@ -21,34 +21,38 @@
  */
 package org.exist.storage;
 
+import static org.junit.Assert.*;
+
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.FileInputStream;
 
-import junit.framework.TestCase;
-import junit.textui.TestRunner;
-
+import org.exist.CommonMethods;
 import org.exist.collections.Collection;
 import org.exist.dom.BinaryDocument;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
-import org.exist.util.Configuration;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * @author wolf
  *
  */
-public class RecoverBinaryTest extends TestCase {
+public class RecoverBinaryTest extends CommonMethods {
+	
+	protected static BrokerPool pool;
 
-    public static void main(String[] args) {
-        TestRunner.run(RecoverBinaryTest.class);
-    }
-    
-    private BrokerPool pool;
+    @Test
+	public void test() throws Exception {
+		testStore();
+		testLoad();
+	}
     
     public void testStore() {
     	BrokerPool.FORCE_CORRUPTION = true;
@@ -121,18 +125,13 @@ public class RecoverBinaryTest extends TestCase {
         }
     }
     
-    protected void setUp() {
-        try {
-            Configuration config = new Configuration();
-            BrokerPool.configure(1, 5, config);
-            pool = BrokerPool.getInstance();
-        } catch (Exception e) {            
-            fail(e.getMessage());
-        }
+    @BeforeClass
+    public static void startUp() {
+    	pool = startDB();
     }
 
-    protected void tearDown() {
-        BrokerPool.stopAll(false);
-        pool = null;
+    @AfterClass
+    public static void tearDown() {
+    	stopDB();
     }
 }
