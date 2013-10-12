@@ -37,6 +37,7 @@ import java.util.Map;
 public class AnotherTrigger extends FilteringTrigger implements DocumentTrigger {
 	
 	protected int count = 0;
+	protected byte createDocumentEvents = 0;
 
     public void configure(DBBroker broker, org.exist.collections.Collection parent, Map<String, List<?>> parameters) throws TriggerException {
         super.configure(broker, parent, parameters);
@@ -52,10 +53,12 @@ public class AnotherTrigger extends FilteringTrigger implements DocumentTrigger 
 	
 	@Override
 	public void beforeCreateDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
+		createDocumentEvents |= 1;
 	}
 
 	@Override
 	public void afterCreateDocument(DBBroker broker, Txn transaction, DocumentImpl document) {
+		createDocumentEvents |= 2;
 	}
 
 	@Override

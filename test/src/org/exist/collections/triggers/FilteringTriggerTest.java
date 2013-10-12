@@ -53,6 +53,8 @@ public class FilteringTriggerTest {
             resource.setContent(DOCUMENT_CONTENT);
             root.storeResource(resource);
 
+            assertEquals(3, trigger.createDocumentEvents);
+
             assertEquals(26, trigger.count);
             
         } catch (XMLDBException e) {
