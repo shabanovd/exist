@@ -21,7 +21,7 @@
  */
 package org.exist.collections.triggers;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 
 import javax.xml.transform.OutputKeys;
 
+import org.exist.CommonAbstract;
 import org.exist.TestUtils;
 import org.exist.util.Base64Decoder;
 import org.exist.xmldb.CollectionManagementServiceImpl;
@@ -56,10 +57,8 @@ import org.xmldb.api.modules.XUpdateQueryService;
 /** class under test : {@link XQueryTrigger}
  * @author Pierrick Brihaye <pierrick.brihaye@free.fr>
  */
-public class XQueryTriggerTest {
+public class XQueryTriggerTest extends CommonAbstract {
 	
-	private final static String TEST_COLLECTION = "testXQueryTrigger";
-
     /** XQuery module implementing the trigger under test */
     private final static String MODULE_NAME = "XQueryTriggerLogger.xqm";
 
@@ -217,9 +216,6 @@ public class XQueryTriggerTest {
         "};" +
         "";
     
-    private static Collection root;
-    private static Collection testCollection;
-
       /** XQuery module implementing the invalid trigger under test */
     private final static String INVALID_MODULE =
     	"module namespace log='log'; " +
@@ -648,10 +644,7 @@ public class XQueryTriggerTest {
 	        assertEquals(6, result.getSize());
 
             
-		} catch (XMLDBException e) {
-			e.printStackTrace();
-			fail(e.getMessage());
-		} catch (URISyntaxException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			fail(e.getMessage());
 		}
@@ -706,10 +699,7 @@ public class XQueryTriggerTest {
 	        assertEquals(6, result.getSize());
 
             
-		} catch (XMLDBException e) {
-			e.printStackTrace();
-			fail(e.getMessage());
-		} catch (URISyntaxException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			fail(e.getMessage());
 		}
@@ -752,7 +742,7 @@ public class XQueryTriggerTest {
 	        assertEquals(4, result.getSize());
 	        
             
-		} catch (XMLDBException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			fail(e.getMessage());
 		}
