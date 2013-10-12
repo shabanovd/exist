@@ -722,7 +722,7 @@ public class BrokerPool implements Database {
 			initialize();
 		} catch (final Throwable e) {
 			// remove that file lock we may have acquired in canReadDataDir
-			if (dataLock != null && !isReadOnly)
+			if (dataLock != null) // && !isReadOnly)
 				dataLock.release();
 			
 			if (!instances.containsKey(instanceName))
@@ -1999,9 +1999,9 @@ public class BrokerPool implements Database {
                 //Clear the living instances container
                 instances.remove(instanceName);
 
-                if (!isReadOnly)
-                    // release the lock on the data directory
-                    {dataLock.release();}
+                // release the lock on the data directory
+                if (dataLock != null) // && !isReadOnly)
+                	dataLock.release();
 
                 LOG.info("shutdown complete !");
 
@@ -2039,6 +2039,11 @@ public class BrokerPool implements Database {
             shutdownListener = null;
             securityManager = null;
             notificationService = null;
+            watchdog = null;
+            debuggee = null;
+            dataLock = null;
+            expathRepo = null;
+            classLoader = null;
         }
 	}
 
