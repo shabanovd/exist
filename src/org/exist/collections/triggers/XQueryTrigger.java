@@ -248,7 +248,7 @@ public class XQueryTrigger extends FilteringTrigger implements DocumentTrigger, 
 			try {
 				querySource = SourceFactory.getSource(broker, null, urlQuery, false);
 			} catch(final Exception e) {
-				LOG.error(e);
+				LOG.error(e.getMessage(), e);
 			}
 		} else if(strQuery != null) {
 			//try and get the XQuery from a string

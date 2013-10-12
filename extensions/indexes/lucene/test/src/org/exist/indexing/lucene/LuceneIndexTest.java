@@ -112,8 +112,6 @@ public class LuceneIndexTest {
     private static String COLLECTION_CONFIG1 =
         "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
     	"	<index>" +
-    	"		<fulltext default=\"none\">" +
-        "		</fulltext>" +
         "       <lucene>" +
         "           <analyzer class=\"org.apache.lucene.analysis.core.SimpleAnalyzer\"/>" +
         "           <text match=\"/section/p\"/>" +
@@ -128,12 +126,6 @@ public class LuceneIndexTest {
     private static String COLLECTION_CONFIG2 =
         "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
     	"	<index>" +
-    	"		<fulltext default=\"none\">" +
-        "           <create qname=\"item\"/>" +
-        "           <create qname=\"description\"/>" +
-        "           <create qname=\"condition\"/>" +
-        "           <create qname=\"@attr\"/>" +
-        "		</fulltext>" +
         "       <lucene>" +
         "           <text qname=\"item\"/>" +
         "           <text match=\"//description\"/>" +
@@ -146,8 +138,6 @@ public class LuceneIndexTest {
     private static String COLLECTION_CONFIG3 =
         "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
         "	<index>" +
-        "		<fulltext default=\"none\">" +
-        "		</fulltext>" +
         "       <lucene>" +
         "           <analyzer id=\"whitespace\" class=\"org.apache.lucene.analysis.core.WhitespaceAnalyzer\"/>" +
         "           <text match=\"/section/head\" analyzer=\"whitespace\"/>" +
@@ -159,8 +149,6 @@ public class LuceneIndexTest {
     private static String COLLECTION_CONFIG4 =
             "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
             "	<index>" +
-            "		<fulltext default=\"none\">" +
-            "		</fulltext>" +
             "       <lucene>" +
             "           <text match=\"/test/a\"/>" +
             "           <text match=\"/test/b/*\"/>" +
@@ -171,8 +159,6 @@ public class LuceneIndexTest {
     private static String COLLECTION_CONFIG5 =
             "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
             "   <index xmlns:tei=\"http://www.tei-c.org/ns/1.0\">" +
-            "       <fulltext default=\"none\" attributes=\"no\">" +
-            "       </fulltext>" +
             "       <lucene>" +
             "           <text qname=\"article\">" +
             "               <ignore qname=\"note\"/>" +
@@ -192,8 +178,6 @@ public class LuceneIndexTest {
     private static String COLLECTION_CONFIG6 =
             "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
             "   <index xmlns:tei=\"http://www.tei-c.org/ns/1.0\">" +
-            "       <fulltext default=\"none\" attributes=\"no\">" +
-            "       </fulltext>" +
             "       <lucene>" +
             "           <text qname=\"b\"/>" +
             "           <text qname=\"c\" boost=\"2.0\"/>" +
@@ -204,8 +188,6 @@ public class LuceneIndexTest {
     private static String COLLECTION_CONFIG7 =
             "<collection xmlns='http://exist-db.org/collection-config/1.0'>" +
             "   <index xmlns:tei='http://www.tei-c.org/ns/1.0'>" +
-            "       <fulltext default='none' attributes='no'>" +
-            "       </fulltext>" +
             "       <lucene>" +
             "           <text match='//*' attribute='class=.*title.*'/>" +
             "           <text qname='c' attribute='class=.*title.*' boost=\"2.0\"/>" +

@@ -1626,10 +1626,10 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 setCollectionConfigEnabled(false);
             }
             
-            final List triggers = new ArrayList();
+            final List<DocumentTrigger> triggers = new ArrayList<DocumentTrigger>();
             
             DocumentTriggersVisitor trigger = new DocumentTriggersVisitor(broker, null) {
-            	protected List getTriggers() throws TriggerException {
+            	protected List<DocumentTrigger> getTriggers() throws TriggerException {
             		return triggers;
             	}
             };
