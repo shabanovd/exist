@@ -103,91 +103,109 @@ public abstract class FilteringTrigger implements DocumentTrigger {
 
     @Override
     public void setDocumentLocator(Locator locator) {
-        outputHandler.setDocumentLocator(locator);
+    	if (outputHandler != null)
+    		outputHandler.setDocumentLocator(locator);
     }
 
     @Override
     public void startDocument() throws SAXException {
-        outputHandler.startDocument();
+    	if (outputHandler != null)
+    		outputHandler.startDocument();
     }
 
     @Override
     public void endDocument() throws SAXException {
-        outputHandler.endDocument();
+    	if (outputHandler != null)
+    		outputHandler.endDocument();
     }
 
     @Override
     public void startPrefixMapping(String prefix, String namespaceURI) throws SAXException {
-        outputHandler.startPrefixMapping(prefix, namespaceURI);
+    	if (outputHandler != null)
+    		outputHandler.startPrefixMapping(prefix, namespaceURI);
     }
 
     @Override
     public void endPrefixMapping(String prefix) throws SAXException {
-        outputHandler.endPrefixMapping(prefix);
+    	if (outputHandler != null)
+    		outputHandler.endPrefixMapping(prefix);
     }
 
     @Override
     public void startElement(String namespaceURI, String localName, String qname, Attributes attributes) throws SAXException {
-        outputHandler.startElement(namespaceURI, localName, qname, attributes);
+    	if (outputHandler != null)
+    		outputHandler.startElement(namespaceURI, localName, qname, attributes);
     }
 
     @Override
     public void endElement(String namespaceURI, String localName, String qname) throws SAXException {
-        outputHandler.endElement(namespaceURI, localName, qname);
+    	if (outputHandler != null)
+    		outputHandler.endElement(namespaceURI, localName, qname);
     }
 
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
-        outputHandler.characters(ch, start, length);
+    	if (outputHandler != null)
+    		outputHandler.characters(ch, start, length);
     }
 
     @Override
     public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
-        outputHandler.ignorableWhitespace(ch, start, length);
+    	if (outputHandler != null)
+    		outputHandler.ignorableWhitespace(ch, start, length);
     }
 
     @Override
     public void processingInstruction(String target, String data) throws SAXException {
-        outputHandler.processingInstruction(target, data);
+    	if (outputHandler != null)
+    		outputHandler.processingInstruction(target, data);
     }
 
     @Override
     public void skippedEntity(String arg0) throws SAXException {
-        outputHandler.skippedEntity(arg0);
+    	if (outputHandler != null)
+    		outputHandler.skippedEntity(arg0);
     }
 
     @Override
     public void startDTD(String name, String publicId, String systemId) throws SAXException {
-        lexicalOutputHandler.startDTD(name, publicId, systemId);
+    	if (lexicalOutputHandler != null)
+    		lexicalOutputHandler.startDTD(name, publicId, systemId);
     }
 
     @Override
     public void endDTD() throws SAXException {
-        lexicalOutputHandler.endDTD();
+    	if (lexicalOutputHandler != null)
+    		lexicalOutputHandler.endDTD();
     }
 
     @Override
     public void startEntity(String arg0) throws SAXException {
-        lexicalOutputHandler.startEntity(arg0);
+    	if (lexicalOutputHandler != null)
+    		lexicalOutputHandler.startEntity(arg0);
     }
 
     @Override
     public void endEntity(String arg0) throws SAXException {
-        lexicalOutputHandler.endEntity(arg0);
+    	if (lexicalOutputHandler != null)
+    		lexicalOutputHandler.endEntity(arg0);
     }
 
     @Override
     public void startCDATA() throws SAXException {
-        lexicalOutputHandler.startCDATA();
+    	if (lexicalOutputHandler != null)
+    		lexicalOutputHandler.startCDATA();
     }
 
     @Override
     public void endCDATA() throws SAXException {
-        lexicalOutputHandler.endCDATA();
+    	if (lexicalOutputHandler != null)
+    		lexicalOutputHandler.endCDATA();
     }
 
     @Override
     public void comment(char[] ch, int start, int length) throws SAXException {
-        lexicalOutputHandler.comment(ch, start, length);
+    	if (lexicalOutputHandler != null)
+    		lexicalOutputHandler.comment(ch, start, length);
     }
 }
