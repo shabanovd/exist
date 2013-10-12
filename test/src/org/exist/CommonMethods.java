@@ -23,6 +23,8 @@ import static org.junit.Assert.fail;
 
 import org.exist.storage.BrokerPool;
 import org.exist.util.Configuration;
+import org.xmldb.api.DatabaseManager;
+import org.xmldb.api.base.Database;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -31,9 +33,21 @@ import org.exist.util.Configuration;
 public abstract class CommonMethods {
 	
     protected static BrokerPool startDB() {
+    	return startDB(false);
+    }
+
+	protected static BrokerPool startDB(boolean initXMLDB) {
         try {
             Configuration config = new Configuration();
             BrokerPool.configure(1, 5, config);
+            
+            if (initXMLDB) {
+	            // initialize driver
+	            Database database = (Database) Class.forName("org.exist.xmldb.DatabaseImpl").newInstance();
+	            database.setProperty("create-database", "true");
+	            DatabaseManager.registerDatabase(database);
+            }
+
             return BrokerPool.getInstance();
         } catch (Exception e) {
             e.printStackTrace();
