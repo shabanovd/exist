@@ -57,8 +57,12 @@ public class SourceFactory {
      * @throws MalformedURLException
      * @throws IOException
      */
-    public static final Source getSource(DBBroker broker, String contextPath, String location, boolean checkXQEncoding) throws MalformedURLException, IOException, PermissionDeniedException
+    public static final Source getSource(DBBroker broker, String contextPath_, String location, boolean checkXQEncoding) throws MalformedURLException, IOException, PermissionDeniedException
     {
+    	String contextPath = contextPath_;
+    	if (contextPath == null)
+    		contextPath = "";
+    	
         Source source = null;
         
         /* resource: */
