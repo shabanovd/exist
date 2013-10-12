@@ -41,34 +41,19 @@ import org.xml.sax.ext.LexicalHandler;
  */
 public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTrigger, DocumentTriggerProxies> implements DocumentTrigger {
 
-    protected Logger LOG = Logger.getLogger(getClass());
+    protected final static Logger LOG = Logger.getLogger(DocumentTriggersVisitor.class);
     
     public DocumentTriggersVisitor(DBBroker broker, DocumentTriggerProxies proxies) {
         super(broker, proxies);
     }
     
+    private void log(Exception e) {
+    	LOG.error(e.getMessage(), e);
+    }
     
     @Override
     public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
         //ignore triggers are already configured by this stage!
-    }
-
-    @Override
-    public void prepare(int event, DBBroker broker, Txn txn, XmldbURI documentPath, DocumentImpl existingDocument) throws TriggerException {
-        for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.prepare(event, broker, txn, documentPath, existingDocument);
-        }
-    }
-
-    @Override
-    public void finish(int event, DBBroker broker, Txn txn, XmldbURI documentPath, DocumentImpl document) {
-        try {
-            for(final DocumentTrigger trigger : getTriggers()) {
-                trigger.finish(event, broker, txn, documentPath, document);
-            }
-        } catch (final TriggerException te) {
-            LOG.error(te.getMessage(), te);
-        }
     }
 
     @Override
@@ -79,9 +64,11 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
     }
 
     @Override
-    public void afterCreateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+    public void afterCreateDocument(DBBroker broker, Txn txn, DocumentImpl document) {
     	for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.afterCreateDocument(broker, txn, document);
+            try {
+				trigger.afterCreateDocument(broker, txn, document);
+			} catch (TriggerException e) { log(e); }
         }
     }
 
@@ -93,9 +80,11 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
     }
 
     @Override
-    public void afterUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+    public void afterUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.afterUpdateDocument(broker, txn, document);
+            try {
+	        	trigger.afterUpdateDocument(broker, txn, document);
+    		} catch (TriggerException e) { log(e); }
         }
     }
 
@@ -107,9 +96,11 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
     }
 
     @Override
-    public void afterCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException {
+    public void afterCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.afterCopyDocument(broker, txn, document, oldUri);
+            try {
+            	trigger.afterCopyDocument(broker, txn, document, oldUri);
+    		} catch (TriggerException e) { log(e); }
         }
     }
 
@@ -121,9 +112,11 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
     }
 
     @Override
-    public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException {
+    public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.afterMoveDocument(broker, txn, document, oldUri);
+            try {
+            	trigger.afterMoveDocument(broker, txn, document, oldUri);
+    		} catch (TriggerException e) { log(e); }
         }
     }
 
@@ -135,140 +128,226 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
     }
 
     @Override
-    public void afterDeleteDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
+    public void afterDeleteDocument(DBBroker broker, Txn txn, XmldbURI uri) {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.afterDeleteDocument(broker, txn, uri);
+            try {
+            	trigger.afterDeleteDocument(broker, txn, uri);
+    		} catch (TriggerException e) { log(e); }
         }
     }
     
     @Override
     public void startDocument() throws SAXException {
-        for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.startDocument();
-        }
+		for(final DocumentTrigger trigger : getTriggers()) {
+            try {
+            	trigger.startDocument();
+    		} catch (TriggerException e) { log(e); }
+		}
+    	
+        if (outputHandler != null)
+        	outputHandler.startDocument();
     }
 
     @Override
     public void endDocument() throws SAXException {
-        for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.endDocument();
-        }
+		for(final DocumentTrigger trigger : getTriggers()) {
+			try {
+				trigger.endDocument();
+			} catch (TriggerException e) { log(e); }
+		}
+        
+    	if (outputHandler != null)
+        	outputHandler.endDocument();
     }
 
     @Override
     public void startPrefixMapping(String prefix, String uri) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.startPrefixMapping(prefix, uri);
+        	try {
+        		trigger.startPrefixMapping(prefix, uri);
+        	} catch (TriggerException e) { log(e); }
         }
+        
+        if (outputHandler != null)
+        	outputHandler.startPrefixMapping(prefix, uri);
     }
 
     @Override
     public void endPrefixMapping(String prefix) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.endPrefixMapping(prefix);
+            try {
+            	trigger.endPrefixMapping(prefix);
+			} catch (TriggerException e) { log(e); }
         }
+        
+        if (outputHandler != null)
+        	outputHandler.endPrefixMapping(prefix);
     }
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.startElement(uri, localName, qName, atts);
+            try {
+            	trigger.startElement(uri, localName, qName, atts);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (outputHandler != null)
+        	outputHandler.startElement(uri, localName, qName, atts);
     }
 
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.endElement(uri, localName, qName);
+            try {
+            	trigger.endElement(uri, localName, qName);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (outputHandler != null)
+        	outputHandler.endElement(uri, localName, qName);
     }
 
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.characters(ch, start, length);
+            try {
+            	trigger.characters(ch, start, length);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (outputHandler != null)
+        	outputHandler.characters(ch, start, length);
     }
 
     @Override
     public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.ignorableWhitespace(ch, start, length);
+            try {
+            	trigger.ignorableWhitespace(ch, start, length);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (outputHandler != null)
+        	outputHandler.ignorableWhitespace(ch, start, length);
     }
 
     @Override
     public void processingInstruction(String target, String data) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.processingInstruction(target, data);
+            try {
+            	trigger.processingInstruction(target, data);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (outputHandler != null)
+        	outputHandler.processingInstruction(target, data);
     }
 
     @Override
     public void skippedEntity(String name) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.skippedEntity(name);
+            try {
+            	trigger.skippedEntity(name);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (outputHandler != null)
+        	outputHandler.skippedEntity(name);
     }
 
     @Override
     public void startDTD(String name, String publicId, String systemId) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.startDTD(name, publicId, systemId);
+            try {
+            	trigger.startDTD(name, publicId, systemId);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (lexicalHandler != null)
+        	lexicalHandler.startDTD(name, publicId, systemId);
     }
 
     @Override
     public void endDTD() throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.endDTD();
+            try {
+            	trigger.endDTD();
+			} catch (TriggerException e) { log(e); }
         }
+        
+        if (lexicalHandler != null)
+        	lexicalHandler.endDTD();
     }
 
     @Override
     public void startEntity(String name) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.startEntity(name);
+            try {
+            	trigger.startEntity(name);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (lexicalHandler != null)
+        	lexicalHandler.startEntity(name);
     }
 
     @Override
     public void endEntity(String name) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.endEntity(name);
+            try {
+            	trigger.endEntity(name);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (lexicalHandler != null)
+        	lexicalHandler.endEntity(name);
     }
 
     @Override
     public void startCDATA() throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.startCDATA();
+            try {
+            	trigger.startCDATA();
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (lexicalHandler != null)
+        	lexicalHandler.startCDATA();
     }
 
     @Override
     public void endCDATA() throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.endCDATA();
+            try {
+            	trigger.endCDATA();
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (lexicalHandler != null)
+        	lexicalHandler.endCDATA();
     }
 
     @Override
     public void comment(char[] ch, int start, int length) throws SAXException {
         for(final DocumentTrigger trigger : getTriggers()) {
-            trigger.comment(ch, start, length);
+            try {
+            	trigger.comment(ch, start, length);
+			} catch (TriggerException e) { log(e); }
         }
+
+        if (lexicalHandler != null)
+        	lexicalHandler.comment(ch, start, length);
     }
     
     @Override
     public void setDocumentLocator(Locator locator) {
-        try {
-            for(final DocumentTrigger trigger : getTriggers()) {
-                trigger.setDocumentLocator(locator);
-            }
-        } catch(final TriggerException te) {
-            LOG.error(te.getMessage(), te);
+        for(final DocumentTrigger trigger : getTriggers()) {
+            trigger.setDocumentLocator(locator);
         }
+
+        if (outputHandler != null)
+        	outputHandler.setDocumentLocator(locator);
     }
     
     private boolean validating = true;
@@ -281,12 +360,8 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
     @Override
     public void setValidating(boolean validating) {
         this.validating = validating;
-        try {
-            for(final DocumentTrigger trigger : getTriggers()) {
-                trigger.setValidating(validating);
-            }
-        } catch(final TriggerException te) {
-            LOG.error(te.getMessage(), te);
+        for(final DocumentTrigger trigger : getTriggers()) {
+            trigger.setValidating(validating);
         }
     }
 
@@ -299,20 +374,7 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
             
     @Override
     public void setOutputHandler(ContentHandler outputHandler) {
-
         this.outputHandler = outputHandler;
-    	
-//        ContentHandler prevOutputHandler = outputHandler;
-//        
-//        try {
-//            for(final DocumentTrigger trigger : getTriggers()) {
-//                prevOutputHandler = new ContentHandlerWrapper(prevOutputHandler, trigger);
-//            }
-//        } catch(final TriggerException te) {
-//            LOG.error(te.getMessage(), te);
-//        }
-//        
-//        this.outputHandler = prevOutputHandler;
     }
     
     private LexicalHandler lexicalHandler;
@@ -325,30 +387,16 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
     @Override
     public void setLexicalOutputHandler(LexicalHandler lexicalHandler) {
         this.lexicalHandler = lexicalHandler;
-
-//        LexicalHandler prevLexicalHandler = lexicalHandler;
-//        
-//        try {
-//            for(final DocumentTrigger trigger : getTriggers()) {
-//                prevLexicalHandler = new LexicalHandlerWrapper(prevLexicalHandler, trigger);
-//            }
-//        } catch(final TriggerException te) {
-//            LOG.error(te.getMessage(), te);
-//        }
-//        
-//        this.lexicalHandler = prevLexicalHandler;
     }
 
-    //TODO check this 
-    /*** these should defer to the Handler methods invoked above ***/
     @Override
     public ContentHandler getInputHandler() {
-        return this.outputHandler;
+        return outputHandler;
     }
     
     @Override
     public LexicalHandler getLexicalInputHandler() {
-        return this.lexicalHandler;
+        return lexicalHandler;
     }
 
 	@Override
@@ -359,9 +407,11 @@ public class DocumentTriggersVisitor extends AbstractTriggersVisitor<DocumentTri
 	}
 
 	@Override
-	public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+	public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) {
         for(final DocumentTrigger trigger : getTriggers()) {
-        	trigger.afterUpdateDocumentMetadata(broker, txn, document);
+        	try {
+        		trigger.afterUpdateDocumentMetadata(broker, txn, document);
+			} catch (TriggerException e) { log(e); }
         }
 	}
 }

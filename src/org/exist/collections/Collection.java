@@ -1629,7 +1629,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             final List<DocumentTrigger> triggers = new ArrayList<DocumentTrigger>();
             
             DocumentTriggersVisitor trigger = new DocumentTriggersVisitor(broker, null) {
-            	protected List<DocumentTrigger> getTriggers() throws TriggerException {
+            	protected List<DocumentTrigger> getTriggers() {
             		return triggers;
             	}
             };

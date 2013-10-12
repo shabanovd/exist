@@ -43,14 +43,6 @@ public class AnotherTrigger extends FilteringTrigger implements DocumentTrigger 
         super.configure(broker, parent, parameters);
     }
 
-    @Deprecated
-    public void prepare(int event, DBBroker broker, Txn transaction, XmldbURI documentPath, DocumentImpl existingDocument) throws TriggerException {
-    }
-
-    @Deprecated
-	public void finish(int event, DBBroker broker, Txn transaction, XmldbURI documentPath, DocumentImpl document) {
-	}
-	
 	@Override
 	public void beforeCreateDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
 		createDocumentEvents |= 1;

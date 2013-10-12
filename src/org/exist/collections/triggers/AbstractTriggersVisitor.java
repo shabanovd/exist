@@ -38,13 +38,14 @@ public abstract class AbstractTriggersVisitor<T extends Trigger, P extends Abstr
         this.proxies = proxies;
     }
     
+    public void init() throws TriggerException {
+        triggers = proxies.instantiateTriggers(broker);
+    }
+    
     /**
      * lazy instantiated
      */
-    protected List<T> getTriggers() throws TriggerException {
-        if(triggers == null) {
-            triggers = proxies.instantiateTriggers(broker);
-        }
+    protected List<T> getTriggers() {
         return triggers;
     }
 }

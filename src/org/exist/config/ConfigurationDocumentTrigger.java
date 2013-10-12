@@ -50,52 +50,46 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public class ConfigurationDocumentTrigger extends FilteringTrigger {
 
-        protected Logger LOG = Logger.getLogger(getClass());
+    protected final static Logger LOG = Logger.getLogger(ConfigurationDocumentTrigger.class);
 
-    @Override
-    public void prepare(int event, DBBroker broker, Txn transaction,
-            XmldbURI documentPath, DocumentImpl existingDocument) throws TriggerException {
-        //Nothing to do
-    }
-
-    @Override
-    public void finish(int event, DBBroker broker, Txn transaction,
-            XmldbURI documentPath, DocumentImpl document) {
-        Configuration conf;
-        switch (event) {
-        case REMOVE_DOCUMENT_EVENT:
-            conf = Configurator.getConfigurtion(broker.getBrokerPool(), documentPath);
-            if (conf != null) {
-                Configurator.unregister(conf);
-                //XXX: inform object that configuration was deleted
-            }
-            break;
-        default:
-            conf = Configurator.getConfigurtion(broker.getBrokerPool(), documentPath);
-            if (conf != null) {
-                conf.checkForUpdates((ElementAtExist) document.getDocumentElement());
-            }
-            if (documentPath.toString().equals(ConverterFrom1_0.LEGACY_USERS_DOCUMENT_PATH)) {
-//            	Subject currectSubject = broker.getSubject();
-                try {
-                	final SecurityManager sm = broker.getBrokerPool().getSecurityManager();
-//                	broker.setSubject(sm.getSystemSubject());
-
-                    ConverterFrom1_0.convert(sm, document);
-                    
-                } catch (final PermissionDeniedException pde) {
-                    LOG.error(pde.getMessage(), pde);
-                    //TODO : raise exception ? -pb
-                } catch (final EXistException ee) {
-                    LOG.error(ee.getMessage(), ee);
-                    //TODO : raise exception ? -pb
-//                } finally {
-//                	broker.setSubject(currectSubject);
-                }
-            }
-            break;
-        }
-    }
+//    @Override
+//    public void finish(int event, DBBroker broker, Txn transaction,
+//            XmldbURI documentPath, DocumentImpl document) {
+//        Configuration conf;
+//        switch (event) {
+//        case REMOVE_DOCUMENT_EVENT:
+//            conf = Configurator.getConfigurtion(broker.getBrokerPool(), documentPath);
+//            if (conf != null) {
+//                Configurator.unregister(conf);
+//                //XXX: inform object that configuration was deleted
+//            }
+//            break;
+//        default:
+//            conf = Configurator.getConfigurtion(broker.getBrokerPool(), documentPath);
+//            if (conf != null) {
+//                conf.checkForUpdates((ElementAtExist) document.getDocumentElement());
+//            }
+//            if (documentPath.toString().equals(ConverterFrom1_0.LEGACY_USERS_DOCUMENT_PATH)) {
+////            	Subject currectSubject = broker.getSubject();
+//                try {
+//                	final SecurityManager sm = broker.getBrokerPool().getSecurityManager();
+////                	broker.setSubject(sm.getSystemSubject());
+//
+//                    ConverterFrom1_0.convert(sm, document);
+//                    
+//                } catch (final PermissionDeniedException pde) {
+//                    LOG.error(pde.getMessage(), pde);
+//                    //TODO : raise exception ? -pb
+//                } catch (final EXistException ee) {
+//                    LOG.error(ee.getMessage(), ee);
+//                    //TODO : raise exception ? -pb
+////                } finally {
+////                	broker.setSubject(currectSubject);
+//                }
+//            }
+//            break;
+//        }
+//    }
 
     private void checkForUpdates(DBBroker broker, XmldbURI uri, DocumentImpl document) {
         final Configuration conf = Configurator.getConfigurtion(broker.getBrokerPool(), uri);
@@ -119,19 +113,15 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
 //            } finally {
 //            	broker.setSubject(currectSubject);
             }
-            
         }
     }
 
     @Override
-    public void beforeCreateDocument(DBBroker broker, 
-        Txn transaction, XmldbURI uri) throws TriggerException {
-        //Nothing to do
+    public void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
     }
 
     @Override
-    public void afterCreateDocument(DBBroker broker, Txn transaction,
-            DocumentImpl document) throws TriggerException {
+    public void afterCreateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
         //check saving list
         if (Configurator.saving.contains(Configurator.getFullURI(broker.getBrokerPool(), document.getURI()) ))
             {return;}
@@ -150,8 +140,7 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
     }
 
     @Override
-    public void beforeUpdateDocument(DBBroker broker, Txn transaction,
-            DocumentImpl document) throws TriggerException {
+    public void beforeUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
         //check saving list
         if (Configurator.saving.contains(Configurator.getFullURI(broker.getBrokerPool(), document.getURI()) ))
             {return;}
@@ -169,8 +158,7 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
     }
 
     @Override
-    public void afterUpdateDocument(DBBroker broker, Txn transaction,
-            DocumentImpl document) throws TriggerException {
+    public void afterUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
         //check saving list
         if (Configurator.saving.contains(Configurator.getFullURI(broker.getBrokerPool(), document.getURI()) ))
             {return;}
@@ -189,26 +177,20 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
     }
 
     @Override
-    public void beforeCopyDocument(DBBroker broker, Txn transaction,
-            DocumentImpl document, XmldbURI newUri) throws TriggerException {
-        //Nothing to do
+    public void beforeCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException {
     }
 
     @Override
-    public void afterCopyDocument(DBBroker broker, Txn transaction,
-            DocumentImpl document, XmldbURI oldUri) throws TriggerException {
+    public void afterCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException {
         checkForUpdates(broker, document.getURI(), document);
     }
 
     @Override
-    public void beforeMoveDocument(DBBroker broker, Txn transaction,
-            DocumentImpl document, XmldbURI newUri) throws TriggerException {
-        //Nothing to do
+    public void beforeMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException {
     }
 
     @Override
-    public void afterMoveDocument(DBBroker broker, Txn transaction,
-            DocumentImpl document, XmldbURI oldUri) throws TriggerException {
+    public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException {
         checkForUpdates(broker, document.getURI(), document);
     }
 
@@ -219,8 +201,7 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
     }
 
     @Override
-    public void afterDeleteDocument(DBBroker broker, Txn transaction,
-            XmldbURI uri) throws TriggerException {
+    public void afterDeleteDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
         final Configuration conf = Configurator.getConfigurtion(broker.getBrokerPool(), uri);
         if (conf != null) {
             Configurator.unregister(conf);
@@ -250,8 +231,8 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
         }
 
     @Override
-    public void startElement(String namespaceURI, String localName,
-            String qname, Attributes attributes) throws SAXException {
+    public void startElement(String namespaceURI, String localName, String qname, Attributes attributes) throws SAXException {
+    	
         final boolean aclPermissionInUse = 
             PermissionFactory.getDefaultResourcePermission() instanceof ACLPermission;
         //map unix style user and group ids to acl style
@@ -267,8 +248,8 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
         }
     }
 
-    private Attributes modifyUserGroupIdAttribute(final Attributes attrs,
-            final Map<Integer, Integer> idMappings) {
+    private Attributes modifyUserGroupIdAttribute(final Attributes attrs, final Map<Integer, Integer> idMappings) {
+    	
         final String strId = attrs.getValue("id");
         if (strId != null) {
             Integer id = Integer.parseInt(strId);
@@ -286,25 +267,14 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
     }
 
 	@Override
-	public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn,
-			DocumentImpl document) {
-		// TODO Auto-generated method stub
-		
+	public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) {
 	}
 
 	@Override
-	public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn,
-			DocumentImpl document) {
-		// TODO Auto-generated method stub
-		
+	public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) {
 	}
 
 	@Override
-	public void configure(DBBroker broker, Collection parent,
-			Map<String, List<? extends Object>> parameters)
-			throws TriggerException {
-		// TODO Auto-generated method stub
-		
+	public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
 	}
-
 }
