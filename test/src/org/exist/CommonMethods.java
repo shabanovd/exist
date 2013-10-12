@@ -58,7 +58,11 @@ public abstract class CommonMethods {
     }
 
     protected static void stopDB() {
-        BrokerPool.stopAll(false);
+    	try {
+    		BrokerPool.stopAll(false);
+        } catch (Exception e) {            
+            fail(e.getMessage());
+        }
     }
     
     @AfterClass

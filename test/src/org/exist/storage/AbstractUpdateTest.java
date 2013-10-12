@@ -21,8 +21,9 @@
  */
 package org.exist.storage;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.*;
 
+import org.exist.CommonMethods;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DocumentImpl;
@@ -31,30 +32,32 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.util.Configuration;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
+import org.junit.Test;
 
-public abstract class AbstractUpdateTest extends TestCase {
+public abstract class AbstractUpdateTest extends CommonMethods {
 
 	protected static XmldbURI TEST_COLLECTION_URI = XmldbURI.ROOT_COLLECTION_URI.append("test");
     protected static String TEST_XML = 
         "<?xml version=\"1.0\"?>" +
         "<products/>";
 
+    @Test
     public void testRead() {        
     	BrokerPool.FORCE_CORRUPTION = false;         
         
-        BrokerPool pool = null;
+        BrokerPool pool = startDB();
+        assertNotNull(pool);
+
         DBBroker broker = null;
         try {
         	System.out.println("testRead() ...\n");  
         	
-        	pool = startDB();
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             Serializer serializer = broker.getSerializer();
             serializer.reset();
@@ -78,7 +81,7 @@ public abstract class AbstractUpdateTest extends TestCase {
         } catch (Exception e) {            
             fail(e.getMessage());
         } finally {
-            if (pool != null) pool.release(broker);
+            pool.release(broker);
         }
     }
 
@@ -109,23 +112,4 @@ public abstract class AbstractUpdateTest extends TestCase {
 	    }  
 	    return info;
     }
-    
-    protected BrokerPool startDB() {
-        try {
-            Configuration config = new Configuration();
-            BrokerPool.configure(1, 5, config);
-            return BrokerPool.getInstance();
-        } catch (Exception e) {
-            fail(e.getMessage());
-        }
-        return null;
-    }
-
-    protected void tearDown() {
-    	try {
-    		BrokerPool.stopAll(false);
-        } catch (Exception e) {            
-            fail(e.getMessage());
-        }
-    }    
 }

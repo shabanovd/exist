@@ -21,14 +21,14 @@
  */
 package org.exist.storage;
 
+import static org.junit.Assert.*;
+
 import java.io.InputStream;
 import java.io.File;
 import java.io.StringWriter;
 import java.io.Writer;
 
-import junit.framework.TestCase;
-import junit.textui.TestRunner;
-
+import org.exist.CommonMethods;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.BinaryDocument;
@@ -40,13 +40,13 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
-import org.exist.util.Configuration;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
+import org.junit.Test;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -56,11 +56,7 @@ import org.xml.sax.SAXException;
  * @author wolf
  *
  */
-public class RecoveryTest extends TestCase {
-    
-    public static void main(String[] args) {
-        TestRunner.run(RecoveryTest.class);
-    }
+public class RecoveryTest extends CommonMethods {
     
     private static String directory = "samples/shakespeare";
     
@@ -78,13 +74,22 @@ public class RecoveryTest extends TestCase {
         "  <para>Hello World!</para>" +
         "</test>";
     
-    public void testStore() {
+    @Test
+	public void test() throws Exception {
+		testStore();
+		stopDB();
+		
+		testRead();
+	}
+    
+    private void testStore() {
         BrokerPool.FORCE_CORRUPTION = true;
-        BrokerPool pool = null;        
+
+        BrokerPool pool = startDB();
+    	assertNotNull(pool);
+        
         DBBroker broker = null;
         try {
-        	pool = startDB();
-        	assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);            
             TransactionManager transact = pool.getTransactionManager();
@@ -167,21 +172,23 @@ public class RecoveryTest extends TestCase {
 	        fail(e.getMessage());
 	        e.printStackTrace();
         } finally {
-        	if (pool != null) pool.release(broker);
+        	pool.release(broker);
         }
     }
     
-    public void testRead() {
-        BrokerPool.FORCE_CORRUPTION = false;
-        BrokerPool pool = null;
-        DBBroker broker = null;           
+    private void testRead() {
+    	System.out.println("testRead() ...\n");
+
+    	BrokerPool.FORCE_CORRUPTION = false;
+        
+        BrokerPool pool = startDB();
+    	assertNotNull(pool);
+
+    	DBBroker broker = null;           
         TransactionManager transact = null;
         Txn transaction = null;
         
         try {
-        	System.out.println("testRead() ...\n");
-        	pool = startDB();
-        	assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             Serializer serializer = broker.getSerializer();
             serializer.reset();
@@ -246,28 +253,13 @@ public class RecoveryTest extends TestCase {
             transact.commit(transaction);
             System.out.println("Transaction commited ...");
 	    } catch (Exception e) {         
-               if (transact!=null) {
-	    	transact.abort(transaction);
-               }
-	        fail(e.getMessage());
+			if (transact != null) {
+				transact.abort(transaction);
+			}
 	        e.printStackTrace();
+	        fail(e.getMessage());
         } finally {
-        	if (pool != null) pool.release(broker);
+        	pool.release(broker);
         }
-    }
-    
-    protected BrokerPool startDB() {
-        try {
-            Configuration config = new Configuration();
-            BrokerPool.configure(1, 5, config);
-            return BrokerPool.getInstance();
-        } catch (Exception e) {            
-            fail(e.getMessage());
-        }
-        return null;
-    }
-
-    protected void tearDown() {
-        BrokerPool.stopAll(false);
     }
 }

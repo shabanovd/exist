@@ -58,16 +58,16 @@ public class RecoverBinaryTest2 extends CommonMethods {
 		stopDB();
 
 		testRead2();
-		stopDB();
 	}
     
     public void testStore() {
         BrokerPool.FORCE_CORRUPTION = true;
-        BrokerPool pool = null;        
+        
+        BrokerPool pool = startDB();        
+        assertNotNull(pool);
+
         DBBroker broker = null;
         try {
-            pool = startDB();
-            assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);            
             TransactionManager transact = pool.getTransactionManager();
@@ -96,13 +96,14 @@ public class RecoverBinaryTest2 extends CommonMethods {
     }
     
     public void testRead() {
+        System.out.println("testRead2() ...\n");
+
         BrokerPool.FORCE_CORRUPTION = false;
-        BrokerPool pool = null;
+        BrokerPool pool = startDB();
+        assertNotNull(pool);        
+        
         DBBroker broker = null;
         try {
-            System.out.println("testRead2() ...\n");
-            pool = startDB();
-            assertNotNull(pool);        
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
 

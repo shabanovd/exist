@@ -21,7 +21,8 @@
  */
 package org.exist.storage;
 
-import junit.textui.TestRunner;
+import static org.junit.Assert.*;
+
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.MutableDocumentSet;
@@ -31,23 +32,22 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.xupdate.Modification;
 import org.exist.xupdate.XUpdateProcessor;
+import org.junit.Test;
 import org.xml.sax.InputSource;
 
 import java.io.StringReader;
 
 public class RenameTest extends AbstractUpdateTest {
 
-    public static void main(String[] args) {
-        TestRunner.run(RenameTest.class);
-    }
-    
+    @Test
     public void testUpdate() {
         BrokerPool.FORCE_CORRUPTION = true;
-        BrokerPool pool = null;        
+
+        BrokerPool pool = startDB();
+    	assertNotNull(pool);
+        
         DBBroker broker = null;
         try {
-        	pool = startDB();
-        	assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);            
             TransactionManager mgr = pool.getTransactionManager();
