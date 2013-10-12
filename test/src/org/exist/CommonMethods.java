@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 
 import org.exist.storage.BrokerPool;
 import org.exist.util.Configuration;
+import org.junit.AfterClass;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
 
@@ -58,5 +59,10 @@ public abstract class CommonMethods {
 
     protected static void stopDB() {
         BrokerPool.stopAll(false);
+    }
+    
+    @AfterClass
+    public static void afterTests() {
+    	stopDB();
     }
 }

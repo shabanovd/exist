@@ -52,8 +52,13 @@ public class RecoverBinaryTest2 extends CommonMethods {
     @Test
 	public void test() throws Exception {
 		testStore();
+		stopDB();
+		
 		testRead();
+		stopDB();
+
 		testRead2();
+		stopDB();
 	}
     
     public void testStore() {

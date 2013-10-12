@@ -36,8 +36,6 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -50,7 +48,11 @@ public class RecoverBinaryTest extends CommonMethods {
 
     @Test
 	public void test() throws Exception {
+    	start();
 		testStore();
+		stop();
+		
+		start();
 		testLoad();
 	}
     
@@ -125,13 +127,12 @@ public class RecoverBinaryTest extends CommonMethods {
         }
     }
     
-    @BeforeClass
-    public static void startUp() {
+    public void start() {
     	pool = startDB();
     }
 
-    @AfterClass
-    public static void tearDown() {
+    public void stop() {
     	stopDB();
+    	pool = null;
     }
 }
