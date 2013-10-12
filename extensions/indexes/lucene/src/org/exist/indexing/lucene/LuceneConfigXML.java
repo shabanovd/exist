@@ -38,6 +38,12 @@ public class LuceneConfigXML {
     protected static LuceneConfig parseConfig(NodeList configNodes, Map<String, String> namespaces) throws DatabaseConfigurationException {
         LuceneConfig conf = new LuceneConfig();
         
+        parseConfig(conf, configNodes, namespaces);
+        
+        return conf;
+    }
+
+    private static LuceneConfig parseConfig(LuceneConfig conf, NodeList configNodes, Map<String, String> namespaces) throws DatabaseConfigurationException {
     	Node node;
         for(int i = 0; i < configNodes.getLength(); i++) {
             node = configNodes.item(i);
@@ -60,7 +66,7 @@ public class LuceneConfigXML {
                             	conf.analyzers.setDefaultAnalyzer(new NoDiacriticsStandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE));
                             }
                         }
-					    parseConfig(node.getChildNodes(), namespaces);
+					    parseConfig(conf, node.getChildNodes(), namespaces);
                         
 					} else if (ANALYZER_ELEMENT.equals(node.getLocalName())) {
 						conf.analyzers.addAnalyzer((Element) node);

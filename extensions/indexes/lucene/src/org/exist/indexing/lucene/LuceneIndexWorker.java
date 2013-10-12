@@ -139,11 +139,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     
     private final TimeZone GMT = TimeZone.getTimeZone("GMT+0:00");
     
-    @Deprecated //use LuceneUtil.FIELD_DOC_ID
-    public static final String FIELD_DOC_ID = "docId";
-    @Deprecated //use LuceneUtil.FIELD_DOC_URI
-    public static final String FIELD_DOC_URI = "docUri";
-
     private final byte[] buf = new byte[1024];
 
     public LuceneIndexWorker(LuceneIndex parent, DBBroker broker) {
