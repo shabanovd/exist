@@ -51,7 +51,9 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-public class FacetAbstractTest {
+import static org.exist.collections.CollectionConfigurationManager.ROOT_COLLECTION_CONFIG_URI;
+
+public class FacetAbstract {
 
     protected static BrokerPool db;
     protected static Collection root;
@@ -161,8 +163,7 @@ public class FacetAbstractTest {
             transaction = transact.beginTransaction();
             assertNotNull(transaction);
 
-            Collection collConfig = broker.getOrCreateCollection(transaction,
-                XmldbURI.create(XmldbURI.CONFIG_COLLECTION + "/db"));
+            Collection collConfig = broker.getOrCreateCollection(transaction, ROOT_COLLECTION_CONFIG_URI);
             assertNotNull(collConfig);
             broker.removeCollection(transaction, collConfig);
 

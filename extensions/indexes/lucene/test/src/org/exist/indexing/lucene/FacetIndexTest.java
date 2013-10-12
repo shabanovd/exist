@@ -48,7 +48,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.Version;
 import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
@@ -58,7 +57,7 @@ import org.exist.storage.DBBroker;
 import org.exist.xmldb.XmldbURI;
 import org.junit.Test;
 
-public class FacetIndexTest extends FacetAbstractTest {
+public class FacetIndexTest extends FacetAbstract {
 	
 	private final static String CREATED = "created";
 	private final static String STATUS = "status";
@@ -82,8 +81,6 @@ public class FacetIndexTest extends FacetAbstractTest {
     private static String COLLECTION_CONFIG5 =
             "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
             "   <index xmlns:tei=\"http://www.tei-c.org/ns/1.0\">" +
-            "       <fulltext default=\"none\" attributes=\"no\">" +
-            "       </fulltext>" +
             "       <lucene>" +
             "           <text qname=\"article\">" +
             "               <ignore qname=\"note\"/>" +
@@ -103,8 +100,6 @@ public class FacetIndexTest extends FacetAbstractTest {
     private static String COLLECTION_CONFIG6 =
             "<collection xmlns='http://exist-db.org/collection-config/1.0'>" +
             "   <index xmlns:tei='http://www.tei-c.org/ns/1.0'>" +
-            "       <fulltext default='none' attributes='no'>" +
-            "       </fulltext>" +
             "       <lucene>" +
             "           <text qname='article'>" +
             "               <ignore qname='note'/>" +
@@ -193,19 +188,10 @@ public class FacetIndexTest extends FacetAbstractTest {
             broker = db.get(db.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
 
-//            checkIndex(docs, broker, new QName[] { new QName("head", "") }, "title", 2);
-//            checkIndex(docs, broker, new QName[] { new QName("p", "") }, "simple", 2);
-//            checkIndex(docs, broker, new QName[] { new QName("p", "") }, "mixed", 2);
-//            checkIndex(docs, broker, new QName[] { new QName("p", "") }, "dangerous", 2);
-//            checkIndex(docs, broker, new QName[] { new QName("p", "") }, "note", 0);
-//            checkIndex(docs, broker, new QName[] { new QName("p", "") }, "ignore", 0);
-//            checkIndex(docs, broker, new QName[] { new QName("p", "") }, "warnings", 2);
-            
             final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
             
             FacetSearchParams fsp = new FacetSearchParams(
                 new CountFacetRequest(new CategoryPath(STATUS), 10)
-//                new CountFacetRequest(new CategoryPath("Author"), 10)
             );
             
             Counter<DocumentImpl> cb = new Counter<DocumentImpl>();
@@ -526,7 +512,6 @@ public class FacetIndexTest extends FacetAbstractTest {
     @Test
     public void testsPossibleNPE() {
         System.out.println("Test NPE ...");
-        
         
         configureAndStore(COLLECTION_CONFIG5, 
                 new Resource[] {

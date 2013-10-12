@@ -59,7 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public class FacetMatchListenerTest extends FacetAbstractTest {
+public class FacetMatchListenerTest extends FacetAbstract {
 
     private static String XML =
             "<root>" +
