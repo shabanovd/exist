@@ -59,6 +59,8 @@ public abstract class MetaData implements MetaStorage {
 	public abstract Meta getMeta(String uuid);
 
 	//low level
+	public abstract Metas addMetas(XmldbURI url);
+	
 	protected abstract Meta _addMeta(Metas metas, String uuid, String key, String value);
 	protected abstract Metas _addMetas(String uri, String uuid);
 	protected abstract Metas replaceMetas(XmldbURI uri, String uuid);

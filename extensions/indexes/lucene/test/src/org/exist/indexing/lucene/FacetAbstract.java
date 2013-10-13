@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 
 import org.apache.lucene.index.AtomicReader;
 import org.exist.Indexer;
+import org.exist.TestUtils;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.IndexInfo;
@@ -81,22 +82,25 @@ public class FacetAbstract {
             }
             
             for (Resource resource : resources) {
+            	
+            	XmldbURI docURL = root.getURI().append(resource.docName);
+            	
+                Metas docMD = md.getMetas(docURL);
+                if (docMD == null) {
+                    docMD = md.addMetas(docURL);
+                }
+                assertNotNull(docMD);
+                
+                for (Entry<String, String> entry : resource.metas.entrySet()) {
+                    docMD.put(entry.getKey(), entry.getValue());
+                }
+            	
                 IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create(resource.docName), resource.data);
                 assertNotNull(info);
     
-                if (docs != null) {
-                    Metas docMD = md.getMetas(info.getDocument());
-                    if (docMD == null) {
-                        docMD = md.addMetas(info.getDocument());
-                    }
-                    assertNotNull(docMD);
-                    
-                    for (Entry<String, String> entry : resource.metas.entrySet()) {
-                        docMD.put(entry.getKey(), entry.getValue());
-                    }
-                }
-                
                 root.store(transaction, broker, info, resource.data, false);
+                
+//                broker.reindexXMLResource(transaction, info.getDocument());
     
                 docs.add(info.getDocument());
             }
@@ -203,7 +207,7 @@ public class FacetAbstract {
 
     @AfterClass
     public static void stopDB() {
-//        TestUtils.cleanupDB();
+        TestUtils.cleanupDB();
         BrokerPool.stopAll(false);
         db = null;
         root = null;

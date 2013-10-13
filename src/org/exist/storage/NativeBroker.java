@@ -2950,7 +2950,7 @@ public class NativeBroker extends DBBroker {
     }
 
     public void reindexXMLResource(Txn transaction, DocumentImpl doc) {
-    	reindexXMLResource(transaction, doc, NodeProcessor.MODE_STORE);
+    	reindexXMLResource(transaction, doc, NodeProcessor.MODE_REPAIR);
     }
     
     /**
@@ -2958,7 +2958,7 @@ public class NativeBroker extends DBBroker {
      * descendant nodes of the passed node, or all nodes below some level of
      * the document if node is null.
      */
-    private void reindexXMLResource(Txn transaction, DocumentImpl doc, int mode) {
+    private void reindexXMLResource(Txn txn, DocumentImpl doc, int mode) {
         if(doc.isCollectionConfig())
             {doc.getCollection().setCollectionConfigEnabled(false);}
         indexController.setDocument(doc, StreamListener.STORE);
@@ -2968,7 +2968,7 @@ public class NativeBroker extends DBBroker {
             final StoredNode node = (StoredNode) nodes.item(i);
             final Iterator<StoredNode> iterator = getNodeIterator(node);
             iterator.next();
-            scanNodes(transaction, iterator, node, new NodePath(), mode, listener);
+            scanNodes(txn, iterator, node, new NodePath(), mode, listener);
         }
         flush();
         if(doc.isCollectionConfig())
@@ -2976,7 +2976,7 @@ public class NativeBroker extends DBBroker {
     }
 
     @Override
-    public void defragXMLResource(final Txn transaction, final DocumentImpl doc) {
+    public void defragXMLResource(final Txn txn, final DocumentImpl doc) {
         //TODO : use dedicated function in XmldbURI
         LOG.debug("============> Defragmenting document " + 
             doc.getCollection().getURI() + "/" + doc.getFileURI());
@@ -2984,7 +2984,7 @@ public class NativeBroker extends DBBroker {
         try {
             final long firstChild = doc.getFirstChildAddress();
             // dropping old structure index
-            dropIndex(transaction, doc);
+            dropIndex(txn, doc);
             // dropping dom index
             final NodeRef ref = new NodeRef(doc.getDocId());
             final IndexQuery idx = new IndexQuery(IndexQuery.TRUNC_RIGHT, ref);
@@ -2992,7 +2992,7 @@ public class NativeBroker extends DBBroker {
                 @Override
                 public Object start() {
                     try {
-                        domDb.remove(transaction, idx, null);
+                        domDb.remove(txn, idx, null);
                         domDb.flush();
                     } catch (final BTreeException e) {
                         LOG.warn("start() - " + "error while removing doc", e);
@@ -3018,14 +3018,14 @@ public class NativeBroker extends DBBroker {
                 final StoredNode node = (StoredNode) nodes.item(i);
                 final Iterator<StoredNode> iterator = getNodeIterator(node);
                 iterator.next();
-                copyNodes(transaction, iterator, node, new NodePath(), tempDoc, true, true, listener);
+                copyNodes(txn, iterator, node, new NodePath(), tempDoc, true, true, listener);
             }
             flush();
             // remove the old nodes
             new DOMTransaction(this, domDb, Lock.WRITE_LOCK) {
                 @Override
                 public Object start() {
-                    domDb.removeAll(transaction, firstChild);
+                    domDb.removeAll(txn, firstChild);
                     try {
                         domDb.flush();
                     } catch (final DBException e) {
@@ -3037,7 +3037,7 @@ public class NativeBroker extends DBBroker {
             doc.copyChildren(tempDoc);
             doc.getMetadata().setSplitCount(0);
             doc.getMetadata().setPageCount(tempDoc.getMetadata().getPageCount());
-            storeXMLResource(transaction, doc);
+            storeXMLResource(txn, doc);
             closeDocument();
             LOG.debug("Defragmentation took " + (System.currentTimeMillis() - start) + "ms.");
         } catch (final ReadOnlyException e) {

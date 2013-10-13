@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Observable;
+
 import org.exist.collections.Collection.SubCollectionEntry;
 
 /**
@@ -470,8 +471,9 @@ public abstract class DBBroker extends Observable {
      * public abstract void reindexCollection(String collectionName) throws
      * PermissionDeniedException;
      */
-    public abstract void reindexCollection(XmldbURI collectionName)
-        throws PermissionDeniedException;
+    public abstract void reindexCollection(XmldbURI collectionName) throws PermissionDeniedException;
+    
+    public abstract void reindexXMLResource(Txn txn, DocumentImpl doc);
 
     public abstract void repair() throws PermissionDeniedException;
 

@@ -54,7 +54,7 @@ public class MetasImpl implements Metas {
 	private MetasImpl() {}
 
 	protected MetasImpl(DocumentAtExist doc) {
-		update(doc);
+		setURL(doc.getURI().toString());
 		
 		if (doc.getUUID() == null)
 			uuid = (new UUID()).toString();
@@ -63,7 +63,7 @@ public class MetasImpl implements Metas {
 	}
 	
 	protected MetasImpl(Collection col) {
-		update(col);
+		setURL(col.getURI().toString());
 		uuid = (new UUID()).toString();
 	}
 
@@ -108,12 +108,8 @@ public class MetasImpl implements Metas {
         MetaDataImpl._.delMeta(uuid, key);
     }
 
-    protected void update(DocumentAtExist doc) {
-		uri = doc.getURI().toString();
-	}
-	
-	protected void update(Collection col) {
-		uri = col.getURI().toString();
+    protected void setURL(String url) {
+		this.uri = url;
 	}
 
 	public List<Meta> metas() {

@@ -153,6 +153,16 @@ public class MetaDataImpl extends MetaData {
 				db.release(broker);
 		}
 	}
+	
+    public Metas addMetas(XmldbURI url) {
+		MetasImpl d = new MetasImpl(url);
+		docByUUID.put(d);
+		
+		if (LOG.isDebugEnabled())
+			LOG.debug("addMetas "+d.getUUID()+" "+url);
+
+		return d;
+	}
 
 	private Metas _addMetas(DocumentAtExist doc) {
 		MetasImpl d = new MetasImpl(doc);

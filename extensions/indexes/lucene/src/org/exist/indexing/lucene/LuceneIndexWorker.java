@@ -192,11 +192,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         
         indexed = false;
         
-        metas = new ArrayList<Field>();
-        paths = new ArrayList<CategoryPath>();
-        
-        collectMetas(metas, paths);
-        
         //config = null;
         contentStack = null;
         IndexSpec indexConf = document.getCollection().getIndexConfiguration(broker);
@@ -208,6 +203,11 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             	config = new LuceneConfig(config);
         }
         setMode(newMode);
+
+        metas = new ArrayList<Field>();
+        paths = new ArrayList<CategoryPath>();
+        
+        collectMetas(metas, paths);
     }
 
     public void setMode(int mode) {
