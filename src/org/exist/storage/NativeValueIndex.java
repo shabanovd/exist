@@ -24,10 +24,8 @@ package org.exist.storage;
 //import java.io.EOFException;
 
 import org.apache.log4j.Logger;
-
 import org.exist.xquery.XQueryWatchDog;
 import org.w3c.dom.Node;
-
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.dom.*;
@@ -65,9 +63,7 @@ import org.exist.xquery.value.Type;
 
 import java.io.File;
 import java.io.IOException;
-
 import java.text.Collator;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -1775,6 +1771,11 @@ public class NativeValueIndex implements ContentLoadingObserver {
             } else {
                 return( cmp );
             }
+        }
+        
+        @Override
+        public String toString() {
+        	return "QNameKey '"+qname+"' = '"+value+"'";
         }
     }
 

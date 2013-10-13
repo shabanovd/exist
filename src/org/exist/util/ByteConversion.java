@@ -93,13 +93,13 @@ public class ByteConversion {
      * Write an int value to the specified byte array. The first byte is written
      * into the location specified by start.
      *
-     * @deprecated this version of the method writes the lowest byte first. It will
-     * be replaced by {@link #intToByteH(int, byte[], int)} for consistency.
      * @param  v the value
      * @param  data  the byte array to write into
      * @param  start  the offset
      * @return   the byte array
      */
+//    * @deprecated this version of the method writes the lowest byte first. It will
+//    * be replaced by {@link #intToByteH(int, byte[], int)} for consistency.
     public final static byte[] intToByte( final int v, final byte[] data, final int start ) {
         data[start] = (byte) ( ( v >>> 0 ) & 0xff );
         data[start + 1] = (byte) ( ( v >>> 8 ) & 0xff );
