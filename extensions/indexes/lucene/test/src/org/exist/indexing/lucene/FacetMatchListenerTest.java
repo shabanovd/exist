@@ -79,8 +79,6 @@ public class FacetMatchListenerTest extends FacetAbstract {
     private static String CONF2 =
         "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
         "	<index>" +
-        "		<fulltext default=\"none\">" +
-        "		</fulltext>" +
         "       <text qname=\"para\"/>" +
         "       <text qname=\"term\"/>" +
         "	</index>" +

@@ -121,10 +121,13 @@ public class LuceneMatchListenerTest {
             "   </index>" +
             "</collection>";
 
+    private static String NS = "xmlns:exist=\"http://exist.sourceforge.net/NS/exist\"";
+    private static String _MATCH_START = "<exist:match>";
     private static String MATCH_START = "<exist:match xmlns:exist=\"http://exist.sourceforge.net/NS/exist\">";
     private static String MATCH_END = "</exist:match>";
     
-    private static String CUTOFF = "<exist:cutoff xmlns:exist=\"http://exist.sourceforge.net/NS/exist\"/>";
+    private static String CUTOFF = "<exist:cutoff/>";
+//    private static String CUTOFF = "<exist:cutoff xmlns:exist=\"http://exist.sourceforge.net/NS/exist\"/>";
 
     private static BrokerPool pool;
 
@@ -314,33 +317,6 @@ public class LuceneMatchListenerTest {
     }
     
     @Test
-    public void chunk1Tests() {
-        DBBroker broker = null;
-        try {
-            configureAndStore(CONF2, XML);
-
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-
-            XQuery xquery = broker.getXQueryService();
-            assertNotNull(xquery);
-
-            Sequence seq = xquery.execute("ft:facet-search('/db', 'ALL:admin*', 1000, fn:false(), (<count num='10'>__status</count>), (<sort>__status</sort>))", null, AccessContext.TEST);
-            assertNotNull(seq);
-            //assertEquals(1, seq.getItemCount());
-            
-            for (NodeProxy proxy : seq.toNodeSet()) {
-            	System.out.println(queryResult2String(broker, 5, proxy));
-            }
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail(e.getMessage());
-        } finally {
-            pool.release(broker);
-        }
-    }
-    
-    @Test
     public void chunkTests() {
         DBBroker broker = null;
         try {
@@ -357,10 +333,10 @@ public class LuceneMatchListenerTest {
             String result = queryResult2String(broker, 5, (NodeProxy)seq.itemAt(0));
             System.out.println("RESULT: " + result);
             XMLAssert.assertEquals(
-        		"<para>" 
-					+ CUTOFF + "with <hi>"
-						+ MATCH_START + "mixed" + MATCH_END
-					+ "</hi> cont" + CUTOFF
+        		"<para "+NS+">" 
+					+ CUTOFF + " with <hi>"
+						+ _MATCH_START + "mixed" + MATCH_END
+					+ "</hi> conte" + CUTOFF
 				+"</para>",
 				result);
             
