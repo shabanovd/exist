@@ -1428,7 +1428,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     } else {
                     	while (!contentStack.isEmpty()) {
                             TextExtractor extractor = contentStack.peek();
-                            if (extractor.getInitLevel() == level) {
+                            if (extractor.getInitLevel() >= level) {
                             	contentStack.pop();
                             	
                             	indexText(element.getNodeId(), element.getQName(), 
@@ -1478,9 +1478,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     	
                     	TextExtractor extractor = contentStack.isEmpty() ? null : contentStack.peek();
                     	
-                    	if (extractor == null || extractor.getInitLevel() != level) {
+                    	if (extractor == null || extractor.getInitLevel() != level - 1 ) {
                     		extractor = new DefaultTextExtractor();
-                            extractor.configure(config, configuration, level);
+                            extractor.configure(config, configuration, level - 1);
                             contentStack.push(extractor);
                     	}
                     }
