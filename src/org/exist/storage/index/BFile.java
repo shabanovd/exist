@@ -21,11 +21,9 @@
 package org.exist.storage.index;
 
 import org.apache.log4j.Logger;
-
-import org.exist.storage.BrokerPool;
+import org.exist.Database;
 import org.exist.storage.BufferStats;
 import org.exist.storage.CacheManager;
-import org.exist.storage.DefaultCacheManager;
 import org.exist.storage.NativeBroker;
 import org.exist.storage.StorageAddress;
 import org.exist.storage.btree.BTree;
@@ -56,7 +54,6 @@ import org.exist.util.ReadOnlyException;
 import org.exist.util.sanity.SanityCheck;
 import org.exist.xquery.Constants;
 import org.exist.xquery.TerminatedException;
-
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import java.io.EOFException;
@@ -66,7 +63,6 @@ import java.io.UnsupportedEncodingException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 
 /**
  * Data store for variable size values.
@@ -150,9 +146,9 @@ public class BFile extends BTree {
 
     protected int maxValueSize;
 
-    public BFile(BrokerPool pool, byte fileId, boolean transactional, File file, DefaultCacheManager cacheManager,
+    public BFile(Database db, byte fileId, boolean transactional, File file, CacheManager cacheManager,
             double cacheGrowth, double thresholdBTree, double thresholdData) throws DBException {
-        super(pool, fileId, transactional, cacheManager, file, thresholdBTree);
+        super(db, fileId, transactional, cacheManager, file, thresholdBTree);
         fileHeader = (BFileHeader) getFileHeader();
         dataCache = new LRUCache(64, cacheGrowth, thresholdData, CacheManager.DATA_CACHE);
         dataCache.setFileName(file.getName());

@@ -35,8 +35,6 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
 import org.exist.collections.Collection;
-import org.exist.collections.CollectionConfiguration;
-import org.exist.collections.CollectionConfigurationManager;
 import org.exist.dom.*;
 import org.exist.indexing.*;
 import org.exist.indexing.lucene.PlainTextHighlighter.Offset;
@@ -166,21 +164,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         config = LuceneConfigXML.parseConfig(configNodes, namespaces);
         return config;
     }
-    
-    public LuceneConfig defineConfig(Collection col) {
-
-        CollectionConfigurationManager confManager = broker.getDatabase().getConfigurationManager();
-
-        CollectionConfiguration colConf = confManager.getOrCreateCollectionConfiguration(broker.getDatabase(), col);
-        IndexSpec indexConf = colConf.getIndexConfiguration();
-        
-        LuceneConfig conf = new LuceneConfig();
-        
-        indexConf.addCustomIndexSpec(this, conf);
-        
-        return conf;
-    }
-
 
     public void flush() {
         switch (mode) {

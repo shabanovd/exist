@@ -616,8 +616,8 @@ public class FacetIndexTest extends FacetAbstract {
             broker = db.get(db.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
 
-            final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
-            
+            final LuceneIndex index = (LuceneIndex) db.getIndexManager().getIndexById(LuceneIndex.ID);
+
 //          <lucene>
 //        	<text qname="article">
 //    			<ignore qname="note"/>
@@ -631,7 +631,9 @@ public class FacetIndexTest extends FacetAbstract {
 //    		<ignore qname="note1"/>
 //    		<inline qname="s2"/>
 //    		</lucene>
-            LuceneConfig conf = worker.defineConfig(root);
+            
+            //configuring
+            LuceneConfig conf = index.defineConfig(root);
             
             LuceneConfigText text = new LuceneConfigText(conf);
             text.setPath(new QName("article"));
@@ -652,12 +654,16 @@ public class FacetIndexTest extends FacetAbstract {
             conf.addIgnoreNode(new QName("note1"));
             conf.addInlineNode(new QName("s2"));
 
+            //store
             DocumentSet docs = configureAndStore(null, 
                     new Resource[] {
                         new Resource("test1.xml", XML5, metas1),
                         new Resource("test2.xml", XML5, metas2),
                     });
 
+            //query
+            final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
+            
             FacetSearchParams fsp = new FacetSearchParams(
                 new CountFacetRequest(new CategoryPath(STATUS), 10)
             );

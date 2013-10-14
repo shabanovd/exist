@@ -22,11 +22,11 @@
 package org.exist.indexing.ngram;
 
 import org.apache.log4j.Logger;
+import org.exist.Database;
 import org.exist.backup.RawDataBackup;
 import org.exist.indexing.AbstractIndex;
 import org.exist.indexing.IndexWorker;
 import org.exist.indexing.RawBackupSupport;
-import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.btree.DBException;
 import org.exist.storage.index.BFile;
@@ -45,7 +45,7 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
 
     private final static Logger LOG = Logger.getLogger(NGramIndex.class);
 
-	protected BFile db;
+	protected BFile bf;
     private int gramSize = 3;
     private File dataFile = null;
     
@@ -58,8 +58,8 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
     }
 
     @Override
-    public void configure(BrokerPool pool, String dataDir, Element config) throws DatabaseConfigurationException {
-        super.configure(pool, dataDir, config);
+    public void configure(Database db, String dataDir, Element config) throws DatabaseConfigurationException {
+        super.configure(db, dataDir, config);
         String fileName = "ngram.dbx";
         if (config.hasAttribute("file"))
             fileName = config.getAttribute("file");
@@ -75,7 +75,7 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
     @Override
     public void open() throws DatabaseConfigurationException {
         try {
-            db = new BFile(pool, (byte) 0, false, dataFile, pool.getCacheManager(), 1.4, 0.01, 0.07);
+        	bf = new BFile(db, (byte) 0, false, dataFile, db.getCacheManager(), 1.4, 0.01, 0.07);
         } catch (DBException e) {
             throw new DatabaseConfigurationException("Failed to create index file: " + dataFile.getAbsolutePath() + ": " +
                 e.getMessage());
@@ -87,18 +87,18 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
     @Override
     public void close() throws DBException {
         LOG.debug("SYNC NGRAM");
-        db.close();
+        bf.close();
     }
 
     @Override
     public void sync() throws DBException {
         LOG.debug("SYNC NGRAM");
-        db.flush();
+        bf.flush();
     }
 
     @Override
     public void remove() throws DBException {
-        db.closeAndRemove();
+    	bf.closeAndRemove();
     }
 
     @Override
@@ -117,8 +117,8 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
     }
 
     public void backupToArchive(RawDataBackup backup) throws IOException {
-        OutputStream os = backup.newEntry(db.getFile().getName());
-        db.backupToStream(os);
+        OutputStream os = backup.newEntry(bf.getFile().getName());
+        bf.backupToStream(os);
         backup.closeEntry();
     }
 }

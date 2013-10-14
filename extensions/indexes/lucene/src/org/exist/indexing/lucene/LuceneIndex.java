@@ -11,12 +11,16 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.exist.Database;
 import org.exist.backup.RawDataBackup;
+import org.exist.collections.Collection;
+import org.exist.collections.CollectionConfiguration;
+import org.exist.collections.CollectionConfigurationManager;
 import org.exist.indexing.AbstractIndex;
 import org.exist.indexing.IndexWorker;
 import org.exist.indexing.RawBackupSupport;
-import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
+import org.exist.storage.IndexSpec;
 import org.exist.storage.btree.DBException;
 import org.exist.util.DatabaseConfigurationException;
 import org.w3c.dom.Element;
@@ -78,8 +82,8 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
     }
 
     @Override
-    public void configure(BrokerPool pool, String dataDir, Element config) throws DatabaseConfigurationException {
-        super.configure(pool, dataDir, config);
+    public void configure(Database db, String dataDir, Element config) throws DatabaseConfigurationException {
+        super.configure(db, dataDir, config);
         if (LOG.isDebugEnabled())
             LOG.debug("Configuring Lucene index");
 
@@ -406,4 +410,18 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
 		}
 	}
 	
+    
+    public LuceneConfig defineConfig(Collection col) {
+
+        CollectionConfigurationManager confManager = getBrokerPool().getConfigurationManager();
+
+        CollectionConfiguration colConf = confManager.getOrCreateCollectionConfiguration(getBrokerPool(), col);
+        IndexSpec indexConf = colConf.getIndexConfiguration();
+        
+        LuceneConfig conf = new LuceneConfig();
+        
+        indexConf.addCustomIndexSpec(this, conf);
+        
+        return conf;
+    }
 }

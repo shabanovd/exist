@@ -5,12 +5,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import org.apache.log4j.Logger;
+import org.exist.Database;
 import org.exist.backup.RawDataBackup;
 import org.exist.dom.SymbolTable;
 import org.exist.indexing.AbstractIndex;
 import org.exist.indexing.IndexWorker;
 import org.exist.indexing.RawBackupSupport;
-import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.btree.DBException;
 import org.exist.storage.index.BTreeStore;
@@ -48,9 +48,9 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
     }
 
     @Override
-    public void configure(BrokerPool pool, String dataDir, Element config) throws DatabaseConfigurationException {
-        super.configure(pool, dataDir, config);
-        symbols = pool.getSymbols();
+    public void configure(Database db, String dataDir, Element config) throws DatabaseConfigurationException {
+        super.configure(db, dataDir, config);
+        symbols = db.getSymbols();
     }
 
     @Override
@@ -58,8 +58,8 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
         final File file = new File(getDataDir(), FILE_NAME);
         LOG.debug("Creating '" + file.getName() + "'...");
         try {
-            btree = new BTreeStore(pool, STRUCTURAL_INDEX_ID, false,
-                    file, pool.getCacheManager(), DEFAULT_STRUCTURAL_KEY_THRESHOLD);
+            btree = new BTreeStore(db, STRUCTURAL_INDEX_ID, false,
+                    file, db.getCacheManager(), DEFAULT_STRUCTURAL_KEY_THRESHOLD);
         } catch (final DBException e) {
             LOG.error("Failed to initialize structural index: " + e.getMessage(), e);
             throw new DatabaseConfigurationException(e.getMessage(), e);
@@ -103,7 +103,7 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
 
     @Override
     public boolean checkIndex(DBBroker broker) {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
+        return false;
     }
 
 	@Override

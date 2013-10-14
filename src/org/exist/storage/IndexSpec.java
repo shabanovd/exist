@@ -24,7 +24,7 @@ package org.exist.storage;
 import org.exist.Namespaces;
 import org.exist.collections.CollectionConfiguration;
 import org.exist.dom.QName;
-import org.exist.indexing.IndexWorker;
+import org.exist.indexing.Index;
 import org.exist.util.DatabaseConfigurationException;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
@@ -111,11 +111,11 @@ public class IndexSpec {
             {customIndexSpecs = broker.getIndexController().configure(childNodes, namespaces);}
     }
     
-    public void addCustomIndexSpec(IndexWorker indexWorker, Object conf) {
+    public void addCustomIndexSpec(Index index, Object conf) {
     	if (customIndexSpecs == null)
     		customIndexSpecs = new HashMap<String, Object>();
     		
-    	customIndexSpecs.put(indexWorker.getIndexId(), conf);
+    	customIndexSpecs.put(index.getIndexId(), conf);
     }
 
     /**

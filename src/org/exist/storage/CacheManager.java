@@ -81,4 +81,11 @@ public interface CacheManager {
      * @return Current size of all Caches in bytes (unit of measurement is implementation defined)
      */
     long getCurrentSize();
+
+    /**
+     * Returns the default initial size for all caches.
+     *
+     * @return  Default initial size.
+     */
+	int getDefaultInitialSize();
 }

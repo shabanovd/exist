@@ -11,10 +11,8 @@ import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Field;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
-import org.exist.util.DatabaseConfigurationException;
 
 public class LuceneConfig {
 

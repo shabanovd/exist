@@ -23,7 +23,6 @@ package org.exist;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.Observer;
 
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.triggers.CollectionTrigger;
@@ -170,6 +169,8 @@ public interface Database {
 
 	public boolean isReadOnly();
 
+	public boolean isTransactional();
+
 	public NotificationService getNotificationService();
 	
 	public PluginsManager getPluginsManager();
@@ -177,4 +178,6 @@ public interface Database {
 	public SymbolTable getSymbols();
 
     public MetaStorage getMetaStorage();
+
+	public int getPageSize();
 }

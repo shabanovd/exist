@@ -1,4 +1,3 @@
-
 /*
  *  eXist Open Source Native XML Database
  *  Copyright (C) 2000-04,  Wolfgang Meier (wolfgang@exist-db.org)
@@ -32,9 +31,9 @@ public class ByteConversion {
     /**
      *  Read an integer value from the specified byte array, starting at start.
      *
-     * @deprecated reads the lowest byte first. will be replaced with
-     * {@link #byteToIntH(byte[], int)} for consistency.
      */
+//    * @deprecated reads the lowest byte first. will be replaced with
+//    * {@link #byteToIntH(byte[], int)} for consistency.
     public final static int byteToInt( final byte data[], final int start ) {
         return ( data[start] & 0xff ) |
             ( ( data[start + 1] & 0xff ) << 8 ) |

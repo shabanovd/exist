@@ -128,4 +128,9 @@ public class CollectionCacheManager implements CacheManager {
             LOG.warn("Exception while registering cache mbean.", e);
         }
         }
+
+	@Override
+	public int getDefaultInitialSize() {
+		return DEFAULT_CACHE_SIZE;
+	}
 }

@@ -21,7 +21,7 @@
  */
 package org.exist.indexing;
 
-import org.exist.storage.BrokerPool;
+import org.exist.Database;
 import org.exist.storage.DBBroker;
 import org.exist.storage.btree.DBException;
 import org.exist.util.DatabaseConfigurationException;
@@ -29,14 +29,15 @@ import org.w3c.dom.Element;
 
 public abstract class AbstractIndex implements Index {
 	
-    protected BrokerPool pool;    
+    protected Database db;
+    
     //Probably not useful for every kind of index. Anyway...
     private String dataDir = null; 
     protected String name = null;    
 
-    public void configure(BrokerPool pool, String dataDir, Element config)
+    public void configure(Database db, String dataDir, Element config)
             throws DatabaseConfigurationException {
-        this.pool = pool;
+        this.db = db;
         this.dataDir = dataDir; 
         if (config != null && config.hasAttribute("id"))
             {name = config.getAttribute("id");}
@@ -50,8 +51,8 @@ public abstract class AbstractIndex implements Index {
         this.name = name;
     }
 
-    public BrokerPool getBrokerPool() {
-        return pool;
+    public Database getBrokerPool() {
+        return db;
     }
 
     //TODO : declare in interface ?
