@@ -7,24 +7,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Field;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
+import org.exist.util.DatabaseConfigurationException;
 
 public class LuceneConfig {
 
 	protected final static Logger LOG = Logger.getLogger(LuceneConfig.class);
 	
-	protected Map<QName, LuceneIndexConfig> paths = new TreeMap<QName, LuceneIndexConfig>();
-	protected List<LuceneIndexConfig> wildcardPaths = new ArrayList<LuceneIndexConfig>();
-	protected Map<String, LuceneIndexConfig> namedIndexes = new TreeMap<String, LuceneIndexConfig>();
+	private Map<QName, LuceneConfigText> paths = new TreeMap<QName, LuceneConfigText>();
+	private List<LuceneConfigText> wildcardPaths = new ArrayList<LuceneConfigText>();
+	private Map<String, LuceneConfigText> namedIndexes = new TreeMap<String, LuceneConfigText>();
     
 	protected Map<String, FieldType> fieldTypes = new HashMap<String, FieldType>();
     
-	protected Set<QName> inlineNodes = null;
-	protected Set<QName> ignoreNodes = null;
+	private Set<QName> inlineNodes = null;
+	private Set<QName> ignoreNodes = null;
 
     private PathIterator iterator = new PathIterator();
     
@@ -52,27 +55,47 @@ public class LuceneConfig {
     	this.analyzers = other.analyzers;
     }
     
+    public void add(LuceneConfigText config) {
+		// if it is a named index, add it to the namedIndexes map
+		if (config.getName() != null) {
+			namedIndexes.put(config.getName(), config);
+        }
+
+		// register index either by QName or path
+		if (config.getNodePath().hasWildcard()) {
+			wildcardPaths.add(config);
+		} else {
+		    LuceneConfigText idxConf = paths.get(config.getNodePath().getLastComponent());
+		    if (idxConf == null) {
+		    	paths.put(config.getNodePath().getLastComponent(), config);
+            }
+		    else {
+                idxConf.add(config);
+            }
+		}
+	}
+    
     public boolean matches(NodePath path) {
-        LuceneIndexConfig idxConf = paths.get(path.getLastComponent());
+        LuceneConfigText idxConf = paths.get(path.getLastComponent());
         while (idxConf != null) {
             if (idxConf.match(path))
                 return true;
             idxConf = idxConf.getNext();
         }
-        for (LuceneIndexConfig config : wildcardPaths) {
+        for (LuceneConfigText config : wildcardPaths) {
             if (config.match(path))
                 return true;
         }
         return false;
     }
 
-    public Iterator<LuceneIndexConfig> getConfig(NodePath path) {
+    public Iterator<LuceneConfigText> getConfig(NodePath path) {
         iterator.reset(path);
         return iterator;
     }
 
-    protected LuceneIndexConfig getWildcardConfig(NodePath path) {
-        LuceneIndexConfig config;
+    protected LuceneConfigText getWildcardConfig(NodePath path) {
+        LuceneConfigText config;
         for (int i = 0; i < wildcardPaths.size(); i++) {
             config = wildcardPaths.get(i);
             if (config.match(path))
@@ -82,7 +105,7 @@ public class LuceneConfig {
     }
 
     public Analyzer getAnalyzer(QName qname) {
-        LuceneIndexConfig idxConf = paths.get(qname);
+        LuceneConfigText idxConf = paths.get(qname);
         while (idxConf != null) {
             if (!idxConf.isNamed() && idxConf.getNodePath().match(qname))
                 break;
@@ -99,14 +122,14 @@ public class LuceneConfig {
     public Analyzer getAnalyzer(NodePath nodePath) {
         if (nodePath.length() == 0)
             throw new RuntimeException();
-        LuceneIndexConfig idxConf = paths.get(nodePath.getLastComponent());
+        LuceneConfigText idxConf = paths.get(nodePath.getLastComponent());
         while (idxConf != null) {
             if (!idxConf.isNamed() && idxConf.match(nodePath))
                 break;
             idxConf = idxConf.getNext();
         }
         if (idxConf == null) {
-            for (LuceneIndexConfig config : wildcardPaths) {
+            for (LuceneConfigText config : wildcardPaths) {
                 if (config.match(nodePath))
                     return config.getAnalyzer();
             }
@@ -120,7 +143,7 @@ public class LuceneConfig {
     }
 
     public Analyzer getAnalyzer(String field) {
-        LuceneIndexConfig config = namedIndexes.get(field);
+        LuceneConfigText config = namedIndexes.get(field);
         if (config != null) {
             String id = config.getAnalyzerId();
             if (id != null)
@@ -133,9 +156,23 @@ public class LuceneConfig {
     	return analyzers.getAnalyzerById(id);
     }
     
-    public boolean isInlineNode(QName qname) {
+	public void addInlineNode(QName qname) {
+	    if (inlineNodes == null)
+	    	inlineNodes = new TreeSet<QName>();
+
+	    inlineNodes.add(qname);
+	}
+
+	public boolean isInlineNode(QName qname) {
         return inlineNodes != null && inlineNodes.contains(qname);
     }
+	
+	public void addIgnoreNode(QName qname) {
+	    if (ignoreNodes == null)
+	    	ignoreNodes = new TreeSet<QName>();
+
+	    ignoreNodes.add(qname);
+	}
 
     public boolean isIgnoredNode(QName qname) {
         return ignoreNodes != null && ignoreNodes.contains(qname);
@@ -145,13 +182,17 @@ public class LuceneConfig {
         return boost;
     }
     
+    public void addFieldType(FieldType type) {
+    	fieldTypes.put(type.getId(), type);
+	}
+    
     public FieldType getFieldType(String name){
         return fieldTypes.get(name);
     }
 
-    private class PathIterator implements Iterator<LuceneIndexConfig> {
+    private class PathIterator implements Iterator<LuceneConfigText> {
 
-        private LuceneIndexConfig nextConfig;
+        private LuceneConfigText nextConfig;
         private NodePath path;
         private boolean atLast = false;
 
@@ -171,11 +212,11 @@ public class LuceneConfig {
         }
 
         @Override
-        public LuceneIndexConfig next() {
+        public LuceneConfigText next() {
             if (nextConfig == null)
                 return null;
 
-            LuceneIndexConfig currentConfig = nextConfig;
+            LuceneConfigText currentConfig = nextConfig;
             nextConfig = nextConfig.getNext();
             if (nextConfig == null && !atLast) {
                 nextConfig = getWildcardConfig(path);

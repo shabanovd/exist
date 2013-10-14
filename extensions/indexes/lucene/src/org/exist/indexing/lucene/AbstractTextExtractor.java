@@ -27,19 +27,19 @@ import org.exist.util.XMLString;
 public abstract class AbstractTextExtractor implements TextExtractor {
 
     protected LuceneConfig config;
-    protected LuceneIndexConfig idxConfig;
+    protected LuceneConfigText idxConfig;
     protected int initLevel = 0;
 
     protected XMLString buffer = new XMLString();
 
-    public void configure(LuceneConfig config, LuceneIndexConfig idxConfig, int level) {
+    public void configure(LuceneConfig config, LuceneConfigText idxConfig, int level) {
         this.config = config;
         this.idxConfig = idxConfig;
         
         initLevel = level;
     }
 
-    public LuceneIndexConfig getIndexConfig() {
+    public LuceneConfigText getIndexConfig() {
     	return idxConfig;
     }
     

@@ -187,7 +187,7 @@ public class FacetIndexTest extends FacetAbstract {
         try {
             broker = db.get(db.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
-
+            
             final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
             
             FacetSearchParams fsp = new FacetSearchParams(
@@ -599,6 +599,120 @@ public class FacetIndexTest extends FacetAbstract {
 
             cb.reset();
             
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            db.release(broker);
+        }
+    }
+    
+    @Test
+    public void configureByAPI() {
+        System.out.println("Test configuring by API ...");
+        
+        DBBroker broker = null;
+        try {
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+            assertNotNull(broker);
+
+            final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
+            
+//          <lucene>
+//        	<text qname="article">
+//    			<ignore qname="note"/>
+//    			<inline qname="s"/>
+//    		</text>
+//    		<text qname="p">
+//    			<ignore qname="note"/>
+//    			<inline qname="s"/>
+//    		</text>
+//    		<text qname="head"/>
+//    		<ignore qname="note1"/>
+//    		<inline qname="s2"/>
+//    		</lucene>
+            LuceneConfig conf = worker.defineConfig(root);
+            
+            LuceneConfigText text = new LuceneConfigText(conf);
+            text.setPath(new QName("article"));
+            text.addIgnoreNode(new QName("note"));
+            text.addInlineNode(new QName("s"));
+            conf.add(text);
+            
+            text = new LuceneConfigText(conf);
+            text.setPath(new QName("p"));
+            text.addIgnoreNode(new QName("note"));
+            text.addInlineNode(new QName("s"));
+            conf.add(text);
+
+            text = new LuceneConfigText(conf);
+            text.setPath(new QName("head"));
+            conf.add(text);
+            
+            conf.addIgnoreNode(new QName("note1"));
+            conf.addInlineNode(new QName("s2"));
+
+            DocumentSet docs = configureAndStore(null, 
+                    new Resource[] {
+                        new Resource("test1.xml", XML5, metas1),
+                        new Resource("test2.xml", XML5, metas2),
+                    });
+
+            FacetSearchParams fsp = new FacetSearchParams(
+                new CountFacetRequest(new CategoryPath(STATUS), 10)
+            );
+            
+            Counter<DocumentImpl> cb = new Counter<DocumentImpl>();
+            
+            List<QName> qnames = new ArrayList<QName>();
+            qnames.add(new QName("head", ""));
+            List<FacetResult> results = QueryDocuments.query(worker, docs, qnames, "title", fsp, null, cb);
+            
+            assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
+            
+            checkFacet(results);
+            
+            cb.reset();
+
+            //Lucene query
+            QName qname = new QName("head", "");
+            
+            String field = LuceneUtil.encodeQName(new QName("head", ""), db.getSymbols());
+            
+            Analyzer analyzer = worker.getAnalyzer(null, qname, broker, docs);
+
+            QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, field, analyzer);
+
+            //worker.setOptions(options, parser);
+
+            Query query = parser.parse("title");
+            
+            
+            results = QueryDocuments.query(worker, docs, query, fsp, cb);
+            
+            assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
+            
+            checkFacet(results);
+
+            cb.reset();
+            
+            //check document filtering
+            qnames = new ArrayList<QName>();
+            qnames.add(new QName("p", ""));
+            results = QueryDocuments.query(worker, docs, qnames, "paragraph", fsp, null, cb);
+            
+            for (FacetResult result : results) {
+                System.out.println(result.toString());
+            }
+            
+            assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
+            
+            checkFacet(results);
+            
+            cb.reset();
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());

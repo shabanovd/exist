@@ -4,15 +4,20 @@ import org.apache.lucene.analysis.Analyzer;
 import org.exist.dom.AttrImpl;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
+import org.exist.util.DatabaseConfigurationException;
 
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
-public class LuceneIndexConfig {
+public class LuceneConfigText {
 
     protected final static String N_INLINE = "inline";
     protected final static String N_IGNORE = "ignore";
+    
+    private LuceneConfig config;
 
     protected String name = null;
 
@@ -23,23 +28,34 @@ public class LuceneIndexConfig {
 
     protected Map<QName, String> specialNodes = null;
 
-    protected LuceneIndexConfig nextConfig = null;
+    protected LuceneConfigText nextConfig = null;
     
     protected FieldType type = null;
     
     protected QName attrName = null;
     protected Pattern attrValuePattern = null;
     
-    public LuceneIndexConfig() {
+    public LuceneConfigText(LuceneConfig config) {
+    	this.config = config;
     }
+    
+    public FieldType getFieldType() {
+    	if (type == null) {
+	     	type = new FieldType();
+	    	type.analyzer = config.analyzers.getDefaultAnalyzer();
+    	}
+    	
+    	return type;
+	}
+
 
     // return saved Analyzer for use in LuceneMatchListener
     public Analyzer getAnalyzer() {
-        return type.getAnalyzer();
+        return getFieldType().getAnalyzer();
     }
 
     public String getAnalyzerId() {
-        return type.getAnalyzerId();
+        return getFieldType().getAnalyzerId();
     }
 
     public QName getQName() {
@@ -51,8 +67,38 @@ public class LuceneIndexConfig {
     }
 
     public float getBoost() {
-        return type.getBoost();
+        return getFieldType().getBoost();
     }
+    
+    public void setPath(QName qname) {
+        path = new NodePath(qname);
+        isQNameIndex = true;
+	}
+    
+    public void setPath(Map<String, String> namespaces, String matchPath) throws DatabaseConfigurationException {
+        try {
+        	path = new NodePath(namespaces, matchPath);
+			if (path.length() == 0)
+			    throw new DatabaseConfigurationException("Lucene module: Invalid match path in collection config: " + matchPath);
+		} catch (IllegalArgumentException e) {
+			throw new DatabaseConfigurationException("Lucene module: invalid qname in configuration: " + e.getMessage());
+		}
+	}
+    
+    public void setAttrPattern(Map<String, String> namespaces, String pattern) throws DatabaseConfigurationException {
+    	int pos = pattern.indexOf("=");
+    	if (pos > 0) {
+    		attrName = LuceneConfigXML.parseQName(pattern.substring(0, pos), namespaces);
+    		try {
+    			attrValuePattern = Pattern.compile(pattern.substring(pos+1));
+    		} catch (PatternSyntaxException e) {
+    			throw new DatabaseConfigurationException(pattern, e);
+    		}
+    		isAttrPatternIndex = true;
+    	} else {
+			throw new DatabaseConfigurationException("Valid pattern 'attribute-name=pattern', but get '"+pattern+"'");
+    	}
+	}
 
     public void setName(String name) {
 		this.name = name;
@@ -62,14 +108,14 @@ public class LuceneIndexConfig {
 		return name;
 	}
 	
-	public void add(LuceneIndexConfig config) {
+	public void add(LuceneConfigText config) {
 		if (nextConfig == null)
 			nextConfig = config;
 		else
 			nextConfig.add(config);
 	}
 	
-	public LuceneIndexConfig getNext() {
+	public LuceneConfigText getNext() {
 		return nextConfig;
 	}
 	
@@ -79,11 +125,25 @@ public class LuceneIndexConfig {
 	public boolean isNamed() {
 		return name != null;
 	}
+	
+	public void addIgnoreNode(QName qname) {
+        if (specialNodes == null)
+        	specialNodes = new TreeMap<QName, String>();
+        
+        specialNodes.put(qname, LuceneConfigText.N_IGNORE);
+	}
 
 	public boolean isIgnoredNode(QName qname) {
         return specialNodes != null && specialNodes.get(qname) == N_IGNORE;
     }
 
+	public void addInlineNode(QName qname) {
+        if (specialNodes == null)
+        	specialNodes = new TreeMap<QName, String>();
+        
+        specialNodes.put(qname, LuceneConfigText.N_INLINE);
+	}
+	
     public boolean isInlineNode(QName qname) {
         return specialNodes != null && specialNodes.get(qname) == N_INLINE;
     }

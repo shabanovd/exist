@@ -2,15 +2,11 @@ package org.exist.indexing.lucene;
 
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 import org.apache.lucene.document.Field;
 import org.exist.dom.QName;
 import org.exist.indexing.lucene.analyzers.NoDiacriticsStandardAnalyzer;
 import org.exist.storage.ElementValue;
-import org.exist.storage.NodePath;
 import org.exist.util.DatabaseConfigurationException;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -73,45 +69,29 @@ public class LuceneConfigXML {
                         
 					} else if (FIELD_TYPE_ELEMENT.equals(node.getLocalName())) {
 						FieldType type = parseFieldType((Element) node, conf.analyzers);
-						conf.fieldTypes.put(type.getId(), type);
+
+						conf.addFieldType(type);
                         
 					} else if (INDEX_ELEMENT.equals(node.getLocalName())) {
 						// found an index definition
 					    Element elem = (Element) node;
-						LuceneIndexConfig config = parseLuceneIndexConfig(elem, namespaces, conf.analyzers, conf.fieldTypes);
-						// if it is a named index, add it to the namedIndexes map
-						if (config.getName() != null) {
-							conf.namedIndexes.put(config.getName(), config);
-                        }
-
-						// register index either by QName or path
-						if (config.getNodePath().hasWildcard()) {
-							conf.wildcardPaths.add(config);
-						} else {
-						    LuceneIndexConfig idxConf = conf.paths.get(config.getNodePath().getLastComponent());
-						    if (idxConf == null) {
-						    	conf.paths.put(config.getNodePath().getLastComponent(), config);
-                            }
-						    else {
-                                idxConf.add(config);
-                            }
-						}
+						
+					    LuceneConfigText config = parseLuceneConfigText(conf, elem, namespaces, conf.analyzers, conf.fieldTypes);
+						
+						conf.add(config);
                         
 					} else if (INLINE_ELEMENT.equals(node.getLocalName())) {
 					    Element elem = (Element) node;
 					    QName qname = parseQName(elem, namespaces);
-					    if (conf.inlineNodes == null) {
-					    	conf.inlineNodes = new TreeSet<QName>();
-                        }
-					    conf.inlineNodes.add(qname);
+					    
+					    conf.addInlineNode(qname);
                         
 					} else if (IGNORE_ELEMENT.equals(node.getLocalName())) {
 					    Element elem = (Element) node;
 					    QName qname = parseQName(elem, namespaces);
-					    if (conf.ignoreNodes == null) {
-					    	conf.ignoreNodes = new TreeSet<QName>();
-                        }
-					    conf.ignoreNodes.add(qname);
+					    
+					    conf.addIgnoreNode(qname);
+					    
 					}
                     
                 } catch (DatabaseConfigurationException e) {
@@ -185,65 +165,50 @@ public class LuceneConfigXML {
 
 	private final static String PATTERN_ATTR = "attribute";
 
-    private static LuceneIndexConfig parseLuceneIndexConfig(
-    		Element config, 
+    private static LuceneConfigText parseLuceneConfigText(
+    		LuceneConfig config,
+    		Element node, 
     		Map<String, String> namespaces, 
     		AnalyzerConfig analyzers,
     		Map<String, FieldType> fieldTypes
     		) throws DatabaseConfigurationException {
     	
-    	LuceneIndexConfig conf = new LuceneIndexConfig();
+    	LuceneConfigText conf = new LuceneConfigText(config);
     	
-        if (config.hasAttribute(QNAME_ATTR)) {
-            QName qname = parseQName(config, namespaces);
-            conf.path = new NodePath(qname);
-            conf.isQNameIndex = true;
+        if (node.hasAttribute(QNAME_ATTR)) {
+            QName qname = parseQName(node, namespaces);
+            
+            conf.setPath(qname);
+            
         } else {
-            String matchPath = config.getAttribute(MATCH_ATTR);
-            try {
-            	conf.path = new NodePath(namespaces, matchPath);
-				if (conf.path.length() == 0)
-				    throw new DatabaseConfigurationException("Lucene module: Invalid match path in collection config: " +
-				        matchPath);
-			} catch (IllegalArgumentException e) {
-				throw new DatabaseConfigurationException("Lucene module: invalid qname in configuration: " + e.getMessage());
-			}
+            String matchPath = node.getAttribute(MATCH_ATTR);
+
+            conf.setPath(namespaces, matchPath);
         }
 
-        if (config.hasAttribute(PATTERN_ATTR)) {
-        	String pattern = config.getAttribute(PATTERN_ATTR);
-        	int pos = pattern.indexOf("=");
-        	if (pos > 0) {
-        		conf.attrName = parseQName(pattern.substring(0, pos), namespaces);
-        		try {
-        			conf.attrValuePattern = Pattern.compile(pattern.substring(pos+1));
-        		} catch (PatternSyntaxException e) {
-        			throw new DatabaseConfigurationException(config.toString(), e);
-        		}
-        		conf.isAttrPatternIndex = true;
-        	} else {
-    			throw new DatabaseConfigurationException("Valid pattern 'attribute-name=pattern', but get '"+config.toString()+"'");
-        	}
-        } else {
-        	conf.isAttrPatternIndex = false;
+        if (node.hasAttribute(PATTERN_ATTR)) {
+        	String pattern = node.getAttribute(PATTERN_ATTR);
+        	
+        	conf.setAttrPattern(namespaces, pattern);
         }
 
-        String name = config.getAttribute(FIELD_ATTR);
+        String name = node.getAttribute(FIELD_ATTR);
         if (name != null && name.length() > 0)
         	conf.setName(name);
         
-        String fieldType = config.getAttribute(TYPE_ATTR);
+        String fieldType = node.getAttribute(TYPE_ATTR);
         if (fieldType != null && fieldType.length() > 0)
         	conf.type = fieldTypes.get(fieldType);        
+        
         if (conf.type == null)
-        	conf.type = parseFieldType(config, analyzers);
+        	conf.type = parseFieldType(node, analyzers);
 
-        parse(conf, config, namespaces);
+        parse(conf, node, namespaces);
         
         return conf;
     }
 
-    private static void parse(LuceneIndexConfig conf, Element root, Map<String, String> namespaces) throws DatabaseConfigurationException {
+    private static void parse(LuceneConfigText conf, Element root, Map<String, String> namespaces) throws DatabaseConfigurationException {
         Node child = root.getFirstChild();
         while (child != null) {
             if (child.getNodeType() == Node.ELEMENT_NODE) {
@@ -251,16 +216,16 @@ public class LuceneConfigXML {
                     String qnameAttr = ((Element) child).getAttribute(QNAME_ATTR);
                     if (qnameAttr == null || qnameAttr.length() == 0)
                         throw new DatabaseConfigurationException("Lucene configuration element 'ignore' needs an attribute 'qname'");
-                    if (conf.specialNodes == null)
-                    	conf.specialNodes = new TreeMap<QName, String>();
-                    conf.specialNodes.put(parseQName(qnameAttr, namespaces), LuceneIndexConfig.N_IGNORE);
+                    
+                    conf.addIgnoreNode(parseQName(qnameAttr, namespaces));
+                    
                 } else if (INLINE_ELEMENT.equals(child.getLocalName())) {
                     String qnameAttr = ((Element) child).getAttribute(QNAME_ATTR);
                     if (qnameAttr == null || qnameAttr.length() == 0)
                         throw new DatabaseConfigurationException("Lucene configuration element 'inline' needs an attribute 'qname'");
                     if (conf.specialNodes == null)
                     	conf.specialNodes = new TreeMap<QName, String>();
-                    conf.specialNodes.put(parseQName(qnameAttr, namespaces), LuceneIndexConfig.N_INLINE);
+                    conf.specialNodes.put(parseQName(qnameAttr, namespaces), LuceneConfigText.N_INLINE);
                 }
             }
             child = child.getNextSibling();
@@ -276,7 +241,7 @@ public class LuceneConfigXML {
         return parseQName(name, namespaces);
     }
 
-    protected static QName parseQName(String name, Map<String, String> namespaces) throws DatabaseConfigurationException {
+    public static QName parseQName(String name, Map<String, String> namespaces) throws DatabaseConfigurationException {
         boolean isAttribute = false;
         if (name.startsWith("@")) {
             isAttribute = true;

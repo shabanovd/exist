@@ -164,7 +164,7 @@ public class LuceneMatchListener extends AbstractMatchListener {
         // Collect the text content of all descendants of p. 
 	// Remember the start offsets of the text nodes for later use.
         NodePath path = getPath(p);
-        LuceneIndexConfig idxConf = config.getConfig(path).next();
+        LuceneConfigText idxConf = config.getConfig(path).next();
         
         TextExtractor extractor = new DefaultTextExtractor();
         extractor.configure(config, idxConf, 0);

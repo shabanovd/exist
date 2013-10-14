@@ -161,7 +161,7 @@ public class AnalyzerConfig {
             final String fieldName = value.substring(value.lastIndexOf(".") + 1);
 
             try {
-                final Class fieldClazz = Class.forName(clazzName);
+                final Class<?> fieldClazz = Class.forName(clazzName);
                 final Field field = fieldClazz.getField(fieldName);
                 field.setAccessible(true);
                 final Object fValue = field.get(fieldClazz.newInstance());
@@ -182,7 +182,7 @@ public class AnalyzerConfig {
             parameter = new KeyTypedValue(name, f, File.class);
             
         } else if(type != null && type.equals("java.util.Set")) {
-            final Set s = getConstructorParameterSetValues(param);
+            final Set<String> s = getConstructorParameterSetValues(param);
             parameter = new KeyTypedValue(name, s, Set.class);
             
         } else if(type != null && (type.equals("java.lang.Integer") || type.equals("int"))) {
@@ -259,7 +259,10 @@ public class AnalyzerConfig {
     }
 
     private static class ParameterException extends Exception {
-        public ParameterException(String message, Throwable cause) {
+
+		private static final long serialVersionUID = -5457330564698905891L;
+
+		public ParameterException(String message, Throwable cause) {
             super(message, cause);
         }
     }

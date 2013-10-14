@@ -35,6 +35,8 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
 import org.exist.collections.Collection;
+import org.exist.collections.CollectionConfiguration;
+import org.exist.collections.CollectionConfigurationManager;
 import org.exist.dom.*;
 import org.exist.indexing.*;
 import org.exist.indexing.lucene.PlainTextHighlighter.Offset;
@@ -163,6 +165,20 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         LOG.debug("Configuring lucene index...");
         config = LuceneConfigXML.parseConfig(configNodes, namespaces);
         return config;
+    }
+    
+    public LuceneConfig defineConfig(Collection col) {
+
+        CollectionConfigurationManager confManager = broker.getDatabase().getConfigurationManager();
+
+        CollectionConfiguration colConf = confManager.getOrCreateCollectionConfiguration(broker.getDatabase(), col);
+        IndexSpec indexConf = colConf.getIndexConfiguration();
+        
+        LuceneConfig conf = new LuceneConfig();
+        
+        indexConf.addCustomIndexSpec(this, conf);
+        
+        return conf;
     }
 
 
@@ -388,12 +404,12 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
 
-    private NodeId readNodeId(int doc, BinaryDocValues nodeIdValues, BrokerPool pool) {
-        BytesRef ref = new BytesRef(buf);
-        nodeIdValues.get(doc, ref);
-        int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-        return pool.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
-    }
+//    private NodeId readNodeId(int doc, BinaryDocValues nodeIdValues, BrokerPool pool) {
+//        BytesRef ref = new BytesRef(buf);
+//        nodeIdValues.get(doc, ref);
+//        int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
+//        return pool.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+//    }
 
     /**
      * Query the index. Returns a node set containing all matching nodes. Each node
@@ -1158,7 +1174,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      * @param qname
      * @param content
      */
-    protected void indexText(NodeId nodeId, QName qname, NodePath path, LuceneIndexConfig config, CharSequence content) {
+    protected void indexText(NodeId nodeId, QName qname, NodePath path, LuceneConfigText config, CharSequence content) {
         indexed = true;
     	PendingDoc pending = new PendingDoc(nodeId, qname, path, content, config);
         nodesToWrite.add(pending);
@@ -1177,7 +1193,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         NodeId nodeId;
         CharSequence text;
         QName qname;
-        LuceneIndexConfig idxConf;
+        LuceneConfigText idxConf;
 
         private PendingDoc() {
             this.document = currentDoc;
@@ -1189,7 +1205,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             this.idxConf = null;
         }
 
-        private PendingDoc(NodeId nodeId, QName qname, NodePath path, CharSequence text, LuceneIndexConfig idxConf) {
+        private PendingDoc(NodeId nodeId, QName qname, NodePath path, CharSequence text, LuceneConfigText idxConf) {
             this.document = currentDoc;
             this._metas = metas;
             this._paths = paths;
@@ -1394,11 +1410,11 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         extractor.startElement(element.getQName());
                     }
                 }
-                Iterator<LuceneIndexConfig> configIter = config.getConfig(path);
+                Iterator<LuceneConfigText> configIter = config.getConfig(path);
                 if (configIter != null) {
                     if (contentStack == null) contentStack = new Stack<TextExtractor>();
                     while (configIter.hasNext()) {
-                        LuceneIndexConfig configuration = configIter.next();
+                        LuceneConfigText configuration = configIter.next();
                         
                         if (configuration.match(path) && !configuration.isAttrPattern()) {
                             TextExtractor extractor = new DefaultTextExtractor();
@@ -1421,7 +1437,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         extractor.endElement(element.getQName());
                     }
                 }
-                Iterator<LuceneIndexConfig> configIter = config.getConfig(path);
+                Iterator<LuceneConfigText> configIter = config.getConfig(path);
                 if (mode != REMOVE_ALL_NODES && configIter != null) {
                     if (mode == REMOVE_SOME_NODES) {
                         nodesToRemove.add(element.getNodeId());
@@ -1450,7 +1466,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         @Override
         public void attribute(Txn transaction, AttrImpl attrib, NodePath path) {
         	path.addComponent(attrib.getQName());
-            Iterator<LuceneIndexConfig> configIter = null;
+            Iterator<LuceneConfigText> configIter = null;
             if (config != null)
                 configIter = config.getConfig(path);
             if (mode != REMOVE_ALL_NODES && configIter != null) {
@@ -1458,7 +1474,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     nodesToRemove.add(attrib.getNodeId());
                 } else {
                     while (configIter.hasNext()) {
-                        LuceneIndexConfig configuration = configIter.next();
+                        LuceneConfigText configuration = configIter.next();
                         if (configuration.match(path)) {
                             indexText(attrib.getNodeId(), attrib.getQName(), path, configuration, attrib.getValue());
                         }
@@ -1467,13 +1483,13 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             }
             path.removeLastComponent();
 
-            Iterator<LuceneIndexConfig> pattrnConfigIter = null;
+            Iterator<LuceneConfigText> pattrnConfigIter = null;
             if (config != null)
             	pattrnConfigIter = config.getConfig(path);
 
             if (mode != REMOVE_ALL_NODES && pattrnConfigIter != null) {
                 while (pattrnConfigIter.hasNext()) {
-                    LuceneIndexConfig configuration = pattrnConfigIter.next();
+                    LuceneConfigText configuration = pattrnConfigIter.next();
                     if (configuration.isAttrPattern() && configuration.match(path, attrib)) {
                     	
                     	TextExtractor extractor = contentStack.isEmpty() ? null : contentStack.peek();

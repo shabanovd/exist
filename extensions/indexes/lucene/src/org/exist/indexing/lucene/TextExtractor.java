@@ -31,7 +31,7 @@ import org.exist.util.XMLString;
  */
 public interface TextExtractor {
 
-    public void configure(LuceneConfig config, LuceneIndexConfig idxConfig, int level);
+    public void configure(LuceneConfig config, LuceneConfigText idxConfig, int level);
 
 	public int getInitLevel();
 
@@ -43,7 +43,7 @@ public interface TextExtractor {
     
     public int characters(XMLString value);
 
-    public LuceneIndexConfig getIndexConfig();
+    public LuceneConfigText getIndexConfig();
     
     public XMLString getText();
 }

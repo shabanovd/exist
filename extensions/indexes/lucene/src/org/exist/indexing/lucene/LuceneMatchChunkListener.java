@@ -308,11 +308,11 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     	if (config == null)
     		throw new SAXException("no lucene configuration");
     	
-    	Iterator<LuceneIndexConfig> confIter = config.getConfig(path);
+    	Iterator<LuceneConfigText> confIter = config.getConfig(path);
     	if (confIter == null)
     		throw new SAXException("no configuration for path = '"+path+"'");
     	
-		LuceneIndexConfig idxConf = confIter.next();
+		LuceneConfigText idxConf = confIter.next();
         
         TextExtractor extractor = new DefaultTextExtractor();
         extractor.configure(config, idxConf, 0);
