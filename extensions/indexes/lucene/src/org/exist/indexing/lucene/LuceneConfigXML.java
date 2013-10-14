@@ -178,7 +178,7 @@ public class LuceneConfigXML {
         if (node.hasAttribute(QNAME_ATTR)) {
             QName qname = parseQName(node, namespaces);
             
-            conf.setPath(qname);
+            conf.setQName(qname);
             
         } else {
             String matchPath = node.getAttribute(MATCH_ATTR);

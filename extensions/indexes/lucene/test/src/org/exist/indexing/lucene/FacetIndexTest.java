@@ -636,19 +636,19 @@ public class FacetIndexTest extends FacetAbstract {
             LuceneConfig conf = index.defineConfig(root);
             
             LuceneConfigText text = new LuceneConfigText(conf);
-            text.setPath(new QName("article"));
+            text.setQName(new QName("article"));
             text.addIgnoreNode(new QName("note"));
             text.addInlineNode(new QName("s"));
             conf.add(text);
             
             text = new LuceneConfigText(conf);
-            text.setPath(new QName("p"));
+            text.setQName(new QName("p"));
             text.addIgnoreNode(new QName("note"));
             text.addInlineNode(new QName("s"));
             conf.add(text);
 
             text = new LuceneConfigText(conf);
-            text.setPath(new QName("head"));
+            text.setQName(new QName("head"));
             conf.add(text);
             
             conf.addIgnoreNode(new QName("note1"));

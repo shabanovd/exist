@@ -70,7 +70,7 @@ public class LuceneConfigText {
         return getFieldType().getBoost();
     }
     
-    public void setPath(QName qname) {
+    public void setQName(QName qname) {
         path = new NodePath(qname);
         isQNameIndex = true;
 	}
