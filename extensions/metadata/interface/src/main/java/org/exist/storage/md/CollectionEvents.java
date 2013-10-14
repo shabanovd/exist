@@ -64,7 +64,7 @@ public class CollectionEvents implements CollectionTrigger {
 			MDStorageManager.LOG.fatal(e);
 		}
 		
-		index(collection.getURI());
+		index(collection);
 	}
 
 	@Override
@@ -80,7 +80,7 @@ public class CollectionEvents implements CollectionTrigger {
 			MDStorageManager.LOG.fatal(e);
 		}
 		
-		index(collection.getURI());
+		index(collection);
 	}
 
 	@Override
@@ -113,7 +113,7 @@ public class CollectionEvents implements CollectionTrigger {
 		}
 		
 //		removeIndex(oldUri);
-		index(collection.getURI());
+		index(collection);
 	}
 	
 	private void deleteCollectionRecursive(DBBroker broker, Collection collection) throws PermissionDeniedException {
@@ -165,10 +165,10 @@ public class CollectionEvents implements CollectionTrigger {
 		}
 	}
 	
-	private void index(XmldbURI url) {
+	private void index(Collection col) {
 		try {
 			IndexWorker worker = db.getActiveBroker().getIndexController().getWorkerByIndexId("org.exist.indexing.lucene.LuceneIndex");
-			worker.indexMetas(url);
+			worker.indexCollection(col);
 		} catch (Throwable e) {
 			MDStorageManager.LOG.fatal(e);
 		}

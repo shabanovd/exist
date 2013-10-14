@@ -2,6 +2,7 @@ package org.exist.indexing.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType.NumericType;
 
 /**
  * Configures a field type: analyzers etc. used for indexing
@@ -19,12 +20,14 @@ public class FieldType {
     // save Analyzer for later use in LuceneMatchListener
 	protected Analyzer analyzer = null;
 
-	protected float boost = -1;
+	private float boost = -1;
     
 	protected Field.Store store = null;
 	
 	protected boolean isStore = false;
 	protected boolean isTokenized = false;
+	
+	protected NumericType numericType = null;
 	
     public FieldType() {
     }
@@ -41,6 +44,10 @@ public class FieldType {
 		return analyzer;
 	}
 
+	public void setBoost(float boost) {
+		this.boost = boost;
+	}
+
 	public float getBoost() {
 		return boost;
 	}
@@ -49,8 +56,17 @@ public class FieldType {
 		return store;
 	}
 
+	public void tokenized(boolean isTokenized) {
+		this.isTokenized = isTokenized;
+	}
+
 	public boolean isTokenized() {
 		return isTokenized;
+	}
+	
+	public void setNumericType(String str) {
+		numericType = NumericType.valueOf(str);
+//		throw new IllegalArgumentException("Unknown numeric-type '"+numericTypeAttr+"'.");
 	}
 	
 	org.apache.lucene.document.FieldType ft = null;
@@ -63,6 +79,9 @@ public class FieldType {
 			_ft.setTokenized(isTokenized);
 			_ft.setStoreTermVectors(true);
 			_ft.setIndexed(true);
+			
+			if (numericType != null)
+				_ft.setNumericType(numericType);
 			
 			ft = _ft;
 		}

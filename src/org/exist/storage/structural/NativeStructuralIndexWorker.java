@@ -14,7 +14,6 @@ import org.exist.util.ByteConversion;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.util.Occurrences;
-import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.NodeTest;
 import org.w3c.dom.Node;
@@ -702,6 +701,6 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     }
 
 	@Override
-	public void indexMetas(XmldbURI uri) {
+	public void indexCollection(Collection col) {
 	}
 }

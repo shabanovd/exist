@@ -50,7 +50,6 @@ import org.exist.storage.NodePath;
 import org.exist.storage.txn.Txn;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
-import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.XQueryContext;
 import org.w3c.dom.NodeList;
@@ -331,6 +330,6 @@ public class ExtractorWorker implements IndexWorker {
 	}
 
 	@Override
-	public void indexMetas(XmldbURI uri) {
+	public void indexCollection(Collection col) {
 	}
 }

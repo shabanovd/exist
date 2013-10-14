@@ -17,11 +17,12 @@ public class LuceneConfigXML {
     private final static String CONFIG_ROOT = "lucene";
     private final static String INDEX_ELEMENT = "text";
     private final static String ANALYZER_ELEMENT = "analyzer";
-    protected final static String FIELD_TYPE_ELEMENT = "fieldType";
+    private final static String FIELD_TYPE_ELEMENT = "fieldType";
     private static final String INLINE_ELEMENT = "inline";
     private static final String IGNORE_ELEMENT = "ignore";
     private final static String BOOST_ATTRIB = "boost";
     private static final String DIACRITICS = "diacritics";
+    private final static String NUMERIC_TYPE_ATTRIB = "numeric-type";
 
     /**
      * Parse a configuration entry. The main configuration entries for this index
@@ -133,13 +134,23 @@ public class LuceneConfigXML {
         String boostAttr = config.getAttribute(BOOST_ATTRIB);
         if (boostAttr != null && boostAttr.length() > 0) {
             try {
-            	type.boost = Float.parseFloat(boostAttr);
+            	type.setBoost( Float.parseFloat(boostAttr) );
             } catch (NumberFormatException e) {
                 throw new DatabaseConfigurationException("Invalid value for attribute 'boost'. Expected float, " +
                         "got: " + boostAttr);
             }
         }
         
+        String numericTypeAttr = config.getAttribute(NUMERIC_TYPE_ATTRIB);
+        if (numericTypeAttr != null && numericTypeAttr.length() > 0) {
+            try {
+            	type.setNumericType( numericTypeAttr );
+            } catch (IllegalArgumentException e) {
+                throw new DatabaseConfigurationException("Invalid value for attribute 'numeric-type'. Expected ', " +
+                        "got: " + boostAttr);
+            }
+        }
+
         String storeAttr = config.getAttribute(STORE_ATTRIB);
         if (storeAttr != null && storeAttr.length() > 0) {
         	type.isStore = storeAttr.equalsIgnoreCase("yes");

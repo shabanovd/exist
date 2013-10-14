@@ -76,7 +76,6 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
 import org.exist.util.serializer.AttrList;
-import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -1117,6 +1116,6 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
 	@Override
-	public void indexMetas(XmldbURI uri) {
+	public void indexCollection(Collection col) {
 	}
 }

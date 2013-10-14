@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -118,6 +119,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private DBBroker broker;
 
     private DocumentImpl currentDoc = null;
+    private Collection currentCol = null;
     private int mode = 0;
     
     private LuceneConfig config;
@@ -642,7 +644,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             // Get name from SOLR field
             String contentFieldName = field.getName();
             
-            Analyzer fieldAnalyzer = (fieldType == null) ? null : fieldType.getAnalyzer();
+//            Analyzer fieldAnalyzer = (fieldType == null) ? null : fieldType.getAnalyzer();
             
             // Actual field content ; Store flag can be set in solrField
             Field contentField = new Field(contentFieldName, field.getData().toString(),  store, Field.Index.ANALYZED, Field.TermVector.YES);
@@ -792,10 +794,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             report = ((org.exist.memtree.DocumentImpl) builder.getDocument()).getNode(nodeNr);
 
 
-        } catch (Exception ex){
-            ex.printStackTrace();
-            LOG.error(ex);
-            throw new XPathException(ex);
+        } catch (Exception e){
+            //ex.printStackTrace();
+            LOG.error(e);
+            throw new XPathException(e);
         
         } finally {
             index.releaseSearcher(searcher);
@@ -895,7 +897,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         private final boolean returnAncestor;
         private final int contextId;
         private final Query query;
-        private final XQueryWatchDog watchdog;
+//        private final XQueryWatchDog watchdog;
 
         private LuceneHitCollector(QName qname, Query query, DocumentSet docs, NodeSet contextSet, NodeSet resultSet, boolean returnAncestor,
                                    int contextId, XQueryWatchDog watchDog) {
@@ -906,7 +908,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             this.returnAncestor = returnAncestor;
             this.contextId = contextId;
             this.query = query;
-            this.watchdog = watchDog;
+//            this.watchdog = watchDog;
         }
 
         @Override
@@ -1228,9 +1230,28 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 					if (ft == null) {
 						ft = defaultFT;
 					}
-                	
-                    Field fld = new Field(name, (String)value, ft);
+					
+                    Field fld;
                     
+                    try {
+						if (fieldConfig.numericType == null) {
+		                    fld = new Field(name, (String)value, ft);
+						} else if (fieldConfig.numericType == NumericType.DOUBLE) {
+		                    fld = new DoubleField(name, Double.valueOf((String)value), ft);
+						} else if (fieldConfig.numericType == NumericType.FLOAT) {
+		                    fld = new FloatField(name, Float.valueOf((String)value), ft);
+						} else if (fieldConfig.numericType == NumericType.INT) {
+		                    fld = new IntField(name, Integer.valueOf((String)value), ft);
+						} else if (fieldConfig.numericType == NumericType.LONG) {
+		                    fld = new LongField(name, Long.valueOf((String)value), ft);
+						} else {
+		                    fld = new Field(name, (String)value, ft);
+						}
+                    } catch (NumberFormatException e) {
+                    	LOG.error(e.getMessage(), e);
+	                    fld = new Field(name, (String)value, ft);
+                    }
+                	
                     if (fieldConfig != null && fieldConfig.getBoost() > 0)
                         fld.setBoost(fieldConfig.getBoost());
                     
@@ -1242,9 +1263,21 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             }
         });
         
-        String url = currentDoc.getFileURI().toString();
+        String url;
+        String name;
+        DocumentMetadata metadata;
+        if (currentCol != null) {
+        	url = currentCol.getURI().toString();
+        	name = currentCol.getURI().lastSegment().toString();
+            metadata = currentDoc.getMetadata();
+        	
+        } else {
+        	url = currentDoc.getURI().toString();
+            name = currentDoc.getFileURI().toString();
+            metadata = currentDoc.getMetadata();
+        }
         
-        Field fld = new Field("eXist:file-name", url, metaFT);
+        Field fld = new Field("eXist:file-name", name, metaFT);
         metas.add(fld);
 
         url = currentDoc.getURI().toString();
@@ -1254,7 +1287,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         paths.add(new CategoryPath("eXist:file-path", url));
 
-        DocumentMetadata metadata = currentDoc.getMetadata();
+        //DocumentMetadata
 
         fld = new Field("eXist:meta-type", metadata.getMimeType(), metaFT);
         metas.add(fld);
@@ -1576,8 +1609,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
 	@Override
-	public void indexMetas(XmldbURI uri) {
-		broker.getIndexController().setURL(uri);
+	public void indexCollection(Collection col) {
+		currentCol = col;
+		broker.getIndexController().setURL(col.getURI());
 		
         metas = new ArrayList<Field>();
         paths = new ArrayList<CategoryPath>();
@@ -1587,6 +1621,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     	indexText(null, null, null, null, null);
         
     	write();
+    	
+    	currentCol = null;
 	}
 }
 
