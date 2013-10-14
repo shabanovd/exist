@@ -21,7 +21,7 @@
  */
 package org.exist.storage;
 
-import org.exist.dom.DocumentImpl;
+import org.exist.xmldb.XmldbURI;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -31,6 +31,6 @@ public interface MetaStorage {
 
     public String getId();
 
-    public void streamMetas(DocumentImpl doc, MetaStreamListener listener);
+    public void streamMetas(XmldbURI uri, MetaStreamListener listener);
 
 }

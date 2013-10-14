@@ -14,12 +14,14 @@ import org.exist.util.ByteConversion;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.util.Occurrences;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.NodeTest;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.util.*;
+
 import org.exist.security.PermissionDeniedException;
 
 /**
@@ -502,8 +504,8 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map hints) {
-        return new Occurrences[0];  //To change body of implemented methods use File | Settings | File Templates.
+    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map<?,?> hints) {
+        return new Occurrences[0];
     }
 
     @Override
@@ -698,4 +700,8 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             return NativeStructuralIndexWorker.this;
         }
     }
+
+	@Override
+	public void indexMetas(XmldbURI uri) {
+	}
 }

@@ -50,6 +50,7 @@ import org.exist.storage.NodePath;
 import org.exist.storage.txn.Txn;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.XQueryContext;
 import org.w3c.dom.NodeList;
@@ -315,17 +316,21 @@ public class ExtractorWorker implements IndexWorker {
 	}
 
 	private class PendingDoc {
-		NodeId nodeId;
+//		NodeId nodeId;
 		CharSequence text;
-		QName qname;
+//		QName qname;
 		ExtractConfig idxConf;
 
 		private PendingDoc(NodeId nodeId, QName qname, NodePath path,
 				CharSequence text, ExtractConfig idxConf) {
-			this.nodeId = nodeId;
-			this.qname = qname;
+//			this.nodeId = nodeId;
+//			this.qname = qname;
 			this.text = text;
 			this.idxConf = idxConf;
 		}
+	}
+
+	@Override
+	public void indexMetas(XmldbURI uri) {
 	}
 }

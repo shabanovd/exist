@@ -24,6 +24,7 @@ import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.txn.Txn;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.TerminatedException;
 import org.exist.xquery.XQueryContext;
@@ -31,6 +32,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Stack;
@@ -166,7 +168,7 @@ public class IndexStatisticsWorker implements IndexWorker {
         return false;
     }
 
-    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map hints) {
+    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map<?,?> hints) {
         return new Occurrences[0];
     }
 
@@ -224,4 +226,8 @@ public class IndexStatisticsWorker implements IndexWorker {
             return true;
         }
     }
+
+	@Override
+	public void indexMetas(XmldbURI uri) {
+	}
 }

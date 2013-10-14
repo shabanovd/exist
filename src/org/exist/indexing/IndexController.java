@@ -29,6 +29,7 @@ import org.exist.storage.MetaStreamListener;
 import org.exist.storage.NodePath;
 import org.exist.storage.txn.Txn;
 import org.exist.util.DatabaseConfigurationException;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.XQueryContext;
 import org.w3c.dom.Node;
@@ -54,6 +55,7 @@ public class IndexController {
     protected DBBroker broker;
     protected StreamListener listener = null;    
     protected DocumentImpl currentDoc = null;
+    protected XmldbURI currentURL = null;
     protected int currentMode = StreamListener.UNKNOWN;
 
     public IndexController(DBBroker broker) {
@@ -160,6 +162,10 @@ public class IndexController {
     public DocumentImpl getDocument() {
         return currentDoc;
     }
+    
+    public void setURL(XmldbURI uri) {
+		currentURL = uri;
+	}
 
     /**
      * Returns the mode for the next operation.
@@ -412,7 +418,11 @@ public class IndexController {
     
     public void streamMetas(MetaStreamListener listener) {
         MetaStorage ms = broker.getDatabase().getMetaStorage();
-        if (currentDoc != null && ms != null)
-            ms.streamMetas(currentDoc, listener);
+        if (ms != null) {
+	        if (currentDoc != null)
+	            ms.streamMetas(currentDoc.getURI(), listener);
+	        else if (currentURL != null)
+	            ms.streamMetas(currentURL, listener);
+        }
     }
 }

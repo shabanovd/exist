@@ -22,12 +22,15 @@
 package org.exist.storage.md;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
+import org.exist.Database;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.CollectionTrigger;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.DocumentImpl;
+import org.exist.indexing.IndexWorker;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -40,8 +43,11 @@ import org.exist.xmldb.XmldbURI;
  */
 public class CollectionEvents implements CollectionTrigger {
 
+	private Database db;
+	
 	@Override
-	public void configure(DBBroker broker, Collection parent, Map parameters) throws TriggerException {
+	public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
+		db = broker.getDatabase();
 	}
 
 	@Override
@@ -50,13 +56,15 @@ public class CollectionEvents implements CollectionTrigger {
 	}
 
 	@Override
-	public void afterCreateCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException {
+	public void afterCreateCollection(DBBroker broker, Txn txn, Collection collection) {
 //		System.out.println("afterCreateCollection "+collection.getURI());
 		try {
 			MDStorageManager._.md.addMetas(collection);
 		} catch (Throwable e) {
 			MDStorageManager.LOG.fatal(e);
 		}
+		
+		index(collection.getURI());
 	}
 
 	@Override
@@ -64,13 +72,15 @@ public class CollectionEvents implements CollectionTrigger {
 	}
 
 	@Override
-	public void afterCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) throws TriggerException {
+	public void afterCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) {
 //		System.out.println("afterCopyCollection "+collection.getURI());
 		try {
 			MDStorageManager._.md.copyMetas(oldUri, collection);
 		} catch (Throwable e) {
 			MDStorageManager.LOG.fatal(e);
 		}
+		
+		index(collection.getURI());
 	}
 
 	@Override
@@ -79,10 +89,14 @@ public class CollectionEvents implements CollectionTrigger {
 		try {
 	        for(Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext(); ) {
 	            DocumentImpl doc = i.next();
-	            MDStorageManager._.md.moveMetas(
-            		collection.getURI().append(doc.getFileURI()), 
-            		newUri.append(doc.getFileURI())
-        		);
+	            try {
+		            MDStorageManager._.md.moveMetas(
+	            		collection.getURI().append(doc.getFileURI()), 
+	            		newUri.append(doc.getFileURI())
+	        		);
+	    		} catch (Throwable e) {
+	    			MDStorageManager.LOG.fatal(e);
+	    		}
 	        }
 		} catch (PermissionDeniedException e) {
 			throw new TriggerException(e);
@@ -90,15 +104,26 @@ public class CollectionEvents implements CollectionTrigger {
 	}
 
 	@Override
-	public void afterMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) throws TriggerException {
+	public void afterMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) {
 //		System.out.println("afterMoveCollection "+oldUri+" to "+collection.getURI());
-		MDStorageManager._.md.moveMetas(oldUri, collection.getURI());
+		try {
+			MDStorageManager._.md.moveMetas(oldUri, collection.getURI());
+		} catch (Throwable e) {
+			MDStorageManager.LOG.fatal(e);
+		}
+		
+//		removeIndex(oldUri);
+		index(collection.getURI());
 	}
 	
 	private void deleteCollectionRecursive(DBBroker broker, Collection collection) throws PermissionDeniedException {
         for(Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext(); ) {
             DocumentImpl doc = i.next();
-            MDStorageManager._.md.delMetas(doc.getURI());
+            try {
+            	MDStorageManager._.md.delMetas(doc.getURI());
+			} catch (Throwable e) {
+				MDStorageManager.LOG.fatal(e);
+			}
         }
 
 		final XmldbURI uri = collection.getURI();
@@ -117,7 +142,7 @@ public class CollectionEvents implements CollectionTrigger {
                 }
             }
         }
-
+//		removeIndex(collection.getURI());
 	}
 
 	@Override
@@ -131,7 +156,7 @@ public class CollectionEvents implements CollectionTrigger {
 	}
 
 	@Override
-	public void afterDeleteCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
+	public void afterDeleteCollection(DBBroker broker, Txn txn, XmldbURI uri) {
 //		System.out.println("afterDeleteCollection "+uri);
 		try {
 			MDStorageManager._.md.delMetas(uri);
@@ -139,4 +164,22 @@ public class CollectionEvents implements CollectionTrigger {
 			MDStorageManager.LOG.fatal(e);
 		}
 	}
+	
+	private void index(XmldbURI url) {
+		try {
+			IndexWorker worker = db.getActiveBroker().getIndexController().getWorkerByIndexId("org.exist.indexing.lucene.LuceneIndex");
+			worker.indexMetas(url);
+		} catch (Throwable e) {
+			MDStorageManager.LOG.fatal(e);
+		}
+	}
+//
+//	private void removeIndex(XmldbURI url) {
+//		try {
+//			IndexWorker worker = db.getActiveBroker().getIndexController().getWorkerByIndexId("org.exist.indexing.lucene.LuceneIndex");
+//			worker.removeIndex(url);
+//		} catch (Throwable e) {
+//			MDStorageManager.LOG.fatal(e);
+//		}
+//	}
 }

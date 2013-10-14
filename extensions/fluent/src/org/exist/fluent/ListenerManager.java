@@ -253,7 +253,7 @@ public class ListenerManager {
 		private ContentHandler contentHandler;
 		private LexicalHandler lexicalHandler;
 		
-		public void configure(DBBroker broker, org.exist.collections.Collection parent, Map parameters)  {
+		public void configure(DBBroker broker, org.exist.collections.Collection parent, Map<String, List<? extends Object>> parameters)  {
 			// nothing to do
 		}
 		public boolean isValidating() {

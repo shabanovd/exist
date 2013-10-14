@@ -31,11 +31,13 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.NodePath;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.XQueryContext;
 import org.w3c.dom.NodeList;
 
 import java.util.Map;
+
 import org.exist.security.PermissionDeniedException;
 
 /**
@@ -213,6 +215,8 @@ public interface IndexWorker {
      */
     QueryRewriter getQueryRewriter(XQueryContext context);
 
-    //TODO : a scanIndex() method that would return an unaggregated list of index entries ?
+	public void indexMetas(XmldbURI uri);
+
+	//TODO : a scanIndex() method that would return an unaggregated list of index entries ?
 
 }

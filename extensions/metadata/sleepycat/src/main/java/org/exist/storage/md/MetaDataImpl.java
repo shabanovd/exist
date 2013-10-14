@@ -367,8 +367,8 @@ public class MetaDataImpl extends MetaData {
 		return null;
 	}
 
-    public void streamMetas(DocumentImpl doc, MetaStreamListener listener) {
-        Metas metas = getMetas(doc);
+    public void streamMetas(XmldbURI uri, MetaStreamListener listener) {
+        Metas metas = getMetas(uri);
         if (metas == null)
             return;
         

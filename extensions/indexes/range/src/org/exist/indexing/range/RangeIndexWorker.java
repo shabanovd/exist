@@ -47,6 +47,7 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.ByteConversion;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.modules.range.RangeQueryRewriter;
 import org.exist.xquery.value.*;
@@ -860,7 +861,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 //    }
 
     @Override
-    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet nodes, Map hints) {
+    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet nodes, Map<?,?> hints) {
         List<QName> qnames = hints == null ? null : (List<QName>)hints.get(QNAMES_KEY);
         qnames = getDefinedIndexes(qnames);
         //Expects a StringValue
@@ -966,4 +967,8 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             } while(termsIter.next() != null);
         }
     }
+
+	@Override
+	public void indexMetas(XmldbURI uri) {
+	}
 }

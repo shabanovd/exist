@@ -338,6 +338,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
                 writer.deleteDocuments(dt);
             }
+            
+            Term dt = new Term(LuceneUtil.FIELD_DOC_URI, collection.getURI().toString());
+            writer.deleteDocuments(dt);
+
         } catch (IOException e) {
             LOG.error("Error while removing lucene index: " + e.getMessage(), e);
         } catch (PermissionDeniedException e) {
@@ -1570,5 +1574,19 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             return equals(other);
         }
     }
+
+	@Override
+	public void indexMetas(XmldbURI uri) {
+		broker.getIndexController().setURL(uri);
+		
+        metas = new ArrayList<Field>();
+        paths = new ArrayList<CategoryPath>();
+        
+        collectMetas(metas, paths);
+        
+    	indexText(null, null, null, null, null);
+        
+    	write();
+	}
 }
 

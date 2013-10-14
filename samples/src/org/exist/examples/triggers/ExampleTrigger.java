@@ -23,6 +23,7 @@ package org.exist.examples.triggers;
 
 import java.io.StringReader;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -66,14 +67,14 @@ public class ExampleTrigger extends FilteringTrigger implements DocumentTrigger 
 	 * @see org.exist.collections.Trigger#configure(org.exist.storage.DBBroker, org.exist.collections.Collection, java.util.Map)
 	 */
     @Override
-    public void configure(DBBroker broker, Collection parent, Map parameters)
+    public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters)
             throws TriggerException {
             super.configure(broker, parent, parameters);
             // the name of the contents file can be set through parameters
             XmldbURI contentsFile = null;
-            String contentsName = (String)parameters.get("contents");
+            String contentsName = (String)parameters.get("contents").get(0);
             if(contentsName == null) {
-                    contentsFile = XmldbURI.create("contents.xml");
+                contentsFile = XmldbURI.create("contents.xml");
             } else {
                 try{
                     contentsFile = XmldbURI.xmldbUriFor(contentsName);

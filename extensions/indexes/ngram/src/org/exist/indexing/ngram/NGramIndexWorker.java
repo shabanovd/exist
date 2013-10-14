@@ -76,6 +76,7 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
 import org.exist.util.serializer.AttrList;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -103,7 +104,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private int mode = 0;
     private final org.exist.indexing.ngram.NGramIndex index;
     private char[] buf = new char[1024];
-    private int currentChar = 0;
+//    private int currentChar = 0;
     private DocumentImpl currentDoc = null;
     private final DBBroker broker;
     @SuppressWarnings("unused")
@@ -428,7 +429,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     @Override
-    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map hints) {
+    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map<?,?> hints) {
         List<QName> qnames = hints == null ? null : (List<QName>)hints.get(QNAMES_KEY);
         //Expects a StringValue
         Object start = hints == null ? null : hints.get(START_VALUE);
@@ -593,13 +594,13 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
 
-    private void checkBuffer() {
-        if (currentChar + index.getN() > buf.length) {
-            buf = new char[1024];
-            Arrays.fill(buf, ' ');
-            currentChar = 0;
-        }
-    }
+//    private void checkBuffer() {
+//        if (currentChar + index.getN() > buf.length) {
+//            buf = new char[1024];
+//            Arrays.fill(buf, ' ');
+//            currentChar = 0;
+//        }
+//    }
 
     private Map<QName, ?> config;
     private Stack<XMLString> contentStack = null;
@@ -633,7 +634,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         contentStack = null;
         IndexSpec indexConf = document.getCollection().getIndexConfiguration(broker);
         if (indexConf != null)
-            config = (Map<QName, ?>) indexConf.getCustomIndexSpec(org.exist.indexing.ngram.NGramIndex.ID);
+            config = (Map<QName, ?>) indexConf.getCustomIndexSpec(NGramIndex.ID);
         mode = newMode;
     }
 
@@ -1115,4 +1116,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
 
+	@Override
+	public void indexMetas(XmldbURI uri) {
+	}
 }
