@@ -24,11 +24,8 @@ package org.exist.xquery.functions.text;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.NodeSet;
 import org.exist.dom.QName;
-import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
 import org.exist.storage.IndexSpec;
-import org.exist.storage.FulltextIndexSpec;
-import org.exist.util.Occurrences;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 
@@ -181,11 +178,12 @@ public class IndexTerms extends BasicFunction {
             final org.exist.collections.Collection collection = i.next();
             final IndexSpec idxConf = collection.getIndexConfiguration(broker);
             if (idxConf != null) {
-                final FulltextIndexSpec fIdxConf = idxConf.getFulltextIndexSpec();
-                final List<QName> qnames = fIdxConf.getIndexedQNames();
-                for (final QName qName : qnames) {
-                    indexes.add(qName);
-                }
+            	//XXX: refactor
+//                final FulltextIndexSpec fIdxConf = idxConf.getFulltextIndexSpec();
+//                final List<QName> qnames = fIdxConf.getIndexedQNames();
+//                for (final QName qName : qnames) {
+//                    indexes.add(qName);
+//                }
             }
         }
         final QName qnames[] = new QName[indexes.size()];

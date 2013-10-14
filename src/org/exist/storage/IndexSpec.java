@@ -24,6 +24,7 @@ package org.exist.storage;
 import org.exist.Namespaces;
 import org.exist.collections.CollectionConfiguration;
 import org.exist.dom.QName;
+import org.exist.indexing.IndexWorker;
 import org.exist.util.DatabaseConfigurationException;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
@@ -46,10 +47,6 @@ import java.util.TreeMap;
  *  
  *  <pre>
  *  &lt;index index-depth="idx-depth"&gt;
- *      &lt;fulltext default="all|none" attributes="true|false"&gt;
- *          &lt;include path="node-path"/&gt;
- *          &lt;exclude path="node-path"/&gt;
- *      &lt;/fulltext&gt;
  *      &lt;create path="node-path" type="schema-type"&gt;
  *  &lt;/index&gt;
  *  </pre>
@@ -62,14 +59,14 @@ public class IndexSpec {
     private static final String PATH_ATTRIB = "path";
     private static final String CREATE_ELEMENT = "create";
     private static final String QNAME_ATTRIB = "qname";
-    private static final String FULLTEXT_ELEMENT = "fulltext";
-
-    private FulltextIndexSpec ftSpec = null;
 
     private GeneralRangeIndexSpec specs[] = null;
     private Map<QName, QNameRangeIndexSpec> qnameSpecs = new TreeMap<QName, QNameRangeIndexSpec>();
 
     private Map<String, Object> customIndexSpecs = null;
+
+    public IndexSpec() {
+    }
 
     public IndexSpec(DBBroker broker, Element index) throws DatabaseConfigurationException {
         read(broker, index);
@@ -77,8 +74,7 @@ public class IndexSpec {
 
     /**
      * Read index configurations from an "index" element node. The node should have
-     * exactly one "fulltext" child node and zero or more "create" nodes. The "fulltext"
-     * section  is forwarded to class {@link FulltextIndexSpec}. The "create" elements
+     * zero or more "create" nodes. The "create" elements
      * add a {@link GeneralRangeIndexSpec} to the current configuration.
      *  
      * @param index
@@ -90,9 +86,7 @@ public class IndexSpec {
         for (int i = 0; i < childNodes.getLength(); i++) {
             final Node node = childNodes.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE) {
-                if (FULLTEXT_ELEMENT.equals(node.getLocalName())) {
-                    ftSpec = new FulltextIndexSpec(namespaces, (Element)node);
-                } else if (CREATE_ELEMENT.equals(node.getLocalName())) {
+                if (CREATE_ELEMENT.equals(node.getLocalName())) {
                     final Element elem = (Element) node;
                     final String type = elem.getAttribute(TYPE_ATTRIB);
                     if (elem.hasAttribute(QNAME_ATTRIB)) {
@@ -116,13 +110,12 @@ public class IndexSpec {
         if (broker != null)
             {customIndexSpecs = broker.getIndexController().configure(childNodes, namespaces);}
     }
-
-    /**
-     * Returns the fulltext index configuration object for the current
-     * configuration.
-     */
-    public FulltextIndexSpec getFulltextIndexSpec() {
-        return ftSpec;
+    
+    public void addCustomIndexSpec(IndexWorker indexWorker, Object conf) {
+    	if (customIndexSpecs == null)
+    		customIndexSpecs = new HashMap<String, Object>();
+    		
+    	customIndexSpecs.put(indexWorker.getIndexId(), conf);
     }
 
     /**
@@ -225,8 +218,6 @@ public class IndexSpec {
 
     public String toString() {
         final StringBuilder result = new StringBuilder();
-        if (ftSpec != null)
-            {result.append(ftSpec.toString()).append('\n');}
         if (specs!= null) {
             for (int i = 0 ; i < specs.length ; i++) {
                 final GeneralRangeIndexSpec spec = specs[i];

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+import org.exist.Database;
 import org.exist.collections.triggers.AbstractTriggerProxy;
 import org.exist.collections.triggers.CollectionTriggerProxies;
 import org.exist.collections.triggers.CollectionTriggerProxy;
@@ -36,7 +37,6 @@ import org.exist.collections.triggers.TriggerProxy;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.security.Account;
 import org.exist.security.Permission;
-import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.IndexSpec;
 import org.exist.util.DatabaseConfigurationException;
@@ -96,10 +96,10 @@ public class CollectionConfiguration {
 
     private XMLReaderObjectFactory.VALIDATION_SETTING validationMode=XMLReaderObjectFactory.VALIDATION_SETTING.UNKNOWN;
 
-    private BrokerPool pool;
+    private Database db;
 
-    public CollectionConfiguration(BrokerPool pool) {
-        this.pool = pool;
+    public CollectionConfiguration(Database db) {
+        this.db = db;
     }
 
     /**
@@ -144,10 +144,10 @@ public class CollectionConfiguration {
                         node = triggers.item(j);
                         if(node.getNodeType() == Node.ELEMENT_NODE &&
                                 node.getLocalName().equals(TRIGGER_ELEMENT)) {
-                            final List <TriggerProxy> triggerProxys = configureTrigger(
+                            final List <TriggerProxy<? extends Trigger>> triggerProxys = configureTrigger(
                                     (Element)node, srcCollectionURI, checkOnly);
                             if(triggerProxys != null) {
-                                for(final TriggerProxy triggerProxy : triggerProxys) {
+                                for(final TriggerProxy<? extends Trigger> triggerProxy : triggerProxys) {
                                     if(triggerProxy instanceof DocumentTriggerProxy) {
                                         getDocumentTriggerProxies().add((DocumentTriggerProxy)triggerProxy);
                                     }
@@ -209,7 +209,7 @@ public class CollectionConfiguration {
                     String groupOpt = elem.getAttribute(RESOURCE_ATTR);
                     if (groupOpt != null && groupOpt.length() > 0) {
                         LOG.debug("RESOURCE: " + groupOpt);
-                        if (pool.getSecurityManager().getGroup(groupOpt)!=null) {
+                        if (db.getSecurityManager().getGroup(groupOpt)!=null) {
                             defResGroup = groupOpt;	
                         } else {
                             //? Seems inconsistent : what does "checkOnly" means then ?
@@ -223,7 +223,7 @@ public class CollectionConfiguration {
                     groupOpt = elem.getAttribute(COLLECTION_ATTR);
                     if (groupOpt != null && groupOpt.length() > 0) {
                         LOG.debug("COLLECTION: " + groupOpt);
-                        if (pool.getSecurityManager().getGroup(groupOpt)!=null) {
+                        if (db.getSecurityManager().getGroup(groupOpt)!=null) {
                             defCollGroup = groupOpt;	
                         } else {
                             //? Seems inconsistent : what does "checkOnly" means then ?
@@ -247,8 +247,7 @@ public class CollectionConfiguration {
                     }
                     
                 } else {
-                    throwOrLog("Ignored node '" + node.getLocalName() +
-                        "' in configuration document", checkOnly);
+                    throwOrLog("Ignored node '" + node.getLocalName() + "' in configuration document", checkOnly);
                     //TODO : throw an exception like above ? -pb
                 }
                 
@@ -299,6 +298,9 @@ public class CollectionConfiguration {
     }
 
     public IndexSpec getIndexConfiguration() {
+    	if (indexSpec == null)
+    		indexSpec = new IndexSpec();
+    	
         return indexSpec;
     }
 
@@ -316,7 +318,7 @@ public class CollectionConfiguration {
         return collectionTriggerProxies;
     }
     
-    private List<TriggerProxy> configureTrigger(Element triggerElement,
+    private List<TriggerProxy<? extends Trigger>> configureTrigger(Element triggerElement,
         XmldbURI collectionConfigurationURI, boolean testOnly) throws CollectionConfigurationException {
 
         //TODO : rely on schema-driven validation -pb
@@ -331,7 +333,7 @@ public class CollectionConfiguration {
             }
             final NodeList nlParameter = triggerElement.getElementsByTagNameNS(NAMESPACE, PARAMETER_ELEMENT);
             final Map<String, List<? extends Object>> parameters = ParametersExtractor.extract(nlParameter);
-            final List<TriggerProxy> triggerProxys = AbstractTriggerProxy.newInstance(clazz, collectionConfigurationURI, parameters);
+            final List<TriggerProxy<? extends Trigger>> triggerProxys = AbstractTriggerProxy.newInstance(clazz, collectionConfigurationURI, parameters);
             return triggerProxys;
         } catch (final ClassNotFoundException e) {
             if(testOnly) {

@@ -71,7 +71,7 @@ public class RandomText extends BasicFunction {
             docs = context.getBroker().getAllXMLResources(docs);
             final IndexWorker indexWorker = context.getBroker().getIndexController().getWorkerByIndexName("lucene-index");
 
-            final Map options = new HashMap();
+            final Map<String, String> options = new HashMap<String, String>();
             options.put(OrderedValuesIndex.START_VALUE, "");
 
             Occurrences[] occurrences =

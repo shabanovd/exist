@@ -22,6 +22,7 @@
 package org.exist.collections;
 
 import org.apache.log4j.Logger;
+import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.dom.DocumentImpl;
 import org.exist.memtree.SAXAdapter;
@@ -41,6 +42,7 @@ import org.xml.sax.XMLReader;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+
 import java.io.StringReader;
 import java.util.*;
 
@@ -266,7 +268,7 @@ public class CollectionConfigurationManager {
         }
     }
     
-    public CollectionConfiguration getOrCreateCollectionConfiguration(DBBroker broker, Collection collection) {
+    public CollectionConfiguration getOrCreateCollectionConfiguration(Database db, Collection collection) {
         final CollectionURI path = new CollectionURI(COLLECTION_CONFIG_PATH);
         path.append(collection.getURI().getRawCollectionPath());
 
@@ -274,7 +276,7 @@ public class CollectionConfigurationManager {
         synchronized (latch) {
         	conf = configurations.get(path);
         	if (conf == null) {
-        		conf = new CollectionConfiguration(broker.getBrokerPool());
+        		conf = new CollectionConfiguration(db);
         		configurations.put(path, conf);
         	}
         }

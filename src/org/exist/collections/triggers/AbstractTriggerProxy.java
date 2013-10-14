@@ -96,9 +96,9 @@ public abstract class AbstractTriggerProxy<T extends Trigger> implements Trigger
     }
     
     @SuppressWarnings("unchecked")
-	public static List<TriggerProxy> newInstance(Class<? extends Trigger> c, XmldbURI collectionConfigurationURI, Map<String, List<? extends Object>> parameters) throws TriggerException {
+	public static List<TriggerProxy<? extends Trigger>> newInstance(Class<? extends Trigger> c, XmldbURI collectionConfigurationURI, Map<String, List<? extends Object>> parameters) throws TriggerException {
         
-        final List<TriggerProxy> proxies = new ArrayList<TriggerProxy>();
+        final List<TriggerProxy<? extends Trigger>> proxies = new ArrayList<TriggerProxy<? extends Trigger>>();
         
         if(DocumentTrigger.class.isAssignableFrom(c)) {
             proxies.add(new DocumentTriggerProxy((Class<DocumentTrigger>)c, collectionConfigurationURI, parameters));

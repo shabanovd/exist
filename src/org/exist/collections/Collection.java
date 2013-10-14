@@ -2267,11 +2267,6 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
         return (idxSpec == null) ? null : idxSpec.getIndexByQName(qname);
     }
 
-    public FulltextIndexSpec getFulltextIndexConfiguration(final DBBroker broker) {
-        final IndexSpec idxSpec = getIndexConfiguration(broker);
-        return (idxSpec == null) ? null : idxSpec.getFulltextIndexSpec();
-    }
-
     /*
     public DocumentTrigger getDocumentTrigger(DBBroker broker) {
         if (triggersEnabled) {

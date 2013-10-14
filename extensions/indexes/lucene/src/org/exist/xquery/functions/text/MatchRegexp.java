@@ -27,7 +27,6 @@ import org.exist.dom.ExtArrayNodeSet;
 import org.exist.dom.NodeSet;
 import org.exist.dom.QName;
 import org.exist.storage.ElementValue;
-import org.exist.storage.FulltextIndexSpec;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.AnalyzeContextInfo;
 import org.exist.xquery.BasicExpressionVisitor;
@@ -303,11 +302,12 @@ public class MatchRegexp extends Function implements Optimizable {
             final Collection collection = i.next();
             if (collection.getURI().equals(XmldbURI.SYSTEM_COLLECTION_URI))
                 {continue;}
-            final FulltextIndexSpec config = collection.getFulltextIndexConfiguration(context.getBroker());
-            //We have a fulltext index
-            if (config != null) {
-            	hasQNameIndex = config.hasQNameIndex(contextQName);
-            }
+            //XXX: refactor
+//            final FulltextIndexSpec config = collection.getFulltextIndexConfiguration(context.getBroker());
+//            //We have a fulltext index
+//            if (config != null) {
+//            	hasQNameIndex = config.hasQNameIndex(contextQName);
+//            }
             if (!hasQNameIndex) {
                 if (LOG.isTraceEnabled())
                     {LOG.trace("cannot use index on QName: " + contextQName + ". Collection " + collection.getURI() +
