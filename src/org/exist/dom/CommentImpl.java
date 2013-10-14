@@ -50,14 +50,14 @@ public class CommentImpl extends CharacterDataImpl implements Comment {
         try {
             s = StringValue.expand(cdata);
         } catch (final XPathException e) {
-            LOG.warn(e);
+            LOG.debug(e);
             s = cdata.toString();
         }
         byte[] cd;
         try {
             cd = s.getBytes( "UTF-8" );
         } catch (final UnsupportedEncodingException uee) {
-            LOG.warn(uee);
+            LOG.debug(uee);
             cd = s.getBytes();
         }
         int nodeIdLen = nodeId.size();
@@ -87,7 +87,7 @@ public class CommentImpl extends CharacterDataImpl implements Comment {
         try {
             cdata = new String(data, pos, len - (pos - start), "UTF-8" );
         } catch ( final UnsupportedEncodingException uee ) {
-            LOG.warn(uee);
+            LOG.debug(uee);
             cdata = new String(data, pos, len - (pos - start));
         }
         //OK : we have the necessary material to build the comment
