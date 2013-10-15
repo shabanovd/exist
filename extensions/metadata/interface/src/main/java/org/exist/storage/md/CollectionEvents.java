@@ -167,8 +167,13 @@ public class CollectionEvents implements CollectionTrigger {
 	
 	private void index(Collection col) {
 		try {
-			IndexWorker worker = db.getActiveBroker().getIndexController().getWorkerByIndexId("org.exist.indexing.lucene.LuceneIndex");
-			worker.indexCollection(col);
+			if (db != null) {
+				IndexWorker worker = 
+						db.getActiveBroker()
+						.getIndexController()
+						.getWorkerByIndexId("org.exist.indexing.lucene.LuceneIndex");
+				worker.indexCollection(col);
+			}
 		} catch (Throwable e) {
 			MDStorageManager.LOG.fatal(e);
 		}
