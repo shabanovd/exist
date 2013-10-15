@@ -1012,7 +1012,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         indexes.add(name);
                 }
             }
-        } catch (IOException e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         } finally {
             index.releaseReader(reader);
@@ -1234,7 +1234,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     Field fld;
                     
                     try {
-						if (fieldConfig.numericType == null) {
+						if (fieldConfig == null || fieldConfig.numericType == null) {
 		                    fld = new Field(name, (String)value, ft);
 						} else if (fieldConfig.numericType == NumericType.DOUBLE) {
 		                    fld = new DoubleField(name, Double.valueOf((String)value), ft);
