@@ -428,7 +428,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             searcher = index.getSearcher();
             for (QName qname : qnames) {
-                String field = LuceneUtil.encodeQName(qname, index.getBrokerPool().getSymbols());
+                String field = LuceneUtil.encodeQName(qname, index.getDatabase().getSymbols());
                 Analyzer analyzer = getAnalyzer(null, qname, context.getBroker(), docs);
                 QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, field, analyzer);
                 setOptions(options, parser);
@@ -501,7 +501,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             searcher = index.getSearcher();
             for (QName qname : qnames) {
-                String field = LuceneUtil.encodeQName(qname, index.getBrokerPool().getSymbols());
+                String field = LuceneUtil.encodeQName(qname, index.getDatabase().getSymbols());
                 analyzer = getAnalyzer(null, qname, context.getBroker(), docs);
                 Query query = queryTranslator.parse(field, queryRoot, analyzer, options);
                 if (query != null) {
@@ -939,7 +939,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 BytesRef ref = new BytesRef(buf);
                 this.nodeIdValues.get(doc, ref);
                 int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-                NodeId nodeId = index.getBrokerPool().getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+                NodeId nodeId = index.getDatabase().getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
                 //LOG.info("doc: " + docId + "; node: " + nodeId.toString() + "; units: " + units);
 
                 NodeProxy storedNode = new NodeProxy(storedDocument, nodeId);
@@ -1007,7 +1007,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             reader = index.getReader();
             for (FieldInfo info: MultiFields.getMergedFieldInfos(reader)) {
                 if (!LuceneUtil.FIELD_DOC_ID.equals(info.name)) {
-                    QName name = LuceneUtil.decodeQName(info.name, index.getBrokerPool().getSymbols());
+                    QName name = LuceneUtil.decodeQName(info.name, index.getDatabase().getSymbols());
                     if (name != null && !name.getLocalName().isEmpty() && (qname == null || matchQName(qname, name)))
                         indexes.add(name);
                 }
@@ -1080,7 +1080,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             reader = index.getReader();
             for (QName qname : qnames) {
-                String field = LuceneUtil.encodeQName(qname, index.getBrokerPool().getSymbols());
+                String field = LuceneUtil.encodeQName(qname, index.getDatabase().getSymbols());
                 List<AtomicReaderContext> leaves = reader.leaves();
                 for (AtomicReaderContext context : leaves) {
                     NumericDocValues docIdValues = context.reader().getNumericDocValues(LuceneUtil.FIELD_DOC_ID);
@@ -1120,7 +1120,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                                     BytesRef nodeIdRef = new BytesRef(buf);
                                     nodeIdValues.get(docsEnum.docID(), nodeIdRef);
                                     int units = ByteConversion.byteToShort(nodeIdRef.bytes, nodeIdRef.offset);
-                                    nodeId = index.getBrokerPool().getNodeFactory().createFromData(units, nodeIdRef.bytes, nodeIdRef.offset + 2);
+                                    nodeId = index.getDatabase().getNodeFactory().createFromData(units, nodeIdRef.bytes, nodeIdRef.offset + 2);
                                 }
                                 if (nodeId == null || nodes.get(storedDocument, nodeId) != null) {
                                     Occurrences oc = map.get(term);
@@ -1365,7 +1365,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 	                if (pending.idxConf.isNamed())
 	                	contentField = pending.idxConf.getName();
 	                else
-	                	contentField = LuceneUtil.encodeQName(pending.qname, index.getBrokerPool().getSymbols());
+	                	contentField = LuceneUtil.encodeQName(pending.qname, index.getDatabase().getSymbols());
 	
 	                Field fld = new Field(contentField, pending.text.toString(), offsetsType);
 	                if (pending.idxConf.getBoost() > 0)

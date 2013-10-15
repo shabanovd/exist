@@ -80,7 +80,7 @@ public class QueryNodes {
 
 		final LuceneIndex index = worker.index;
 		
-		final Database db = index.getBrokerPool();
+		final Database db = index.getDatabase();
 
 		Set<String> fieldsToLoad = new HashSet<String>();
 		fieldsToLoad.add(LuceneUtil.FIELD_DOC_ID);
@@ -120,7 +120,7 @@ public class QueryNodes {
 
 		final LuceneIndex index = worker.index;
 
-		final Database db = index.getBrokerPool();
+		final Database db = index.getDatabase();
 
 		IndexSearcher searcher = null;
 		try {
@@ -149,7 +149,7 @@ public class QueryNodes {
 
 		final LuceneIndex index = worker.index;
 
-		final Database db = index.getBrokerPool();
+		final Database db = index.getDatabase();
 
 		DBBroker broker = db.getActiveBroker();
 

@@ -22,7 +22,6 @@
 package org.exist.indexing;
 
 import org.exist.Database;
-import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.btree.DBException;
 import org.exist.util.DatabaseConfigurationException;
@@ -53,7 +52,7 @@ public interface Index {
      * 
      * @return the database
      */
-    Database getBrokerPool();
+    Database getDatabase();
 
 	/**
      * Configure the index and all resources associated with it. This method

@@ -267,7 +267,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
     @Override
     public QueryRewriter getQueryRewriter(XQueryContext context) {
-        List<Object> configs = index.getBrokerPool().getConfigurationManager().getCustomIndexSpecs(getIndexId());
+        List<Object> configs = index.getDatabase().getConfigurationManager().getCustomIndexSpecs(getIndexId());
         return new RangeQueryRewriter(this, configs, context);
     }
 
@@ -421,7 +421,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     if (field.isNamed())
                         contentField = field.getName();
                     else
-                        contentField = LuceneUtil.encodeQName(pending.getQName(), index.getBrokerPool().getSymbols());
+                        contentField = LuceneUtil.encodeQName(pending.getQName(), index.getDatabase().getSymbols());
                     Field fld = pending.getConfig().convertToField(contentField, field.getContent().toString());
                     if (fld != null) {
                         doc.add(fld);
@@ -453,7 +453,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             searcher = index.getSearcher();
             for (QName qname : qnames) {
                 Query query;
-                String field = LuceneUtil.encodeQName(qname, index.getBrokerPool().getSymbols());
+                String field = LuceneUtil.encodeQName(qname, index.getDatabase().getSymbols());
                 if (keys.length > 1) {
                     BooleanQuery bool = new BooleanQuery();
                     for (AtomicValue key: keys) {
@@ -594,7 +594,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 return;
             }
             int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-            NodeId nodeId = index.getBrokerPool().getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+            NodeId nodeId = index.getDatabase().getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
 
             // if a context set is specified, we can directly check if the
             // matching node is a descendant of one of the nodes
@@ -663,7 +663,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             reader = index.getReader();
             for (FieldInfo info: MultiFields.getMergedFieldInfos(reader)) {
                 if (!FIELD_DOC_ID.equals(info.name)) {
-                    QName name = LuceneUtil.decodeQName(info.name, index.getBrokerPool().getSymbols());
+                    QName name = LuceneUtil.decodeQName(info.name, index.getDatabase().getSymbols());
                     if (name != null && (qname == null || matchQName(qname, name)))
                         indexes.add(name);
                 }
@@ -898,7 +898,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             reader = index.getReader();
             for (QName qname : qnames) {
-                String field = LuceneUtil.encodeQName(qname, index.getBrokerPool().getSymbols());
+                String field = LuceneUtil.encodeQName(qname, index.getDatabase().getSymbols());
                 scan(docs, nodes, start, end, max, map, reader, field);
             }
         } catch (IOException e) {
@@ -950,7 +950,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                             BytesRef nodeIdRef = new BytesRef(buf);
                             nodeIdValues.get(docsEnum.docID(), nodeIdRef);
                             int units = ByteConversion.byteToShort(nodeIdRef.bytes, nodeIdRef.offset);
-                            nodeId = index.getBrokerPool().getNodeFactory().createFromData(units, nodeIdRef.bytes, nodeIdRef.offset + 2);
+                            nodeId = index.getDatabase().getNodeFactory().createFromData(units, nodeIdRef.bytes, nodeIdRef.offset + 2);
                         }
                         if (nodeId == null || nodes.get(storedDocument, nodeId) != null) {
                             Occurrences oc = map.get(term);

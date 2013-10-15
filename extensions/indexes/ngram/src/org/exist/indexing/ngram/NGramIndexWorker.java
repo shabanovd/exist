@@ -213,7 +213,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 lock.acquire(Lock.WRITE_LOCK);
 
                 NGramQNameKey value = new NGramQNameKey(currentDoc.getCollection().getId(), key.qname,
-                        index.getBrokerPool().getSymbols(), key.term);
+                        index.getDatabase().getSymbols(), key.term);
                 index.bf.append(value, data);
             } catch (LockException e) {
                 LOG.warn("Failed to acquire lock for file " + index.bf.getFile().getName(), e);
@@ -243,7 +243,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 lock.acquire(Lock.WRITE_LOCK);
 
                 NGramQNameKey value = new NGramQNameKey(currentDoc.getCollection().getId(), key.qname,
-                        index.getBrokerPool().getSymbols(), key.term);
+                        index.getDatabase().getSymbols(), key.term);
                 boolean changed = false;
                 os.clear();
                 VariableByteInput is = index.bf.getAsStream(value);
@@ -275,7 +275,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                             NodeId previous = null;
                             OccurrenceList newOccurrences = new OccurrenceList();
                             for (int m = 0; m < occurrences; m++) {
-                                NodeId nodeId = index.getBrokerPool().getNodeFactory().createFromStream(previous, is);
+                                NodeId nodeId = index.getDatabase().getNodeFactory().createFromStream(previous, is);
                                 previous = nodeId;
                                 int freq = is.readInt();
                                 // add the node to the new list if it is not
@@ -372,7 +372,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             final int collectionId = iter.next().getId();
             for (int i = 0; i < qnames.size(); i++) {
                 QName qname = qnames.get(i);
-                NGramQNameKey key = new NGramQNameKey(collectionId, qname, index.getBrokerPool().getSymbols(), query);
+                NGramQNameKey key = new NGramQNameKey(collectionId, qname, index.getDatabase().getSymbols(), query);
                 final Lock lock = index.bf.getLock();
                 try {
                     lock.acquire(Lock.READ_LOCK);
@@ -448,13 +448,13 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     query = new IndexQuery(IndexQuery.TRUNC_RIGHT, startRef);
                 } else if (end == null) {
                     Value startRef = new NGramQNameKey(collectionId, qnames.get(q),
-                    		index.getBrokerPool().getSymbols(), start.toString().toLowerCase());
+                    		index.getDatabase().getSymbols(), start.toString().toLowerCase());
                     query = new IndexQuery(IndexQuery.TRUNC_RIGHT, startRef);
                 } else {
                     Value startRef = new NGramQNameKey(collectionId, qnames.get(q), 
-                    	index.getBrokerPool().getSymbols(), start.toString().toLowerCase());
+                    	index.getDatabase().getSymbols(), start.toString().toLowerCase());
                     Value endRef = new NGramQNameKey(collectionId, qnames.get(q),
-                    		index.getBrokerPool().getSymbols(), end.toString().toLowerCase());
+                    		index.getDatabase().getSymbols(), end.toString().toLowerCase());
                     query = new IndexQuery(IndexQuery.BW, startRef, endRef);
                 }
                 try {
@@ -984,7 +984,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     }
                     NodeId previous = null;
                     for (int m = 0; m < occurrences; m++) {
-                        NodeId nodeId = index.getBrokerPool().getNodeFactory().createFromStream(previous, is);
+                        NodeId nodeId = index.getDatabase().getNodeFactory().createFromStream(previous, is);
                         previous = nodeId;
                         int freq = is.readInt();
                         NodeProxy storedNode = new NodeProxy(storedDocument, nodeId);
@@ -1084,7 +1084,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     }
                     NodeId previous = null;
                     for (int m = 0; m < occurrences; m++) {
-                        NodeId nodeId = index.getBrokerPool().getNodeFactory().createFromStream(previous, is);
+                        NodeId nodeId = index.getDatabase().getNodeFactory().createFromStream(previous, is);
                         previous = nodeId;
                         int freq = is.readInt();
                         is.skip(freq);

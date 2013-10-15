@@ -413,9 +413,9 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
     
     public LuceneConfig defineConfig(Collection col) {
 
-        CollectionConfigurationManager confManager = getBrokerPool().getConfigurationManager();
+        CollectionConfigurationManager confManager = getDatabase().getConfigurationManager();
 
-        CollectionConfiguration colConf = confManager.getOrCreateCollectionConfiguration(getBrokerPool(), col);
+        CollectionConfiguration colConf = confManager.getOrCreateCollectionConfiguration(getDatabase(), col);
         IndexSpec indexConf = colConf.getIndexConfiguration();
         
         LuceneConfig conf = new LuceneConfig();

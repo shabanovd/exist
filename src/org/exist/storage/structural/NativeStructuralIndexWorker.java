@@ -567,7 +567,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     }
 
     private byte[] computeKey(byte type, QName qname, int documentId, NodeId nodeId) {
-        final SymbolTable symbols = index.getBrokerPool().getSymbols();
+        final SymbolTable symbols = index.getDatabase().getSymbols();
         final short sym = symbols.getSymbol(qname.getLocalName());
         final short nsSym = symbols.getNSSymbol(qname.getNamespaceURI());
         final byte[] data = new byte[9 + nodeId.size()];
@@ -581,7 +581,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     }
 
     private byte[] computeKey(byte type, QName qname, int documentId) {
-        final SymbolTable symbols = index.getBrokerPool().getSymbols();
+        final SymbolTable symbols = index.getDatabase().getSymbols();
         final short sym = symbols.getSymbol(qname.getLocalName());
         final short nsSym = symbols.getNSSymbol(qname.getNamespaceURI());
         final byte[] data = new byte[9];
@@ -602,7 +602,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     }
     
     private byte[] computeDocKey(byte type, int documentId, QName qname) {
-        final SymbolTable symbols = index.getBrokerPool().getSymbols();
+        final SymbolTable symbols = index.getDatabase().getSymbols();
         final short sym = symbols.getSymbol(qname.getLocalName());
         final short nsSym = symbols.getNSSymbol(qname.getNamespaceURI());
         final byte[] data = new byte[10];
@@ -643,11 +643,11 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             {bits = 8;}
         // compute total number of bits for node id
         final int units = (key.length - 10) * 8 + bits;
-        return index.getBrokerPool().getNodeFactory().createFromData(units, key, 9);
+        return index.getDatabase().getNodeFactory().createFromData(units, key, 9);
     }
 
     private QName readQName(byte[] key) {
-        final SymbolTable symbols = index.getBrokerPool().getSymbols();
+        final SymbolTable symbols = index.getDatabase().getSymbols();
         final byte type = key[5];
         final short sym = ByteConversion.byteToShortH(key, 6);
         final short nsSym = ByteConversion.byteToShortH(key, 8);

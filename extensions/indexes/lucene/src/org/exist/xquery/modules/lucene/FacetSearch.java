@@ -241,7 +241,7 @@ public class FacetSearch extends BasicFunction {
             final QueryParser parser;
             if (queryText.startsWith("ALL:")) {
             	
-            	Database db = index.getBrokerPool();
+            	Database db = index.getDatabase();
             	
             	List<QName> qnames = indexWorker.getDefinedIndexes(null);
             	

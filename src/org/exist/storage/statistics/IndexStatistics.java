@@ -74,7 +74,7 @@ public class IndexStatistics extends AbstractIndex implements RawBackupSupport {
                 final long start = System.currentTimeMillis();
                 final FileInputStream is = new FileInputStream(dataFile);
                 final FileChannel fc = is.getChannel();
-                dataGuide.read(fc, getBrokerPool().getSymbols());
+                dataGuide.read(fc, getDatabase().getSymbols());
                 is.close();
                 if (LOG.isDebugEnabled())
                     {LOG.debug("Reading " + dataFile.getName() + " took " +
@@ -95,7 +95,7 @@ public class IndexStatistics extends AbstractIndex implements RawBackupSupport {
         try {
             final FileOutputStream os = new FileOutputStream(dataFile);
             final FileChannel fc = os.getChannel();
-            dataGuide.write(fc, getBrokerPool().getSymbols());
+            dataGuide.write(fc, getDatabase().getSymbols());
             os.close();
         } catch (final IOException e) {
             LOG.error(e.getMessage(), e);

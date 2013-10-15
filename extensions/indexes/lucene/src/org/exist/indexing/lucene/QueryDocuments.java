@@ -126,7 +126,7 @@ public class QueryDocuments {
 
         final LuceneIndex index = worker.index;
 
-        final Database db = index.getBrokerPool();
+        final Database db = index.getDatabase();
         
         DBBroker broker = db.getActiveBroker();
         

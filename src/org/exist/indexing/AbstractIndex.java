@@ -51,7 +51,7 @@ public abstract class AbstractIndex implements Index {
         this.name = name;
     }
 
-    public Database getBrokerPool() {
+    public Database getDatabase() {
         return db;
     }
 
