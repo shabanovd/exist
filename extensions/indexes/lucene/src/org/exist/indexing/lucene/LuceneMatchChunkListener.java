@@ -55,6 +55,12 @@ import org.apache.lucene.util.AttributeSource.State;
 public class LuceneMatchChunkListener extends AbstractMatchListener {
 
     private static final Logger LOG = Logger.getLogger(LuceneMatchChunkListener.class);
+    
+    public static final byte CHUNK = 1;
+    public static final byte CHUNK_TILL_WS = 2;
+    public static final byte DO_NOT_CHUNK_NODE = 3;
+    
+    private byte mode = 0;
 
     private Match match;
 
@@ -76,9 +82,10 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     
     private boolean cutted = false;
 
-    public LuceneMatchChunkListener(LuceneIndex index, int chunkOffset) {
+    public LuceneMatchChunkListener(LuceneIndex index, int chunkOffset, byte mode) {
         this.index = index;
         this.chunkOffset = chunkOffset;
+        this.mode = mode;
     }
 
     public boolean hasMatches(NodeProxy proxy) {
@@ -176,6 +183,8 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     		}
     	}
     	
+    	cutNode();
+    	
         //super.startElement(qname, attribs);
     }
 
@@ -208,13 +217,49 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 
     @Override
     public void characters(CharSequence seq) throws SAXException {
+    	if (mode == CHUNK || mode == CHUNK_TILL_WS) {
+    		charactersChunking(seq);
+    	} else if (mode == DO_NOT_CHUNK_NODE) {
+    		charactersDoNotChunkNode(seq);
+    	}
+    }
+
+    public void charactersDoNotChunkNode(CharSequence seq) throws SAXException {
+        NodeId nodeId = getCurrentNode().getNodeId();
+        Offset offset = nodesWithMatch.get(nodeId);
+        if (offset == null)
+            return; //super.characters(seq);
+        else {
+            String s = seq.toString();
+            int pos = 0;
+            while (offset != null) {
+                if (offset.startOffset > pos) {
+                    if (offset.startOffset > seq.length())
+                        throw new SAXException("start offset out of bounds");
+                    super.characters(s.substring(pos, offset.startOffset));
+                }
+                int end = offset.endOffset;
+                if (end > s.length())
+                    end = s.length();
+                super.startElement(MATCH_ELEMENT, null);
+                super.characters(s.substring(offset.startOffset, end));
+                super.endElement(MATCH_ELEMENT);
+                pos = end;
+                offset = offset.next;
+            }
+            if (pos < seq.length())
+                super.characters(s.substring(pos));
+        }
+    }
+    
+    public void charactersChunking(CharSequence seq) throws SAXException {
         NodeId nodeId = getCurrentNode().getNodeId();
         
         Offset offset = nodesWithMatch.get(nodeId);
 
         int index = offsets.getIndex(nodeId);
         
-        boolean wasMatch = false;
+//        boolean wasMatch = false;
         
         boolean outStart = true;
         boolean outEnd = true;
@@ -224,14 +269,17 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 	        	if (!offsets.ids[i].equals(nodeId))
 	        		break;
 	        	
-	        	int s;
-	        	if (offsets.starts[i] == offsets.offsets[i]) {
+	        	int s; int e;
+	        	if (offsets.starts[i] == offsets.offsets[i] || outStart) {
 	        		s = offsets.starts[i] - offsets.offsets[i];
+	        		e = 0;
 	        		
 	        	} else {
 	        		s = offsets.starts[i] - offsets.offsets[i] - 1;
+	        		e = 0;
 	        	}
-	        	int e = offsets.ends[i] - offsets.offsets[i] + 1;
+	        	
+	        	e += offsets.ends[i] - offsets.offsets[i];// + 1;
 	        	if (e > seq.length())
 	        		e = seq.length();
 	
@@ -247,7 +295,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 	                super.startElement(MATCH_ELEMENT, null);
 	                super.characters(seq.subSequence(offset.startOffset, end));
 	                super.endElement(MATCH_ELEMENT);
-	                wasMatch = true;
+//	                wasMatch = true;
 	                cutted = false;
 	                
 	                outStart = false;
@@ -255,14 +303,22 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 	                offset = offset.next;
 	        	}
 	        	
-	        	if (outStart && s != 0) {
+	        	if (outStart && s != 0)
 	        		cut();
-	        		outStart = false;
-	        	} else
-	        		outStart = false;
 
-	        	super.characters(seq.subSequence(s, e));
+	        	if (i == offsets.len - 1) {
+	        		;
+	        	} else {
+	        		e++;
+		        	if (e > seq.length())
+		        		e = seq.length();
+	        	}
+
+	        	super.characters(aroundWS(seq.subSequence(s, e), outStart));
+	        	
 	        	cutted = false;
+
+        		outStart = false;
 	        	
 	        	if (e == seq.length())
 	        		outEnd = false;
@@ -277,7 +333,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             super.startElement(MATCH_ELEMENT, null);
             super.characters(seq.subSequence(offset.startOffset, end));
             super.endElement(MATCH_ELEMENT);
-            wasMatch = true;
+//            wasMatch = true;
             cutted = false;
             
             if (end == seq.length())
@@ -286,12 +342,44 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             offset = offset.next;
     	}
     	
-    	if (wasMatch && outEnd)
+    	if (outEnd)
+//    	if (wasMatch && outEnd)
     		cut();
     }
     
+    private CharSequence aroundWS(CharSequence chars, boolean left) {
+    	
+    	if (left) {
+    		for (int i = 0; i < chars.length(); i++) {
+    			char ch = chars.charAt(i);
+    			if (ch == ' ' || ch == '\t') {
+    				return chars.subSequence(i, chars.length() - i + 1);
+    			}
+    		}
+    		return chars;
+    	} else {
+    		for (int i = chars.length() - 1; i >= 0 ; i--) {
+    			
+    			char ch = chars.charAt(i);
+    			
+    			if (ch == ' ' || ch == '\t') {
+    				return chars.subSequence(0, i + 1);
+    			}
+    		}
+    		return chars;
+    	}
+	}
+    
     private void cut() throws SAXException {
     	if (!cutted) {
+	        super.startElement(CUTOFF_ELEMENT, null);
+	        super.endElement(CUTOFF_ELEMENT);
+	        cutted = true;
+    	}
+    }
+
+    private void cutNode() throws SAXException {
+    	if (mode == DO_NOT_CHUNK_NODE && !cutted) {
 	        super.startElement(CUTOFF_ELEMENT, null);
 	        super.endElement(CUTOFF_ELEMENT);
 	        cutted = true;
@@ -666,35 +754,38 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             for (Entry<NodeId, Offset> entry : nodesWithMatch.entrySet()) {
             	offset = entry.getValue();
             	
-            	int start = offset.gStartOffset - chunkOffset;
-            	if (start > 0) {
-            		int b = getIndex(pos);
-            		int e = getIndex(start);
-            		
-            		if (b > -1) {
-	            		for (int i = b; i <= e; i++) {
-	            			if (starts[i] != -1) {
-	            				if (ends[i] > start) {
-	            					if (starts[i] < start) {
-	            						if (pos != 0 && starts[i] <= pos && ends[i] >= pos) {
-	            							//starts[i] = start;
-	            							
-	            						} else {
-	            							starts[i] = start;
-	            						}
-	            					}
-	            				} else if (pos != 0 && starts[i] <= pos && ends[i] >= pos) {
-	            					ends[i] = pos;
-	            				} else {
-	            					starts[i] = -1;
-	            					ends[i] = -1;
-	            				}
-	            			}
+            	while (offset != null) {
+	            	int start = offset.gStartOffset - chunkOffset;
+	            	if (start > 0) {
+	            		int b = getIndex(pos);
+	            		int e = getIndex(start);
+	            		
+	            		if (b > -1) {
+		            		for (int i = b; i <= e; i++) {
+		            			if (starts[i] != -1) {
+		            				if (ends[i] > start) {
+		            					if (starts[i] < start) {
+		            						if (pos != 0 && starts[i] <= pos && ends[i] >= pos) {
+		            							//starts[i] = start;
+		            							
+		            						} else {
+		            							starts[i] = start;
+		            						}
+		            					}
+		            				} else if (pos != 0 && starts[i] <= pos && ends[i] >= pos) {
+		            					ends[i] = pos;
+		            				} else {
+		            					starts[i] = -1;
+		            					ends[i] = -1;
+		            				}
+		            			}
+		            		}
 	            		}
-            		}
+	            	}
+	            	pos = offset.gEndOffset + chunkOffset + 1;
+	            	
+	            	offset = offset.next;
             	}
-            	
-            	pos = offset.gEndOffset + chunkOffset + 1;
             }
             
     		int b = getIndex(pos);

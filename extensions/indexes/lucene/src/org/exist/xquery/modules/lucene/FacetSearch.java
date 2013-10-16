@@ -21,7 +21,6 @@
  */
 package org.exist.xquery.modules.lucene;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,7 +33,6 @@ import javax.xml.transform.OutputKeys;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.CountFacetRequest;
 import org.apache.lucene.facet.search.FacetRequest;
@@ -49,6 +47,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.exist.Database;
+import org.exist.collections.Collection;
 import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.MutableDocumentSet;
@@ -59,7 +58,6 @@ import org.exist.indexing.lucene.LuceneIndex;
 import org.exist.indexing.lucene.LuceneIndexWorker;
 import org.exist.indexing.lucene.LuceneMatchChunkListener;
 import org.exist.indexing.lucene.LuceneUtil;
-import org.exist.indexing.lucene.PlainTextHighlighter;
 import org.exist.indexing.lucene.QueryDocuments;
 import org.exist.indexing.lucene.QueryNodes;
 import org.exist.indexing.lucene.SearchCallback;
@@ -275,7 +273,19 @@ public class FacetSearch extends BasicFunction {
             
             MutableDocumentSet docs = new DefaultDocumentSet(1031);
             for (String uri : toBeMatchedURIs) {
-            	broker.getCollection(XmldbURI.xmldbUriFor(uri)).allDocs(broker, docs, true);
+            	Collection col = broker.getCollection(XmldbURI.xmldbUriFor(uri));
+            	if (col != null) {
+            		col.allDocs(broker, docs, true);
+            	} else {
+//            		XmldbURI docURL = XmldbURI.xmldbUriFor(uri);
+//                	col = broker.getCollection(docURL.removeLastSegment());
+//            		
+//                	if (col != null) {
+//                		DocumentImpl doc = col.getDocument(broker, docURL.lastSegment());
+//                		if (doc != null)
+//                			docs.add(doc);
+//                	}
+            	}
             }
             
             QName bq = null;
@@ -308,8 +318,8 @@ public class FacetSearch extends BasicFunction {
 					@Override
 					public void found(AtomicReader reader, int docNum, NodeProxy element, float score) {
 //						try {
-//							System.out.println("");
-//							System.out.println( queryResult2String(broker, 10, element) );
+//							System.out.println(""+element.getDocument().getURI());
+//							System.out.println( queryResult2String(broker, element, 5, LuceneMatchChunkListener.CHUNK) );
 //						} catch (Throwable e) {
 //							e.printStackTrace();
 //						}
@@ -494,14 +504,14 @@ public class FacetSearch extends BasicFunction {
         return new Sort(sortFields.toArray(new SortField[sortFields.size()]));
     }
  
-    private String queryResult2String(DBBroker broker, int chunkOffset, NodeProxy proxy) throws SAXException, XPathException {
+    private String queryResult2String(DBBroker broker, NodeProxy proxy, int chunkOffset, byte mode) throws SAXException, XPathException {
         Properties props = new Properties();
         props.setProperty(OutputKeys.INDENT, "no");
         
         Serializer serializer = broker.getSerializer();
         serializer.reset();
         
-        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex(broker), chunkOffset);
+        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex(broker), chunkOffset, mode);
         highlighter.reset(broker, proxy);
         
         final StringWriter writer = new StringWriter();

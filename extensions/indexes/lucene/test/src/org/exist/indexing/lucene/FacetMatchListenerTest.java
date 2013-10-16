@@ -276,7 +276,7 @@ public class FacetMatchListenerTest extends FacetAbstract {
 				public void found(AtomicReader reader, int docNum, NodeProxy element, float score) {
 					try {
 						System.out.println(
-							queryResult2String(_broker, 10, element)
+							queryResult2String(_broker, element, 10, LuceneMatchChunkListener.CHUNK)
 						);
 					} catch (Throwable e) {
 						e.printStackTrace();
@@ -329,14 +329,14 @@ public class FacetMatchListenerTest extends FacetAbstract {
         
     }
     
-    private String queryResult2String(DBBroker broker, int chunkOffset, NodeProxy proxy) throws SAXException, XPathException {
+    private String queryResult2String(DBBroker broker, NodeProxy proxy, int chunkOffset, byte mode) throws SAXException, XPathException {
         Properties props = new Properties();
         props.setProperty(OutputKeys.INDENT, "no");
         
         Serializer serializer = broker.getSerializer();
         serializer.reset();
         
-        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex(), 5);
+        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex(), 5, mode);
         highlighter.reset(broker, proxy);
         
         final StringWriter writer = new StringWriter();

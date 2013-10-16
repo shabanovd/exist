@@ -77,6 +77,18 @@ public class LuceneMatchListenerTest {
             "   <p>A simple<note>sic</note> paragraph with <hi>highlighted</hi> text <note>and a note</note> to be ignored.</p>" +
             "   <p>Paragraphs with <s>mix</s><s>ed</s> content are <s>danger</s>ous.</p>" +
             "</article>";
+    
+    private static String XML2 =
+            "<root>" +
+            "   <para>bla bla content bla bla bla bla content bla bla</para>" +
+            "</root>";
+
+    private static String XML3 =
+            "<root>" +
+            "   <para>blabla</para>" +
+            "   <para>bla bla content bla bla bla bla content bla bla</para>" +
+            "   <para>blabla</para>" +
+            "</root>";
 
     private static String CONF1 =
             "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
@@ -330,13 +342,13 @@ public class LuceneMatchListenerTest {
             Sequence seq = xquery.execute("//para[ft:query(., 'mixed')]", null, AccessContext.TEST);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
-            String result = queryResult2String(broker, 5, (NodeProxy)seq.itemAt(0));
+            String result = queryResult2String(broker, (NodeProxy)seq.itemAt(0), 5, LuceneMatchChunkListener.CHUNK);
             System.out.println("RESULT: " + result);
             XMLAssert.assertEquals(
         		"<para "+NS+">" 
-					+ CUTOFF + " with <hi>"
+					+ CUTOFF + "with <hi>"
 						+ _MATCH_START + "mixed" + MATCH_END
-					+ "</hi> conte" + CUTOFF
+					+ "</hi> cont" + CUTOFF
 				+"</para>",
 				result);
             
@@ -394,6 +406,124 @@ public class LuceneMatchListenerTest {
         }
     }
 
+    @Test
+    public void chunkMultiMatchTest() {
+        DBBroker broker = null;
+        try {
+            configureAndStore(CONF2, XML2);
+
+            broker = pool.get(pool.getSecurityManager().getSystemSubject());
+
+            XQuery xquery = broker.getXQueryService();
+            assertNotNull(xquery);
+
+            Sequence seq = xquery.execute("//para[ft:query(., 'content')]", null, AccessContext.TEST);
+            assertNotNull(seq);
+            assertEquals(1, seq.getItemCount());
+            String result = queryResult2String(broker, (NodeProxy)seq.itemAt(0), 5, LuceneMatchChunkListener.CHUNK);
+            System.out.println("RESULT: " + result);
+            XMLAssert.assertEquals(
+        		"<para "+NS+">" +
+					CUTOFF + " bla " +
+					_MATCH_START + "content" + MATCH_END +
+					" bla bla bla bla " + 
+//					" bla " + CUTOFF + " bla " +
+					_MATCH_START + "content" + MATCH_END +
+					" bla b" + CUTOFF +
+//					" bla " + CUTOFF +
+				"</para>",
+				result);
+
+            result = queryResult2String(broker, (NodeProxy)seq.itemAt(0), 5, LuceneMatchChunkListener.DO_NOT_CHUNK_NODE);
+            XMLAssert.assertEquals(
+        		"<para "+NS+">bla bla " +
+					_MATCH_START + "content" + MATCH_END +
+					" bla bla bla bla " + 
+					_MATCH_START + "content" + MATCH_END +
+					" bla bla" +
+				"</para>",
+				result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            pool.release(broker);
+        }
+    }
+    
+    @Test
+    public void chunkCutNode() {
+        DBBroker broker = null;
+        try {
+            configureAndStore(CONF2, XML3);
+
+            broker = pool.get(pool.getSecurityManager().getSystemSubject());
+
+            XQuery xquery = broker.getXQueryService();
+            assertNotNull(xquery);
+
+            Sequence seq = xquery.execute("//para[ft:query(., 'content')]/parent::*", null, AccessContext.TEST);
+            assertNotNull(seq);
+            assertEquals(1, seq.getItemCount());
+            String result = queryResult2String(broker, (NodeProxy)seq.itemAt(0), 5, LuceneMatchChunkListener.DO_NOT_CHUNK_NODE);
+            System.out.println("RESULT: " + result);
+            XMLAssert.assertEquals(
+        		"<root "+NS+">" +
+    				CUTOFF + 
+    				"<para>" +
+	    				 "bla bla " +
+						_MATCH_START + "content" + MATCH_END +
+						" bla bla bla bla " + 
+						_MATCH_START + "content" + MATCH_END +
+						" bla bla" + 
+					"</para>" +
+					CUTOFF +
+				"</root>",
+				result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            pool.release(broker);
+        }
+    }
+
+    @Test
+    public void chunkAroundWS() {
+        DBBroker broker = null;
+        try {
+            configureAndStore(CONF2, XML2);
+
+            broker = pool.get(pool.getSecurityManager().getSystemSubject());
+
+            XQuery xquery = broker.getXQueryService();
+            assertNotNull(xquery);
+
+            Sequence seq = xquery.execute("//para[ft:query(., 'content')]/parent::*", null, AccessContext.TEST);
+            assertNotNull(seq);
+            assertEquals(1, seq.getItemCount());
+            String result = queryResult2String(broker, (NodeProxy)seq.itemAt(0), 6, LuceneMatchChunkListener.CHUNK_TILL_WS);
+            System.out.println("RESULT: " + result);
+            XMLAssert.assertEquals(
+        		"<root "+NS+">" +
+    				"<para>" +
+    					CUTOFF + 
+		    				 " bla " +
+							_MATCH_START + "content" + MATCH_END +
+							" bla bla bla bla " + 
+							_MATCH_START + "content" + MATCH_END +
+							" bla " + 
+						CUTOFF +
+					"</para>" +
+				"</root>",
+				result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            pool.release(broker);
+        }
+    }
 
     @BeforeClass
     public static void startDB() {
@@ -482,14 +612,14 @@ public class LuceneMatchListenerTest {
         return serializer.serialize((NodeValue) seq.itemAt(0));
     }
     
-    private String queryResult2String(DBBroker broker, int chunkOffset, NodeProxy proxy) throws SAXException, XPathException {
+    private String queryResult2String(DBBroker broker, NodeProxy proxy, int chunkOffset, byte mode) throws SAXException, XPathException {
         Properties props = new Properties();
         props.setProperty(OutputKeys.INDENT, "no");
         
         Serializer serializer = broker.getSerializer();
         serializer.reset();
         
-        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex(), 5);
+        LuceneMatchChunkListener highlighter = new LuceneMatchChunkListener(getLuceneIndex(), chunkOffset, mode);
         highlighter.reset(broker, proxy);
 
         final StringWriter writer = new StringWriter();
