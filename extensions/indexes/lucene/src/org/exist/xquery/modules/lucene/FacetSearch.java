@@ -93,7 +93,7 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public class FacetSearch extends BasicFunction {
 
-    private static final Logger logger = Logger.getLogger(FacetSearch.class);
+    private static final Logger LOG = Logger.getLogger(FacetSearch.class);
     
     private static final QName SEARCH = new QName("facet-search", LuceneModule.NAMESPACE_URI, LuceneModule.PREFIX);
     
@@ -200,7 +200,7 @@ public class FacetSearch extends BasicFunction {
 
         } catch (XPathException ex) {
             // Log and rethrow
-            logger.error(ex);
+            LOG.error(ex);
             throw ex;
         }
 
@@ -277,14 +277,16 @@ public class FacetSearch extends BasicFunction {
             	if (col != null) {
             		col.allDocs(broker, docs, true);
             	} else {
-//            		XmldbURI docURL = XmldbURI.xmldbUriFor(uri);
-//                	col = broker.getCollection(docURL.removeLastSegment());
-//            		
-//                	if (col != null) {
-//                		DocumentImpl doc = col.getDocument(broker, docURL.lastSegment());
-//                		if (doc != null)
-//                			docs.add(doc);
-//                	}
+            		if (LuceneIndex.DEBUG) {
+	            		XmldbURI docURL = XmldbURI.xmldbUriFor(uri);
+	                	col = broker.getCollection(docURL.removeLastSegment());
+	            		
+	                	if (col != null) {
+	                		DocumentImpl doc = col.getDocument(broker, docURL.lastSegment());
+	                		if (doc != null)
+	                			docs.add(doc);
+	                	}
+            		}
             	}
             }
             
@@ -317,12 +319,13 @@ public class FacetSearch extends BasicFunction {
 	
 					@Override
 					public void found(AtomicReader reader, int docNum, NodeProxy element, float score) {
-//						try {
-//							System.out.println(""+element.getDocument().getURI());
-//							System.out.println( queryResult2String(broker, element, 5, LuceneMatchChunkListener.CHUNK) );
-//						} catch (Throwable e) {
-//							e.printStackTrace();
-//						}
+						if (LuceneIndex.DEBUG)
+							try {
+								System.out.println("\n"+element.getDocument().getURI());
+								System.out.println( queryResult2String(broker, element, 5, LuceneMatchChunkListener.CHUNK) );
+							} catch (Throwable e) {
+								e.printStackTrace();
+							}
 						
 						String fDocUri = element.getDocument().getURI().toString();
 						
@@ -506,7 +509,7 @@ public class FacetSearch extends BasicFunction {
  
     private String queryResult2String(DBBroker broker, NodeProxy proxy, int chunkOffset, byte mode) throws SAXException, XPathException {
         Properties props = new Properties();
-        props.setProperty(OutputKeys.INDENT, "no");
+        props.setProperty(OutputKeys.INDENT, "yes");
         
         Serializer serializer = broker.getSerializer();
         serializer.reset();

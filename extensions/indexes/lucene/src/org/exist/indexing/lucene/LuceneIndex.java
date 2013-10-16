@@ -43,6 +43,8 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
     public final static String ID = LuceneIndex.class.getName();
 
 	private static final String DIR_NAME = "lucene";
+	
+	public static final boolean DEBUG = false;
 
     protected Directory directory;
     protected Analyzer defaultAnalyzer;

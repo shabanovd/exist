@@ -56,11 +56,12 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 
     private static final Logger LOG = Logger.getLogger(LuceneMatchChunkListener.class);
     
+    public static final byte DO_NOT_CHUNK = 1;
     public static final byte CHUNK = 1;
     public static final byte CHUNK_TILL_WS = 2;
     public static final byte DO_NOT_CHUNK_NODE = 3;
     
-    private byte mode = 0;
+    private byte mode = CHUNK;
 
     private Match match;
 
@@ -353,7 +354,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     		for (int i = 0; i < chars.length(); i++) {
     			char ch = chars.charAt(i);
     			if (ch == ' ' || ch == '\t') {
-    				return chars.subSequence(i, chars.length() - i + 1);
+    				return chars.subSequence(i, chars.length());
     			}
     		}
     		return chars;
@@ -574,26 +575,32 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
             LOG.warn("Problem found while serializing XML: " + e.getMessage(), e);
         }
         
-        System.out.println("Debug");
-        
-        for (int i = 0; i < offsets.len; i++) {
-        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+        if (LuceneIndex.DEBUG) {
+		    System.out.println("Debug");
+		    
+		    for (int i = 0; i < offsets.len; i++) {
+		    	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+	        }
         }
 
         offsets.chunking();
         
-        System.out.println("after chunking");
-        
-        for (int i = 0; i < offsets.len; i++) {
-        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+        if (LuceneIndex.DEBUG) {
+	        System.out.println("after chunking");
+	        
+	        for (int i = 0; i < offsets.len; i++) {
+	        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+	        }
         }
         
         offsets.cleanup();
         
-        System.out.println("after cleanup");
-        
-        for (int i = 0; i < offsets.len; i++) {
-        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+        if (LuceneIndex.DEBUG) {
+	        System.out.println("after cleanup");
+	        
+	        for (int i = 0; i < offsets.len; i++) {
+	        	System.out.println("" + offsets.ids[i] + " " + offsets.offsets[i] + " [" + offsets.starts[i] + " : " + offsets.ends[i] + "]");
+	        }
         }
     }
 
