@@ -228,29 +228,34 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     public void charactersDoNotChunkNode(CharSequence seq) throws SAXException {
         NodeId nodeId = getCurrentNode().getNodeId();
         Offset offset = nodesWithMatch.get(nodeId);
-        if (offset == null)
-            return; //super.characters(seq);
-        else {
-            String s = seq.toString();
-            int pos = 0;
-            while (offset != null) {
-                if (offset.startOffset > pos) {
-                    if (offset.startOffset > seq.length())
-                        throw new SAXException("start offset out of bounds");
-                    super.characters(s.substring(pos, offset.startOffset));
-                }
-                int end = offset.endOffset;
-                if (end > s.length())
-                    end = s.length();
-                super.startElement(MATCH_ELEMENT, null);
-                super.characters(s.substring(offset.startOffset, end));
-                super.endElement(MATCH_ELEMENT);
-                pos = end;
-                offset = offset.next;
+        if (offset == null) {
+        	
+            int index = offsets.getIndex(nodeId);
+            if (index == -1) {
+	        	System.out.println("empty text on "+nodeId);
+	            return; //super.characters(seq);
             }
-            if (pos < seq.length())
-                super.characters(s.substring(pos));
         }
+
+        String s = seq.toString();
+        int pos = 0;
+        while (offset != null) {
+            if (offset.startOffset > pos) {
+                if (offset.startOffset > seq.length())
+                    throw new SAXException("start offset out of bounds");
+                super.characters(s.substring(pos, offset.startOffset));
+            }
+            int end = offset.endOffset;
+            if (end > s.length())
+                end = s.length();
+            super.startElement(MATCH_ELEMENT, null);
+            super.characters(s.substring(offset.startOffset, end));
+            super.endElement(MATCH_ELEMENT);
+            pos = end;
+            offset = offset.next;
+        }
+        if (pos < seq.length())
+            super.characters(s.substring(pos));
     }
     
     public void charactersChunking(CharSequence seq) throws SAXException {
@@ -821,7 +826,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         	int count = 0;
 
         	for (int i = 0; i < len; i++) {
-    			if (starts[i] != -1)
+    			if (starts[i] != -1 && ends[i] != -1)
     				count++;
         	}
         	
@@ -834,7 +839,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         	
         	count = 0;
         	for (int i = 0; i < len; i++) {
-    			if (starts[i] != -1) {
+    			if (starts[i] != -1 && ends[i] != -1) {
     				_offsets[count] = offsets[i];
     				_starts[count] = starts[i];
     				_ends[count] = ends[i];

@@ -322,7 +322,7 @@ public class FacetSearch extends BasicFunction {
 						if (LuceneIndex.DEBUG)
 							try {
 								System.out.println("\n"+element.getDocument().getURI());
-								System.out.println( queryResult2String(broker, element, 5, LuceneMatchChunkListener.CHUNK) );
+								System.out.println( queryResult2String(broker, element, 5, LuceneMatchChunkListener.DO_NOT_CHUNK_NODE) );
 							} catch (Throwable e) {
 								e.printStackTrace();
 							}
