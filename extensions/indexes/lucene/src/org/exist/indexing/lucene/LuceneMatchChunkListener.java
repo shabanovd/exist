@@ -350,23 +350,27 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     
     private CharSequence aroundWS(CharSequence chars, boolean left) {
     	
-    	if (left) {
-    		for (int i = 0; i < chars.length(); i++) {
-    			char ch = chars.charAt(i);
-    			if (ch == ' ' || ch == '\t') {
-    				return chars.subSequence(i, chars.length());
-    			}
-    		}
-    		return chars;
+    	if (mode == CHUNK_TILL_WS) {
+	    	if (left) {
+	    		for (int i = 0; i < chars.length(); i++) {
+	    			char ch = chars.charAt(i);
+	    			if (ch == ' ' || ch == '\t') {
+	    				return chars.subSequence(i, chars.length());
+	    			}
+	    		}
+	    		return chars;
+	    	} else {
+	    		for (int i = chars.length() - 1; i >= 0 ; i--) {
+	    			
+	    			char ch = chars.charAt(i);
+	    			
+	    			if (ch == ' ' || ch == '\t') {
+	    				return chars.subSequence(0, i + 1);
+	    			}
+	    		}
+	    		return chars;
+	    	}
     	} else {
-    		for (int i = chars.length() - 1; i >= 0 ; i--) {
-    			
-    			char ch = chars.charAt(i);
-    			
-    			if (ch == ' ' || ch == '\t') {
-    				return chars.subSequence(0, i + 1);
-    			}
-    		}
     		return chars;
     	}
 	}
