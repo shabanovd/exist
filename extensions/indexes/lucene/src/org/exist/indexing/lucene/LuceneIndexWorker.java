@@ -33,6 +33,8 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
 import org.exist.collections.Collection;
@@ -420,7 +422,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      */
     public NodeSet query(XQueryContext context, int contextId, DocumentSet docs, NodeSet contextSet,
         List<QName> qnames, String queryStr, int axis, Properties options)
-            throws IOException, ParseException, TerminatedException {
+            throws IOException, ParseException, XPathException {
         qnames = getDefinedIndexes(qnames);
         NodeSet resultSet = new NewArrayNodeSet();
         boolean returnAncestor = axis == NodeSet.ANCESTOR;
@@ -430,8 +432,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             for (QName qname : qnames) {
                 String field = LuceneUtil.encodeQName(qname, index.getDatabase().getSymbols());
                 Analyzer analyzer = getAnalyzer(null, qname, context.getBroker(), docs);
-                QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, field, analyzer);
-                setOptions(options, parser);
+                QueryParserWrapper parser = getQueryParser(field, analyzer, docs);
+                setOptions(options, parser.getConfiguration());
                 Query query = parser.parse(queryStr);
                 searchAndProcess(contextId, qname, docs, contextSet, resultSet,
                     returnAncestor, searcher, query, context.getWatchDog());
@@ -442,15 +444,15 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         return resultSet;
     }
 
-    protected void setOptions(Properties options, QueryParser parser) throws ParseException {
+    protected void setOptions(Properties options, CommonQueryParserConfiguration parser) throws ParseException {
         if (options == null)
             return;
         String option = options.getProperty(OPTION_DEFAULT_OPERATOR);
-        if (option != null) {
+        if (option != null && parser instanceof QueryParserBase) {
             if (DEFAULT_OPERATOR_OR.equals(option))
-                parser.setDefaultOperator(QueryParser.OR_OPERATOR);
+                ((QueryParserBase)parser).setDefaultOperator(QueryParser.OR_OPERATOR);
             else
-                parser.setDefaultOperator(QueryParser.AND_OPERATOR);
+                ((QueryParserBase)parser).setDefaultOperator(QueryParser.AND_OPERATOR);
         }
         option = options.getProperty(OPTION_LEADING_WILDCARD);
         if (option != null)
@@ -544,7 +546,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
     public NodeSet queryField(XQueryContext context, int contextId, DocumentSet docs, NodeSet contextSet,
             String field, String queryString, int axis, Properties options)
-            throws IOException, ParseException, TerminatedException {
+            throws IOException, ParseException, XPathException {
         NodeSet resultSet = new NewArrayNodeSet();
         boolean returnAncestor = axis == NodeSet.ANCESTOR;
         IndexSearcher searcher = null;
@@ -552,8 +554,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             searcher = index.getSearcher();
             Analyzer analyzer = getAnalyzer(field, null, context.getBroker(), docs);
             LOG.debug("Using analyzer " + analyzer + " for " + queryString);
-            QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, field, analyzer);
-            setOptions(options, parser);
+            QueryParserWrapper parser = getQueryParser(field, analyzer, docs);
+            setOptions(options, parser.getConfiguration());
             Query query = parser.parse(queryString);
             searchAndProcess(contextId, null, docs, contextSet, resultSet,
                 returnAncestor, searcher, query, context.getWatchDog());
@@ -694,7 +696,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             final Analyzer searchAnalyzer = new StandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE);
 
             // Setup query Version, default field, analyzer
-            final QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, "", searchAnalyzer);
+            final QueryParserWrapper parser = getQueryParser("", searchAnalyzer, null);
             final Query query = parser.parse(queryText);
                        
             // extract all used fields from query
@@ -1051,6 +1053,26 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             }
         }
         return index.getDefaultAnalyzer();
+    }
+
+    protected QueryParserWrapper getQueryParser(String field, Analyzer analyzer, DocumentSet docs) {
+        if (docs != null) {
+            for (Iterator<Collection> i = docs.getCollectionIterator(); i.hasNext(); ) {
+                Collection collection = i.next();
+                IndexSpec idxConf = collection.getIndexConfiguration(broker);
+                if (idxConf != null) {
+                    LuceneConfig config = (LuceneConfig) idxConf.getCustomIndexSpec(LuceneIndex.ID);
+                    if (config != null) {
+                        QueryParserWrapper parser = config.getQueryParser(field, analyzer);
+                        if (parser != null) {
+                            return parser;
+                        }
+                    }
+                }
+            }
+        }
+        // not found. return default query parser:
+        return new ClassicQueryParserWrapper(field, analyzer);
     }
 
     public boolean checkIndex(DBBroker broker) {

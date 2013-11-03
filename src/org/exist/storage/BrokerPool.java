@@ -1515,6 +1515,13 @@ public class BrokerPool implements Database {
 		return securityManager.getGuestSubject();
     }
 
+    /**
+     *  Get active broker for current thread
+     * 
+     * @return Database broker
+     * @throws RuntimeException NO broker available for current thread.
+     * 
+     */
 	public DBBroker getActiveBroker() { //throws EXistException {
 		//synchronized(this) {
 			//Try to get an active broker
@@ -1539,6 +1546,7 @@ public class BrokerPool implements Database {
 						}
 					}
 				});
+                LOG.debug(sb.toString());
 				throw new RuntimeException(sb.toString());
 			}
 			return broker;

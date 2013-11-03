@@ -17,6 +17,7 @@ public class LuceneConfigXML {
     private final static String CONFIG_ROOT = "lucene";
     private final static String INDEX_ELEMENT = "text";
     private final static String ANALYZER_ELEMENT = "analyzer";
+    private final static String PARSER_ELEMENT = "parser";
     private final static String FIELD_TYPE_ELEMENT = "fieldType";
     private static final String INLINE_ELEMENT = "inline";
     private static final String IGNORE_ELEMENT = "ignore";
@@ -67,6 +68,9 @@ public class LuceneConfigXML {
                         
 					} else if (ANALYZER_ELEMENT.equals(node.getLocalName())) {
 						conf.analyzers.addAnalyzer((Element) node);
+						
+					} else if (PARSER_ELEMENT.equals(node.getLocalName())) {
+					    conf.queryParser = ((Element)node).getAttribute("class");
                         
 					} else if (FIELD_TYPE_ELEMENT.equals(node.getLocalName())) {
 						FieldType type = parseFieldType((Element) node, conf.analyzers);

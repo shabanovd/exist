@@ -140,9 +140,8 @@
 	<classpathentry kind="lib" path="lib/optional/httpcore-4.2.2.jar"/>
 	<classpathentry kind="lib" path="lib/optional/httpmime-4.2.3.jar"/>
 	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-analyzers-common-4.4.0.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-core-4.4.0.jar" sourcepath="extensions/indexes/lucene/lib/lucene-4.4.0.zip"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-core-4.4.0.jar"/>
 	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-facet-4.4.0.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-highlighter-4.4.0.jar"/>
 	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queries-4.4.0.jar"/>
 	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queryparser-4.4.0.jar"/>
 	<classpathentry kind="lib" path="extensions/fluent/lib/hamcrest-core-1.3.jar"/>

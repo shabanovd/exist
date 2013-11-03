@@ -8,4 +8,4 @@ If the index got corrupted, this is how to recover:
 - remove all ".dbx" files EXCEPT dom.dbx, collections.dbx and symbols.dbx
 - start database
 
-$Id$
+$Id: RECOVERY 11804 2010-05-22 18:01:29Z dizzzz $

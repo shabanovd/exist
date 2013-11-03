@@ -11,6 +11,7 @@ import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
 
@@ -32,6 +33,8 @@ public class LuceneConfig {
     protected float boost = -1;
 
     protected AnalyzerConfig analyzers = new AnalyzerConfig();
+
+    protected String queryParser = null;
 
     public LuceneConfig() {
     }
@@ -161,7 +164,37 @@ public class LuceneConfig {
 	    inlineNodes.add(qname);
 	}
 
-	public boolean isInlineNode(QName qname) {
+    /**
+     * Try to instantiate the configured Lucene query parser. Lucene's parsers
+     * do not all have a common base class, so we need to wrap around the implementation
+     * details.
+     *
+     * @param field the default field to query
+     * @param analyzer analyzer to use for query parsing
+     * @return a query wrapper
+     */
+    public QueryParserWrapper getQueryParser(String field, Analyzer analyzer) {
+        QueryParserWrapper parser = null;
+        if (queryParser != null) {
+            try {
+                Class<?> clazz = Class.forName(queryParser);
+                if (QueryParserBase.class.isAssignableFrom(clazz)) {
+                    parser = new ClassicQueryParserWrapper(queryParser, field, analyzer);
+                } else {
+                    parser = QueryParserWrapper.create(queryParser, field, analyzer);
+                }
+            } catch (ClassNotFoundException e) {
+                LOG.warn("Failed to instantiate lucene query parser class: " + queryParser, e);
+            }
+        }
+        if (parser == null) {
+            // use default parser
+            parser = new ClassicQueryParserWrapper(field, analyzer);
+        }
+        return parser;
+    }
+
+    public boolean isInlineNode(QName qname) {
         return inlineNodes != null && inlineNodes.contains(qname);
     }
 	
