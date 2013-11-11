@@ -232,7 +232,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         	
             int index = offsets.getIndex(nodeId);
             if (index == -1) {
-	        	System.out.println("empty text on "+nodeId);
+	        	//System.out.println("empty text on "+nodeId);
 	            return; //super.characters(seq);
             }
         }
