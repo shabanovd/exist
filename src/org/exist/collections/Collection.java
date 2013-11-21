@@ -701,7 +701,19 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             getLock().release(Lock.READ_LOCK);
         }
     }
-    
+
+    /**
+     * Determines if this Collection has any documents, or sub-collections
+     */
+    public boolean isEmptyNoLock(final DBBroker broker) throws PermissionDeniedException {
+        
+        if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.READ)) {
+            throw new PermissionDeniedException("Permission denied to read collection: " + path);
+        }
+        
+        return documents.isEmpty() && subCollections.isEmpty();
+    }
+
     /**
      * Determines if this Collection has any documents, or sub-collections
      */

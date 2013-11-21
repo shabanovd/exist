@@ -1004,7 +1004,7 @@ public class NativeBroker extends DBBroker {
                     throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " to " + dest.getURI() + " by " + getSubject().getName());
                 }
                 
-                if(newDest.isEmpty(this)) {
+                if(newDest.isEmptyNoLock(this)) {
                     if(!dest.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
                         throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " to " + dest.getURI() + " by " + getSubject().getName());
                     }
@@ -1018,7 +1018,7 @@ public class NativeBroker extends DBBroker {
                 throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " for resource " + srcSubDoc.getURI() + " by " + getSubject().getName());
             }
             
-            if(newDest != null && !newDest.isEmpty(this)) {
+            if(newDest != null && !newDest.isEmptyNoLock(this)) {
                 final DocumentImpl newDestSubDoc = newDest.getDocument(this, srcSubDoc.getFileURI()); //TODO check this uri is just the filename!
                 if(newDestSubDoc != null) {
                     if(!newDestSubDoc.getPermissions().validate(getSubject(), Permission.WRITE)) {
@@ -1374,7 +1374,7 @@ public class NativeBroker extends DBBroker {
             throw new PermissionDeniedException("Account '" + getSubject().getName() + "' is not allowed to remove collection '" + collection.getURI() + "'");
         }
         
-        if(!collection.isEmpty(this)) {
+        if(!collection.isEmptyNoLock(this)) {
             if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
                 throw new PermissionDeniedException("Account '" + getSubject().getName() + "' is not allowed to remove collection '" + collection.getURI() + "'");
             }
