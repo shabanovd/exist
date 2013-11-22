@@ -23,7 +23,9 @@ package org.exist.management.impl;
 
 import java.io.StringWriter;
 import java.util.Map;
+
 import javax.management.openmbean.*;
+
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 
@@ -123,6 +125,29 @@ public class Database implements DatabaseMBean {
         return pool.getConfiguration().getExistHome().getAbsolutePath();
     }
     
+    private static String[] txnItemNames = {
+        "active"
+    };
+    
+    private static String[] txnItemDescriptions = {
+        "Number of active transactions"
+    };
+    
+    @Override
+    public CompositeData getTransactions() {
+        final OpenType<?>[] itemTypes = { SimpleType.INTEGER };
+        try {
+            final CompositeType infoType = new CompositeType("transactions", "Provides information transactions.", txnItemNames, txnItemDescriptions, itemTypes);
+            
+            final Object[] itemValues = { pool.getTransactionManager().numberActiveTransactions() };
+            return new CompositeDataSupport(infoType, txnItemNames, itemValues);
+            
+        } catch (final OpenDataException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public String printStackTrace(Thread thread) {
     	final StackTraceElement[] stack = thread.getStackTrace();
     	final StringWriter writer = new StringWriter();

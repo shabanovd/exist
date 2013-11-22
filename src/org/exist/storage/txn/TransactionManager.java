@@ -344,6 +344,10 @@ public class TransactionManager {
     		}
     	}.run();
     }
+    
+    public int numberActiveTransactions() {
+        return transactions.size();
+    }
 
 	public void debug(PrintStream out) {
 		out.println("Active transactions: "+ transactions.size());

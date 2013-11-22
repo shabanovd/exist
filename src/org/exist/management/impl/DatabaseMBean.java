@@ -1,5 +1,6 @@
 package org.exist.management.impl;
 
+import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
 /*
@@ -46,4 +47,6 @@ public interface DatabaseMBean {
     public long getUptime();
 
     public String getExistHome();
+
+    public CompositeData getTransactions();
 }
