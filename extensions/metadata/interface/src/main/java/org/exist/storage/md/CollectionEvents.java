@@ -87,7 +87,7 @@ public class CollectionEvents implements CollectionTrigger {
 	public void beforeMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException {
 //		System.out.println("beforeMoveCollection "+collection.getURI());
 		try {
-	        for(Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext(); ) {
+	        for(Iterator<DocumentImpl> i = collection.iteratorNoLock(broker); i.hasNext(); ) {
 	            DocumentImpl doc = i.next();
 	            try {
 		            MDStorageManager._.md.moveMetas(
@@ -148,11 +148,24 @@ public class CollectionEvents implements CollectionTrigger {
 	@Override
 	public void beforeDeleteCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException {
 //		System.out.println("beforeDeleteCollection "+collection.getURI());
-		try {
-			deleteCollectionRecursive(broker, collection);
-		} catch (PermissionDeniedException e) {
-			throw new TriggerException(e);
-		}
+        try {
+            for(Iterator<DocumentImpl> i = collection.iteratorNoLock(broker); i.hasNext(); ) {
+                DocumentImpl doc = i.next();
+                try {
+                    MDStorageManager._.md.delMetas(doc.getURI());
+                } catch (Throwable e) {
+                    MDStorageManager.LOG.fatal(e);
+                }
+            }
+        } catch (PermissionDeniedException e) {
+            throw new TriggerException(e);
+        }
+	    
+//		try {
+//			deleteCollectionRecursive(broker, collection);
+//		} catch (PermissionDeniedException e) {
+//			throw new TriggerException(e);
+//		}
 	}
 
 	@Override
