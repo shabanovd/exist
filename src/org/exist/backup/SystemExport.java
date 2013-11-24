@@ -41,6 +41,7 @@ import org.exist.storage.btree.Value;
 import org.exist.storage.index.CollectionStore;
 import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.serializers.EXistOutputKeys;
+import org.exist.storage.sync.Sync;
 import org.exist.util.UTF8;
 import org.exist.util.serializer.AttrList;
 import org.exist.util.serializer.Receiver;
@@ -63,6 +64,7 @@ import org.xml.sax.helpers.NamespaceSupport;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.OutputKeys;
+
 import java.io.*;
 import java.util.*;
 
@@ -211,6 +213,8 @@ public class SystemExport
 //
 //            FileUtils.forceDelete(repoBackup);
 
+            broker.sync(Sync.MAJOR_SYNC);
+            
             final Date date = ( prevBackup == null ) ? null : prevBackup.getDate();
             final CollectionCallback cb   = new CollectionCallback( output, date, prevBackup, errorList, true );
             broker.getCollectionsFailsafe( cb );
