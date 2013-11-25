@@ -80,7 +80,7 @@ public class CollectionConfigurationManager {
     
     public CollectionConfigurationManager(DBBroker broker) throws EXistException, CollectionConfigurationException, PermissionDeniedException, LockException {
 		this.pool = broker.getBrokerPool();
-        this.latch = pool.getCollectionsCache();
+        this.latch = new Object(); //pool.getCollectionsCache();
         
         checkCreateCollection(broker, CONFIG_COLLECTION_URI);
         checkCreateCollection(broker, ROOT_COLLECTION_CONFIG_URI);
