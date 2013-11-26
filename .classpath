@@ -146,6 +146,6 @@
 	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queryparser-4.4.0.jar"/>
 	<classpathentry kind="lib" path="extensions/fluent/lib/hamcrest-core-1.3.jar"/>
 	<classpathentry kind="lib" path="extensions/fluent/lib/hamcrest-library-1.3.jar"/>
-	<classpathentry kind="lib" path="lib/test/junit-4.11.jar"/>
+	<classpathentry kind="lib" path="lib/test/junit-4.11.jar" sourcepath="/home/dmitriy/.m2/repository/junit/junit/4.11/junit-4.11-sources.jar"/>
 	<classpathentry kind="output" path="test/classes"/>
 </classpath>
