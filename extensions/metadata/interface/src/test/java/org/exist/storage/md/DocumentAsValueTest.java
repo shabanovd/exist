@@ -42,6 +42,7 @@ import org.exist.test.TestConstants;
 import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
 import org.exist.xmldb.XmldbURI;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
@@ -78,7 +79,7 @@ public class DocumentAsValueTest {
     private static DocumentImpl doc1 = null;
     private static DocumentImpl doc2 = null;
 
-    @Test
+    //@Test
 	public void test_00() throws Exception {
     	System.out.println("test");
     	
