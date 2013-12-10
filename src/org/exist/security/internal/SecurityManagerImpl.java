@@ -803,6 +803,11 @@ public class SecurityManagerImpl implements SecurityManager {
         usersById.modify(new PrincipalDbModify<Account>(){
             @Override
             public void execute(final Int2ObjectHashMap<Account> principalDb) {
+            	Account tmp = principalDb.get(id);
+            	if (tmp != null) {
+            		LOG.error("Two accounts with same id '"+id+"': '"+account.getName()+"' and '"+tmp.getName()+"'");
+            		System.out.println("ERROR: Two accounts with same id '"+id+"': '"+account.getName()+"' and '"+tmp.getName()+"' !!!");
+            	}
                principalDb.put(id, account);
             }
         });
