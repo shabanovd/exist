@@ -24,15 +24,16 @@ package org.exist.indexing.lucene;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import org.apache.lucene.facet.encoding.DGapVInt8IntDecoder;
 import org.apache.lucene.facet.params.CategoryListParams;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.search.CountingFacetsAggregator;
+import org.apache.lucene.facet.search.DepthOneFacetResultsHandler;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetRequest;
 import org.apache.lucene.facet.search.FacetResult;
@@ -40,11 +41,9 @@ import org.apache.lucene.facet.search.FacetResultNode;
 import org.apache.lucene.facet.search.FacetResultsHandler;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.facet.search.FastCountingFacetsAggregator;
-import org.apache.lucene.facet.search.FloatFacetResultsHandler;
-import org.apache.lucene.facet.search.IntFacetResultsHandler;
+import org.apache.lucene.facet.search.OrdinalValueResolver;
 import org.apache.lucene.facet.search.TopKFacetResultsHandler;
 import org.apache.lucene.facet.search.TopKInEachNodeHandler;
-import org.apache.lucene.facet.search.FacetRequest.FacetArraysSource;
 import org.apache.lucene.facet.search.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.FacetsCollector.MatchingDocs;
@@ -165,34 +164,34 @@ public abstract class QueryFacetCollector extends Collector {
         }
     }
 
-    private Set<CategoryListParams> getCategoryLists() {
+    private Map<CategoryListParams,List<FacetRequest>> groupRequests() {
         if (searchParams.indexingParams.getAllCategoryListParams().size() == 1) {
-            return Collections.singleton(searchParams.indexingParams.getCategoryListParams(null));
+          return Collections.singletonMap(searchParams.indexingParams.getCategoryListParams(null), searchParams.facetRequests);
         }
-
-        HashSet<CategoryListParams> clps = new HashSet<CategoryListParams>();
+        
+        HashMap<CategoryListParams,List<FacetRequest>> requestsPerCLP = new HashMap<CategoryListParams,List<FacetRequest>>();
         for (FacetRequest fr : searchParams.facetRequests) {
-            clps.add(searchParams.indexingParams.getCategoryListParams(fr.categoryPath));
+          CategoryListParams clp = searchParams.indexingParams.getCategoryListParams(fr.categoryPath);
+          List<FacetRequest> requests = requestsPerCLP.get(clp);
+          if (requests == null) {
+            requests = new ArrayList<FacetRequest>();
+            requestsPerCLP.put(clp, requests);
+          }
+          requests.add(fr);
         }
-        return clps;
+        return requestsPerCLP;
     }
 
-    private FacetResultsHandler createFacetResultsHandler(FacetRequest fr) {
+    private FacetResultsHandler createFacetResultsHandler(FacetRequest fr, OrdinalValueResolver resolver) {
         if (fr.getDepth() == 1 && fr.getSortOrder() == SortOrder.DESCENDING) {
-            FacetArraysSource fas = fr.getFacetArraysSource();
-            if (fas == FacetArraysSource.INT) {
-                return new IntFacetResultsHandler(taxonomyReader, fr, facetArrays);
-            }
-
-            if (fas == FacetArraysSource.FLOAT) {
-                return new FloatFacetResultsHandler(taxonomyReader, fr, facetArrays);
-            }
+          return new DepthOneFacetResultsHandler(taxonomyReader, fr, facetArrays, resolver);
         }
 
         if (fr.getResultMode() == ResultMode.PER_NODE_IN_TREE) {
-            return new TopKInEachNodeHandler(taxonomyReader, fr, facetArrays);
+          return new TopKInEachNodeHandler(taxonomyReader, fr, resolver, facetArrays);
+        } else {
+          return new TopKFacetResultsHandler(taxonomyReader, fr, resolver, facetArrays);
         }
-        return new TopKFacetResultsHandler(taxonomyReader, fr, facetArrays);
     }
 
     private static FacetResult emptyResult(int ordinal, FacetRequest fr) {
@@ -213,40 +212,38 @@ public abstract class QueryFacetCollector extends Collector {
 
     private List<FacetResult> accumulate() throws IOException {
         
-        // aggregate facets per category list (usually only one category list)
+        // aggregate facets per category list (usually onle one category list)
         FacetsAggregator aggregator = getAggregator();
-        for (CategoryListParams clp : getCategoryLists()) {
-            for (MatchingDocs md : matchingDocs) {
-                aggregator.aggregate(md, clp, facetArrays);
-            }
+        for (CategoryListParams clp : groupRequests().keySet()) {
+          for (MatchingDocs md : matchingDocs) {
+            aggregator.aggregate(md, clp, facetArrays);
+          }
         }
-
+        
         ParallelTaxonomyArrays arrays = taxonomyReader.getParallelTaxonomyArrays();
-
+        
         // compute top-K
         final int[] children = arrays.children();
         final int[] siblings = arrays.siblings();
         List<FacetResult> res = new ArrayList<FacetResult>();
         for (FacetRequest fr : searchParams.facetRequests) {
-            int rootOrd = taxonomyReader.getOrdinal(fr.categoryPath);
-            // category does not exist
-            if (rootOrd == TaxonomyReader.INVALID_ORDINAL) {
-                // Add empty FacetResult
-                res.add(emptyResult(rootOrd, fr));
-                continue;
+          int rootOrd = taxonomyReader.getOrdinal(fr.categoryPath);
+          if (rootOrd == TaxonomyReader.INVALID_ORDINAL) { // category does not exist
+            // Add empty FacetResult
+            res.add(emptyResult(rootOrd, fr));
+            continue;
+          }
+          CategoryListParams clp = searchParams.indexingParams.getCategoryListParams(fr.categoryPath);
+          if (fr.categoryPath.length > 0) { // someone might ask to aggregate the ROOT category
+            OrdinalPolicy ordinalPolicy = clp.getOrdinalPolicy(fr.categoryPath.components[0]);
+            if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
+              // rollup values
+              aggregator.rollupValues(fr, rootOrd, children, siblings, facetArrays);
             }
-            CategoryListParams clp = searchParams.indexingParams.getCategoryListParams(fr.categoryPath);
-            // someone might ask to aggregate ROOT category
-            if (fr.categoryPath.length > 0) { 
-                OrdinalPolicy ordinalPolicy = clp.getOrdinalPolicy(fr.categoryPath.components[0]);
-                if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
-                    // rollup values
-                    aggregator.rollupValues(fr, rootOrd, children, siblings, facetArrays);
-                }
-            }
-
-            FacetResultsHandler frh = createFacetResultsHandler(fr);
-            res.add(frh.compute());
+          }
+          
+          FacetResultsHandler frh = createFacetResultsHandler(fr, aggregator.createOrdinalValueResolver(fr, facetArrays));
+          res.add(frh.compute());
         }
         return res;
     }

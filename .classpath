@@ -137,10 +137,10 @@
 	<classpathentry kind="lib" path="lib/optional/httpclient-cache-4.2.3.jar"/>
 	<classpathentry kind="lib" path="lib/optional/httpcore-4.2.2.jar"/>
 	<classpathentry kind="lib" path="lib/optional/httpmime-4.2.3.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-analyzers-common-4.4.0.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-core-4.4.0.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-facet-4.4.0.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queries-4.4.0.jar"/>
-	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queryparser-4.4.0.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-analyzers-common-4.6.0.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-core-4.6.0.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-facet-4.6.0.jar" sourcepath="/home/dmitriy/.m2/repository/org/apache/lucene/lucene-facet/4.6.0/lucene-facet-4.6.0-sources.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queries-4.6.0.jar"/>
+	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queryparser-4.6.0.jar"/>
 	<classpathentry kind="output" path="test/classes"/>
 </classpath>
