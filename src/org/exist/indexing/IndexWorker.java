@@ -22,6 +22,7 @@
 package org.exist.indexing;
 
 import org.exist.collections.Collection;
+import org.exist.dom.BinaryDocument;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.NodeProxy;
@@ -31,6 +32,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.NodePath;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.XQueryContext;
 import org.w3c.dom.NodeList;
@@ -216,6 +218,9 @@ public interface IndexWorker {
 
 	public void indexCollection(Collection col);
 
-	//TODO : a scanIndex() method that would return an unaggregated list of index entries ?
+    public void indexBinary(BinaryDocument doc);
 
+    public void removeIndex(XmldbURI url);
+
+    //TODO : a scanIndex() method that would return an unaggregated list of index entries ?
 }

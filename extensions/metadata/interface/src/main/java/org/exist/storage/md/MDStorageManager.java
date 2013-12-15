@@ -58,6 +58,8 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 
     public final static String PREFIX = "md";
 	public final static String NAMESPACE_URI = "http://exist-db.org/metadata";
+	
+    public final static String LUCENE_ID = "org.exist.indexing.lucene.LuceneIndex";
 
 	public final static String UUID = "uuid";
 	public final static String META = "meta";

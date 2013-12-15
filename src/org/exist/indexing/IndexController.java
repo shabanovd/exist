@@ -209,6 +209,26 @@ public class IndexController {
             indexWorker.removeCollection(collection, broker);
         }
     }
+    
+    public void indexBinary(BinaryDocument doc) {
+        setDocument(doc, StreamListener.STORE);
+        //setMode(StreamListener.STORE);
+        
+        for (final IndexWorker worker : indexWorkers.values()) {
+            worker.indexBinary(doc);
+        }
+    }
+    
+
+    public void removeIndex(BinaryDocument doc) {
+        setDocument(doc, StreamListener.REMOVE_BINARY);
+        //setMode(StreamListener.REMOVE_BINARY);
+        
+        for (final IndexWorker worker : indexWorkers.values()) {
+            worker.removeIndex(doc.getURI());
+        }
+    }
+
 
     /**
      * Re-index all nodes below the specified root node, using the given mode.

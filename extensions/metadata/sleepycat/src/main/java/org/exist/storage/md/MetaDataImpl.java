@@ -586,12 +586,14 @@ public class MetaDataImpl extends MetaData {
 	
 	//lucene index methods
     public void indexMetas(Metas metas) {
+//        System.out.println("indexMetas");
         //XXX: update lucene!!!
 //        PlugToLucene plug = new PlugToLucene(this);
 //        plug.addMetas(metas);
     }
 
     private void indexRemoveMetas(Metas metas) {
+//        System.out.println("indexRemoveMetas");
         //XXX: update lucene!!!
 //        PlugToLucene plug = new PlugToLucene(this);
 //        plug.removeMetas(metas);

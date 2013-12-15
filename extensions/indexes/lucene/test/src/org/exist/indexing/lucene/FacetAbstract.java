@@ -25,15 +25,18 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.*;
 import java.util.Map.Entry;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.tools.ant.filters.StringInputStream;
 import org.exist.Indexer;
 import org.exist.TestUtils;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.IndexInfo;
+import org.exist.dom.BinaryDocument;
 import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.MutableDocumentSet;
@@ -46,6 +49,8 @@ import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
 import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
+import org.exist.util.MimeTable;
+import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -82,9 +87,9 @@ public class FacetAbstract {
             }
             
             for (Resource resource : resources) {
-            	
-            	XmldbURI docURL = root.getURI().append(resource.docName);
-            	
+                
+                XmldbURI docURL = root.getURI().append(resource.docName);
+
                 Metas docMD = md.getMetas(docURL);
                 if (docMD == null) {
                     docMD = md.addMetas(docURL);
@@ -94,15 +99,34 @@ public class FacetAbstract {
                 for (Entry<String, String> entry : resource.metas.entrySet()) {
                     docMD.put(entry.getKey(), entry.getValue());
                 }
-            	
-                IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create(resource.docName), resource.data);
-                assertNotNull(info);
-    
-                root.store(transaction, broker, info, resource.data, false);
                 
-//                broker.reindexXMLResource(transaction, info.getDocument());
+                if (resource.type == "XML") {
+                	
+                    IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create(resource.docName), resource.data);
+                    assertNotNull(info);
+        
+                    root.store(transaction, broker, info, resource.data, false);
+
+                    docs.add(info.getDocument());
+                
+//                    broker.reindexXMLResource(transaction, info.getDocument());
+                } else {
+                    
+                    final MimeTable mimeTable = MimeTable.getInstance();
+                    
+                    final MimeType mimeType = mimeTable.getContentTypeFor(resource.docName);
+
+                    InputStream is = new StringInputStream(resource.data);
+                    
+                    XmldbURI name = XmldbURI.create(resource.docName);
+                    
+                    BinaryDocument binary = root.validateBinaryResource(transaction, broker, name, is, mimeType.toString(), (long)-1, (Date)null, (Date)null);
+
+                    binary = root.addBinaryResource(transaction, broker, name, is, mimeType.getName(), -1, (Date)null, (Date)null);
+                    
+                    docs.add(binary);
+                }
     
-                docs.add(info.getDocument());
             }
             
             transact.commit(transaction);
@@ -217,8 +241,18 @@ public class FacetAbstract {
         final String docName;
         final String data;
         final Map<String, String> metas;
+        final String type;
         
         Resource(String docName, String data, Map<String, String> metas) {
+            this.docName = docName;
+            this.data = data;
+            this.metas = metas;
+            
+            type = "XML";
+        }
+
+        Resource(String type, String docName, String data, Map<String, String> metas) {
+            this.type = type;
             this.docName = docName;
             this.data = data;
             this.metas = metas;

@@ -315,18 +315,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     protected void removePlainTextIndexes() {
-    	IndexWriter writer = null;
-        try {
-            writer = index.getWriter();
-            String uri = currentDoc.getURI().toString();
-            Term dt = new Term(LuceneUtil.FIELD_DOC_URI, uri);
-            writer.deleteDocuments(dt);
-        } catch (IOException e) {
-            LOG.warn("Error while removing lucene index: " + e.getMessage(), e);
-        } finally {
-            index.releaseWriter(writer);
-            mode = StreamListener.STORE;
-        }
+        removeIndex(currentDoc.getURI());
     }
     
     public void removeCollection(Collection collection, DBBroker broker) {
@@ -1646,5 +1635,38 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     	
     	currentCol = null;
 	}
+
+    @Override
+    public void indexBinary(BinaryDocument doc) {
+        currentDoc = doc;
+        broker.getIndexController().setURL(doc.getURI());
+        
+        metas = new ArrayList<Field>();
+        paths = new ArrayList<CategoryPath>();
+        
+        collectMetas(metas, paths);
+        
+        indexText(null, null, null, null, null);
+        
+        write();
+        
+        currentDoc = null;
+    }
+
+    @Override
+    public void removeIndex(XmldbURI url) {
+        IndexWriter writer = null;
+        try {
+            writer = index.getWriter();
+            String uri = url.toString();
+            Term dt = new Term(LuceneUtil.FIELD_DOC_URI, uri);
+            writer.deleteDocuments(dt);
+        } catch (IOException e) {
+            LOG.warn("Error while removing lucene index: " + e.getMessage(), e);
+        } finally {
+            index.releaseWriter(writer);
+            mode = StreamListener.STORE;
+        }
+    }
 }
 

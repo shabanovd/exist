@@ -37,7 +37,11 @@ import org.exist.xmldb.XmldbURI;
  *
  */
 public class DocumentEvents extends FilteringTrigger {
-
+    
+    @Override
+    public void configure(DBBroker broker, Collection parent, Map<String, List<?>> parameters) throws TriggerException {
+    }
+    
 	@Override
 	public void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
 	}
@@ -105,9 +109,5 @@ public class DocumentEvents extends FilteringTrigger {
 
 	@Override
 	public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-	}
-
-	@Override
-	public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
 	}
 }

@@ -1,6 +1,7 @@
 package org.exist.storage.statistics;
 
 import org.exist.collections.Collection;
+import org.exist.dom.BinaryDocument;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.ElementImpl;
@@ -24,6 +25,7 @@ import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.txn.Txn;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.TerminatedException;
 import org.exist.xquery.XQueryContext;
@@ -229,4 +231,12 @@ public class IndexStatisticsWorker implements IndexWorker {
 	@Override
 	public void indexCollection(Collection col) {
 	}
+
+    @Override
+    public void indexBinary(BinaryDocument doc) {
+    }
+
+    @Override
+    public void removeIndex(XmldbURI url) {
+    }
 }

@@ -2024,6 +2024,10 @@ public class NativeBroker extends DBBroker {
         } finally {
             lock.release(Lock.WRITE_LOCK);
         }
+        
+        if (doc instanceof BinaryDocument) {
+            indexController.indexBinary( (BinaryDocument)doc );
+        }
     }
 
     public void storeMetadata(final Txn transaction, final DocumentImpl doc) throws TriggerException {
@@ -2805,8 +2809,9 @@ public class NativeBroker extends DBBroker {
         }
         removeResourceMetadata(transaction, blob);
         
-        getIndexController().setDocument(blob, StreamListener.REMOVE_BINARY);
-        getIndexController().flush();
+        //indexController.setDocument(blob, StreamListener.REMOVE_BINARY);
+        indexController.removeIndex(blob);
+        indexController.flush();
     }
 
     /**

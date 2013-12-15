@@ -47,6 +47,7 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.ByteConversion;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.modules.range.RangeQueryRewriter;
 import org.exist.xquery.value.*;
@@ -992,4 +993,12 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 	@Override
 	public void indexCollection(Collection col) {
 	}
+
+    @Override
+    public void indexBinary(BinaryDocument doc) {
+    }
+
+    @Override
+    public void removeIndex(XmldbURI url) {
+    }
 }

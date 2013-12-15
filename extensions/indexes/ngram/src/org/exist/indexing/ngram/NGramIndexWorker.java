@@ -38,6 +38,7 @@ import javax.xml.stream.XMLStreamReader;
 import org.apache.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.dom.AttrImpl;
+import org.exist.dom.BinaryDocument;
 import org.exist.dom.CharacterDataImpl;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
@@ -76,6 +77,7 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
 import org.exist.util.serializer.AttrList;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -1118,4 +1120,12 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 	@Override
 	public void indexCollection(Collection col) {
 	}
+
+    @Override
+    public void indexBinary(BinaryDocument doc) {
+    }
+
+    @Override
+    public void removeIndex(XmldbURI url) {
+    }
 }
