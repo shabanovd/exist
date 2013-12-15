@@ -184,20 +184,11 @@ public class CollectionEvents implements CollectionTrigger {
 				IndexWorker worker = 
 						db.getActiveBroker()
 						.getIndexController()
-						.getWorkerByIndexId("org.exist.indexing.lucene.LuceneIndex");
+						.getWorkerByIndexId(MDStorageManager.LUCENE_ID);
 				worker.indexCollection(col);
 			}
 		} catch (Throwable e) {
 			MDStorageManager.LOG.fatal(e);
 		}
 	}
-//
-//	private void removeIndex(XmldbURI url) {
-//		try {
-//			IndexWorker worker = db.getActiveBroker().getIndexController().getWorkerByIndexId("org.exist.indexing.lucene.LuceneIndex");
-//			worker.removeIndex(url);
-//		} catch (Throwable e) {
-//			MDStorageManager.LOG.fatal(e);
-//		}
-//	}
 }

@@ -68,7 +68,7 @@ public class FacetIndexTest extends FacetAbstract {
     protected static String XUPDATE_END =
         "</xu:modifications>";
     
-    private static String XML5 =
+    private static String XML1 =
             "<article>" +
             "   <head>The <b>title</b>of it</head>" +
             "   <p>A simple paragraph with <hi>highlighted</hi> text <note>and a note</note> " +
@@ -77,6 +77,8 @@ public class FacetIndexTest extends FacetAbstract {
             "   <p><note1>ignore</note1> <s2>warn</s2>ings</p>" +
             "   <p>Another simple paragraph.</p>" +
             "</article>";
+    
+    private static String BINARY1 = "A simple paragraph with highlighted text and a note in it.";
 
     private static String COLLECTION_CONFIG5 =
             "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
@@ -179,8 +181,8 @@ public class FacetIndexTest extends FacetAbstract {
         System.out.println("Test simple queries ...");
         DocumentSet docs = configureAndStore(COLLECTION_CONFIG5, 
                 new Resource[] {
-                    new Resource("test1.xml", XML5, metas1),
-                    new Resource("test2.xml", XML5, metas2),
+                    new Resource("test1.xml", XML1, metas1),
+                    new Resource("test2.xml", XML1, metas2),
                 });
         
         DBBroker broker = null;
@@ -245,63 +247,22 @@ public class FacetIndexTest extends FacetAbstract {
             checkFacet(results);
             
             cb.reset();
+            
+            Sort sort = new Sort(new SortField(CREATED, SortField.Type.STRING, true));
+            
+            BooleanQuery bq = new  BooleanQuery();
+            bq.add(new TermQuery(new Term(STATUS, "draft")), BooleanClause.Occur.SHOULD);
+            bq.add(new TermQuery(new Term(STATUS, "final")), BooleanClause.Occur.SHOULD);
+            
+            results = QueryDocuments.query(worker, docs, bq, fsp, cb, 100, sort);
+            
+            assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
 
+            checkFacet(results);
 
-//            seq = xquery.execute("/article[ft:query(p, 'highlighted')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(1, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(p, 'mixed')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(1, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(p, 'mix')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(0, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(p, 'dangerous')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(1, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(p, 'ous')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(0, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(p, 'danger')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(0, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(p, 'note')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(0, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(., 'highlighted')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(1, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(., 'mixed')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(1, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(., 'dangerous')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(1, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(., 'warnings')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(1, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(., 'danger')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(0, seq.getItemCount());
-//
-//            seq = xquery.execute("/article[ft:query(., 'note')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(0, seq.getItemCount());
-//            
-//            seq = xquery.execute("/article[ft:query(., 'ignore')]", null, AccessContext.TEST);
-//            assertNotNull(seq);
-//            assertEquals(0, seq.getItemCount());
+            cb.reset();
+
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());
@@ -310,6 +271,89 @@ public class FacetIndexTest extends FacetAbstract {
         }
     }
     
+    @Test
+    public void counterBinary() {
+        System.out.println("Test counterBinary ...");
+        DocumentSet docs = configureAndStore(COLLECTION_CONFIG5, 
+                new Resource[] {
+                    new Resource("BINARY", "test1.txt", BINARY1, metas1),
+                    new Resource("BINARY", "test2.txt", BINARY1, metas2),
+                });
+        
+        DBBroker broker = null;
+        try {
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+            assertNotNull(broker);
+            
+            final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
+            
+            FacetSearchParams fsp = new FacetSearchParams(
+                new CountFacetRequest(new CategoryPath(STATUS), 10)
+            );
+            
+            Counter<DocumentImpl> cb = new Counter<DocumentImpl>();
+            
+            Sort sort = new Sort(new SortField(CREATED, SortField.Type.STRING, true));
+            
+            BooleanQuery bq = new  BooleanQuery();
+            bq.add(new TermQuery(new Term(STATUS, "draft")), BooleanClause.Occur.SHOULD);
+            bq.add(new TermQuery(new Term(STATUS, "final")), BooleanClause.Occur.SHOULD);
+            
+            List<FacetResult> results = QueryDocuments.query(worker, docs, bq, fsp, cb, 100, sort);
+            
+            assertEquals(2, cb.count);
+            assertEquals(2, cb.total);
+            
+            checkFacet(results);
+            
+            cb.reset();
+
+            //Lucene query
+//            QName qname = new QName("head", "");
+//            
+//            String field = LuceneUtil.encodeQName(new QName("head", ""), db.getSymbols());
+//            
+//            Analyzer analyzer = worker.getAnalyzer(null, qname, broker, docs);
+//
+//            QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, field, analyzer);
+//
+//            //worker.setOptions(options, parser);
+//
+//            Query query = parser.parse("title");
+//            
+//            
+//            results = QueryDocuments.query(worker, docs, query, fsp, cb);
+//            
+//            assertEquals(2, cb.count);
+//            assertEquals(2, cb.total);
+//            
+//            checkFacet(results);
+//
+//            cb.reset();
+//            
+//            //check document filtering
+//            qnames = new ArrayList<QName>();
+//            qnames.add(new QName("p", ""));
+//            results = QueryDocuments.query(worker, docs, qnames, "paragraph", fsp, null, cb);
+//            
+//            for (FacetResult result : results) {
+//                System.out.println(result.toString());
+//            }
+//            
+//            assertEquals(2, cb.count);
+//            assertEquals(2, cb.total);
+//            
+//            checkFacet(results);
+//            
+//            cb.reset();
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            db.release(broker);
+        }
+    }
+
     private void checkFacet2(List<FacetResult> facets) {
         assertEquals(1, facets.size());
         
@@ -332,10 +376,10 @@ public class FacetIndexTest extends FacetAbstract {
         System.out.println("Test sorting queries ...");
         DocumentSet docs = configureAndStore(COLLECTION_CONFIG5, 
                 new Resource[] {
-                    new Resource("test1.xml", XML5, metas1),
-                    new Resource("test2.xml", XML5, metas2),
-                    new Resource("test3.xml", XML5, metas3),
-                    new Resource("test4.xml", XML5, metas4),
+                    new Resource("test1.xml", XML1, metas1),
+                    new Resource("test2.xml", XML1, metas2),
+                    new Resource("test3.xml", XML1, metas3),
+                    new Resource("test4.xml", XML1, metas4),
                 });
         
         DBBroker broker = null;
@@ -420,12 +464,12 @@ public class FacetIndexTest extends FacetAbstract {
         
         configureAndStore(COLLECTION_CONFIG6, 
                 new Resource[] {
-                    new Resource("test1.xml", XML5, metas1),
-                    new Resource("test2.xml", XML5, metas2),
-                    new Resource("test3.xml", XML5, metas3),
-                    new Resource("test4.xml", XML5, metas4),
-                    new Resource("test5.xml", XML5, metas5),
-                    new Resource("test6.xml", XML5, metas6),
+                    new Resource("test1.xml", XML1, metas1),
+                    new Resource("test2.xml", XML1, metas2),
+                    new Resource("test3.xml", XML1, metas3),
+                    new Resource("test4.xml", XML1, metas4),
+                    new Resource("test5.xml", XML1, metas5),
+                    new Resource("test6.xml", XML1, metas6),
                 });
         
         final ArrayList<DocumentImpl> myHits = new ArrayList<DocumentImpl>();
@@ -515,11 +559,11 @@ public class FacetIndexTest extends FacetAbstract {
         
         configureAndStore(COLLECTION_CONFIG5, 
                 new Resource[] {
-                    new Resource("test1.xml", XML5, metas1),
-                    new Resource("test2.xml", XML5, metas2),
-                    new Resource("test3.xml", XML5, metas3),
-                    new Resource("test4.xml", XML5, metas4),
-                    new Resource("test5.xml", XML5, metas5),
+                    new Resource("test1.xml", XML1, metas1),
+                    new Resource("test2.xml", XML1, metas2),
+                    new Resource("test3.xml", XML1, metas3),
+                    new Resource("test4.xml", XML1, metas4),
+                    new Resource("test5.xml", XML1, metas5),
                 });
         
         final ArrayList<DocumentImpl> myHits = new ArrayList<DocumentImpl>();
@@ -657,8 +701,8 @@ public class FacetIndexTest extends FacetAbstract {
             //store
             DocumentSet docs = configureAndStore(null, 
                     new Resource[] {
-                        new Resource("test1.xml", XML5, metas1),
-                        new Resource("test2.xml", XML5, metas2),
+                        new Resource("test1.xml", XML1, metas1),
+                        new Resource("test2.xml", XML1, metas2),
                     });
 
             //query

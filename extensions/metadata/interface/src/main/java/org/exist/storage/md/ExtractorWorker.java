@@ -31,6 +31,7 @@ import java.util.TreeSet;
 
 import org.exist.collections.Collection;
 import org.exist.dom.AttrImpl;
+import org.exist.dom.BinaryDocument;
 import org.exist.dom.CharacterDataImpl;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
@@ -50,6 +51,7 @@ import org.exist.storage.NodePath;
 import org.exist.storage.txn.Txn;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.XQueryContext;
 import org.w3c.dom.NodeList;
@@ -332,4 +334,12 @@ public class ExtractorWorker implements IndexWorker {
 	@Override
 	public void indexCollection(Collection col) {
 	}
+
+    @Override
+    public void indexBinary(BinaryDocument doc) {
+    }
+
+    @Override
+    public void removeIndex(XmldbURI url) {
+    }
 }

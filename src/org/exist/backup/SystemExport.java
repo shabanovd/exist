@@ -212,6 +212,8 @@ public class SystemExport
 //
 //
 //            FileUtils.forceDelete(repoBackup);
+            
+            broker.sync(Sync.MAJOR_SYNC);
 
             broker.sync(Sync.MAJOR_SYNC);
             
