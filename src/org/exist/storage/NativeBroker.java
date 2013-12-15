@@ -1818,7 +1818,10 @@ public class NativeBroker extends DBBroker {
         indexController.removeCollection(collection, this);
         for (final Iterator<DocumentImpl> i = collection.iterator(this); i.hasNext();) {
             final DocumentImpl doc = i.next();
-            LOG.debug("Dropping index for document " + doc.getFileURI());
+            
+            if (LOG.isDebugEnabled())
+                LOG.debug("Dropping index for document " + doc.getFileURI());
+            
             new DOMTransaction(this, domDb, Lock.WRITE_LOCK) {
                 @Override
                 public Object start() {
@@ -2966,14 +2969,21 @@ public class NativeBroker extends DBBroker {
     private void reindexXMLResource(Txn txn, DocumentImpl doc, int mode) {
         if(doc.isCollectionConfig())
             {doc.getCollection().setCollectionConfigEnabled(false);}
+
         indexController.setDocument(doc, StreamListener.STORE);
-        final StreamListener listener = indexController.getStreamListener();
-        final NodeList nodes = doc.getChildNodes();
-        for (int i = 0; i < nodes.getLength(); i++) {
-            final StoredNode node = (StoredNode) nodes.item(i);
-            final Iterator<StoredNode> iterator = getNodeIterator(node);
-            iterator.next();
-            scanNodes(txn, iterator, node, new NodePath(), mode, listener);
+        
+        if (doc instanceof BinaryDocument) {
+            indexController.indexBinary((BinaryDocument) doc);
+
+        } else {
+            final StreamListener listener = indexController.getStreamListener();
+            final NodeList nodes = doc.getChildNodes();
+            for (int i = 0; i < nodes.getLength(); i++) {
+                final StoredNode node = (StoredNode) nodes.item(i);
+                final Iterator<StoredNode> iterator = getNodeIterator(node);
+                iterator.next();
+                scanNodes(txn, iterator, node, new NodePath(), mode, listener);
+            }
         }
         flush();
         if(doc.isCollectionConfig())
