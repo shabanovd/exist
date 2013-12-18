@@ -104,7 +104,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     	chunkOffset = value;
     }
 
-    public void reset(DBBroker broker, NodeProxy proxy) throws SAXException {
+    public void reset(DBBroker broker, NodeProxy proxy, LuceneConfig config) throws SAXException {
         this.broker = broker;
         
         this.match = proxy.getMatches();
@@ -114,11 +114,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         //this.match = proxy.getMatches();
         setNextInChain(null);
 
-        IndexSpec indexConf = proxy.getDocument().getCollection().getIndexConfiguration(broker);
-        if (indexConf == null)
-        	throw new SAXException("no Lucene config");
-        
-        config = (LuceneConfig) indexConf.getCustomIndexSpec(LuceneIndex.ID);
+        this.config = config;
 
         getTerms();
         nodesWithMatch = new TreeMap<NodeId, Offset>();
@@ -127,6 +123,17 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         
         firstElement = null;
         cutted = false;
+    }
+
+    public void reset(DBBroker broker, NodeProxy proxy) throws SAXException {
+
+        IndexSpec indexConf = proxy.getDocument().getCollection().getIndexConfiguration(broker);
+        if (indexConf == null)
+        	throw new SAXException("no Lucene config");
+        
+        config = (LuceneConfig) indexConf.getCustomIndexSpec(LuceneIndex.ID);
+        
+        reset(broker, proxy, config);
     }
     
     StoredNode firstElement = null;

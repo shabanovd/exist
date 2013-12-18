@@ -1344,13 +1344,13 @@ public class NativeBroker extends DBBroker {
      * enable the Collection Tree to be removed. We then return back up the Collection
      * tree, removing each child as we progresses upwards.
      * 
-     * @param transaction the transaction to use
+     * @param txn the transaction to use
      * @param collection the collection to remove
      * @return true if the collection was removed, false otherwise
      * @throws TriggerException 
      */
     @Override
-    public boolean removeCollection(final Txn transaction, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
+    public boolean removeCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
         
         if(pool.isReadOnly()) {
             throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
@@ -1388,10 +1388,10 @@ public class NativeBroker extends DBBroker {
 
             pool.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_COLLECTION, collection.getURI());
             
-            pool.getCollectionTrigger().beforeDeleteCollection(this, transaction, collection);
+            pool.getCollectionTrigger().beforeDeleteCollection(this, txn, collection);
             
             final CollectionTriggersVisitor triggersVisitor = parent.getConfiguration(this).getCollectionTriggerProxies().instantiateVisitor(this);
-            triggersVisitor.beforeDeleteCollection(this, transaction, collection);
+            triggersVisitor.beforeDeleteCollection(this, txn, collection);
             
             
             final long start = System.currentTimeMillis();
@@ -1402,7 +1402,10 @@ public class NativeBroker extends DBBroker {
                 final String collName = uri.getRawCollectionPath();
                 
                 // Notify the collection configuration manager
-                pool.getConfigurationManager().invalidateAll(uri);
+                final CollectionConfigurationManager manager = pool.getConfigurationManager();
+                if(manager != null) {
+                    manager.invalidate(uri);
+                }
                 
                 if(LOG.isDebugEnabled()) {
                     LOG.debug("Removing children collections from their parent '" + collName + "'...");
@@ -1414,7 +1417,7 @@ public class NativeBroker extends DBBroker {
                     //TODO : resulve URIs !!! (uri.resolve(childName))
                     final Collection childCollection = openCollection(uri.append(childName), Lock.WRITE_LOCK);
                     try {
-                        removeCollection(transaction, childCollection);
+                        removeCollection(txn, childCollection);
                     } finally {
                         if (childCollection != null) {
                             childCollection.getLock().release(Lock.WRITE_LOCK);
@@ -1435,8 +1438,8 @@ public class NativeBroker extends DBBroker {
                     //TODO : resolve URIs ! (uri.resolve(".."))
                     final Collection parentCollection = openCollection(collection.getParentURI(), Lock.WRITE_LOCK);
                     // keep the lock for the transaction
-                    if(transaction != null) {
-                        transaction.registerLock(parentCollection.getLock(), Lock.WRITE_LOCK);
+                    if(txn != null) {
+                        txn.registerLock(parentCollection.getLock(), Lock.WRITE_LOCK);
                     }
                     
                     if(parentCollection != null) {
@@ -1444,13 +1447,13 @@ public class NativeBroker extends DBBroker {
                             LOG.debug("Removing collection '" + collName + "' from its parent...");
                             //TODO : resolve from collection's base URI
                             parentCollection.removeCollection(this, uri.lastSegment());
-                            saveCollection(transaction, parentCollection);
+                            saveCollection(txn, parentCollection);
                             
                         } catch(final LockException e) {
                             LOG.warn("LockException while removing collection '" + collName + "'");
                         }
                         finally {
-                            if(transaction == null){
+                            if(txn == null){
                                 parentCollection.getLock().release(Lock.WRITE_LOCK);
                             }
                         }
@@ -1464,21 +1467,21 @@ public class NativeBroker extends DBBroker {
                     // remove the metadata of all documents in the collection
                     final Value docKey = new CollectionStore.DocumentKey(collection.getId());
                     final IndexQuery query = new IndexQuery(IndexQuery.TRUNC_RIGHT, docKey);
-                    collectionsDb.removeAll(transaction, query);
+                    collectionsDb.removeAll(txn, query);
                     // if this is not the root collection remove it...
                     if(!isRoot) {
                         final Value key = new CollectionStore.CollectionKey(collName);
                         //... from the disk
-                        collectionsDb.remove(transaction, key);
+                        collectionsDb.remove(txn, key);
                         //... from the cache
                         collectionsCache.remove(collection);
                         //and free its id for any futher use
-                        freeCollectionId(transaction, collection.getId());
+                        freeCollectionId(txn, collection.getId());
                     } else {
                         //Simply save the collection on disk
                         //It will remain cached
                         //and its id well never be made available
-                        saveCollection(transaction, collection);
+                        saveCollection(txn, collection);
                     }
                 }
                 catch(final LockException e) {
@@ -1505,7 +1508,7 @@ public class NativeBroker extends DBBroker {
                 for(final Iterator<DocumentImpl> i = collection.iterator(this); i.hasNext();) {
                     final DocumentImpl doc = i.next();
 
-                    pool.getDocumentTrigger().beforeDeleteDocument(this, transaction, doc);
+                    pool.getDocumentTrigger().beforeDeleteDocument(this, txn, doc);
 
                     //Remove doc's metadata
                     // WM: now removed in one step. see above.
@@ -1517,7 +1520,7 @@ public class NativeBroker extends DBBroker {
                             try {
                                 final Value ref = new NodeRef(doc.getDocId());
                                 final IndexQuery query = new IndexQuery(IndexQuery.TRUNC_RIGHT, ref);
-                                domDb.remove(transaction, query, null);
+                                domDb.remove(txn, query, null);
                             } catch(final BTreeException e) {
                                 LOG.warn("btree error while removing document", e);
                             } catch(final IOException e) {
@@ -1536,24 +1539,24 @@ public class NativeBroker extends DBBroker {
                             if(doc.getResourceType() == DocumentImpl.BINARY_FILE) {
                                 final long page = ((BinaryDocument)doc).getPage();
                                 if (page > Page.NO_PAGE)
-                                    {domDb.removeOverflowValue(transaction, page);}
+                                    {domDb.removeOverflowValue(txn, page);}
                             } else {
                                 final StoredNode node = (StoredNode)doc.getFirstChild();
-                                domDb.removeAll(transaction, node.getInternalAddress());
+                                domDb.removeAll(txn, node.getInternalAddress());
                             }
                             return null;
                         }
                     }.run();
                     
-                    pool.getDocumentTrigger().afterDeleteDocument(this, transaction, doc.getURI());
+                    pool.getDocumentTrigger().afterDeleteDocument(this, txn, doc.getURI());
                     
                     //Make doc's id available again
-                    freeResourceId(transaction, doc.getDocId());
+                    freeResourceId(txn, doc.getDocId());
                 }
                 
                 //now that the database has been updated, update the binary collections on disk
                 final File fsSourceDir = getCollectionFile(fsDir,collection.getURI(),false);
-                final File fsTargetDir = getCollectionFile(fsBackupDir,transaction,collection.getURI(),true);
+                final File fsTargetDir = getCollectionFile(fsBackupDir,txn,collection.getURI(),true);
 
                 // remove child binary collections
                 if (fsSourceDir.exists()) {
@@ -1563,7 +1566,7 @@ public class NativeBroker extends DBBroker {
                    // DW: not sure a Fatal is required here. Copy and delete
                    // maybe?
                    if(fsSourceDir.renameTo(fsTargetDir)) {
-                     final Loggable loggable = new RenameBinaryLoggable(this,transaction,fsSourceDir,fsTargetDir);
+                     final Loggable loggable = new RenameBinaryLoggable(this,txn,fsSourceDir,fsTargetDir);
                      try {
                         logManager.writeToLog(loggable);
                      } catch (final TransactionException e) {
@@ -1580,9 +1583,9 @@ public class NativeBroker extends DBBroker {
                     LOG.debug("Removing collection '" + collName + "' took " + (System.currentTimeMillis() - start));
                 }
                 
-                triggersVisitor.afterDeleteCollection(this, transaction, collection.getURI());
+                triggersVisitor.afterDeleteCollection(this, txn, collection.getURI());
     	        
-                pool.getCollectionTrigger().afterDeleteCollection(this, transaction, collection.getURI());
+                pool.getCollectionTrigger().afterDeleteCollection(this, txn, collection.getURI());
 
                 return true;
                 

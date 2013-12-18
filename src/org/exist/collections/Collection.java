@@ -66,6 +66,9 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
+import static org.exist.collections.CollectionConfigurationManager.CONFIG_COLLECTION_URI;
+import static org.exist.collections.CollectionConfiguration.COLLECTION_CONFIG_SUFFIX_URI;
+
 /**
  * This class represents a collection in the database. A collection maintains a list of
  * sub-collections and documents, and provides the methods to store/remove resources.
@@ -1072,11 +1075,11 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
     /**
      * Remove the specified document from the collection.
      *
-     * @param  transaction
+     * @param  txn
      * @param  broker
      * @param  docUri
      */
-    public void removeXMLResource(final Txn transaction, final DBBroker broker, final XmldbURI docUri) throws PermissionDeniedException, TriggerException, LockException {
+    public void removeXMLResource(final Txn txn, final DBBroker broker, final XmldbURI docUri) throws PermissionDeniedException, TriggerException, LockException {
         
         if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.WRITE)) {
             throw new PermissionDeniedException("Permission denied to write collection: " + path);
@@ -1104,20 +1107,22 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 // reload the configuration.
                 useTriggers = false;
                 final CollectionConfigurationManager confMgr = broker.getBrokerPool().getConfigurationManager();
-                confMgr.invalidateAll(getURI());
+                if (confMgr != null) {
+                    confMgr.invalidate(getURI());
+                }
             }
             
             DocumentTriggersVisitor triggersVisitor = null;
             if(useTriggers) {
                 triggersVisitor = getConfiguration(broker).getDocumentTriggerProxies().instantiateVisitor(broker);
-                triggersVisitor.beforeDeleteDocument(broker, transaction, doc);
+                triggersVisitor.beforeDeleteDocument(broker, txn, doc);
             }
             
-            broker.removeXMLResource(transaction, doc);
+            broker.removeXMLResource(txn, doc);
             documents.remove(docUri.getRawCollectionPath());
             
             if(useTriggers) {
-                triggersVisitor.afterDeleteDocument(broker, transaction, getURI().append(docUri));
+                triggersVisitor.afterDeleteDocument(broker, txn, getURI().append(docUri));
             }
             
             broker.getBrokerPool().getNotificationService().notifyUpdate(doc, UpdateListener.REMOVE);
@@ -1322,7 +1327,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
      * org.exist.storage.DBBroker, org.exist.xmldb.XmldbURI, CollectionConfiguration, org.exist.collections.Collection.ValidateBlock)} 
      * should have been called previously in order to acquire a write lock for the document. Launches the finish trigger.
      * 
-     * @param transaction
+     * @param txn
      * @param broker
      * @param info
      * @param privileged
@@ -1331,7 +1336,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
      * @throws EXistException
      * @throws SAXException
      */
-    private void storeXMLInternal(final Txn transaction, final DBBroker broker, final IndexInfo info, final boolean privileged, final StoreBlock doParse) throws EXistException, SAXException, PermissionDeniedException {
+    private void storeXMLInternal(final Txn txn, final DBBroker broker, final IndexInfo info, final boolean privileged, final StoreBlock doParse) throws EXistException, SAXException, PermissionDeniedException {
         
         final DocumentImpl document = info.getIndexer().getDocument();
         
@@ -1390,7 +1395,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_STORE_DOC, document.getFileURI());
             doParse.run();
-            broker.storeXMLResource(transaction, document);
+            broker.storeXMLResource(txn, document);
             broker.flush();
             broker.closeDocument();
             //broker.checkTree(document);
@@ -1411,9 +1416,9 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
 //        
 //        if(isTriggersEnabled() && isCollectionConfigEnabled() && info.getTriggersVisitor() != null) {
             if(info.isCreating()) {
-                info.getTriggersVisitor().afterCreateDocument(broker, transaction, document);
+                info.getTriggersVisitor().afterCreateDocument(broker, txn, document);
             } else {
-                info.getTriggersVisitor().afterUpdateDocument(broker, transaction, document);
+                info.getTriggersVisitor().afterUpdateDocument(broker, txn, document);
             }
 //        }
         
@@ -1422,13 +1427,13 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
         final XmldbURI docName = document.getFileURI();
         //WARNING : there is no reason to lock the collection since setPath() is normally called in a safe way
         //TODO: *resolve* URI against CollectionConfigurationManager.CONFIG_COLLECTION_URI 
-        if (getURI().startsWith(XmldbURI.CONFIG_COLLECTION_URI)
-                && docName.endsWith(CollectionConfiguration.COLLECTION_CONFIG_SUFFIX_URI)) {
+        if (getURI().startsWith(CONFIG_COLLECTION_URI)
+                && docName.endsWith(COLLECTION_CONFIG_SUFFIX_URI)) {
             broker.sync(Sync.MAJOR_SYNC);
             final CollectionConfigurationManager manager = broker.getBrokerPool().getConfigurationManager();
             if(manager != null) {
                 try {
-                    manager.invalidateAll(getURI());
+                    manager.invalidate(getURI());
                     manager.loadConfiguration(broker, this);
                 } catch(final PermissionDeniedException pde) {
                     throw new EXistException(pde.getMessage(), pde);
@@ -1735,10 +1740,10 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
     private void checkConfigurationDocument(final Txn transaction, final DBBroker broker, final XmldbURI docUri) throws EXistException, PermissionDeniedException, LockException {
         //Is it a collection configuration file ?
         //TODO : use XmldbURI.resolve() !
-        if (!getURI().startsWith(XmldbURI.CONFIG_COLLECTION_URI)) {
+        if (!getURI().startsWith(CONFIG_COLLECTION_URI)) {
             return;
         }
-        if(!docUri.endsWith(CollectionConfiguration.COLLECTION_CONFIG_SUFFIX_URI)) {
+        if(!docUri.endsWith(COLLECTION_CONFIG_SUFFIX_URI)) {
             return;
         }
         //Allow just one configuration document per collection
