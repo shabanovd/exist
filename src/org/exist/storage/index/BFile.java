@@ -2528,7 +2528,8 @@ public class BFile extends BTree {
             ph = (BFilePageHeader) page.getPageHeader();
             if(initialize) {
                 offsets = new short[ph.nextTID];
-                readOffsets();
+                if (ph.getStatus() != MULTI_PAGE)
+                    readOffsets();
             }
         }
 
