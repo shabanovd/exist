@@ -135,7 +135,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
         permissions = PermissionFactory.getDefaultCollectionPermission();
 
         setPath(path);
-        lock = new ReentrantReadWriteLock(path);
+        lock = new MultiReadReentrantLock(path); //new ReentrantReadWriteLock(path);
     }
 
     public boolean isTriggersEnabled() {
