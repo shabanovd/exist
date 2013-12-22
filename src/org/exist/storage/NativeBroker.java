@@ -730,6 +730,9 @@ public class NativeBroker extends DBBroker {
             parent.addCollection(this, col, true);
         }
 
+        if (parent != null) {
+            saveCollection(txn, parent);
+        }
         saveCollection(txn, col);
         
         trigger.afterCreateCollection(this, txn, col);
@@ -1635,10 +1638,7 @@ public class NativeBroker extends DBBroker {
             throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
         }
         
-        if (!pool.isInitializing()) {
-            // don't cache the collection during initialization: SecurityManager is not yet online
-            pool.getCollectionsCache().add(collection);
-        }
+        pool.getCollectionsCache().add(collection);
         
         final Lock lock = collectionsDb.getLock();
         try {

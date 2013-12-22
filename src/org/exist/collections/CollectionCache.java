@@ -63,6 +63,7 @@ public class CollectionCache extends LRUCache<Collection> {
     }
 
     public void add(Collection collection, int initialRefCount) {
+        // don't cache the collection during initialization: SecurityManager is not yet online
         if(db.isInitializing()) {
             return;
         }
