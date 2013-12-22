@@ -57,6 +57,13 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
         this.type = type;
     }
 
+    private void addItem(T item) {
+        if (map.size() == max) {
+            removeOne(item);
+        }
+        map.put(item.getKey(), item);
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -64,7 +71,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
      * int)
      */
     public void add(T item, int initialRefCount) {
-        add(item);
+        addItem(item);
     }
 
     public String getType() {
@@ -77,12 +84,9 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
      * @see org.exist.storage.cache.Cache#add(org.exist.storage.cache.Cacheable)
      */
     public void add(T item) {
-        if (map.size() == max) {
-            removeOne(item);
-        }
-        map.put(item.getKey(), item);
+        addItem(item);
     }
-
+    
     /*
      * (non-Javadoc)
      * 

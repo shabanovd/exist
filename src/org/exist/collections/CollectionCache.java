@@ -68,6 +68,7 @@ public class CollectionCache extends LRUCache<Collection> {
         }
         
         super.add(collection, initialRefCount);
+        
         final String name = collection.getURI().getRawCollectionPath();
         names.put(name, collection.getKey());
     }
@@ -122,12 +123,14 @@ public class CollectionCache extends LRUCache<Collection> {
     }
 
     public void remove(Collection item) {
-        final Collection col = item;
         super.remove(item);
-        names.remove(col.getURI().getRawCollectionPath());
+
+        names.remove(item.getURI().getRawCollectionPath());
+        
         // might be null during db initialization
-        if(db.getConfigurationManager() != null) {
-            db.getConfigurationManager().invalidate(col.getURI());
+        CollectionConfigurationManager manager = db.getConfigurationManager();
+        if(manager != null) {
+            manager.invalidate(item.getURI());
         }
     }
 
