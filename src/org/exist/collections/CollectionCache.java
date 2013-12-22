@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2012 The eXist Project
+ *  Copyright (C) 2001-2013 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.collections;
 
@@ -40,14 +38,14 @@ import org.exist.xmldb.XmldbURI;
  * 
  * @author wolf
  */
-public class CollectionCache extends LRUCache {
+public class CollectionCache extends LRUCache<Collection> {
 
-    private Object2LongHashMap names;
+    private Object2LongHashMap<String> names;
     private BrokerPool pool;
 
     public CollectionCache(BrokerPool pool, int blockBuffers, double growthThreshold) {
         super(blockBuffers, 2.0, 0.000001, CacheManager.DATA_CACHE);
-        this.names = new Object2LongHashMap(blockBuffers);
+        this.names = new Object2LongHashMap<String>(blockBuffers);
         this.pool = pool;
         setFileName("collection cache");
     }
@@ -63,7 +61,7 @@ public class CollectionCache extends LRUCache {
     }
 
     public Collection get(Collection collection) {
-        return (Collection) get(collection.getKey());
+        return get(collection.getKey());
     }
 
     public Collection get(XmldbURI name) {
@@ -71,7 +69,7 @@ public class CollectionCache extends LRUCache {
         if (key < 0) {
             return null;
         }
-        return (Collection) get(key);
+        return get(key);
     }
 
     /**
@@ -79,11 +77,11 @@ public class CollectionCache extends LRUCache {
      */
     protected void removeOne(Cacheable item) {
         boolean removed = false;
-        SequencedLongHashMap.Entry<Cacheable> next = map.getFirstEntry();
+        SequencedLongHashMap.Entry<Collection> next = map.getFirstEntry();
         do {
-            final Cacheable cached = next.getValue();
+            final Collection cached = next.getValue();
             if(cached.getKey() != item.getKey()) {
-                final Collection old = (Collection) cached;
+                final Collection old = cached;
                 final Lock lock = old.getLock();
                 if (lock.attempt(Lock.READ_LOCK)) {
                     try {
@@ -111,12 +109,14 @@ public class CollectionCache extends LRUCache {
         cacheManager.requestMem(this);
     }
 
-    public void remove(Cacheable item) {
-        final Collection col = (Collection) item;
+    public void remove(Collection item) {
+        final Collection col = item;
         super.remove(item);
         names.remove(col.getURI().getRawCollectionPath());
-        if(pool.getConfigurationManager() != null) // might be null during db initialization
-           {pool.getConfigurationManager().invalidate(col.getURI());}
+        // might be null during db initialization
+        if(pool.getConfigurationManager() != null) {
+            pool.getConfigurationManager().invalidate(col.getURI());
+        }
     }
 
     /**
@@ -129,7 +129,7 @@ public class CollectionCache extends LRUCache {
     public int getRealSize() {
         int size = 0;
         for (final Iterator<Long> i = names.valueIterator(); i.hasNext(); ) {
-            final Collection collection = (Collection) get(i.next());
+            final Collection collection = get(i.next());
             if (collection != null) {
                 size += collection.getMemorySize();
             }
@@ -142,14 +142,14 @@ public class CollectionCache extends LRUCache {
             shrink(newSize);
         } else {
             LOG.debug("Growing collection cache to " + newSize);
-            SequencedLongHashMap<Cacheable> newMap = new SequencedLongHashMap<Cacheable>(newSize * 2);
-            Object2LongHashMap newNames = new Object2LongHashMap(newSize);
-            SequencedLongHashMap.Entry<Cacheable> next = map.getFirstEntry();
-            Cacheable cacheable;
+            SequencedLongHashMap<Collection> newMap = new SequencedLongHashMap<Collection>(newSize * 2);
+            Object2LongHashMap<String> newNames = new Object2LongHashMap<String>(newSize);
+            SequencedLongHashMap.Entry<Collection> next = map.getFirstEntry();
+            Collection cacheable;
             while(next != null) {
                 cacheable = next.getValue();
                 newMap.put(cacheable.getKey(), cacheable);
-                newNames.put(((Collection) cacheable).getURI().getRawCollectionPath(), cacheable.getKey());
+                newNames.put(cacheable.getURI().getRawCollectionPath(), cacheable.getKey());
                 next = next.getNext();
             }
             max = newSize;
@@ -163,6 +163,6 @@ public class CollectionCache extends LRUCache {
     @Override
     protected void shrink(int newSize) {
         super.shrink(newSize);
-        names = new Object2LongHashMap(newSize);
+        names = new Object2LongHashMap<String>(newSize);
     }
 }

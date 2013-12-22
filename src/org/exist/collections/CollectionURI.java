@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2003-2012 The eXist Project
+ *  Copyright (C) 2003-2013 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.collections;
 
@@ -66,9 +64,8 @@ public class CollectionURI {
     }
 
     public void removeLastSegment() {
-        char c;
         int pos = length - 1;
-        while ((c = uri[pos]) != FRAGMENT_SEPARATOR) {
+        while (uri[pos] != FRAGMENT_SEPARATOR) {
             pos--;
         }
         length = pos;
@@ -113,8 +110,9 @@ public class CollectionURI {
             if (this.length == otherCollectionURI.length) {
                 int pos = length - 1;
                 while (pos > -1) {
-                    if (this.uri[pos] != otherCollectionURI.uri[pos--])
-                        {return false;}
+                    if (this.uri[pos] != otherCollectionURI.uri[pos--]) {
+                        return false;
+                    }
                 }
                 return true;
             }
