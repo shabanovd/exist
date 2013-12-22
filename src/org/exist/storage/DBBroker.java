@@ -327,14 +327,14 @@ public abstract class DBBroker extends Observable {
      * collection does not yet exist, it is created - including all ancestors.
      * The path should be absolute, e.g. /db/shakespeare.
      * 
-     * @param transaction The transaction, which registers the acquired write locks. The locks should be released on commit/abort.
+     * @param txn The transaction, which registers the acquired write locks. The locks should be released on commit/abort.
      * @param uri The collection's URI
      * @return The collection or <code>null</code> if no collection matches the path
      * @throws PermissionDeniedException
      * @throws IOException
      * @throws TriggerException 
      */
-    public abstract Collection getOrCreateCollection(Txn transaction, XmldbURI uri)
+    public abstract Collection getOrCreateCollection(Txn txn, XmldbURI uri)
         throws PermissionDeniedException, IOException, TriggerException;
 
     /**

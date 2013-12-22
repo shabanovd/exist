@@ -363,8 +363,9 @@ public class DocumentImpl extends NodeImpl implements Document, DocumentAtExist,
      * 
      */
     public final synchronized Lock getUpdateLock() {
-        if(updateLock == null)
-            {updateLock = new MultiReadReentrantLock(fileURI);}
+        if(updateLock == null) {
+            updateLock = new MultiReadReentrantLock(fileURI);
+        }
         return updateLock;
     }
 

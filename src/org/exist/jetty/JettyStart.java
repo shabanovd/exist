@@ -237,33 +237,41 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
                 //TODO: pluggable in future
                 if (openid != null) {
                     if (handler instanceof ServletContextHandler) {
-                        final ServletContextHandler contextHandler = (ServletContextHandler) handler;
-                        contextHandler.addServlet(new ServletHolder((Class<? extends Servlet>) openid), "/openid");
-
-                        String suffix;
-                        if (contextHandler.getContextPath().endsWith("/")) {
-                            suffix = "openid";
-                        } else {
-                            suffix = "/openid";
+                        try {
+                            final ServletContextHandler contextHandler = (ServletContextHandler) handler;
+                            contextHandler.addServlet(new ServletHolder((Class<? extends Servlet>) openid), "/openid");
+    
+                            String suffix;
+                            if (contextHandler.getContextPath().endsWith("/")) {
+                                suffix = "openid";
+                            } else {
+                                suffix = "/openid";
+                            }
+    
+                            logger.info("'" + contextHandler.getContextPath() + suffix + "'");
+                        } catch (Throwable e) {
+                            logger.error(e.getMessage(), e);
                         }
-
-                        logger.info("'" + contextHandler.getContextPath() + suffix + "'");
                     }
                 }
 
                 if (oauth != null) {
                     if (handler instanceof ServletContextHandler) {
-                        final ServletContextHandler contextHandler = (ServletContextHandler) handler;
-                        contextHandler.addServlet(new ServletHolder((Class<? extends Servlet>) oauth), "/oauth/*");
-
-                        String suffix;
-                        if (contextHandler.getContextPath().endsWith("/")) {
-                            suffix = "oauth";
-                        } else {
-                            suffix = "/oauth";
+                        try {
+                            final ServletContextHandler contextHandler = (ServletContextHandler) handler;
+                            contextHandler.addServlet(new ServletHolder((Class<? extends Servlet>) oauth), "/oauth/*");
+    
+                            String suffix;
+                            if (contextHandler.getContextPath().endsWith("/")) {
+                                suffix = "oauth";
+                            } else {
+                                suffix = "/oauth";
+                            }
+    
+                            logger.info("'" + contextHandler.getContextPath() + suffix + "'");
+                        } catch (Throwable e) {
+                            logger.error(e.getMessage(), e);
                         }
-
-                        logger.info("'" + contextHandler.getContextPath() + suffix + "'");
                     }
                 }
                 //*************************************************************

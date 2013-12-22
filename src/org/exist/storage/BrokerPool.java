@@ -416,7 +416,6 @@ public class BrokerPool implements Database {
 	 */
 	private String instanceName;
 
-	//TODO: change 0 = initializing, 1 = operating, -1 = shutdown  (shabanovd)
     private final static int SHUTDOWN = -1;
     private final static int INITIALIZING = 0;
     private final static int OPERATING = 1;
