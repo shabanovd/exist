@@ -1,3 +1,22 @@
+/*
+ *  eXist Open Source Native XML Database
+ *  Copyright (C) 2001-2013 The eXist Project
+ *  http://exist-db.org
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.management;
 
 import java.io.Serializable;
@@ -16,8 +35,18 @@ public class TaskStatus implements Serializable {
     private static final long serialVersionUID = -8405783622910875893L;
 
     public enum Status {
-        NA, NEVER_RUN, INIT, PAUSED, STOPPED_OK, STOPPED_ERROR, RUNNING_CHECK, RUNNING_BACKUP,
-        PING_OK, PING_ERROR, PING_WAIT
+        NA,
+        NEVER_RUN,
+        INIT,
+        PAUSED,
+        STOPPED_OK,
+        STOPPED_ERROR,
+        RUNNING_CHECK,
+        RUNNING_BACKUP,
+        
+        PING_OK,
+        PING_ERROR,
+        PING_WAIT
     }
 
     private Status status = Status.NA;
@@ -92,7 +121,8 @@ public class TaskStatus implements Serializable {
         data.put("reason", _reason);
         data.put("percentage", Integer.valueOf(_percentageDone));
         try {
-            compositeData = new CompositeDataSupport(new CompositeType("TaskStatus", "Status of the task", //
+            compositeData = new CompositeDataSupport(
+                new CompositeType("TaskStatus", "Status of the task", //
                     new String[] { "status", "statusChangeTime", "reason", "percentage" }, //
                     new String[] { "status of the task", "reason for this status", "time when the status has changed",
                             "percentage of work" },//

@@ -141,7 +141,7 @@ public interface Cache<T extends Cacheable> {
      * Get the number of times where an object has been successfully
      * loaded from the cache.
      */
-    public int getHits();
+    public long getHits();
 
     /**
      * Get the number of times where an object could not be
@@ -150,9 +150,9 @@ public interface Cache<T extends Cacheable> {
      * @return number of times where an object could not be
      * found in the cache
      */
-    public int getFails();
+    public long getFails();
 
-    public int getLoad();
+    public long getLoad();
 
     public void setFileName(String fileName);
 

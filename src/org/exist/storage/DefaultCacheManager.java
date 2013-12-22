@@ -250,7 +250,7 @@ public class DefaultCacheManager implements CacheManager
     {
         final int   minSize = (int)( totalPageCount * MIN_SHRINK_FACTOR );
         Cache cache;
-        int   load;
+        long   load;
 
         if( shrinkThreshold >= 0 ) {
 

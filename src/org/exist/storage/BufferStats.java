@@ -30,10 +30,10 @@ public class BufferStats {
     // private int type = 0;
     private int size = 0;
     private int used = 0;
-    private int pageFails = 0;
-    private int pageHits = 0;
+    private long pageFails = 0;
+    private long pageHits = 0;
 
-    public BufferStats(int size, int used, int hits, int fails) {
+    public BufferStats(int size, int used, long hits, long fails) {
         this.size = size;
         this.used = used;
         this.pageHits = hits;
@@ -41,16 +41,16 @@ public class BufferStats {
     }
 
     /**
-     * @return int
+     * @return long
      */
-    public int getPageFails() {
+    public long getPageFails() {
         return pageFails;
     }
 
     /**
-     * @return int
+     * @return long
      */
-    public int getPageHits() {
+    public long getPageHits() {
         return pageHits;
     }
 

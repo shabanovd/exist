@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-07 The eXist Project
+ *  Copyright (C) 2001-2013 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,16 +16,16 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- * $Id$
  */
 package org.exist.management;
 
+import org.exist.storage.cache.Cacheable;
+
 public class Cache implements CacheMBean {
 
-    private org.exist.storage.cache.Cache cache;
+    private org.exist.storage.cache.Cache<? extends Cacheable> cache;
 
-    public Cache(org.exist.storage.cache.Cache cache) {
+    public Cache(org.exist.storage.cache.Cache<? extends Cacheable> cache) {
         this.cache = cache;
     }
 
@@ -45,12 +45,12 @@ public class Cache implements CacheMBean {
     }
 
     @Override
-    public int getHits() {
+    public long getHits() {
         return cache.getHits();
     }
 
     @Override
-    public int getFails() {
+    public long getFails() {
         return cache.getFails();
     }
 

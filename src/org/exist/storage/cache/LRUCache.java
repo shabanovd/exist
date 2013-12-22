@@ -38,7 +38,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
 
     protected Accounting accounting;
 
-    protected int hitsOld = -1;
+    protected volatile long hitsOld = -1;
 
     protected double growthFactor;
 
@@ -177,7 +177,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
      * 
      * @see org.exist.storage.cache.Cache#getHits()
      */
-    public int getHits() {
+    public long getHits() {
         return accounting.getHits();
     }
 
@@ -186,7 +186,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
      * 
      * @see org.exist.storage.cache.Cache#getFails()
      */
-    public int getFails() {
+    public long getFails() {
         return accounting.getMisses();
     }
 
@@ -283,12 +283,12 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
         accounting.setTotalSize(max);
     }
 
-    public int getLoad() {
+    public long getLoad() {
         if (hitsOld == 0) {
             hitsOld = accounting.getHits();
-            return Integer.MAX_VALUE;
+            return Long.MAX_VALUE;
         }
-        final int load = accounting.getHits() - hitsOld;
+        final long load = accounting.getHits() - hitsOld;
         hitsOld = accounting.getHits();
         return load;
     }

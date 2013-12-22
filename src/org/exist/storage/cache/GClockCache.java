@@ -46,7 +46,7 @@ public class GClockCache<T extends Cacheable> implements Cache<T> {
     protected Long2ObjectHashMap<T> map;
     protected int used = 0;
 
-    protected int hitsOld = 0;
+    protected volatile long hitsOld = 0;
 
     protected Accounting accounting;
     protected double growthFactor;
@@ -195,11 +195,11 @@ public class GClockCache<T extends Cacheable> implements Cache<T> {
         return growthFactor;
     }
 
-    public int getHits() {
+    public long getHits() {
         return accounting.getHits();
     }
 
-    public int getFails() {
+    public long getFails() {
         return accounting.getMisses();
     }
 
@@ -240,12 +240,12 @@ public class GClockCache<T extends Cacheable> implements Cache<T> {
         accounting.setTotalSize(size);
     }
 
-    public int getLoad() {
+    public long getLoad() {
         if (hitsOld == 0) {
             hitsOld = accounting.getHits();
-            return Integer.MAX_VALUE;
+            return Long.MAX_VALUE;
         }
-        final int load = accounting.getHits() - hitsOld;
+        final long load = accounting.getHits() - hitsOld;
         hitsOld = accounting.getHits();
         return load;
     }

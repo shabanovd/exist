@@ -50,10 +50,10 @@ public class Accounting {
     private int maxEntries = 5000;
     
     /** total cache hits during the lifetime of the cache*/
-    private int hits = 0;
+    private long hits = 0;
     
     /** total cache misses during the lifetime of the cache */
-    private int misses = 0;
+    private long misses = 0;
     
     /** the current size of the cache */
     private int totalSize = 0;
@@ -97,7 +97,7 @@ public class Accounting {
      * 
      * @return number of total cache hits
      */
-    public int getHits() {
+    public long getHits() {
         return hits;
     }
     
@@ -112,7 +112,7 @@ public class Accounting {
      * Returns the number of total cache faults.
      * @return number of total cache faults
      */
-    public int getMisses() {
+    public long getMisses() {
         return misses;
     }
     
@@ -135,8 +135,9 @@ public class Accounting {
         
         if (map.get(cacheable.getKey()) != null) {
             ++thrashing;
-        } else
-            {map.put(cacheable.getKey(), DUMMY);}
+        } else {
+            map.put(cacheable.getKey(), DUMMY);
+        }
     }
     
     /**
