@@ -685,7 +685,11 @@ public class MatchDocumentsTest {
 
             Collection col = broker.getCollection(col1uri);
             if (col != null) {
-            	broker.removeCollection(txn, col);
+                try {
+                    broker.removeCollection(txn, col);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             col = broker.getCollection(col2uri);

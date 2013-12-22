@@ -79,8 +79,9 @@ public class DocumentAsValueTest {
     private static DocumentImpl doc1 = null;
     private static DocumentImpl doc2 = null;
 
-    //@Test
-	public void test_00() throws Exception {
+    @Test
+    @Ignore
+    public void test_00() throws Exception {
     	System.out.println("test");
     	
     	startDB();
