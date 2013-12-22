@@ -1805,24 +1805,32 @@ public class NativeBroker extends DBBroker {
     }
 
     public void reindexCollection(Txn transaction, Collection collection, int mode) throws PermissionDeniedException {
+        if (!collection.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
+            throw new PermissionDeniedException("Account "+getSubject().getName()+" have insufficient privileges on collection " + collection.getURI());
+        }
+
         final CollectionCache collectionsCache = pool.getCollectionsCache();
         synchronized(collectionsCache) {
-            if (!collection.getPermissionsNoLock().validate(getSubject(), Permission.WRITE))
-                {throw new PermissionDeniedException("Account "+getSubject().getName()+" have insufficient privileges on collection " + collection.getURI());}
             LOG.debug("Reindexing collection " + collection.getURI());
-            if (mode == NodeProcessor.MODE_STORE)
-                {dropCollectionIndex(transaction, collection);}
+            if (mode == NodeProcessor.MODE_STORE) {
+                dropCollectionIndex(transaction, collection);
+            }
+            
             for(final Iterator<DocumentImpl> i = collection.iterator(this); i.hasNext(); ) {
                 final DocumentImpl next = i.next();
                 reindexXMLResource(transaction, next, mode);
             }
+            
             for(final Iterator<XmldbURI> i = collection.collectionIterator(this); i.hasNext(); ) {
                 final XmldbURI next = i.next();
+                
                 //TODO : resolve URIs !!! (collection.getURI().resolve(next))
                 final Collection child = getCollection(collection.getURI().append(next));
-                if(child == null)
-                    {LOG.warn("Collection '" + next + "' not found");}
-                else {
+                
+                if(child == null) {
+                    LOG.warn("Collection '" + next + "' not found");
+                
+                } else {
                     reindexCollection(transaction, child, mode);
                 }
             }
