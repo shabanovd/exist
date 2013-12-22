@@ -53,6 +53,7 @@ import org.exist.collections.CollectionCache;
 import org.exist.collections.CollectionConfiguration;
 import org.exist.collections.CollectionConfigurationException;
 import org.exist.collections.CollectionConfigurationManager;
+import org.exist.collections.triggers.CollectionTrigger;
 import org.exist.collections.triggers.CollectionTriggersVisitor;
 import org.exist.collections.triggers.DocumentTriggersVisitor;
 import org.exist.collections.triggers.TriggerException;
@@ -106,6 +107,9 @@ import org.w3c.dom.DocumentType;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.exist.xquery.TerminatedException;
+
+import static org.exist.storage.lock.Lock.READ_LOCK;
+import static org.exist.storage.lock.Lock.WRITE_LOCK;
 
 /**
  *  Main class for the native XML storage backend.
@@ -666,131 +670,141 @@ public class NativeBroker extends DBBroker {
         return null;
     }
     
+    private void checkPermsForCollectionWrite(Collection col, XmldbURI uri) throws PermissionDeniedException {
+        if (pool.isReadOnly()) {
+            throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
+        }
+        
+        final Permission perms = col.getPermissionsNoLock();
+        
+        if(!perms.validate(getSubject(), Permission.WRITE)) {
+            LOG.error("Permission denied to create collection '" + uri + "'");
+            throw new PermissionDeniedException("Account '"+ getSubject().getName() + "' not allowed to write to collection '" + col.getURI() + "'");
+        }
+        
+        if (!perms.validate(getSubject(), Permission.EXECUTE)) {
+            LOG.error("Permission denied to create collection '" + uri + "'");
+            throw new PermissionDeniedException("Account '"+ getSubject().getName() + "' not allowed to execute to collection '" + col.getURI() + "'");
+        }
+        
+        if (col.hasDocument(this, uri.lastSegment())) {
+            LOG.error("Collection '" + col.getURI() + "' have document '" + uri.lastSegment() + "'");
+            throw new PermissionDeniedException("Collection '" + col.getURI() + "' have document '" + uri.lastSegment() + "'.");
+        }
+    }
+    
+    private Collection createCollection(Txn txn, Collection parent, XmldbURI uri) throws PermissionDeniedException, TriggerException, LockException, IOException {
+        
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Creating collection '" + uri + "'");
+        }
+        
+        if (parent != null) {
+            checkPermsForCollectionWrite(parent, uri);
+        }
+        
+        CollectionTriggersVisitor triggersVisitor = null;
+        if(parent != null) {
+            final CollectionConfiguration conf = parent.getConfiguration(this);
+            if(conf != null) {
+                triggersVisitor = conf.getCollectionTriggerProxies().instantiateVisitor(this);
+            }
+        }
+
+        final CollectionTrigger trigger = pool.getCollectionTrigger();
+        trigger.beforeCreateCollection(this, txn, uri);
+        if (triggersVisitor != null) triggersVisitor.beforeCreateCollection(this, txn, uri);
+
+        
+        Collection col = new Collection(this, uri);
+        
+        col.setId(getNextCollectionId(txn));
+        col.setCreationTime(System.currentTimeMillis());
+        
+        if(txn != null) {
+            txn.acquireLock(col.getLock(), Lock.WRITE_LOCK);
+        }
+        
+        //TODO : acquire lock manually if transaction is null ?
+        if (parent != null) {
+            parent.addCollection(this, col, true);
+        }
+
+        saveCollection(txn, col);
+        
+        trigger.afterCreateCollection(this, txn, col);
+        if (triggersVisitor != null) triggersVisitor.afterCreateCollection(this, txn, col);
+        
+        return col;
+    }
+    
+    private void initialCollectionConfiguration(Txn txn, Collection col) {
+        try {
+            final String initCollectionConfig = readInitCollectionConfig();
+            if(initCollectionConfig != null) {
+                CollectionConfigurationManager collectionConfigurationManager = pool.getConfigurationManager();
+                if(collectionConfigurationManager == null) {
+                    //might not yet have been initialised
+                    pool.initCollectionConfigurationManager(this);
+                    collectionConfigurationManager = pool.getConfigurationManager();
+                }
+                
+                if(collectionConfigurationManager != null) {
+                    collectionConfigurationManager.addConfiguration(txn, this, col, initCollectionConfig);
+                }
+            }
+        } catch(final CollectionConfigurationException cce) {
+            LOG.error("Could not load initial collection configuration for /db: " + cce.getMessage(), cce);
+        }
+    }
+
+    
     /* (non-Javadoc)
      * @see org.exist.storage.DBBroker#getOrCreateCollection(org.exist.storage.txn.Txn, org.exist.xmldb.XmldbURI)
      */
     @Override
-    public Collection getOrCreateCollection(Txn transaction, XmldbURI name) throws PermissionDeniedException, IOException, TriggerException {
+    public Collection getOrCreateCollection(Txn txn, XmldbURI uri) throws PermissionDeniedException, IOException, TriggerException {
         
-        name = prepend(name.normalizeCollectionPath());
+        uri = prepend(uri.normalizeCollectionPath());
         
         final CollectionCache collectionsCache = pool.getCollectionsCache();
         
         synchronized(collectionsCache) {
             try {
                 //TODO : resolve URIs !
-                final XmldbURI[] segments = name.getPathSegments();
+                final XmldbURI[] segments = uri.getPathSegments();
+
                 XmldbURI path = XmldbURI.ROOT_COLLECTION_URI;
-                Collection sub;
-                Collection current = getCollection(XmldbURI.ROOT_COLLECTION_URI);
+
+                Collection current = getCollection(path);
                 if (current == null) {
-                    LOG.debug("Creating root collection '" + XmldbURI.ROOT_COLLECTION_URI + "'");
-                    
-                    pool.getCollectionTrigger().beforeCreateCollection(this, transaction, XmldbURI.ROOT_COLLECTION_URI);
-                    
-                    current = new Collection(this, XmldbURI.ROOT_COLLECTION_URI);
-                    
-                    current.setId(getNextCollectionId(transaction));
-                    current.setCreationTime(System.currentTimeMillis());
-                    
-                    if(transaction != null) {
-                        transaction.acquireLock(current.getLock(), Lock.WRITE_LOCK);
-                    }
-                    
-                    //TODO : acquire lock manually if transaction is null ?
-                    saveCollection(transaction, current);
-                    
-                    pool.getCollectionTrigger().afterCreateCollection(this, transaction, current);
-                    
+                    current = createCollection(txn, null, path);
+
                     //import an initial collection configuration
-                    try {
-                        final String initCollectionConfig = readInitCollectionConfig();
-                        if(initCollectionConfig != null) {
-                            CollectionConfigurationManager collectionConfigurationManager = pool.getConfigurationManager();
-                            if(collectionConfigurationManager == null) {
-                                //might not yet have been initialised
-                                pool.initCollectionConfigurationManager(this);
-                                collectionConfigurationManager = pool.getConfigurationManager();
-                            }
-                            
-                            if(collectionConfigurationManager != null) {
-                                collectionConfigurationManager.addConfiguration(transaction, this, current, initCollectionConfig);
-                            }
-                        }
-                    } catch(final CollectionConfigurationException cce) {
-                        LOG.error("Could not load initial collection configuration for /db: " + cce.getMessage(), cce);
-                    }
+                    initialCollectionConfiguration(txn, current);
                 }
                 
-                for(int i=1;i<segments.length;i++) {
+                for(int i=1; i < segments.length; i++) {
+                    
                     final XmldbURI temp = segments[i];
                     path = path.append(temp);
+                    
                     if(current.hasSubcollectionNoLock(this, temp)) {
                         current = getCollection(path);
                         if (current == null) {
-                            LOG.debug("Collection '" + path + "' not found!");
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("Collection '" + path + "' not found!");
+                            }
                         }
                     } else {
-                        
-                        if (pool.isReadOnly()) {
-                            throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
-                        }
-                        
-                        if(!current.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
-                            LOG.error("Permission denied to create collection '" + path + "'");
-                            throw new PermissionDeniedException("Account '"+ getSubject().getName() + "' not allowed to write to collection '" + current.getURI() + "'");
-                        }
-                        
-                        if (!current.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE)) {
-                            LOG.error("Permission denied to create collection '" + path + "'");
-                            throw new PermissionDeniedException("Account '"+ getSubject().getName() + "' not allowed to execute to collection '" + current.getURI() + "'");
-                        }
-                        
-                        if (current.hasDocument(this, path.lastSegment())) {
-                            LOG.error("Collection '" + current.getURI() + "' have document '" + path.lastSegment() + "'");
-                            throw new PermissionDeniedException("Collection '" + current.getURI() + "' have document '" + path.lastSegment() + "'.");
-                        }
-                        
-                        LOG.debug("Creating collection '" + path + "'...");
-                        
-                        final CollectionConfiguration colConf = current.getConfiguration(this);
-                        
-                        pool.getCollectionTrigger().beforeCreateCollection(this, transaction, path);
-                        
-                        CollectionTriggersVisitor triggersVisitor = null;
-                        if(colConf != null) {
-                            triggersVisitor = colConf.getCollectionTriggerProxies().instantiateVisitor(this);
-                            triggersVisitor.beforeCreateCollection(this, transaction, path);
-                        }
-            	        
-                        sub = new Collection(this, path);
-			
-                        sub.setId(getNextCollectionId(transaction));
-                        
-                        if (transaction != null) {
-                            transaction.acquireLock(sub.getLock(), Lock.WRITE_LOCK);
-                        }
-                        
-                        //TODO : acquire lock manually if transaction is null ?
-                        current.addCollection(this, sub, true);
-                        saveCollection(transaction, current);
-                        
-                        pool.getCollectionTrigger().afterCreateCollection(this, transaction, sub);
-
-                        if(colConf != null) {
-                            triggersVisitor.afterCreateCollection(this, transaction, sub);
-                        }
-                        
-                        current = sub;
+                        current = createCollection(txn, current, path);
                     }
                 }
                 return current;
             } catch (final LockException e) {
                 LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());
                 return null;
-            } catch (final ReadOnlyException e) {
-                throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
-			}                
+            }                
         }
     }    
 
@@ -803,7 +817,6 @@ public class NativeBroker extends DBBroker {
     public Collection openCollection(XmldbURI uri, int lockMode) throws PermissionDeniedException {
         return openCollection(uri, BFile.UNKNOWN_ADDRESS, lockMode);
     }
-
     
     @Override
     public List<String> findCollectionsMatching(String regexp) {
@@ -835,19 +848,14 @@ public class NativeBroker extends DBBroker {
             }
         } catch (final UnsupportedEncodingException e) {
             //LOG.error("Unable to encode '" + uri + "' in UTF-8");
-            //return null;
         } catch (final LockException e) {
             LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());
-            //return null;
         } catch (final TerminatedException e) {
             LOG.error(e.getMessage(), e);
-            //return null;
         } catch (final BTreeException e) {
             LOG.error(e.getMessage(), e);
-            //return null;
         } catch (final IOException e) {
             LOG.error(e.getMessage(), e);
-            //return null;
         } finally {
             lock.release(Lock.READ_LOCK);
         }
@@ -903,6 +911,43 @@ public class NativeBroker extends DBBroker {
         }
     }
     
+    private Collection readCollection(CollectionCache collectionsCache, XmldbURI uri, long addr) throws PermissionDeniedException {
+        final Lock lock = collectionsDb.getLock();
+        try {
+            lock.acquire(Lock.READ_LOCK);
+            
+            VariableByteInput is;
+            
+            if (addr == BFile.UNKNOWN_ADDRESS) {
+                final Value key = new CollectionStore.CollectionKey(uri.toString());
+                is = collectionsDb.getAsStream(key);
+            } else {
+                is = collectionsDb.getAsStream(addr);
+            }
+            
+            if (is == null) {
+                return null;
+            }
+            
+            Collection collection = new Collection(this, uri);
+            collection.read(this, is);
+            
+            collectionsCache.add(collection);
+            
+            return collection;
+            
+        //TODO : rethrow exceptions ? -pb
+        } catch (final LockException e) {
+            LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());
+            return null;
+        } catch (final IOException e) {
+            LOG.error(e.getMessage(), e);
+            return null;
+        } finally {
+            lock.release(Lock.READ_LOCK);
+        }
+    }
+    
     /**
      *  Get collection object. If the collection does not exist, null is
      *  returned.
@@ -911,56 +956,30 @@ public class NativeBroker extends DBBroker {
      *@return       The collection value
      */
     private Collection openCollection(XmldbURI uri, long addr, int lockMode) throws PermissionDeniedException {
-        uri = prepend(uri.toCollectionPathURI());
-        //We *must* declare it here (see below)
-        Collection collection;
+        XmldbURI path = prepend(uri.toCollectionPathURI());
+
+        Collection collection = null;
+        
         final CollectionCache collectionsCache = pool.getCollectionsCache();  
         synchronized(collectionsCache) {
-            collection = collectionsCache.get(uri);
+            collection = collectionsCache.get(path);
             if (collection == null) {
-                final Lock lock = collectionsDb.getLock();
-                try {
-                    lock.acquire(Lock.READ_LOCK);
-                    VariableByteInput is;
-                    if (addr == BFile.UNKNOWN_ADDRESS) {
-                        final Value key = new CollectionStore.CollectionKey(uri.toString());
-                        is = collectionsDb.getAsStream(key);
-                    } else {
-                        is = collectionsDb.getAsStream(addr);
-                    }
-                    if (is == null)
-                        {return null;}
-                    collection = new Collection(this, uri);
-                    collection.read(this, is);
-                    //TODO : manage this from within the cache -pb
-                    if(!pool.isInitializing())
-                        {collectionsCache.add(collection);}
-                //TODO : rethrow exceptions ? -pb
-                } catch (final UnsupportedEncodingException e) {
-                    LOG.error("Unable to encode '" + uri + "' in UTF-8");
-                    return null;
-                } catch (final LockException e) {
-                    LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());
-                    return null;
-                } catch (final IOException e) {
-                    LOG.error(e.getMessage(), e);
-                    return null;
-                } finally {
-                    lock.release(Lock.READ_LOCK);
-                }
+                collection = readCollection(collectionsCache, path, addr);
             } else {
-                if (!collection.getURI().equalsInternal(uri)) {
-                    LOG.error("The collection received from the cache is not the requested: " + uri +
-                        "; received: " + collection.getURI());
+                if (!collection.getURI().equalsInternal(path)) {
+                    LOG.error("The collection received from the cache is not the requested: " + path + "; received: " + collection.getURI());
                 }
-                collectionsCache.add(collection);
                 
-                if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE)) {
-                    throw new PermissionDeniedException("Permission denied to open collection: " + collection.getURI().toString() + " by " + getSubject().getName());
-                }
+                collectionsCache.add(collection);
             }
         }
         
+        if (collection == null)
+            return null;
+
+        if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE)) {
+            throw new PermissionDeniedException("Permission denied to open collection: " + collection.getURI().toString() + " by " + getSubject().getName());
+        }
 
         //Important : 
         //This code must remain outside of the synchonized block
@@ -973,7 +992,7 @@ public class NativeBroker extends DBBroker {
             try {
                 collection.getLock().acquire(lockMode);
             } catch (final LockException e) {
-                LOG.warn("Failed to acquire lock on collection '" + uri + "'");
+                LOG.warn("Failed to acquire lock on collection '" + path + "'");
             }
         }
         return collection;
@@ -1640,8 +1659,6 @@ public class NativeBroker extends DBBroker {
             collection.setAddress(addr);
             ostream.close();
             
-        } catch (final ReadOnlyException e) {
-            LOG.warn(DATABASE_IS_READ_ONLY);
         } catch (final LockException e) {
             LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName(), e);
         } finally {
@@ -1690,7 +1707,7 @@ public class NativeBroker extends DBBroker {
      * @return next free collection id.
      * @throws ReadOnlyException
      */
-    public int getFreeCollectionId(Txn transaction) throws ReadOnlyException {
+    public int getFreeCollectionId(Txn transaction) {
         int freeCollectionId = Collection.UNKNOWN_COLLECTION_ID;
         final Lock lock = collectionsDb.getLock();
         try {
@@ -1725,7 +1742,7 @@ public class NativeBroker extends DBBroker {
      * @return next available unique collection id
      * @throws ReadOnlyException
      */
-    public int getNextCollectionId(Txn transaction) throws ReadOnlyException {
+    public int getNextCollectionId(Txn transaction) {
         int nextCollectionId = getFreeCollectionId(transaction);
         if (nextCollectionId != Collection.UNKNOWN_COLLECTION_ID)
             {return nextCollectionId;}

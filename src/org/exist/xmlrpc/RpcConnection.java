@@ -187,7 +187,7 @@ public class RpcConnection implements RpcAPI {
             //TODO : register a lock (wich one ?) within the transaction ?
             if (created != null)
                 {current.setCreationTime( created.getTime());}
-            LOG.debug("creating collection " + collUri);
+            //LOG.debug("creating collection " + collUri);
             
             broker.saveCollection(transaction, current);
             transact.commit(transaction);
