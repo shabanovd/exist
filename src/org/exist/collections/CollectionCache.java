@@ -21,11 +21,12 @@ package org.exist.collections;
 
 import java.util.Iterator;
 
-import org.exist.storage.BrokerPool;
+import org.exist.Database;
 import org.exist.storage.CacheManager;
 import org.exist.storage.cache.Cacheable;
 import org.exist.storage.cache.LRUCache;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.MultiReadReentrantLock;
 import org.exist.util.hashtable.Object2LongHashMap;
 import org.exist.util.hashtable.SequencedLongHashMap;
 import org.exist.xmldb.XmldbURI;
@@ -41,20 +42,31 @@ import org.exist.xmldb.XmldbURI;
 public class CollectionCache extends LRUCache<Collection> {
 
     private Object2LongHashMap<String> names;
-    private BrokerPool pool;
+    private Database db;
+    private Lock lock;
 
-    public CollectionCache(BrokerPool pool, int blockBuffers, double growthThreshold) {
+    public CollectionCache(Database db, int blockBuffers, double growthThreshold) {
         super(blockBuffers, 2.0, 0.000001, CacheManager.DATA_CACHE);
         this.names = new Object2LongHashMap<String>(blockBuffers);
-        this.pool = pool;
+        this.db = db;
+        
+        lock = new MultiReadReentrantLock("collection cache");
         setFileName("collection cache");
     }
-
+    
+    public Lock getLock() {
+        return lock;
+    }
+    
     public void add(Collection collection) {
         add(collection, 1);
     }
 
     public void add(Collection collection, int initialRefCount) {
+        if(db.isInitializing()) {
+            return;
+        }
+        
         super.add(collection, initialRefCount);
         final String name = collection.getURI().getRawCollectionPath();
         names.put(name, collection.getKey());
@@ -86,8 +98,8 @@ public class CollectionCache extends LRUCache<Collection> {
                 if (lock.attempt(Lock.READ_LOCK)) {
                     try {
                         if (cached.allowUnload()) {
-                            if(pool.getConfigurationManager()!=null) { // might be null during db initialization
-                                pool.getConfigurationManager().invalidate(old.getURI());
+                            if(db.getConfigurationManager()!=null) { // might be null during db initialization
+                                db.getConfigurationManager().invalidate(old.getURI());
                             }
                             names.remove(old.getURI().getRawCollectionPath());
                             cached.sync(true);
@@ -114,8 +126,8 @@ public class CollectionCache extends LRUCache<Collection> {
         super.remove(item);
         names.remove(col.getURI().getRawCollectionPath());
         // might be null during db initialization
-        if(pool.getConfigurationManager() != null) {
-            pool.getConfigurationManager().invalidate(col.getURI());
+        if(db.getConfigurationManager() != null) {
+            db.getConfigurationManager().invalidate(col.getURI());
         }
     }
 
@@ -141,7 +153,9 @@ public class CollectionCache extends LRUCache<Collection> {
         if (newSize < max) {
             shrink(newSize);
         } else {
-            LOG.debug("Growing collection cache to " + newSize);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Growing collection cache to " + newSize);
+            }
             SequencedLongHashMap<Collection> newMap = new SequencedLongHashMap<Collection>(newSize * 2);
             Object2LongHashMap<String> newNames = new Object2LongHashMap<String>(newSize);
             SequencedLongHashMap.Entry<Collection> next = map.getFirstEntry();
