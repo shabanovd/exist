@@ -113,7 +113,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
      * @see
      * org.exist.storage.cache.Cache#remove(org.exist.storage.cache.Cacheable)
      */
-    public void remove(Cacheable item) {
+    public void remove(T item) {
         map.remove(item.getKey());
     }
 
@@ -124,7 +124,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
      */
     public boolean flush() {
         boolean flushed = false;
-        Cacheable cacheable;
+        T cacheable;
         SequencedLongHashMap.Entry<T> next = map.getFirstEntry();
         while (next != null) {
             cacheable = next.getValue();
@@ -142,7 +142,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
      * @see org.exist.storage.cache.Cache#hasDirtyItems()
      */
     public boolean hasDirtyItems() {
-        Cacheable cacheable;
+        T cacheable;
         SequencedLongHashMap.Entry<T> next = map.getFirstEntry();
         while (next != null) {
             cacheable = next.getValue();
@@ -259,8 +259,7 @@ public class LRUCache<T extends Cacheable> implements Cache<T> {
         if (newSize < max) {
             shrink(newSize);
         } else {
-            SequencedLongHashMap<T> newMap = new SequencedLongHashMap<T>(
-                    newSize * 2);
+            SequencedLongHashMap<T> newMap = new SequencedLongHashMap<T>(newSize * 2);
             SequencedLongHashMap.Entry<T> next = map.getFirstEntry();
             T cacheable;
             while (next != null) {
