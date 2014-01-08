@@ -37,6 +37,8 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.stax.EmbeddedXMLStreamReader;
 import org.exist.storage.btree.BTreeCallback;
+import org.exist.storage.dom.DOMFile;
+import org.exist.storage.index.CollectionStore;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
@@ -57,7 +59,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Observable;
 
-import org.exist.collections.Collection.SubCollectionEntry;
+import org.exist.storage.StoredCollection.SubCollectionEntry;
 
 /**
  * This is the base class for all database backends. All the basic database
@@ -92,6 +94,10 @@ public abstract class DBBroker extends Observable {
     public final static String PROPERTY_XUPDATE_CONSISTENCY_CHECKS = "xupdate.consistency-checks";
 
     protected final static Logger LOG = Logger.getLogger(DBBroker.class);
+    
+    /** the database files */
+    protected CollectionStore collectionsDb;
+    protected DOMFile domDb;
 
     protected boolean caseSensitive = true;
 
@@ -401,12 +407,6 @@ public abstract class DBBroker extends Observable {
         throws PermissionDeniedException;
 
     /**
-     * Get a new document id that does not yet exist within the collection.
-     * @throws EXistException 
-     */
-    public abstract int getNextResourceId(Txn transaction, Collection collection) throws EXistException;
-
-    /**
      * Get the string value of the specified node.
      * 
      * If addWhitespace is set to true, an extra space character will be added
@@ -574,8 +574,6 @@ public abstract class DBBroker extends Observable {
      */
     public abstract void storeBinaryResource(Txn transaction,
         BinaryDocument blob, InputStream is) throws IOException;
-
-    public abstract void getCollectionResources(Collection.InternalAccess collectionInternalAccess);
 
     /* *
      * Retrieve the binary data stored under the resource descriptor
@@ -835,7 +833,7 @@ public abstract class DBBroker extends Observable {
 
     public abstract void readCollectionEntry(SubCollectionEntry entry);
 
-	public void release() {
-		pool.release(this);
-	}
+    public void release() {
+        pool.release(this);
+    }
 }

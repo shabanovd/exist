@@ -22,6 +22,7 @@
  */
 package org.exist.dom;
 
+import org.exist.Database;
 import org.exist.collections.Collection;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.btree.Paged.Page;
@@ -46,8 +47,8 @@ public class BinaryDocument extends DocumentImpl {
     
     private long realSize = 0L;
     
-    public BinaryDocument(BrokerPool pool) {
-        super(pool, null, null);
+    public BinaryDocument(Database db) {
+        super(db, null, null);
     } 
 
     public BinaryDocument(BrokerPool pool, Collection collection, XmldbURI fileURI) {

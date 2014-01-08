@@ -511,11 +511,12 @@ public class LocalUserManagementService implements EXistUserManagementService {
     @Override
     public Permission getSubResourcePermissions(final Collection parent, final String name) throws XMLDBException {
         try {
+            final XmldbURI docName = XmldbURI.xmldbUriFor(name);
             return executeWithBroker(new BrokerOperation<Permission>(){
                 @Override
                 public Permission withBroker(final DBBroker broker) throws XMLDBException, LockException, PermissionDeniedException, IOException, EXistException, TriggerException, SyntaxException {
                     if(parent instanceof LocalCollection) {
-                        return ((LocalCollection) parent).getCollection().getResourceEntry(broker, name).getPermissions();
+                        return ((LocalCollection) parent).getCollection().getResourceEntry(broker, docName).getPermissions();
                     }
                     return null;
                 }

@@ -21,6 +21,7 @@
  */
 package org.exist.dom;
 
+import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfiguration;
@@ -64,6 +65,7 @@ import org.w3c.dom.UserDataHandler;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Iterator;
+
 import org.exist.security.ACLPermission;
 
 /**
@@ -84,7 +86,7 @@ public class DocumentImpl extends NodeImpl implements Document, DocumentAtExist,
 
     //public final static byte DOCUMENT_NODE_SIGNATURE = 0x0F;
 
-    protected BrokerPool pool = null;
+    protected Database pool = null;
 
     /** number of child nodes */
     private int children = 0;
@@ -109,10 +111,10 @@ public class DocumentImpl extends NodeImpl implements Document, DocumentAtExist,
     /**
      * Creates a new <code>DocumentImpl</code> instance.
      *
-     * @param pool a <code>BrokerPool</code> instance representing the db
+     * @param db a <code>Database</code> instance representing the db
      */
-    public DocumentImpl(BrokerPool pool) {
-        this(pool, null, null);
+    public DocumentImpl(Database db) {
+        this(db, null, null);
     }
 
     /**
@@ -122,8 +124,8 @@ public class DocumentImpl extends NodeImpl implements Document, DocumentAtExist,
      * @param collection a <code>Collection</code> value
      * @param fileURI a <code>XmldbURI</code> value
      */
-    public DocumentImpl(BrokerPool pool, Collection collection, XmldbURI fileURI) {
-        this.pool = pool;
+    public DocumentImpl(Database db, Collection collection, XmldbURI fileURI) {
+        this.pool = db;
         this.collection = collection;
         this.fileURI = fileURI;
 
@@ -131,11 +133,12 @@ public class DocumentImpl extends NodeImpl implements Document, DocumentAtExist,
         this.permissions = PermissionFactory.getDefaultResourcePermission();
     }
 
+    @Deprecated
     public BrokerPool getBrokerPool() {
-        return pool;
+        return (BrokerPool) pool;
     }
 
-    public BrokerPool getDatabase() {
+    public Database getDatabase() {
         return pool;
     }
 
@@ -362,7 +365,15 @@ public class DocumentImpl extends NodeImpl implements Document, DocumentAtExist,
      * resource.
      * 
      */
+    @Deprecated //use getLock
     public final synchronized Lock getUpdateLock() {
+        if(updateLock == null) {
+            updateLock = new MultiReadReentrantLock(fileURI);
+        }
+        return updateLock;
+    }
+
+    public final synchronized Lock getLock() {
         if(updateLock == null) {
             updateLock = new MultiReadReentrantLock(fileURI);
         }

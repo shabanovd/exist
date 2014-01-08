@@ -20,7 +20,6 @@
 package org.exist.collections;
 
 import org.exist.Indexer;
-import org.exist.Namespaces;
 import org.exist.collections.triggers.DocumentTriggersVisitor;
 import org.exist.dom.DocumentImpl;
 import org.exist.security.Permission;
@@ -28,12 +27,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.util.serializer.DOMStreamer;
 import org.exist.xmldb.XmldbURI;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.ext.LexicalHandler;
 
 /**
  * Internal class used to track required fields between calls to
@@ -42,79 +36,25 @@ import org.xml.sax.ext.LexicalHandler;
  * 
  * @author wolf
  */
-public class IndexInfo {
+public interface IndexInfo {
 
-    private Indexer indexer;
-    private DOMStreamer streamer;
-    private DocumentTriggersVisitor triggersVisitor;
-    private boolean creating = false;
-    private Permission oldDocPermissions = null;
-    private CollectionConfiguration collectionConfig;
+    public Indexer getIndexer();
 
-    IndexInfo(Indexer indexer, CollectionConfiguration collectionConfig) {
-        this.indexer = indexer;
-        this.collectionConfig = collectionConfig;
-    }
+    public void setTriggersVisitor(DocumentTriggersVisitor triggersVisitor);
 
-    public Indexer getIndexer() {
-        return indexer;
-    }
+    public DocumentTriggersVisitor getTriggersVisitor();
 
-    public void setTriggersVisitor(DocumentTriggersVisitor triggersVisitor) {
-        this.triggersVisitor = triggersVisitor;
-    }
+    public void setCreating(boolean creating);
 
-    public DocumentTriggersVisitor getTriggersVisitor() {
-        return triggersVisitor;
-    }
-
-    public void setCreating(boolean creating) {
-        this.creating = creating;
-    }
-
-    public boolean isCreating() {
-        return creating;
-    }
+    public boolean isCreating();
     
-    public void setOldDocPermissions(final Permission oldDocPermissions) {
-        this.oldDocPermissions = oldDocPermissions;
-    }
+    public void setOldDocPermissions(final Permission oldDocPermissions);
     
-    public Permission getOldDocPermissions() {
-        return oldDocPermissions;
-    }
+    public Permission getOldDocPermissions();
 
-    void setReader(XMLReader reader, EntityResolver entityResolver) throws SAXException {
-        if(entityResolver != null) {
-            reader.setEntityResolver(entityResolver);
-        }
-        LexicalHandler lexicalHandler = triggersVisitor == null ? indexer : triggersVisitor; //.getLexicalInputHandler();
-        ContentHandler contentHandler = triggersVisitor == null ? indexer : triggersVisitor; //.getInputHandler();
-        reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, lexicalHandler);
-        reader.setContentHandler(contentHandler);
-        reader.setErrorHandler(indexer);
-    }
+    public DOMStreamer getDOMStreamer();
 
-    void setDOMStreamer(DOMStreamer streamer) {
-        this.streamer = streamer;
-        if (triggersVisitor == null) {
-            streamer.setContentHandler(indexer);
-            streamer.setLexicalHandler(indexer);
-        } else {
-            streamer.setContentHandler(triggersVisitor.getInputHandler());
-            streamer.setLexicalHandler(triggersVisitor.getLexicalInputHandler());
-        }
-    }
+    public DocumentImpl getDocument();
 
-    public DOMStreamer getDOMStreamer() {
-        return this.streamer;
-    }
-
-    public DocumentImpl getDocument() {
-        return indexer.getDocument();
-    }
-
-    public CollectionConfiguration getCollectionConfig() {
-        return collectionConfig;
-    }
+    public CollectionConfiguration getCollectionConfig();
 }

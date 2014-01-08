@@ -42,7 +42,6 @@ import org.exist.memtree.NodeImpl;
 import org.exist.numbering.NodeId;
 import org.exist.protocolhandler.embedded.EmbeddedInputStream;
 import org.exist.protocolhandler.xmldb.XmldbURL;
-import org.exist.repo.RepoBackup;
 import org.exist.security.ACLPermission;
 import org.exist.security.AXSchemaType;
 import org.exist.security.Account;
@@ -83,7 +82,6 @@ import org.exist.xquery.util.HTTPUtils;
 import org.exist.xquery.value.*;
 import org.exist.xupdate.Modification;
 import org.exist.xupdate.XUpdateProcessor;
-import org.expath.pkg.repo.PackageException;
 import org.w3c.dom.DocumentType;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -1695,7 +1693,7 @@ public class RpcConnection implements RpcAPI {
             if(collection == null) {
                 throw new EXistException("collection " + uri + " not found");
             } else {
-                perm = collection.getResourceEntry(broker, name).getPermissions();
+                perm = collection.getResourceEntry(broker, XmldbURI.xmldbUriFor(name)).getPermissions();
             }
 
             final HashMap<String, Object> result = new HashMap<String, Object>();

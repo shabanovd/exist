@@ -22,6 +22,7 @@ package org.exist;
 import java.io.File;
 import java.util.Collection;
 
+import org.exist.collections.CollectionCache;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.triggers.CollectionTrigger;
 import org.exist.collections.triggers.DocumentTrigger;
@@ -50,6 +51,8 @@ import org.exist.xquery.PerformanceStats;
  * 
  */
 public interface Database {
+    
+    public static final String IS_READ_ONLY = "database is read-only";
 
     // TODO: javadocs
 
@@ -78,6 +81,13 @@ public interface Database {
      * @return CacheManager
      */
     public CacheManager getCacheManager();
+    
+    /**
+     * Returns a cache in which the database instance's collections are stored.
+     * 
+     * @return The cache
+     */
+    public CollectionCache getCollectionsCache();
 
     /**
      * 
@@ -161,6 +171,8 @@ public interface Database {
     public CollectionTrigger getCollectionTrigger();
 
     public ProcessMonitor getProcessMonitor();
+
+    public void setReadOnly();
 
     public boolean isReadOnly();
 

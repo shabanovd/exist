@@ -215,7 +215,8 @@ public class CollectionConfigurationManager {
      * @return The collection configuration
      * @throws CollectionConfigurationException
      */
-    protected CollectionConfiguration getConfiguration(DBBroker broker, Collection collection) throws CollectionConfigurationException {
+    //TODO:protected
+    public CollectionConfiguration getConfiguration(DBBroker broker, Collection collection) throws CollectionConfigurationException {
 
         final CollectionURI path = new CollectionURI(COLLECTION_CONFIG_PATH);
         path.append(collection.getURI().getRawCollectionPath());
@@ -270,7 +271,8 @@ public class CollectionConfigurationManager {
         }
     }
 
-    protected void loadConfiguration(DBBroker broker, final Collection configCollection) throws CollectionConfigurationException, PermissionDeniedException, LockException {
+    //XXX: protected
+    public void loadConfiguration(DBBroker broker, final Collection configCollection) throws CollectionConfigurationException, PermissionDeniedException, LockException {
         if (configCollection != null && configCollection.getDocumentCount(broker) > 0) {
             for (final Iterator<DocumentImpl> i = configCollection.iterator(broker); i.hasNext();) {
                 final DocumentImpl confDoc = i.next();
