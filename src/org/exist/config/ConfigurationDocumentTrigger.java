@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2010-2012 The eXist Project
+ *  Copyright (C) 2010-2013 The eXist Project
  *  http://exist-db.org
  *  
  *  This program is free software; you can redistribute it and/or
@@ -118,6 +118,7 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
 
     @Override
     public void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
+        //Nothing to do
     }
 
     @Override
@@ -178,6 +179,7 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
 
     @Override
     public void beforeCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException {
+        //Nothing to do
     }
 
     @Override
@@ -187,6 +189,7 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
 
     @Override
     public void beforeMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException {
+        //Nothing to do
     }
 
     @Override
@@ -195,8 +198,7 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
     }
 
     @Override
-    public void beforeDeleteDocument(DBBroker broker, Txn transaction,
-            DocumentImpl document) throws TriggerException {
+    public void beforeDeleteDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
         //Nothing to do
     }
 
@@ -232,7 +234,6 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
 
     @Override
     public void startElement(String namespaceURI, String localName, String qname, Attributes attributes) throws SAXException {
-    	
         final boolean aclPermissionInUse = 
             PermissionFactory.getDefaultResourcePermission() instanceof ACLPermission;
         //map unix style user and group ids to acl style
@@ -249,7 +250,6 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
     }
 
     private Attributes modifyUserGroupIdAttribute(final Attributes attrs, final Map<Integer, Integer> idMappings) {
-    	
         final String strId = attrs.getValue("id");
         if (strId != null) {
             Integer id = Integer.parseInt(strId);

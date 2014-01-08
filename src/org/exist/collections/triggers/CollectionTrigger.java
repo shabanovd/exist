@@ -33,7 +33,25 @@ import org.exist.xmldb.XmldbURI;
  */
 public interface CollectionTrigger extends Trigger {
 
+    /**
+     * This method is called once before the database will actually create, remove or rename a collection. You may 
+     * take any action here, using the supplied broker instance.
+     * 
+     * @param broker
+     * @param txn
+     * @param uri
+     * @throws TriggerException
+     */
     public void beforeCreateCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
+    
+    /**
+     * This method is called after the operation has completed.
+     * 
+     * @param broker
+     * @param txn
+     * @param collection
+     * @throws TriggerException
+     */
     public void afterCreateCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException;
 
     public void beforeCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException;

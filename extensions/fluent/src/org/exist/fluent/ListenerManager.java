@@ -284,58 +284,58 @@ public class ListenerManager {
 			return LOG;
 		}
 		public void characters(char[] ch, int start, int length) throws SAXException {
-			if (contentHandler != null) contentHandler.characters(ch, start, length);
+			contentHandler.characters(ch, start, length);
 		}
 		public void endDocument() throws SAXException {
-			if (contentHandler != null) contentHandler.endDocument();
+			contentHandler.endDocument();
 		}
 		public void endElement(String uri, String localName, String qName) throws SAXException {
-			if (contentHandler != null) contentHandler.endElement(uri, localName, qName);
+			contentHandler.endElement(uri, localName, qName);
 		}
 		public void endPrefixMapping(String prefix) throws SAXException {
-			if (contentHandler != null) contentHandler.endPrefixMapping(prefix);
+			contentHandler.endPrefixMapping(prefix);
 		}
 		public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
-			if (contentHandler != null) contentHandler.ignorableWhitespace(ch, start, length);
+			contentHandler.ignorableWhitespace(ch, start, length);
 		}
 		public void processingInstruction(String target, String data) throws SAXException {
-			if (contentHandler != null) contentHandler.processingInstruction(target, data);
+			contentHandler.processingInstruction(target, data);
 		}
 		public void setDocumentLocator(Locator locator) {
-			if (contentHandler != null) contentHandler.setDocumentLocator(locator);
+			contentHandler.setDocumentLocator(locator);
 		}
 		public void skippedEntity(String name) throws SAXException {
-			if (contentHandler != null) contentHandler.skippedEntity(name);
+			contentHandler.skippedEntity(name);
 		}
 		public void startDocument() throws SAXException {
-			if (contentHandler != null) contentHandler.startDocument();
+			contentHandler.startDocument();
 		}
 		public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
-			if (contentHandler != null) contentHandler.startElement(uri, localName, qName, atts);
+			contentHandler.startElement(uri, localName, qName, atts);
 		}
 		public void startPrefixMapping(String prefix, String uri) throws SAXException {
-			if (contentHandler != null) contentHandler.startPrefixMapping(prefix, uri);
+			contentHandler.startPrefixMapping(prefix, uri);
 		}
 		public void comment(char[] ch, int start, int length) throws SAXException {
-			if (lexicalHandler != null) lexicalHandler.comment(ch, start, length);
+			lexicalHandler.comment(ch, start, length);
 		}
 		public void endCDATA() throws SAXException {
-			if (lexicalHandler != null) lexicalHandler.endCDATA();
+			lexicalHandler.endCDATA();
 		}
 		public void endDTD() throws SAXException {
-			if (lexicalHandler != null) lexicalHandler.endDTD();
+			lexicalHandler.endDTD();
 		}
 		public void endEntity(String name) throws SAXException {
-			if (lexicalHandler != null) lexicalHandler.endEntity(name);
+			lexicalHandler.endEntity(name);
 		}
 		public void startCDATA() throws SAXException {
-			if (lexicalHandler != null) lexicalHandler.startCDATA();
+			lexicalHandler.startCDATA();
 		}
 		public void startDTD(String name, String publicId, String systemId) throws SAXException {
-			if (lexicalHandler != null) lexicalHandler.startDTD(name, publicId, systemId);
+			lexicalHandler.startDTD(name, publicId, systemId);
 		}
 		public void startEntity(String name) throws SAXException {
-			if (lexicalHandler != null) lexicalHandler.startEntity(name);
+			lexicalHandler.startEntity(name);
 		}
 
 		@Override

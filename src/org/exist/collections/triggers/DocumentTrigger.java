@@ -77,7 +77,26 @@ import org.xml.sax.ext.LexicalHandler;
  */
 public interface DocumentTrigger extends Trigger, ContentHandler, LexicalHandler {
 
+    /**
+     * This method is called once before the database will actually parse the input data. You may take any action
+     * here, using the supplied broker instance.
+     * 
+     * @param broker
+     * @param txn
+     * @param uri
+     * @throws TriggerException
+     */
     public void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException;
+    
+    /**
+     * This method is called after the operation completed. At this point, the document has already
+     * been stored.
+     * 
+     * @param broker
+     * @param txn
+     * @param document
+     * @throws TriggerException
+     */
     public void afterCreateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
 
     public void beforeUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
