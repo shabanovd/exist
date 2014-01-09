@@ -1221,13 +1221,13 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         broker.getIndexController().streamMetas(new MetaStreamListener() {
             @Override
             public void metadata(QName key, Object value) {
-            	if (value == null)
-            		return;
-            	
+                if (value == null)
+                    return;
+                
                 if (value instanceof String) {
-                	if (((String) value).isEmpty())
-                		return;
-                	
+                    if (((String) value).isEmpty())
+                        return;
+                    
                     String name = key.getLocalName();//LuceneUtil.encodeQName(key, index.getBrokerPool().getSymbols());
 
                     org.exist.indexing.lucene.FieldType fieldConfig = null;
@@ -1235,34 +1235,34 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     	fieldConfig = config.getFieldType(name);
                     
                     org.apache.lucene.document.FieldType ft = null;
-					if (fieldConfig != null)
-                    	ft  = fieldConfig.getFieldType();
-					
-					if (ft == null) {
-						ft = defaultFT;
-					}
-					
+                    if (fieldConfig != null)
+                        ft  = fieldConfig.getFieldType();
+                    
+                    if (ft == null) {
+                        ft = defaultFT;
+                    }
+                    
                     Field fld;
                     
                     try {
-						if (fieldConfig == null || fieldConfig.numericType == null) {
-		                    fld = new Field(name, (String)value, ft);
-						} else if (fieldConfig.numericType == NumericType.DOUBLE) {
-		                    fld = new DoubleField(name, Double.valueOf((String)value), ft);
-						} else if (fieldConfig.numericType == NumericType.FLOAT) {
-		                    fld = new FloatField(name, Float.valueOf((String)value), ft);
-						} else if (fieldConfig.numericType == NumericType.INT) {
-		                    fld = new IntField(name, Integer.valueOf((String)value), ft);
-						} else if (fieldConfig.numericType == NumericType.LONG) {
-		                    fld = new LongField(name, Long.valueOf((String)value), ft);
-						} else {
-		                    fld = new Field(name, (String)value, ft);
-						}
+                        if (fieldConfig == null || fieldConfig.numericType == null) {
+                            fld = new Field(name, (String)value, ft);
+                        } else if (fieldConfig.numericType == NumericType.DOUBLE) {
+                            fld = new DoubleField(name, Double.valueOf((String)value), ft);
+                        } else if (fieldConfig.numericType == NumericType.FLOAT) {
+                            fld = new FloatField(name, Float.valueOf((String)value), ft);
+                        } else if (fieldConfig.numericType == NumericType.INT) {
+                            fld = new IntField(name, Integer.valueOf((String)value), ft);
+                        } else if (fieldConfig.numericType == NumericType.LONG) {
+                            fld = new LongField(name, Long.valueOf((String)value), ft);
+                        } else {
+                            fld = new Field(name, (String)value, ft);
+                        }
                     } catch (NumberFormatException e) {
-                    	LOG.error(e.getMessage(), e);
-	                    fld = new Field(name, (String)value, ft);
+                        LOG.error(e.getMessage(), e);
+                        fld = new Field(name, (String)value, ft);
                     }
-                	
+                    
                     if (fieldConfig != null && fieldConfig.getBoost() > 0)
                         fld.setBoost(fieldConfig.getBoost());
                     
@@ -1276,22 +1276,34 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         
         String url;
         String name;
-        DocumentMetadata metadata;
+        String mimeType;
+        long createdTime;
+        long lastModified;
+        
         if (currentCol != null) {
-        	url = currentCol.getURI().toString();
-        	name = currentCol.getURI().lastSegment().toString();
-            metadata = currentDoc.getMetadata();
-        	
+            url = currentCol.getURI().toString();
+            name = currentCol.getURI().lastSegment().toString();
+            
+            mimeType = "collection";
+            createdTime = currentCol.getCreationTime();
+            lastModified = currentCol.getCreationTime();
+            
         } else {
-        	url = currentDoc.getURI().toString();
+            url = currentDoc.getURI().toString();
             name = currentDoc.getFileURI().toString();
-            metadata = currentDoc.getMetadata();
+            
+            DocumentMetadata metadata = currentDoc.getMetadata();
+            
+            mimeType = metadata.getMimeType();
+            
+            createdTime = metadata.getCreated();
+            lastModified = metadata.getLastModified();
         }
         
         Field fld = new Field("eXist:file-name", name, metaFT);
         metas.add(fld);
 
-        url = currentDoc.getURI().toString();
+        //url = currentDoc.getURI().toString();
         
         fld = new Field("eXist:file-path", url, metaFT);
         metas.add(fld);
@@ -1300,31 +1312,33 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         //DocumentMetadata
 
-        fld = new Field("eXist:meta-type", metadata.getMimeType(), metaFT);
+        fld = new Field("eXist:meta-type", mimeType, metaFT);
         metas.add(fld);
         
-		GregorianCalendar date = new GregorianCalendar(GMT);
+        paths.add(new CategoryPath("eXist:meta-type", mimeType));
 
-		date.setTimeInMillis(metadata.getCreated());
+        GregorianCalendar date = new GregorianCalendar(GMT);
 
-		fld = new Field("eXist:created", DatatypeConverter.printDateTime(date), metaFT);
+        date.setTimeInMillis(createdTime);
+
+        fld = new Field("eXist:created", DatatypeConverter.printDateTime(date), metaFT);
         metas.add(fld);
         
-		date.setTimeInMillis(metadata.getLastModified());
+        date.setTimeInMillis(lastModified);
 
-		fld = new Field("eXist:last-modified", DatatypeConverter.printDateTime(date), metaFT);
+        fld = new Field("eXist:last-modified", DatatypeConverter.printDateTime(date), metaFT);
         metas.add(fld);
     }
     
     private static final org.apache.lucene.document.FieldType offsetsType = new org.apache.lucene.document.FieldType(TextField.TYPE_STORED);
     static {
-		offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-		offsetsType.setStored(false);
-		offsetsType.setIndexed(true);   
-		offsetsType.setStoreTermVectors(true);
-		offsetsType.setStoreTermVectorOffsets(true);
-		offsetsType.setStoreTermVectorPositions(true);
-		offsetsType.setStoreTermVectorPayloads(true);
+        offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+        offsetsType.setStored(false);
+        offsetsType.setIndexed(true);   
+        offsetsType.setStoreTermVectors(true);
+        offsetsType.setStoreTermVectorOffsets(true);
+        offsetsType.setStoreTermVectorPositions(true);
+        offsetsType.setStoreTermVectorPayloads(true);
     }
     
     private void write() {
