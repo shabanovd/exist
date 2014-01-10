@@ -1113,7 +1113,7 @@ public class Configurator {
         }
         
         if (document == null) {
-            if (broker.isReadOnly()) {
+            if (broker.getDatabase().isReadOnly()) {
                 //database in read-only mode & there no configuration file, 
                 //create in memory document & configuration 
                 try {

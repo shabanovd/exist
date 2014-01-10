@@ -434,11 +434,6 @@ public class NativeBroker extends DBBroker {
         notifyRemove();
     }
 
-    @Override
-    public boolean isReadOnly() {
-        return pool.isReadOnly();
-    }
-
     public DOMFile getDOMFile() {
         return domDb;
     }
@@ -2606,7 +2601,7 @@ public class NativeBroker extends DBBroker {
 
     @Override
     public void sync(int syncEvent) {
-        if (isReadOnly())
+        if (pool.isReadOnly())
             {return;}
         try {
             new DOMTransaction(this, domDb, Lock.WRITE_LOCK) {

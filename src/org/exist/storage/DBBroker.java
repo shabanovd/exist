@@ -731,16 +731,7 @@ public abstract class DBBroker extends Observable {
 	 */
 	public abstract void updateNode(Txn transaction, StoredNode node, boolean reindex);
 
-	/**
-	 * Is the database running read-only? Returns false by default. Storage
-	 * backends should override this if they support read-only mode.
-	 * 
-	 * @return boolean
-	 */
-	public boolean isReadOnly() {
-		return false;
-	}
-
+	@Deprecated
 	public BrokerPool getBrokerPool() {
 		return pool;
 	}

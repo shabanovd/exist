@@ -1524,7 +1524,7 @@ public abstract class Stored extends Observable implements Comparable<Stored>, C
      * @throws TriggerException 
      */
     protected void saveCollection(DBBroker broker, Txn transaction) throws PermissionDeniedException, IOException, TriggerException {
-        if (broker.isReadOnly()) {
+        if (broker.getDatabase().isReadOnly()) {
             throw new PermissionDeniedException(Database.IS_READ_ONLY);
         }
         
