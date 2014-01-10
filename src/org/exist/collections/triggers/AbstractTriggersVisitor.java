@@ -51,8 +51,6 @@ public abstract class AbstractTriggersVisitor<T extends Trigger> implements Trig
     }
 
     public List<T> getTriggers() {
-    	if (triggers == null)
-    		System.out.println("");
         return triggers;
     }
 }
