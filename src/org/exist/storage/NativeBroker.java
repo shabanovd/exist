@@ -227,23 +227,6 @@ public class NativeBroker extends DBBroker {
             prepend = PREPEND_DB_AS_NEEDED;
         }
 
-        dataDir = (String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
-        if (dataDir == null)
-            {dataDir = DEFAULT_DATA_DIR;}
-
-        fsDir = new File(new File(dataDir),"fs");
-        if (!fsDir.exists()) {
-           if (!fsDir.mkdir()) {
-              throw new EXistException("Cannot make collection filesystem directory: "+fsDir);
-           }
-        }
-        fsBackupDir = new File(new File(dataDir),"fs.journal");
-        if (!fsBackupDir.exists()) {
-           if (!fsBackupDir.mkdir()) {
-              throw new EXistException("Cannot make collection filesystem directory: "+fsBackupDir);
-           }
-        }
-
         nodesCountThreshold = config.getInteger(BrokerPool.PROPERTY_NODES_BUFFER);
         if (nodesCountThreshold > 0)
             {nodesCountThreshold = nodesCountThreshold * 1000;}
@@ -267,25 +250,14 @@ public class NativeBroker extends DBBroker {
             //2) have a consistent READ-ONLY behaviour (based on *mandatory* files ?)
             //3) have consistent file creation behaviour (we can probably avoid some unnecessary files)
             //4) use... *customized* factories for a better index plugability ;-)
-            // Initialize DOM storage
+
             domDb = (DOMFile) config.getProperty(DOMFile.getConfigKeyForFile());
-            if (domDb == null)
-                {domDb =	new DOMFile(pool, DOM_DBX_ID, dataDir, config);}
-            if (domDb.isReadOnly()) {
-                LOG.warn(domDb.getFile().getName() + " is read-only!");
-                pool.setReadOnly();
-            }
+
             //Initialize collections storage
             collectionsDb = (CollectionStore) config.getProperty(CollectionStore.getConfigKeyForFile());
-            if (collectionsDb == null)
-                {collectionsDb = new CollectionStore(pool, COLLECTIONS_DBX_ID, dataDir, config);}
-            if (collectionsDb.isReadOnly()) {
-                LOG.warn(collectionsDb.getFile().getName() + " is read-only!");
-                pool.setReadOnly();
-            }
+
             valueIndex = new NativeValueIndex(this, VALUES_DBX_ID, dataDir, config);
-            if (pool.isReadOnly())
-                {LOG.info("Database runs in read-only mode");}
+
         } catch (final DBException e) {
             LOG.debug(e.getMessage(), e);
             throw new EXistException(e);
