@@ -176,8 +176,8 @@ public class NativeBroker extends DBBroker {
     /** check available memory after storing DEFAULT_NODES_BEFORE_MEMORY_CHECK nodes */
     public static final int DEFAULT_NODES_BEFORE_MEMORY_CHECK = 500;
     
-    public static int OFFSET_COLLECTION_ID = 0;
-    public static int OFFSET_VALUE = OFFSET_COLLECTION_ID + Collection.LENGTH_COLLECTION_ID; //2
+    public final static int OFFSET_COLLECTION_ID = 0;
+    public final static int OFFSET_VALUE = OFFSET_COLLECTION_ID + Collection.LENGTH_COLLECTION_ID; //2
 
     /** the index processors */
     protected NativeValueIndex valueIndex;
@@ -193,9 +193,6 @@ public class NativeBroker extends DBBroker {
 
     protected int nodesCountThreshold = DEFAULT_NODES_BEFORE_MEMORY_CHECK;
 
-    protected String dataDir;
-    protected File fsDir;
-    protected File fsBackupDir;
     protected int pageSize;
 
     protected byte prepend;
@@ -253,7 +250,7 @@ public class NativeBroker extends DBBroker {
 
             collectionsDb = (CollectionStore) config.getProperty(CollectionStore.getConfigKeyForFile());
 
-            valueIndex = new NativeValueIndex(this, VALUES_DBX_ID, dataDir, config);
+            valueIndex = new NativeValueIndex(this, VALUES_DBX_ID, pool.dataDir, config);
 
         } catch (final DBException e) {
             LOG.debug(e.getMessage(), e);
@@ -481,7 +478,7 @@ public class NativeBroker extends DBBroker {
             backup.closeEntry();
         }
         pool.getSymbols().backupToArchive(backup);
-        backupBinary(backup, fsDir, "");
+        backupBinary(backup, pool.fsDir(), "");
         pool.getIndexManager().backupToArchive(backup);
         //TODO backup counters
         //TODO USE zip64 or tar to create snapshots larger then 4Gb
@@ -1081,7 +1078,7 @@ public class NativeBroker extends DBBroker {
     }
     
     public File getCollectionBinaryFileFsPath(XmldbURI uri) {
-        return new File(fsDir, uri.getURI().toString());
+        return new File(pool.fsDir(), uri.getURI().toString());
     }
 
     protected File getCollectionFile(File dir,Txn transaction,XmldbURI uri,boolean create)
@@ -1120,11 +1117,11 @@ public class NativeBroker extends DBBroker {
     public void storeBinaryResource(final Txn transaction, final BinaryDocument blob, final byte[] data)
             throws IOException {
        blob.setPage(Page.NO_PAGE);
-       final File binFile = getCollectionFile(fsDir,blob.getURI(),true);
+       final File binFile = getCollectionFile(pool.fsDir(),blob.getURI(),true);
        File backupFile = null;
        final boolean exists = binFile.exists();
        if (exists) {
-          backupFile = getCollectionFile(fsBackupDir,transaction,blob.getURI(),true);
+          backupFile = getCollectionFile(pool.fsBackupDir(),transaction,blob.getURI(),true);
           if (!binFile.renameTo(backupFile)) {
              throw new IOException("Cannot backup binary resource for journal to "+backupFile);
           }
@@ -1153,11 +1150,11 @@ public class NativeBroker extends DBBroker {
     public void storeBinaryResource(final Txn transaction, final BinaryDocument blob, final InputStream is)
     throws IOException {
        blob.setPage(Page.NO_PAGE);
-       final File binFile = getCollectionFile(fsDir,blob.getURI(),true);
+       final File binFile = getCollectionFile(pool.fsDir(),blob.getURI(),true);
        File backupFile = null;
        final boolean exists = binFile.exists();
        if (exists) {
-          backupFile = getCollectionFile(fsBackupDir,transaction,blob.getURI(),true);
+          backupFile = getCollectionFile(pool.fsBackupDir(),transaction,blob.getURI(),true);
           if (!binFile.renameTo(backupFile)) {
              throw new IOException("Cannot backup binary resource for journal to "+backupFile);
           }
@@ -1304,19 +1301,19 @@ public class NativeBroker extends DBBroker {
     @Override
     public long getBinaryResourceSize(final BinaryDocument blob) 
             throws IOException {
-        final File binFile = getCollectionFile(fsDir,blob.getURI(),false);
+        final File binFile = getCollectionFile(pool.fsDir(),blob.getURI(),false);
         return binFile.length();
     }
 
     @Override
     public File getBinaryFile(final BinaryDocument blob) throws IOException {
-        return getCollectionFile(fsDir, blob.getURI(), false);
+        return getCollectionFile(pool.fsDir(), blob.getURI(), false);
     }
 
     @Override
     public InputStream getBinaryResource(final BinaryDocument blob) 
             throws IOException {
-        final File binFile = getCollectionFile(fsDir,blob.getURI(),false);
+        final File binFile = getCollectionFile(pool.fsDir(),blob.getURI(),false);
         return new FileInputStream(binFile);
     }
 
@@ -1611,7 +1608,7 @@ public class NativeBroker extends DBBroker {
         
         
         /* Copy reference to original document */
-        final File fsOriginalDocument = getCollectionFile(fsDir, doc.getURI(), true);
+        final File fsOriginalDocument = getCollectionFile(pool.fsDir(), doc.getURI(), true);
 
         
         final XmldbURI oldName = doc.getFileURI();
@@ -1675,9 +1672,9 @@ public class NativeBroker extends DBBroker {
                 // binary resource
             	doc.setCollection(destination);
                 destination.addDocument(transaction, this, doc);
-                final File colDir = getCollectionFile(fsDir,destination.getURI(),true);
+                final File colDir = getCollectionFile(pool.fsDir(),destination.getURI(),true);
                 final File binFile = new File(colDir,newName.lastSegment().toString());
-                final File sourceFile = getCollectionFile(fsDir,doc.getURI(),false);
+                final File sourceFile = getCollectionFile(pool.fsDir(),doc.getURI(),false);
                 /* Create required directories */
                 binFile.getParentFile().mkdirs();
                 /* Rename original file to new location */
@@ -1791,9 +1788,9 @@ public class NativeBroker extends DBBroker {
             LOG.debug("removing binary resource " + blob.getDocId() + "...");
         }
         
-        final File binFile = getCollectionFile(fsDir,blob.getURI(),false);
+        final File binFile = getCollectionFile(pool.fsDir(),blob.getURI(),false);
         if (binFile.exists()) {
-            final File binBackupFile = getCollectionFile(fsBackupDir, transaction, blob.getURI(), true);
+            final File binBackupFile = getCollectionFile(pool.fsBackupDir(), transaction, blob.getURI(), true);
             final Loggable loggable = new RenameBinaryLoggable(this, transaction, binFile, binBackupFile);
             if (!binFile.renameTo(binBackupFile)) {
                 // Workaround for Java bug 6213298 - renameTo() sometimes doesn't work
@@ -2552,7 +2549,7 @@ public class NativeBroker extends DBBroker {
         }
         LOG.info("Recreating index files ...");
         try {
-            valueIndex = new NativeValueIndex(this, VALUES_DBX_ID, dataDir, config);
+            valueIndex = new NativeValueIndex(this, VALUES_DBX_ID, pool.dataDir, config);
         } catch (final DBException e) {
             LOG.warn("Exception during repair: " + e.getMessage(), e);
         }

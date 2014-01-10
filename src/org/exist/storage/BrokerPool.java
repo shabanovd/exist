@@ -515,6 +515,7 @@ public class BrokerPool implements Database {
     
     private DOMFile domDB;
     
+    protected String dataDir;
     private File fsDir;
     private File fsBackupDir;
     
@@ -872,7 +873,7 @@ public class BrokerPool implements Database {
         			// If the initailization fails after transactionManager has been created this method better cleans up
         			// or the FileSyncThread for the journal can/will hang.
         			try {
-        			        String dataDir = (String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR);
+        			        dataDir = (String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR);
         			        if (dataDir == null) {
         			            dataDir = NativeBroker.DEFAULT_DATA_DIR;
     			                }
