@@ -62,8 +62,6 @@ import org.exist.security.SecurityManager;
 import org.exist.security.Subject;
 import org.exist.security.internal.SecurityManagerImpl;
 import org.exist.storage.btree.DBException;
-import org.exist.storage.dom.DOMFile;
-import org.exist.storage.index.CollectionStore;
 import org.exist.storage.lock.DeadlockDetection;
 import org.exist.storage.lock.FileLock;
 import org.exist.storage.lock.Lock;
@@ -870,43 +868,6 @@ public class BrokerPool implements Database {
         				isReadOnly = isReadOnly || !symbols.getFile().canWrite();
 
         				indexManager = new IndexManager(this, conf);
-        				
-        			        String dataDir = (String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR);
-        			        if (dataDir == null)
-        			            {dataDir = NativeBroker.DEFAULT_DATA_DIR;}
-
-        			        File fsDir = new File(new File(dataDir),"fs");
-        			        if (!fsDir.exists()) {
-        			           if (!fsDir.mkdir()) {
-        			              throw new EXistException("Cannot make collection filesystem directory: "+fsDir);
-        			           }
-        			        }
-        			        File fsBackupDir = new File(new File(dataDir),"fs.journal");
-        			        if (!fsBackupDir.exists()) {
-        			           if (!fsBackupDir.mkdir()) {
-        			              throw new EXistException("Cannot make collection filesystem directory: "+fsBackupDir);
-        			           }
-        			        }
-        				
-        			        // Initialize DOM storage
-        			        DOMFile domDb = new DOMFile(this, NativeBroker.DOM_DBX_ID, dataDir, conf);
-        			        if (domDb.isReadOnly()) {
-        			            LOG.warn(domDb.getFile().getName() + " is read-only!");
-        			            setReadOnly();
-        			        }
-
-        			        //Initialize collections storage
-        			        CollectionStore collectionsDb = new CollectionStore(this, NativeBroker.COLLECTIONS_DBX_ID, dataDir, conf);
-        				if (collectionsDb.isReadOnly()) {
-        				    LOG.warn(collectionsDb.getFile().getName() + " is read-only!");
-        				    setReadOnly();
-        				}
-        				
-        				if (isReadOnly()) {
-        				    LOG.info("Database runs in read-only mode");
-    				        }
-
-
 
         				//TODO : replace the following code by get()/release() statements ?
         				// WM: I would rather tend to keep this broker reserved as a system broker.
