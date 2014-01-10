@@ -48,7 +48,7 @@ import org.exist.EXistException;
 import org.exist.Indexer;
 import org.exist.backup.RawDataBackup;
 import org.exist.collections.Collection;
-import org.exist.storage.StoredCollection.SubCollectionEntry;
+import org.exist.storage.Stored.SubCollectionEntry;
 import org.exist.collections.CollectionCache;
 import org.exist.collections.CollectionConfiguration;
 import org.exist.collections.CollectionConfigurationException;
@@ -179,8 +179,6 @@ public class NativeBroker extends DBBroker {
     public static int OFFSET_COLLECTION_ID = 0;
     public static int OFFSET_VALUE = OFFSET_COLLECTION_ID + Collection.LENGTH_COLLECTION_ID; //2
 
-    public final static String INIT_COLLECTION_CONFIG = "collection.xconf.init";
-    
     /** the index processors */
     protected NativeValueIndex valueIndex;
 
@@ -253,7 +251,6 @@ public class NativeBroker extends DBBroker {
 
             domDb = (DOMFile) config.getProperty(DOMFile.getConfigKeyForFile());
 
-            //Initialize collections storage
             collectionsDb = (CollectionStore) config.getProperty(CollectionStore.getConfigKeyForFile());
 
             valueIndex = new NativeValueIndex(this, VALUES_DBX_ID, dataDir, config);
@@ -289,7 +286,7 @@ public class NativeBroker extends DBBroker {
 
     // ============ dispatch the various events to indexing classes ==========
 
-    private void notifyRemoveNode(StoredNode node, NodePath currentPath, String content) {
+    protected void notifyRemoveNode(StoredNode node, NodePath currentPath, String content) {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             observer.removeNode(node, currentPath, content);
@@ -303,42 +300,42 @@ public class NativeBroker extends DBBroker {
     //    }	
     //}	
 
-    private void notifyStoreText(TextImpl text, NodePath currentPath, int indexingHint) {
+    protected void notifyStoreText(TextImpl text, NodePath currentPath, int indexingHint) {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             observer.storeText(text, currentPath, indexingHint);
         }
     }
 
-    private void notifyDropIndex(Collection collection) {
+    protected void notifyDropIndex(Collection collection) {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             observer.dropIndex(collection);
         }
     }
 
-    private void notifyDropIndex(DocumentImpl doc) throws ReadOnlyException {
+    protected void notifyDropIndex(DocumentImpl doc) throws ReadOnlyException {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             observer.dropIndex(doc);
         }
     }
     
-    private void notifyRemove() {
+    protected void notifyRemove() {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             observer.remove();
         }
     }
 
-    private void notifySync() {
+    protected void notifySync() {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             observer.sync();
         }
     }
 
-    private void notifyFlush() {
+    protected void notifyFlush() {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             try {
@@ -350,14 +347,14 @@ public class NativeBroker extends DBBroker {
         }
     }
 
-    private void notifyPrintStatistics() {
+    protected void notifyPrintStatistics() {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             observer.printStatistics();
         }
     }
 
-    private void notifyClose() throws DBException {
+    protected void notifyClose() throws DBException {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             observer.close();
@@ -365,7 +362,7 @@ public class NativeBroker extends DBBroker {
         clearContentLoadingObservers();
     }
 
-    private void notifyCloseAndRemove() {
+    protected void notifyCloseAndRemove() {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
             observer.closeAndRemove();
@@ -604,178 +601,13 @@ public class NativeBroker extends DBBroker {
         	setSubject( u );
         }
     }
-
-    private final String readInitCollectionConfig() {
-        final File fInitCollectionConfig = new File(pool.getConfiguration().getExistHome(), INIT_COLLECTION_CONFIG);
-        if(fInitCollectionConfig.exists() && fInitCollectionConfig.isFile()) {
-            
-            InputStream is = null;
-            try {
-                final StringBuilder initCollectionConfig = new StringBuilder();
-                
-                is = new FileInputStream(fInitCollectionConfig);
-                int read = -1;
-                final byte buf[] = new byte[1024];
-                while((read = is.read(buf)) != -1) {
-                    initCollectionConfig.append(new String(buf, 0, read));
-                }
-                
-                return initCollectionConfig.toString();
-            } catch(final IOException ioe) {
-                LOG.error(ioe.getMessage(), ioe);
-            } finally {
-                if(is != null) {
-                    try {
-                        is.close();
-                    } catch(final IOException ioe) {
-                        LOG.warn(ioe.getMessage(), ioe);
-                    }
-                }
-            }
-                    
-        };
-        return null;
-    }
-    
-    private void checkPermsForCollectionWrite(Collection col, XmldbURI uri) throws PermissionDeniedException {
-        if (pool.isReadOnly()) {
-            throw new PermissionDeniedException(Database.IS_READ_ONLY);
-        }
-        
-        final Permission perms = col.getPermissionsNoLock();
-        
-        if(!perms.validate(getSubject(), Permission.WRITE)) {
-            LOG.error("Permission denied to create collection '" + uri + "'");
-            throw new PermissionDeniedException("Account '"+ getSubject().getName() + "' not allowed to write to collection '" + col.getURI() + "'");
-        }
-        
-        if (!perms.validate(getSubject(), Permission.EXECUTE)) {
-            LOG.error("Permission denied to create collection '" + uri + "'");
-            throw new PermissionDeniedException("Account '"+ getSubject().getName() + "' not allowed to execute to collection '" + col.getURI() + "'");
-        }
-        
-        if (col.hasDocument(this, uri.lastSegment())) {
-            LOG.error("Collection '" + col.getURI() + "' have document '" + uri.lastSegment() + "'");
-            throw new PermissionDeniedException("Collection '" + col.getURI() + "' have document '" + uri.lastSegment() + "'.");
-        }
-    }
-    
-    private Collection createCollection(Txn txn, Collection parent, XmldbURI uri) throws PermissionDeniedException, TriggerException, LockException, IOException {
-        
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Creating collection '" + uri + "'");
-        }
-        
-        if (parent != null) {
-            checkPermsForCollectionWrite(parent, uri);
-        }
-        
-        CollectionTriggersVisitor triggersVisitor = null;
-        if(parent != null) {
-            final CollectionConfiguration conf = parent.getConfiguration(this);
-            if(conf != null) {
-                triggersVisitor = conf.getCollectionTriggerProxies().instantiateVisitor(this);
-            }
-        }
-
-        final CollectionTrigger trigger = pool.getCollectionTrigger();
-        trigger.beforeCreateCollection(this, txn, uri);
-        if (triggersVisitor != null) triggersVisitor.beforeCreateCollection(this, txn, uri);
-
-        
-        Collection col = new Collection(this, uri);
-        
-        col.setId(getNextCollectionId(txn));
-        col.setCreationTime(System.currentTimeMillis());
-        
-        if(txn != null) {
-            txn.acquireLock(col.getLock(), Lock.WRITE_LOCK);
-        }
-        
-        //TODO : acquire lock manually if transaction is null ?
-        if (parent != null) {
-            parent.addCollection(this, col, true);
-        }
-
-        if (parent != null) {
-            saveCollection(txn, parent);
-        }
-        saveCollection(txn, col);
-        
-        trigger.afterCreateCollection(this, txn, col);
-        if (triggersVisitor != null) triggersVisitor.afterCreateCollection(this, txn, col);
-        
-        return col;
-    }
-    
-    private void initialCollectionConfiguration(Txn txn, Collection col) {
-        try {
-            final String initCollectionConfig = readInitCollectionConfig();
-            if(initCollectionConfig != null) {
-                CollectionConfigurationManager collectionConfigurationManager = pool.getConfigurationManager();
-                if(collectionConfigurationManager == null) {
-                    //might not yet have been initialised
-                    pool.initCollectionConfigurationManager(this);
-                    collectionConfigurationManager = pool.getConfigurationManager();
-                }
-                
-                if(collectionConfigurationManager != null) {
-                    collectionConfigurationManager.addConfiguration(txn, this, col, initCollectionConfig);
-                }
-            }
-        } catch(final CollectionConfigurationException cce) {
-            LOG.error("Could not load initial collection configuration for /db: " + cce.getMessage(), cce);
-        }
-    }
-
     
     /* (non-Javadoc)
      * @see org.exist.storage.DBBroker#getOrCreateCollection(org.exist.storage.txn.Txn, org.exist.xmldb.XmldbURI)
      */
     @Override
     public Collection getOrCreateCollection(Txn txn, XmldbURI uri) throws PermissionDeniedException, IOException, TriggerException {
-        
-        uri = prepend(uri.normalizeCollectionPath());
-        
-        final CollectionCache collectionsCache = pool.getCollectionsCache();
-        
-        synchronized(collectionsCache) {
-            try {
-                //TODO : resolve URIs !
-                final XmldbURI[] segments = uri.getPathSegments();
-
-                XmldbURI path = XmldbURI.ROOT_COLLECTION_URI;
-
-                Collection current = getCollection(path);
-                if (current == null) {
-                    current = createCollection(txn, null, path);
-
-                    //import an initial collection configuration
-                    initialCollectionConfiguration(txn, current);
-                }
-                
-                for(int i=1; i < segments.length; i++) {
-                    
-                    final XmldbURI temp = segments[i];
-                    path = path.append(temp);
-                    
-                    if(current.hasSubcollectionNoLock(this, temp)) {
-                        current = getCollection(path);
-                        if (current == null) {
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debug("Collection '" + path + "' not found!");
-                            }
-                        }
-                    } else {
-                        current = createCollection(txn, current, path);
-                    }
-                }
-                return current;
-            } catch (final LockException e) {
-                LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());
-                return null;
-            }                
-        }
+        return StoredCollectionOperations.getOrCreateCollection(this, txn, uri);
     }    
 
     @Override
@@ -785,7 +617,7 @@ public class NativeBroker extends DBBroker {
 
     @Override
     public Collection openCollection(XmldbURI uri, int lockMode) throws PermissionDeniedException {
-        return openCollection(uri, BFile.UNKNOWN_ADDRESS, lockMode);
+        return StoredCollectionOperations.openCollection(this, uri, BFile.UNKNOWN_ADDRESS, lockMode);
     }
     
     @Override
@@ -838,7 +670,7 @@ public class NativeBroker extends DBBroker {
         
         final XmldbURI uri = prepend(entry.getUri().toCollectionPathURI());
         
-        StoredCollection collection;
+        Stored collection;
         final CollectionCache collectionsCache = pool.getCollectionsCache();  
         synchronized(collectionsCache) {
             collection = collectionsCache.get(uri);
@@ -881,449 +713,19 @@ public class NativeBroker extends DBBroker {
         }
     }
     
-    private Collection readCollection(CollectionCache collectionsCache, XmldbURI uri, long addr) throws PermissionDeniedException {
-        final Lock lock = collectionsDb.getLock();
-        try {
-            lock.acquire(Lock.READ_LOCK);
-            
-            VariableByteInput is;
-            
-            if (addr == BFile.UNKNOWN_ADDRESS) {
-                final Value key = new CollectionStore.CollectionKey(uri.toString());
-                is = collectionsDb.getAsStream(key);
-            } else {
-                is = collectionsDb.getAsStream(addr);
-            }
-            
-            if (is == null) {
-                return null;
-            }
-            
-            Collection collection = new Collection(this, uri);
-            collection.read(this, is);
-            
-            collectionsCache.add(collection);
-            
-            return collection;
-            
-        //TODO : rethrow exceptions ? -pb
-        } catch (final LockException e) {
-            LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());
-            return null;
-        } catch (final IOException e) {
-            LOG.error(e.getMessage(), e);
-            return null;
-        } finally {
-            lock.release(Lock.READ_LOCK);
-        }
-    }
-    
-    /**
-     *  Get collection object. If the collection does not exist, null is
-     *  returned.
-     *
-     *@param  uri  collection URI
-     *@return       The collection value
-     */
-    private Collection openCollection(XmldbURI uri, long addr, int lockMode) throws PermissionDeniedException {
-        XmldbURI path = prepend(uri.toCollectionPathURI());
-
-        StoredCollection collection = null;
-        
-        final CollectionCache collectionsCache = pool.getCollectionsCache();  
-        synchronized(collectionsCache) {
-            collection = collectionsCache.get(path);
-            if (collection == null) {
-                collection = readCollection(collectionsCache, path, addr);
-            } else {
-                if (!collection.getURI().equalsInternal(path)) {
-                    LOG.error("The collection received from the cache is not the requested: " + path + "; received: " + collection.getURI());
-                }
-                
-                collectionsCache.add(collection);
-            }
-        }
-        
-        if (collection == null)
-            return null;
-
-        if(!collection.permissions().validate(getSubject(), Permission.EXECUTE)) {
-            throw new PermissionDeniedException("Permission denied to open collection: " + collection.getURI().toString() + " by " + getSubject().getName());
-        }
-
-        //Important : 
-        //This code must remain outside of the synchonized block
-        //because another thread may already own a lock on the collection
-        //This would result in a deadlock... until the time-out raises the Exception
-        //TODO : make an attempt to an immediate lock ?
-        //TODO : manage a collection of requests for locks ?
-        //TODO : another yet smarter solution ?
-        if(lockMode != Lock.NO_LOCK) {
-            try {
-                collection.getLock().acquire(lockMode);
-            } catch (final LockException e) {
-                LOG.warn("Failed to acquire lock on collection '" + path + "'");
-            }
-        }
-        return (Collection) collection;
-    }
-    
-    
-    /**
-     * Checks all permissions in the tree to ensure that a copy operation will succeed
-     */
-    final void checkPermissionsForCopy(final Collection src, final XmldbURI destUri) throws PermissionDeniedException, LockException {
-        
-        if(!src.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE | Permission.READ)) {
-            throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " by " + getSubject().getName());
-        }
-        
-        
-        final Collection dest = getCollection(destUri);
-        final XmldbURI newDestUri = destUri.append(src.getURI().lastSegment());
-        final Collection newDest = getCollection(newDestUri);
-        
-        if(dest != null) {
-            if(!dest.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE | Permission.WRITE | Permission.READ)) {
-                throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " to " + dest.getURI() + " by " + getSubject().getName());
-            }
-            
-            if(newDest != null) {
-                if(!dest.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE | Permission.READ)) {
-                    throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " to " + dest.getURI() + " by " + getSubject().getName());
-                }
-                
-                if(newDest.isEmptyNoLock(this)) {
-                    if(!dest.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
-                        throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " to " + dest.getURI() + " by " + getSubject().getName());
-                    }
-                }
-            }
-        }
-        
-        for(final Iterator<DocumentImpl> itSrcSubDoc = src.iterator(this); itSrcSubDoc.hasNext();) {
-            final DocumentImpl srcSubDoc = itSrcSubDoc.next();
-            if(!srcSubDoc.getPermissions().validate(getSubject(), Permission.READ)) {
-                throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " for resource " + srcSubDoc.getURI() + " by " + getSubject().getName());
-            }
-            
-            if(newDest != null && !newDest.isEmptyNoLock(this)) {
-                final DocumentImpl newDestSubDoc = newDest.getDocument(this, srcSubDoc.getFileURI()); //TODO check this uri is just the filename!
-                if(newDestSubDoc != null) {
-                    if(!newDestSubDoc.getPermissions().validate(getSubject(), Permission.WRITE)) {
-                        throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " for resource " + newDestSubDoc.getURI() + " by " + getSubject().getName());
-                    }
-                } else {
-                    if(!dest.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
-                        throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " to " + dest.getURI() + " by " + getSubject().getName());
-                    }
-                }
-            }
-        }
-        
-        for(final Iterator<XmldbURI> itSrcSubColUri = src.collectionIterator(this); itSrcSubColUri.hasNext();) {
-            final XmldbURI srcSubColUri = itSrcSubColUri.next();
-            final Collection srcSubCol = getCollection(src.getURI().append(srcSubColUri));
-            
-            checkPermissionsForCopy(srcSubCol, newDestUri);
-        }
-    }
-    
-
     /* (non-Javadoc)
      * @see org.exist.storage.DBBroker#copyCollection(org.exist.storage.txn.Txn, org.exist.collections.Collection, org.exist.collections.Collection, org.exist.xmldb.XmldbURI)
      */
+    @Deprecated 
     @Override
     public void copyCollection(final Txn transaction, final Collection collection, final Collection destination, final XmldbURI newName) throws PermissionDeniedException, LockException, IOException, TriggerException, EXistException {
-        if(pool.isReadOnly()) {
-            throw new PermissionDeniedException(Database.IS_READ_ONLY);
-        }
-        
-        //TODO : resolve URIs !!!
-        if(newName != null && newName.numSegments() != 1) {
-            throw new PermissionDeniedException("New collection name must have one segment!");
-        }
-        
-        final XmldbURI srcURI = collection.getURI();
-        final XmldbURI dstURI = destination.getURI().append(newName);
-
-        if(collection.getURI().equals(dstURI)) {
-            throw new PermissionDeniedException("Cannot move collection to itself '"+collection.getURI()+"'.");
-        }
-        if(collection.getId() == destination.getId()) {
-            throw new PermissionDeniedException("Cannot move collection to itself '"+collection.getURI()+"'.");
-        }
-        
-        
-        final CollectionCache collectionsCache = pool.getCollectionsCache();
-        synchronized(collectionsCache) {
-            final Lock lock = collectionsDb.getLock();
-            try {
-                pool.getProcessMonitor().startJob(ProcessMonitor.ACTION_COPY_COLLECTION, collection.getURI());
-                lock.acquire(Lock.WRITE_LOCK);
-                
-                final XmldbURI parentName = collection.getParentURI();
-                final Collection parent = parentName == null ? collection : getCollection(parentName);
-
-                final CollectionTriggersVisitor triggersVisitor = parent.getConfiguration(this).getCollectionTriggerProxies().instantiateVisitor(this);
-                triggersVisitor.beforeCopyCollection(this, transaction, collection, dstURI);
-
-                //atomically check all permissions in the tree to ensure a copy operation will succeed before starting copying
-                checkPermissionsForCopy(collection, destination.getURI());
-                
-                final Collection newCollection = doCopyCollection(transaction, collection, destination, newName);
-
-                triggersVisitor.afterCopyCollection(this, transaction, newCollection, srcURI);
-            } finally {
-                lock.release(Lock.WRITE_LOCK);
-                pool.getProcessMonitor().endJob();
-            }
-        }
+        collection.copyCollection(transaction, destination, newName);
     }
 
-    private Collection doCopyCollection(final Txn transaction, final Collection collection, final Collection destination, XmldbURI newName) throws PermissionDeniedException, IOException, EXistException, TriggerException, LockException {
-        
-        if(newName == null)
-            {newName = collection.getURI().lastSegment();}
-
-        newName = destination.getURI().append(newName);
-        
-        if (LOG.isDebugEnabled())
-        	{LOG.debug("Copying collection to '" + newName + "'");}
-        
-        final Collection destCollection = getOrCreateCollection(transaction, newName);
-        for(final Iterator<DocumentImpl> i = collection.iterator(this); i.hasNext(); ) {
-            final DocumentImpl child = i.next();
-
-            if (LOG.isDebugEnabled())
-            	{LOG.debug("Copying resource: '" + child.getURI() + "'");}
-            
-            final XmldbURI newUri = destCollection.getURI().append(child.getFileURI());
-            pool.getDocumentTrigger().beforeCopyDocument(this, transaction, child, newUri);
-            
-            DocumentImpl createdDoc;
-            if (child.getResourceType() == DocumentImpl.XML_FILE) {
-                //TODO : put a lock on newDoc ?
-                final DocumentImpl newDoc = new DocumentImpl(pool, destCollection, child.getFileURI());
-                newDoc.copyOf(child);
-                newDoc.setDocId(destination.getNextResourceId(this, transaction));
-                copyXMLResource(transaction, child, newDoc);
-                storeXMLResource(transaction, newDoc);
-                destCollection.addDocument(transaction, this, newDoc);
-                
-                createdDoc = newDoc;
-            } else {
-                final BinaryDocument newDoc = new BinaryDocument(pool, destCollection, child.getFileURI());
-                newDoc.copyOf(child);
-                newDoc.setDocId(destination.getNextResourceId(this, transaction));
-                
-                InputStream is = null;
-                try {
-                    is = getBinaryResource((BinaryDocument)child);
-                    storeBinaryResource(transaction,newDoc,is);
-                } finally {
-                    is.close();
-                }
-                storeXMLResource(transaction, newDoc);
-                destCollection.addDocument(transaction, this, newDoc);
-
-                createdDoc = newDoc;
-            }
-            
-            pool.getDocumentTrigger().afterCopyDocument(this, transaction, createdDoc, child.getURI());
-        }
-        saveCollection(transaction, destCollection);
-        
-        final XmldbURI name = collection.getURI();
-        for(final Iterator<XmldbURI> i = collection.collectionIterator(this); i.hasNext(); ) {
-            final XmldbURI childName = i.next();
-            //TODO : resolve URIs ! collection.getURI().resolve(childName)
-            final Collection child = openCollection(name.append(childName), Lock.WRITE_LOCK);
-            if(child == null) {
-                LOG.warn("Child collection '" + childName + "' not found");
-            } else {
-                try {
-                    doCopyCollection(transaction, child, destCollection, childName);
-                } finally {
-                    child.release(Lock.WRITE_LOCK);
-                }
-            }
-        }
-        saveCollection(transaction, destCollection);
-        saveCollection(transaction, destination);
-        
-        return destCollection;
-    }
-    
+    @Deprecated
     @Override
     public void moveCollection(Txn transaction, Collection collection, Collection destination, XmldbURI newName)  throws PermissionDeniedException, LockException, IOException, TriggerException {
-    	
-        if(pool.isReadOnly()) {
-            throw new PermissionDeniedException(Database.IS_READ_ONLY);
-        }
-        
-        if(newName != null && newName.numSegments() != 1) {
-            throw new PermissionDeniedException("New collection name must have one segment!");
-        }
-        
-        if(collection.getId() == destination.getId()) {
-            throw new PermissionDeniedException("Cannot move collection to itself '"+collection.getURI()+"'.");
-        }
-        if(collection.getURI().equals(destination.getURI().append(newName))) {
-            throw new PermissionDeniedException("Cannot move collection to itself '"+collection.getURI()+"'.");
-        }
-        if(collection.getURI().equals(XmldbURI.ROOT_COLLECTION_URI)) {
-            throw new PermissionDeniedException("Cannot move the db root collection");
-        }
-        
-        final XmldbURI parentName = collection.getParentURI();
-        final Collection parent = parentName == null ? collection : getCollection(parentName);
-        if(!parent.getPermissionsNoLock().validate(getSubject(), Permission.WRITE | Permission.EXECUTE)) {
-            throw new PermissionDeniedException("Account "+getSubject().getName()+" have insufficient privileges on collection " + parent.getURI() + " to move collection " + collection.getURI());
-        }
-        
-        if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
-            throw new PermissionDeniedException("Account "+getSubject().getName()+" have insufficient privileges on collection to move collection " + collection.getURI());
-        }
-        
-        if(!destination.getPermissionsNoLock().validate(getSubject(), Permission.WRITE | Permission.EXECUTE)) {
-            throw new PermissionDeniedException("Account "+getSubject().getName()+" have insufficient privileges on collection " + parent.getURI() + " to move collection " + collection.getURI());
-        }
-        
-        /*
-         * If replacing another collection in the move i.e. /db/col1/A -> /db/col2 (where /db/col2/A exists)
-         * we have to make sure the permissions to remove /db/col2/A are okay!
-         * 
-         * So we must call removeCollection on /db/col2/A
-         * Which will ensure that collection can be removed and then remove it.
-         */
-        final XmldbURI movedToCollectionUri = destination.getURI().append(newName);
-        final Collection existingMovedToCollection = getCollection(movedToCollectionUri);
-        if(existingMovedToCollection != null) {
-            removeCollection(transaction, existingMovedToCollection);
-        }
-        
-        pool.getProcessMonitor().startJob(ProcessMonitor.ACTION_MOVE_COLLECTION, collection.getURI());
-        
-        try {
-        	
-            final XmldbURI srcURI = collection.getURI();
-            final XmldbURI dstURI = destination.getURI().append(newName);
-
-            final CollectionTriggersVisitor triggersVisitor = parent.getConfiguration(this).getCollectionTriggerProxies().instantiateVisitor(this);
-            triggersVisitor.beforeMoveCollection(this, transaction, collection, dstURI);
-            
-            // sourceDir must be known in advance, because once moveCollectionRecursive
-            // is called, both collection and destination can point to the same resource
-            final File fsSourceDir = getCollectionFile(fsDir, collection.getURI(),false);
-        
-            // Need to move each collection in the source tree individually, so recurse.
-            moveCollectionRecursive(transaction, collection, destination, newName);
-            
-            // For binary resources, though, just move the top level directory and all descendants come with it.
-            moveBinaryFork(transaction, fsSourceDir, destination, newName);
-            
-            triggersVisitor.afterMoveCollection(this, transaction, collection, srcURI);
-
-        } finally {
-            pool.getProcessMonitor().endJob();
-        }
-		
-    }
-
-    private void moveBinaryFork(Txn transaction, File sourceDir, Collection destination, XmldbURI newName) throws IOException {
-        final File targetDir = getCollectionFile(fsDir,destination.getURI().append(newName),false);
-        if (sourceDir.exists()) {
-            if(targetDir.exists()) {
-                final File targetDelDir = getCollectionFile(fsBackupDir,transaction,destination.getURI().append(newName),true);
-                targetDelDir.getParentFile().mkdirs();
-                if (targetDir.renameTo(targetDelDir)) {
-                    final Loggable loggable = new RenameBinaryLoggable(this,transaction,targetDir,targetDelDir);
-                    try {
-                        logManager.writeToLog(loggable);
-                    } catch (final TransactionException e) {
-                        LOG.warn(e.getMessage(), e);
-                    }
-                } else {
-                    LOG.fatal("Cannot rename "+targetDir+" to "+targetDelDir);
-                }
-            }
-            targetDir.getParentFile().mkdirs();
-            if (sourceDir.renameTo(targetDir)) {
-                final Loggable loggable = new RenameBinaryLoggable(this,transaction,sourceDir,targetDir);
-                try {
-                    logManager.writeToLog(loggable);
-                } catch (final TransactionException e) {
-                    LOG.warn(e.getMessage(), e);
-                }
-            } else {
-                LOG.fatal("Cannot move "+sourceDir+" to "+targetDir);
-            }
-        }
-    }
-
-    private void moveCollectionRecursive(Txn transaction, Collection collection, Collection destination, XmldbURI newName) throws PermissionDeniedException, IOException, LockException, TriggerException {
-        
-        final XmldbURI uri = collection.getURI();
-        final CollectionCache collectionsCache = pool.getCollectionsCache();
-        synchronized(collectionsCache) {
-        	
-            final XmldbURI srcURI = collection.getURI();
-            final XmldbURI dstURI = destination.getURI().append(newName);
-
-        	pool.getCollectionTrigger().beforeMoveCollection(this, transaction, collection, dstURI);
-	
-            final XmldbURI parentName = collection.getParentURI();
-            final Collection parent = openCollection(parentName, Lock.WRITE_LOCK);
-            
-            if(parent != null) {
-                try {
-                    //TODO : resolve URIs
-                    parent.removeCollection(this, uri.lastSegment());
-                } finally {
-                    parent.release(Lock.WRITE_LOCK);
-                }
-            }
-            
-            final Lock lock = collectionsDb.getLock();
-            try {
-                lock.acquire(Lock.WRITE_LOCK);
-                collectionsCache.remove(collection);
-                final Value key = new CollectionStore.CollectionKey(uri.toString());
-                collectionsDb.remove(transaction, key);
-                //TODO : resolve URIs destination.getURI().resolve(newName)
-                collection.setPath(destination.getURI().append(newName));
-                collection.setCreationTime(System.currentTimeMillis());
-                destination.addCollection(this, collection, false);
-                if(parent != null) {
-                    saveCollection(transaction, parent);
-                }
-                if(parent != destination) {
-                    saveCollection(transaction, destination);
-                }
-                saveCollection(transaction, collection);
-            //} catch (ReadOnlyException e) {
-                //throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
-            } finally {
-                lock.release(Lock.WRITE_LOCK);
-            }
-            pool.getCollectionTrigger().afterMoveCollection(this, transaction, collection, srcURI);
-            
-            for(final Iterator<XmldbURI> i = collection.collectionIterator(this); i.hasNext(); ) {
-                final XmldbURI childName = i.next();
-                //TODO : resolve URIs !!! name.resolve(childName)
-                final Collection child = openCollection(uri.append(childName), Lock.WRITE_LOCK);
-                if(child == null) {
-                    LOG.warn("Child collection " + childName + " not found");
-                } else {
-                    try {
-                        moveCollectionRecursive(transaction, child, collection, childName);
-                    } finally {
-                        child.release(Lock.WRITE_LOCK);
-                    }
-                }
-            }
-        }
+        collection.moveCollection(transaction, destination, newName);
     }
 
     /**
@@ -1338,250 +740,10 @@ public class NativeBroker extends DBBroker {
      * @return true if the collection was removed, false otherwise
      * @throws TriggerException 
      */
+    @Deprecated
     @Override
     public boolean removeCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
-        
-        if(pool.isReadOnly()) {
-            throw new PermissionDeniedException(Database.IS_READ_ONLY);
-        }
-        
-    	final XmldbURI parentName = collection.getParentURI();
-        final boolean isRoot = parentName == null;
-        final Collection parent = isRoot ? collection : getCollection(parentName);
-        
-        //parent collection permissions
-        if(!parent.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
-            throw new PermissionDeniedException("Account '" + getSubject().getName() + "' is not allowed to remove collection '" + collection.getURI() + "'");
-        }
-        
-        if(!parent.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE)) {
-            throw new PermissionDeniedException("Account '" + getSubject().getName() + "' is not allowed to remove collection '" + collection.getURI() + "'");
-        }
-        
-        //this collection permissions
-        if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.READ)) {
-            throw new PermissionDeniedException("Account '" + getSubject().getName() + "' is not allowed to remove collection '" + collection.getURI() + "'");
-        }
-        
-        if(!collection.isEmptyNoLock(this)) {
-            if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
-                throw new PermissionDeniedException("Account '" + getSubject().getName() + "' is not allowed to remove collection '" + collection.getURI() + "'");
-            }
-
-            if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE)) {
-                throw new PermissionDeniedException("Account '" + getSubject().getName() + "' is not allowed to remove collection '" + collection.getURI() + "'");
-            }
-        }
-        
-        try {
-
-            pool.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_COLLECTION, collection.getURI());
-            
-            pool.getCollectionTrigger().beforeDeleteCollection(this, txn, collection);
-            
-            final CollectionTriggersVisitor triggersVisitor = parent.getConfiguration(this).getCollectionTriggerProxies().instantiateVisitor(this);
-            triggersVisitor.beforeDeleteCollection(this, txn, collection);
-            
-            
-            final long start = System.currentTimeMillis();
-            final CollectionCache collectionsCache = pool.getCollectionsCache();
-            
-            synchronized(collectionsCache) {
-                final XmldbURI uri = collection.getURI();
-                final String collName = uri.getRawCollectionPath();
-                
-                // Notify the collection configuration manager
-                final CollectionConfigurationManager manager = pool.getConfigurationManager();
-                if(manager != null) {
-                    manager.invalidate(uri);
-                }
-                
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("Removing children collections from their parent '" + collName + "'...");
-                }
-                
-                for(final Iterator<XmldbURI> i = collection.collectionIterator(this); i.hasNext();) {
-                    final XmldbURI childName = i.next();
-                    //TODO : resolve from collection's base URI
-                    //TODO : resulve URIs !!! (uri.resolve(childName))
-                    final Collection childCollection = openCollection(uri.append(childName), Lock.WRITE_LOCK);
-                    try {
-                        removeCollection(txn, childCollection);
-                    } finally {
-                        if (childCollection != null) {
-                            childCollection.getLock().release(Lock.WRITE_LOCK);
-                        } else {
-                            LOG.warn("childCollection is null !");
-                        }
-                    }
-                }
-                
-                //Drop all index entries
-                notifyDropIndex(collection);
-                
-                // Drop custom indexes
-                indexController.removeCollection(collection, this);
-                
-                if(!isRoot) {
-                    // remove from parent collection
-                    //TODO : resolve URIs ! (uri.resolve(".."))
-                    final Collection parentCollection = openCollection(collection.getParentURI(), Lock.WRITE_LOCK);
-                    // keep the lock for the transaction
-                    if(txn != null) {
-                        txn.registerLock(parentCollection.getLock(), Lock.WRITE_LOCK);
-                    }
-                    
-                    if(parentCollection != null) {
-                        try {
-                            LOG.debug("Removing collection '" + collName + "' from its parent...");
-                            //TODO : resolve from collection's base URI
-                            parentCollection.removeCollection(this, uri.lastSegment());
-                            saveCollection(txn, parentCollection);
-                            
-                        } catch(final LockException e) {
-                            LOG.warn("LockException while removing collection '" + collName + "'");
-                        }
-                        finally {
-                            if(txn == null){
-                                parentCollection.getLock().release(Lock.WRITE_LOCK);
-                            }
-                        }
-                    }
-                }
-                
-                //Update current state
-                final Lock lock = collectionsDb.getLock();
-                try {
-                    lock.acquire(Lock.WRITE_LOCK);
-                    // remove the metadata of all documents in the collection
-                    final Value docKey = new CollectionStore.DocumentKey(collection.getId());
-                    final IndexQuery query = new IndexQuery(IndexQuery.TRUNC_RIGHT, docKey);
-                    collectionsDb.removeAll(txn, query);
-                    // if this is not the root collection remove it...
-                    if(!isRoot) {
-                        final Value key = new CollectionStore.CollectionKey(collName);
-                        //... from the disk
-                        collectionsDb.remove(txn, key);
-                        //... from the cache
-                        collectionsCache.remove(collection);
-                        //and free its id for any futher use
-                        freeCollectionId(txn, collection.getId());
-                    } else {
-                        //Simply save the collection on disk
-                        //It will remain cached
-                        //and its id well never be made available
-                        saveCollection(txn, collection);
-                    }
-                }
-                catch(final LockException e) {
-                    LOG.warn("Failed to acquire lock on '" + collectionsDb.getFile().getName() + "'");
-                }
-                //catch(ReadOnlyException e) {
-                    //throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
-                //}
-                catch(final BTreeException e) {
-                    LOG.warn("Exception while removing collection: " + e.getMessage(), e);
-                }
-                catch(final IOException e) {
-                    LOG.warn("Exception while removing collection: " + e.getMessage(), e);
-                }
-                finally {
-                    lock.release(Lock.WRITE_LOCK);
-                }
-                
-                //Remove child resources
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Removing resources in '" + collName + "'...");
-                }
-                
-                for(final Iterator<DocumentImpl> i = collection.iterator(this); i.hasNext();) {
-                    final DocumentImpl doc = i.next();
-
-                    pool.getDocumentTrigger().beforeDeleteDocument(this, txn, doc);
-
-                    //Remove doc's metadata
-                    // WM: now removed in one step. see above.
-                    //removeResourceMetadata(transaction, doc);
-                    //Remove document nodes' index entries
-                    new DOMTransaction(this, domDb, Lock.WRITE_LOCK) {
-                        @Override
-                        public Object start() {
-                            try {
-                                final Value ref = new NodeRef(doc.getDocId());
-                                final IndexQuery query = new IndexQuery(IndexQuery.TRUNC_RIGHT, ref);
-                                domDb.remove(txn, query, null);
-                            } catch(final BTreeException e) {
-                                LOG.warn("btree error while removing document", e);
-                            } catch(final IOException e) {
-                                LOG.warn("io error while removing document", e);
-                            }
-                            catch(final TerminatedException e) {
-                                LOG.warn("method terminated", e);
-                            }
-                            return null;
-                        }
-                    }.run();
-                    //Remove nodes themselves
-                    new DOMTransaction(this, domDb, Lock.WRITE_LOCK) {
-                        @Override
-                        public Object start() {
-                            if(doc.getResourceType() == DocumentImpl.BINARY_FILE) {
-                                final long page = ((BinaryDocument)doc).getPage();
-                                if (page > Page.NO_PAGE)
-                                    {domDb.removeOverflowValue(txn, page);}
-                            } else {
-                                final StoredNode node = (StoredNode)doc.getFirstChild();
-                                domDb.removeAll(txn, node.getInternalAddress());
-                            }
-                            return null;
-                        }
-                    }.run();
-                    
-                    pool.getDocumentTrigger().afterDeleteDocument(this, txn, doc.getURI());
-                    
-                    //Make doc's id available again
-                    freeResourceId(txn, doc.getDocId());
-                }
-                
-                //now that the database has been updated, update the binary collections on disk
-                final File fsSourceDir = getCollectionFile(fsDir,collection.getURI(),false);
-                final File fsTargetDir = getCollectionFile(fsBackupDir,txn,collection.getURI(),true);
-
-                // remove child binary collections
-                if (fsSourceDir.exists()) {
-                   fsTargetDir.getParentFile().mkdirs();
-                   
-                   //XXX: log first, rename second ??? -shabanovd
-                   // DW: not sure a Fatal is required here. Copy and delete
-                   // maybe?
-                   if(fsSourceDir.renameTo(fsTargetDir)) {
-                     final Loggable loggable = new RenameBinaryLoggable(this,txn,fsSourceDir,fsTargetDir);
-                     try {
-                        logManager.writeToLog(loggable);
-                     } catch (final TransactionException e) {
-                         LOG.warn(e.getMessage(), e);
-                     }
-                   } else {
-                       //XXX: throw IOException -shabanovd
-                       LOG.fatal("Cannot rename "+fsSourceDir+" to "+fsTargetDir);
-                   }
-                }
-                
-                
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("Removing collection '" + collName + "' took " + (System.currentTimeMillis() - start));
-                }
-                
-                triggersVisitor.afterDeleteCollection(this, txn, collection.getURI());
-    	        
-                pool.getCollectionTrigger().afterDeleteCollection(this, txn, collection.getURI());
-
-                return true;
-                
-            }
-		} finally {
-            pool.getProcessMonitor().endJob();
-        }
+        return collection.removeCollection(txn);
     }
 
     /**
@@ -1595,6 +757,7 @@ public class NativeBroker extends DBBroker {
      * @throws IOException 
      * @throws TriggerException 
      */
+    @Deprecated
     @Override
     public void saveCollection(Txn transaction, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
         if (collection == null) {
@@ -1602,109 +765,7 @@ public class NativeBroker extends DBBroker {
             return;
         }
         
-        ((StoredCollection)collection).saveCollection(this, transaction);
-    }
-
-    /**
-     * Release the collection id assigned to a collection so it can be
-     * reused later.
-     * 
-     * @param id
-     * @throws PermissionDeniedException
-     */
-    protected void freeCollectionId(Txn transaction, int id) throws PermissionDeniedException {
-        final Lock lock = collectionsDb.getLock();
-        try {
-            lock.acquire(Lock.WRITE_LOCK);
-            final Value key = new CollectionStore.CollectionKey(CollectionStore.FREE_COLLECTION_ID_KEY);
-            final Value value = collectionsDb.get(key);
-            if (value != null) {
-                final byte[] data = value.getData();
-                final byte[] ndata = new byte[data.length + Collection.LENGTH_COLLECTION_ID];
-                System.arraycopy(data, 0, ndata, OFFSET_VALUE, data.length);
-                ByteConversion.intToByte(id, ndata, OFFSET_COLLECTION_ID);
-                collectionsDb.put(transaction, key, ndata, true);
-            } else {
-                final byte[] data = new byte[Collection.LENGTH_COLLECTION_ID];
-                ByteConversion.intToByte(id, data, OFFSET_COLLECTION_ID);
-                collectionsDb.put(transaction, key, data, true);
-            }
-        } catch (final LockException e) {
-            LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName(), e);
-            //TODO : rethrow ? -pb
-        //} catch (ReadOnlyException e) {
-            //throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
-        } finally {
-            lock.release(Lock.WRITE_LOCK);
-        }
-    }
-
-    /**
-     * Get the next free collection id. If a collection is removed, its collection id
-     * is released so it can be reused.
-     * 
-     * @return next free collection id.
-     * @throws ReadOnlyException
-     */
-    public int getFreeCollectionId(Txn transaction) {
-        int freeCollectionId = Collection.UNKNOWN_COLLECTION_ID;
-        final Lock lock = collectionsDb.getLock();
-        try {
-            lock.acquire(Lock.WRITE_LOCK);
-            final Value key = new CollectionStore.CollectionKey(CollectionStore.FREE_COLLECTION_ID_KEY);
-            final Value value = collectionsDb.get(key);
-            if (value != null) {
-                final byte[] data = value.getData();
-                freeCollectionId = ByteConversion.byteToInt(data, data.length - Collection.LENGTH_COLLECTION_ID);
-                //LOG.debug("reusing collection id: " + freeCollectionId);
-                if(data.length - Collection.LENGTH_COLLECTION_ID > 0) {
-                    final byte[] ndata = new byte[data.length - Collection.LENGTH_COLLECTION_ID];
-                    System.arraycopy(data, 0, ndata, OFFSET_COLLECTION_ID, ndata.length);
-                    collectionsDb.put(transaction, key, ndata, true);
-                } else {
-                    collectionsDb.remove(transaction, key);
-                }
-            }
-            return freeCollectionId;
-        } catch (final LockException e) {
-            LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName(), e);
-            return Collection.UNKNOWN_COLLECTION_ID;
-            //TODO : rethrow ? -pb
-        } finally {
-            lock.release(Lock.WRITE_LOCK);
-        }
-    }
-
-    /**
-     * Get the next available unique collection id.
-     * 
-     * @return next available unique collection id
-     * @throws ReadOnlyException
-     */
-    public int getNextCollectionId(Txn transaction) {
-        int nextCollectionId = getFreeCollectionId(transaction);
-        if (nextCollectionId != Collection.UNKNOWN_COLLECTION_ID)
-            {return nextCollectionId;}
-        final Lock lock = collectionsDb.getLock();
-        try {
-            lock.acquire(Lock.WRITE_LOCK);
-            final Value key = new CollectionStore.CollectionKey(CollectionStore.NEXT_COLLECTION_ID_KEY);
-            final Value data = collectionsDb.get(key);
-            if (data != null) {
-                nextCollectionId = ByteConversion.byteToInt(data.getData(), OFFSET_COLLECTION_ID);
-                ++nextCollectionId;
-            }
-            final byte[] d = new byte[Collection.LENGTH_COLLECTION_ID];
-            ByteConversion.intToByte(nextCollectionId, d, OFFSET_COLLECTION_ID);
-            collectionsDb.put(transaction, key, d, true);
-            return nextCollectionId;
-        } catch (final LockException e) {
-            LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName(), e);
-            return Collection.UNKNOWN_COLLECTION_ID;
-            //TODO : rethrow ? -pb
-        } finally {
-            lock.release(Lock.WRITE_LOCK);
-        }
+        ((Stored)collection).saveCollection(this, transaction);
     }
 
     @Override
@@ -2015,7 +1076,7 @@ public class NativeBroker extends DBBroker {
     		
     }
 
-	private File getCollectionFile(File dir,XmldbURI uri,boolean create) throws IOException {
+    protected File getCollectionFile(File dir,XmldbURI uri,boolean create) throws IOException {
        return getCollectionFile(dir,null,uri,create);
     }
     
@@ -2023,7 +1084,7 @@ public class NativeBroker extends DBBroker {
         return new File(fsDir, uri.getURI().toString());
     }
 
-    private File getCollectionFile(File dir,Txn transaction,XmldbURI uri,boolean create)
+    protected File getCollectionFile(File dir,Txn transaction,XmldbURI uri,boolean create)
             throws IOException {
        if (transaction!=null) {
           dir = new File(dir,"txn."+transaction.getId());
@@ -2482,7 +1543,7 @@ public class NativeBroker extends DBBroker {
         }
     }
 
-    private void copyXMLResource(Txn transaction, DocumentImpl oldDoc, DocumentImpl newDoc) {
+    protected void copyXMLResource(Txn transaction, DocumentImpl oldDoc, DocumentImpl newDoc) {
         LOG.debug("Copying document " + oldDoc.getFileURI() + " to " + 
             newDoc.getURI());
         final long start = System.currentTimeMillis();

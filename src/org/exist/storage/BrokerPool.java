@@ -511,6 +511,13 @@ public class BrokerPool implements Database {
      */
     private SymbolTable symbols;
     
+    private CollectionStore collectionsDB;
+    
+    private DOMFile domDB;
+    
+    private File fsDir;
+    private File fsBackupDir;
+    
     /**
 	 * Cache synchronization on the database instance.
 	 */
@@ -870,13 +877,13 @@ public class BrokerPool implements Database {
         			            dataDir = NativeBroker.DEFAULT_DATA_DIR;
     			                }
 
-        			        File fsDir = new File(new File(dataDir),"fs");
+        			        fsDir = new File(new File(dataDir),"fs");
         			        if (!fsDir.exists()) {
         			           if (!fsDir.mkdir()) {
         			              throw new EXistException("Cannot make collection filesystem directory: "+fsDir);
         			           }
         			        }
-        			        File fsBackupDir = new File(new File(dataDir),"fs.journal");
+        			        fsBackupDir = new File(new File(dataDir),"fs.journal");
         			        if (!fsBackupDir.exists()) {
         			           if (!fsBackupDir.mkdir()) {
         			              throw new EXistException("Cannot make collection filesystem directory: "+fsBackupDir);
@@ -887,15 +894,15 @@ public class BrokerPool implements Database {
         				isReadOnly = isReadOnly || !symbols.getFile().canWrite();
         				
         			        // Initialize DOM storage
-        				DOMFile domDb = new DOMFile(this, NativeBroker.DOM_DBX_ID, dataDir, conf);
-        			        if (domDb.isReadOnly()) {
-        			            LOG.warn(domDb.getFile().getName() + " is read-only!");
+        				domDB = new DOMFile(this, NativeBroker.DOM_DBX_ID, dataDir, conf);
+        			        if (domDB.isReadOnly()) {
+        			            LOG.warn(domDB.getFile().getName() + " is read-only!");
         			            isReadOnly = true;
         			        }
         			        //Initialize collections storage
-        			        CollectionStore collectionsDb = new CollectionStore(this, NativeBroker.COLLECTIONS_DBX_ID, dataDir, conf);
-        			        if (collectionsDb.isReadOnly()) {
-        			            LOG.warn(collectionsDb.getFile().getName() + " is read-only!");
+        			        collectionsDB = new CollectionStore(this, NativeBroker.COLLECTIONS_DBX_ID, dataDir, conf);
+        			        if (collectionsDB.isReadOnly()) {
+        			            LOG.warn(collectionsDB.getFile().getName() + " is read-only!");
         			            isReadOnly = true;
         			        }
 
@@ -2226,4 +2233,22 @@ public class BrokerPool implements Database {
 	public MetaStorage getMetaStorage() {
 	    return metaStorage;
 	}
+
+    @Override
+    public CollectionStore collectionStore() {
+        return collectionsDB;
+    }
+
+    @Override
+    public DOMFile domStore() {
+        return domDB;
+    }
+
+    public File fsDir() {
+        return fsDir;
+    }
+
+    public File fsBackupDir() {
+        return fsBackupDir;
+    }
 }

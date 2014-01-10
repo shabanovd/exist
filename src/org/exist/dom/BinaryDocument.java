@@ -24,7 +24,6 @@ package org.exist.dom;
 
 import org.exist.Database;
 import org.exist.collections.Collection;
-import org.exist.storage.BrokerPool;
 import org.exist.storage.btree.Paged.Page;
 import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.io.VariableByteOutputStream;
@@ -51,8 +50,8 @@ public class BinaryDocument extends DocumentImpl {
         super(db, null, null);
     } 
 
-    public BinaryDocument(BrokerPool pool, Collection collection, XmldbURI fileURI) {
-        super(pool, collection, fileURI);
+    public BinaryDocument(Database db, Collection collection, XmldbURI fileURI) {
+        super(db, collection, fileURI);
     }
 
     /* (non-Javadoc)

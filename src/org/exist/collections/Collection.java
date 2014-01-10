@@ -50,7 +50,7 @@ import org.exist.xmldb.XmldbURI;
  *
  * @author wolf
  */
-public class Collection extends StoredCollection {
+public class Collection extends StoredCollectionOperations {
 
     public static int LENGTH_COLLECTION_ID = 4; //sizeof int
 
@@ -59,7 +59,7 @@ public class Collection extends StoredCollection {
     public final static int UNKNOWN_COLLECTION_ID = -1;
     
     public Collection(final DBBroker broker, final XmldbURI path) {
-        super(path);
+        super(broker.getDatabase(), path);
     }
 
     /**

@@ -59,7 +59,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Observable;
 
-import org.exist.storage.StoredCollection.SubCollectionEntry;
+import org.exist.storage.Stored.SubCollectionEntry;
 
 /**
  * This is the base class for all database backends. All the basic database

@@ -40,6 +40,8 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.MetaStorage;
 import org.exist.storage.NotificationService;
 import org.exist.storage.ProcessMonitor;
+import org.exist.storage.dom.DOMFile;
+import org.exist.storage.index.CollectionStore;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.util.Configuration;
 import org.exist.xquery.PerformanceStats;
@@ -189,4 +191,8 @@ public interface Database {
     public int getPageSize();
 
     public boolean isInitializing();
+
+    public CollectionStore collectionStore();
+
+    public DOMFile domStore();
 }

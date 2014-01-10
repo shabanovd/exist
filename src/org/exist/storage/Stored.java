@@ -93,9 +93,9 @@ import org.xml.sax.XMLReader;
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
-public abstract class StoredCollection extends Observable implements Comparable<StoredCollection>, Cacheable {
+public abstract class Stored extends Observable implements Comparable<Stored>, Cacheable {
     
-    private final static Logger LOG = Logger.getLogger(StoredCollection.class);
+    protected final static Logger LOG = Logger.getLogger(Stored.class);
 
     protected final static int POOL_PARSER_THRESHOLD = 500;
 
@@ -142,7 +142,7 @@ public abstract class StoredCollection extends Observable implements Comparable<
 
     private Permission permissions;
     
-    public StoredCollection(XmldbURI path) {
+    public Stored(XmldbURI path) {
         //The permissions assigned to this collection
         permissions = PermissionFactory.getDefaultCollectionPermission();
 
@@ -359,7 +359,7 @@ public abstract class StoredCollection extends Observable implements Comparable<
     }
 
     @Override
-    public int compareTo(final StoredCollection other) {
+    public int compareTo(final Stored other) {
         if(collectionId == other.collectionId) {
             return Constants.EQUAL;
         } else if(collectionId < other.collectionId) {
@@ -371,11 +371,11 @@ public abstract class StoredCollection extends Observable implements Comparable<
     
     @Override
     public boolean equals(final Object obj) {
-        if(!(obj instanceof StoredCollection)) {
+        if(!(obj instanceof Stored)) {
             return false;
         }
         
-        return ((StoredCollection) obj).collectionId == collectionId;
+        return ((Stored) obj).collectionId == collectionId;
     }
     
     @Override
@@ -514,6 +514,10 @@ public abstract class StoredCollection extends Observable implements Comparable<
         return documents.size();
     }
     
+    protected java.util.Collection<DocumentImpl> documents() {
+        return documents.values();
+    }
+
     /**
      * Get a child resource as identified by path. This method doesn't put
      * a lock on the document nor does it recognize locks held by other threads.
@@ -1598,7 +1602,7 @@ public abstract class StoredCollection extends Observable implements Comparable<
             throw new PermissionDeniedException("Permission denied to open the Collection " + path);
         }
         
-        final StoredCollection col = this;
+        final Stored col = this;
         final Lock lock = broker.collectionsDb.getLock();
         lock.acquire(Lock.READ_LOCK);
         try {
@@ -1661,7 +1665,7 @@ public abstract class StoredCollection extends Observable implements Comparable<
      * @throws LockException 
      * @throws ReadOnlyException
      */
-    private int getNextCollectionId(final DBBroker broker, Txn transaction) throws LockException {
+    protected static int getNextCollectionId(final DBBroker broker, Txn transaction) throws LockException {
         int nextCollectionId = getFreeCollectionId(broker, transaction);
         
         if (nextCollectionId != Collection.UNKNOWN_COLLECTION_ID) {
@@ -1695,7 +1699,7 @@ public abstract class StoredCollection extends Observable implements Comparable<
      * @return next free collection id.
      * @throws ReadOnlyException
      */
-    private int getFreeCollectionId(final DBBroker broker, Txn transaction) {
+    private static int getFreeCollectionId(final DBBroker broker, Txn transaction) {
         int freeCollectionId = Collection.UNKNOWN_COLLECTION_ID;
         final Lock lock = broker.collectionsDb.getLock();
         try {
@@ -1962,7 +1966,7 @@ public abstract class StoredCollection extends Observable implements Comparable<
             setCreated(is.readLong());
         }
 
-        public void read(final StoredCollection collection) {
+        public void read(final Stored collection) {
             setPermissions(collection.permissions());
             setCreated(collection.getCreationTime());
         }

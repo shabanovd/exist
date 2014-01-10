@@ -40,7 +40,7 @@ import org.exist.xmldb.XmldbURI;
  * 
  * @author wolf
  */
-public class StoredCollectionCache extends LRUCache<StoredCollection> {
+public class StoredCollectionCache extends LRUCache<Stored> {
 
     private Object2LongHashMap<String> names;
     private Database db;
@@ -59,11 +59,11 @@ public class StoredCollectionCache extends LRUCache<StoredCollection> {
         return lock;
     }
     
-    public void add(StoredCollection collection) {
+    public void add(Stored collection) {
         add(collection, 1);
     }
 
-    public void add(StoredCollection collection, int initialRefCount) {
+    public void add(Stored collection, int initialRefCount) {
         // don't cache the collection during initialization: SecurityManager is not yet online
         if(db.isInitializing()) {
             return;
@@ -75,11 +75,11 @@ public class StoredCollectionCache extends LRUCache<StoredCollection> {
         names.put(name, collection.getKey());
     }
 
-    public StoredCollection get(StoredCollection collection) {
+    public Stored get(Stored collection) {
         return get(collection.getKey());
     }
 
-    public StoredCollection get(XmldbURI name) {
+    public Stored get(XmldbURI name) {
         final long key = names.get(name.getRawCollectionPath());
         if (key < 0) {
             return null;
@@ -92,11 +92,11 @@ public class StoredCollectionCache extends LRUCache<StoredCollection> {
      */
     protected void removeOne(Cacheable item) {
         boolean removed = false;
-        SequencedLongHashMap.Entry<StoredCollection> next = map.getFirstEntry();
+        SequencedLongHashMap.Entry<Stored> next = map.getFirstEntry();
         do {
-            final StoredCollection cached = next.getValue();
+            final Stored cached = next.getValue();
             if(cached.getKey() != item.getKey()) {
-                final StoredCollection old = cached;
+                final Stored old = cached;
                 final Lock lock = old.getLock();
                 if (lock.attempt(Lock.READ_LOCK)) {
                     try {
@@ -124,7 +124,7 @@ public class StoredCollectionCache extends LRUCache<StoredCollection> {
         cacheManager.requestMem(this);
     }
 
-    public void remove(StoredCollection item) {
+    public void remove(Stored item) {
         super.remove(item);
 
         names.remove(item.getURI().getRawCollectionPath());
@@ -146,7 +146,7 @@ public class StoredCollectionCache extends LRUCache<StoredCollection> {
     public int getRealSize() {
         int size = 0;
         for (final Iterator<Long> i = names.valueIterator(); i.hasNext(); ) {
-            final StoredCollection collection = get(i.next());
+            final Stored collection = get(i.next());
             if (collection != null) {
                 size += collection.getMemorySize();
             }
@@ -161,10 +161,10 @@ public class StoredCollectionCache extends LRUCache<StoredCollection> {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Growing collection cache to " + newSize);
             }
-            SequencedLongHashMap<StoredCollection> newMap = new SequencedLongHashMap<StoredCollection>(newSize * 2);
+            SequencedLongHashMap<Stored> newMap = new SequencedLongHashMap<Stored>(newSize * 2);
             Object2LongHashMap<String> newNames = new Object2LongHashMap<String>(newSize);
-            SequencedLongHashMap.Entry<StoredCollection> next = map.getFirstEntry();
-            StoredCollection cacheable;
+            SequencedLongHashMap.Entry<Stored> next = map.getFirstEntry();
+            Stored cacheable;
             while(next != null) {
                 cacheable = next.getValue();
                 newMap.put(cacheable.getKey(), cacheable);

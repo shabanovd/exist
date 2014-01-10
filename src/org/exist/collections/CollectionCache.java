@@ -30,7 +30,6 @@ import org.exist.storage.StoredCollectionCache;
  * 
  * @author wolf
  */
-@Deprecated
 public class CollectionCache extends StoredCollectionCache {
 
     public CollectionCache(Database db, int blockBuffers, double growthThreshold) {

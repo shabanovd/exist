@@ -36,7 +36,7 @@ import javax.xml.transform.OutputKeys;
 
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.storage.StoredCollection.CollectionEntry;
+import org.exist.storage.Stored.CollectionEntry;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.BinaryDocument;
 import org.exist.dom.DocumentImpl;
