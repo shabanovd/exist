@@ -355,7 +355,7 @@ public class FacetIndexTest extends FacetAbstract {
     }
 
     private void checkFacet2(List<FacetResult> facets) {
-        assertEquals(1, facets.size());
+        assertEquals(2, facets.size());
         
         FacetResult facet = facets.get(0);
         assertEquals(1, facet.getNumValidDescendants());
@@ -369,6 +369,19 @@ public class FacetIndexTest extends FacetAbstract {
         node = subResults.get(0);
         assertEquals(2.0, node.value, 0.0001);
         assertEquals("status/draft", node.label.toString());
+
+        facet = facets.get(1);
+        assertEquals(1, facet.getNumValidDescendants());
+        node = facet.getFacetResultNode();
+        assertEquals(2.0, node.value, 0.0001);
+        assertEquals("eXist:meta-type/application", node.label.toString());
+        
+        subResults = node.subResults;
+        assertEquals(1, subResults.size());
+        
+        node = subResults.get(0);
+        assertEquals(2.0, node.value, 0.0001);
+        assertEquals("eXist:meta-type/application/xml", node.label.toString());
     }
 
     @Test
@@ -390,7 +403,9 @@ public class FacetIndexTest extends FacetAbstract {
             final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
             
             FacetSearchParams fsp = new FacetSearchParams(
-                new CountFacetRequest(new CategoryPath(STATUS), 10)
+                new CountFacetRequest(new CategoryPath(STATUS), 10),
+                new CountFacetRequest(new CategoryPath("eXist:meta-type"), 10),
+                new CountFacetRequest(new CategoryPath("eXist:meta-type","application"), 10)
 //                new CountFacetRequest(new CategoryPath("Author"), 10)
             );
             
@@ -420,7 +435,7 @@ public class FacetIndexTest extends FacetAbstract {
             assertEquals(2, cb.total);
             
             for (FacetResult result : results) {
-            	System.out.println(result);
+            	System.out.println(result.toString());
             }
             
             checkFacet2(results);

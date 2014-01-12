@@ -1315,7 +1315,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         fld = new Field("eXist:meta-type", mimeType, metaFT);
         metas.add(fld);
         
-        paths.add(new CategoryPath("eXist:meta-type", mimeType));
+        paths.add(new CategoryPath(("eXist:meta-type/"+mimeType).split("/")));
 
         GregorianCalendar date = new GregorianCalendar(GMT);
 
