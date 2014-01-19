@@ -32,7 +32,9 @@ import java.util.Map;
 /**
  * Test trigger to check if trigger configuration is working properly.
  */
-public class AnotherTrigger extends FilteringTrigger implements DocumentTrigger {
+public class AnotherTrigger extends FilteringTrigger {
+    
+    StringBuilder sb = null;
 
     protected int count = 0;
     protected byte createDocumentEvents = 0;
@@ -91,8 +93,40 @@ public class AnotherTrigger extends FilteringTrigger implements DocumentTrigger 
     public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
     }
 
+    @Override
+    public void startDocument() throws SAXException {
+        sb = new StringBuilder();
+        
+        super.startDocument();
+    }
+    
     public void startElement(String namespaceURI, String localName, String qname, Attributes attributes) throws SAXException {
         count++;
+        
+        sb.append("<").append(qname);
+        
+        for (int i = 0; i < attributes.getLength(); i++) {
+            sb.append(" ").append(attributes.getQName(i)).append("='").append(attributes.getValue(i)).append("'");
+        }
+        
+        sb.append(">");
+        
         super.startElement(namespaceURI, localName, qname, attributes);
+    }
+    
+    @Override
+    public void endElement(String namespaceURI, String localName, String qname) throws SAXException {
+        
+        sb.append("</").append(qname).append(">");
+
+        super.endElement(namespaceURI, localName, qname);
+    }
+    
+    @Override
+    public void characters(char[] ch, int start, int length) throws SAXException {
+        
+        sb.append(ch);
+        
+        super.characters(ch, start, length);
     }
 }

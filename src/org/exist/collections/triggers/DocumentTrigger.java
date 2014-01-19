@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2012 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.collections.triggers;
 
@@ -26,8 +24,8 @@ import org.exist.dom.DocumentImpl;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
-
 import org.xml.sax.ContentHandler;
+import org.xml.sax.ErrorHandler;
 import org.xml.sax.ext.LexicalHandler;
 
 /**
@@ -75,7 +73,7 @@ import org.xml.sax.ext.LexicalHandler;
  * 
  * @author wolf
  */
-public interface DocumentTrigger extends Trigger, ContentHandler, LexicalHandler {
+public interface DocumentTrigger extends Trigger, ContentHandler, LexicalHandler, ErrorHandler {
 
     /**
      * This method is called once before the database will actually parse the input data. You may take any action
@@ -102,8 +100,8 @@ public interface DocumentTrigger extends Trigger, ContentHandler, LexicalHandler
     public void beforeUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
     public void afterUpdateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
 
-	public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
-	public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
+    public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
+    public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;
 
     public void beforeCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException;
     public void afterCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException;
@@ -129,48 +127,4 @@ public interface DocumentTrigger extends Trigger, ContentHandler, LexicalHandler
      * @param validating
      */
     public void setValidating(boolean validating);
-    
-    /**
-     * Called by the database to set the output content handler for this trigger.
-     * 
-     * @param handler
-     */
-    public void setOutputHandler(ContentHandler handler);
-
-    /**
-     * Called by the database to set the lexical output content handler for this trigger.
-     * 
-     * @param handler
-     */
-    public void setLexicalOutputHandler(LexicalHandler handler);
-
-    /**
-     * Returns the output handler to which SAX events should be forwarded.
-     * 
-     * @return The ContentHandler instance for the output.
-     */
-    public ContentHandler getOutputHandler();
-
-    /**
-     * Returns the input content handler. Usually, this method should just return
-     * the trigger object itself, i.e. <b>this</b>. However, the trigger may choose to provide
-     * a different content handler.
-     * 
-     * @return the ContentHandler to be called by the database.
-     */
-    public ContentHandler getInputHandler();
-
-    /**
-     * Called by the database to set the lexical output handler for this trigger.
-     * 
-     * @return The LexicalHandler instance for the output.
-     */
-    public LexicalHandler getLexicalOutputHandler();
-
-    /**
-     * Returns the lexical input handler for this trigger. See {@link #getInputHandler() getInputHandler}.
-     * 
-     * @return The LexicalHandler instance for the input.
-     */
-    public LexicalHandler getLexicalInputHandler();
 }

@@ -1172,7 +1172,7 @@ public class BrokerPool implements Database {
             final CollectionConfiguration collConf = manager.getOrCreateCollectionConfiguration(broker.getDatabase(), collection);
             
             final DocumentTriggerProxy triggerProxy = new DocumentTriggerProxy(ConfigurationDocumentTrigger.class, collection.getURI());
-            collConf.getDocumentTriggerProxies().add(triggerProxy);  
+            collConf.documentTriggers().add(triggerProxy);  
         }
     }
 
@@ -2136,58 +2136,31 @@ public class BrokerPool implements Database {
         }
     }
 
-	@Override
-	public File getStoragePlace() {
-		return new File((String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR));
-	}
+    @Override
+    public File getStoragePlace() {
+        return new File((String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR));
+    }
 
-	private final List<DocumentTrigger> documentTriggers = new ArrayList<DocumentTrigger>(); 
-	private final List<CollectionTrigger> collectionTriggers = new ArrayList<CollectionTrigger>(); 
+    private final List<DocumentTrigger> documentTriggers = new ArrayList<DocumentTrigger>(); 
+    private final List<CollectionTrigger> collectionTriggers = new ArrayList<CollectionTrigger>(); 
 
-	@Override
-	public List<DocumentTrigger> getDocumentTriggers() {
-		return documentTriggers;
-	}
+    @Override
+    public List<DocumentTrigger> getDocumentTriggers() {
+        return documentTriggers;
+    }
 
-	@Override
-	public List<CollectionTrigger> getCollectionTriggers() {
-		return collectionTriggers;
-	}
-	
-	private DocumentTriggersVisitor docsTriggersVisitor = new DocumentTriggersVisitor(documentTriggers);
-	private CollectionTriggersVisitor colsTriggersVisitor = new CollectionTriggersVisitor(collectionTriggers);
+    @Override
+    public List<CollectionTrigger> getCollectionTriggers() {
+        return collectionTriggers;
+    }
 
-	@Override
-	public DocumentTrigger getDocumentTrigger() {
-		return docsTriggersVisitor;
-	}
+    public PluginsManager getPluginsManager() {
+        return pluginManager;
+    }
 
-	@Override
-	public CollectionTrigger getCollectionTrigger() {
-		return colsTriggersVisitor;
-	}
-	
-	class DocumentTriggers extends DocumentTriggerProxies {
+    protected MetaStorage metaStorage = null;
 
-		protected List<DocumentTrigger> instantiateTriggers(DBBroker broker) {
-	        return getDocumentTriggers();
-	    }
-	}
-
-	class CollectionTriggers extends CollectionTriggerProxies {
-
-		protected List<CollectionTrigger> instantiateTriggers(DBBroker broker) {
-	        return getCollectionTriggers();
-	    }
-	}
-
-	public PluginsManager getPluginsManager() {
-		return pluginManager;
-	}
-	
-	protected MetaStorage metaStorage = null;
-	
-	public MetaStorage getMetaStorage() {
-	    return metaStorage;
-	}
+    public MetaStorage getMetaStorage() {
+        return metaStorage;
+    }
 }

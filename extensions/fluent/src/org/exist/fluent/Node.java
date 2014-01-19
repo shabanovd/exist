@@ -9,7 +9,6 @@ import org.apache.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.*;
 import org.exist.dom.*;
-import org.exist.storage.DBBroker;
 import org.exist.storage.io.VariableByteOutputStream;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.value.*;
@@ -367,7 +366,8 @@ public class Node extends Item {
 		if (!(item instanceof NodeProxy)) return null;
 		DocumentImpl docimpl = ((NodeProxy) item).getDocument();
 //		try {
-			DocumentTrigger trigger = docimpl.getCollection().getConfiguration(tx.broker).getDocumentTriggerProxies().instantiateVisitor(tx.broker);
+		        Collection col = docimpl.getCollection();
+			DocumentTrigger trigger = new DocumentTriggers(tx.broker, null, col, col.getConfiguration(tx.broker));
 			if (trigger == null) return null;
 			
 			trigger.beforeUpdateDocument(tx.broker, tx.tx, docimpl);

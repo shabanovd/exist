@@ -22,100 +22,16 @@ package org.exist.collections.triggers;
 import java.util.List;
 
 import org.apache.log4j.Logger;
-import org.exist.collections.Collection;
-import org.exist.storage.DBBroker;
-import org.exist.storage.txn.Txn;
-import org.exist.xmldb.XmldbURI;
 
 /**
  * 
  * @author aretter
  */
-public class CollectionTriggersVisitor extends AbstractTriggersVisitor<CollectionTrigger> implements CollectionTrigger {
+public class CollectionTriggersVisitor extends AbstractTriggersVisitor<CollectionTrigger> {
 
     protected final static Logger LOG = Logger.getLogger(CollectionTriggersVisitor.class);
 
-    public CollectionTriggersVisitor(CollectionTriggerProxies proxies) {
-        super(proxies);
-    }
-
     public CollectionTriggersVisitor(List<CollectionTrigger> triggers) {
         super(triggers);
-    }
-
-    private void log(Exception e) {
-        LOG.error(e.getMessage(), e);
-    }
-
-    @Override
-    public void beforeCreateCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
-        for (final CollectionTrigger trigger : getTriggers()) {
-            trigger.beforeCreateCollection(broker, txn, uri);
-        }
-    }
-
-    @Override
-    public void afterCreateCollection(DBBroker broker, Txn txn, Collection collection) {
-        for (final CollectionTrigger trigger : getTriggers()) {
-            try {
-                trigger.afterCreateCollection(broker, txn, collection);
-            } catch (TriggerException e) {
-                log(e);
-            }
-        }
-    }
-
-    @Override
-    public void beforeCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException {
-        for (final CollectionTrigger trigger : getTriggers()) {
-            trigger.beforeCopyCollection(broker, txn, collection, newUri);
-        }
-    }
-
-    @Override
-    public void afterCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) {
-        for (final CollectionTrigger trigger : getTriggers()) {
-            try {
-                trigger.afterCopyCollection(broker, txn, collection, oldUri);
-            } catch (TriggerException e) {
-                log(e);
-            }
-        }
-    }
-
-    @Override
-    public void beforeMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException {
-        for (final CollectionTrigger trigger : getTriggers()) {
-            trigger.beforeMoveCollection(broker, txn, collection, newUri);
-        }
-    }
-
-    @Override
-    public void afterMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) {
-        for (final CollectionTrigger trigger : getTriggers()) {
-            try {
-                trigger.afterMoveCollection(broker, txn, collection, oldUri);
-            } catch (TriggerException e) {
-                log(e);
-            }
-        }
-    }
-
-    @Override
-    public void beforeDeleteCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException {
-        for (final CollectionTrigger trigger : getTriggers()) {
-            trigger.beforeDeleteCollection(broker, txn, collection);
-        }
-    }
-
-    @Override
-    public void afterDeleteCollection(DBBroker broker, Txn txn, XmldbURI uri) {
-        for (final CollectionTrigger trigger : getTriggers()) {
-            try {
-                trigger.afterDeleteCollection(broker, txn, uri);
-            } catch (TriggerException e) {
-                log(e);
-            }
-        }
     }
 }

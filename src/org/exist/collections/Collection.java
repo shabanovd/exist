@@ -1094,28 +1094,24 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 // we remove a collection.xconf configuration file: tell the configuration manager to
                 // reload the configuration.
                 useTriggers = false;
-                final CollectionConfigurationManager confMgr = broker.getBrokerPool().getConfigurationManager();
+                final CollectionConfigurationManager confMgr = db.getConfigurationManager();
                 if (confMgr != null) {
                     confMgr.invalidate(getURI());
                 }
             }
             
-            DocumentTriggersVisitor triggersVisitor = null;
-            if(useTriggers) {
-                triggersVisitor = getConfiguration(broker).getDocumentTriggerProxies().instantiateVisitor(broker);
-                triggersVisitor.beforeDeleteDocument(broker, txn, doc);
-            }
+            DocumentTriggers trigger = new DocumentTriggers(broker, null, this, useTriggers ? getConfiguration(broker) : null);
+            
+            trigger.beforeDeleteDocument(broker, txn, doc);
             
             broker.removeXMLResource(txn, doc);
             documents.remove(docUri.getRawCollectionPath());
             
-            if(useTriggers) {
-                triggersVisitor.afterDeleteDocument(broker, txn, getURI().append(docUri));
-            }
+            trigger.afterDeleteDocument(broker, txn, getURI().append(docUri));
             
-            broker.getBrokerPool().getNotificationService().notifyUpdate(doc, UpdateListener.REMOVE);
+            db.getNotificationService().notifyUpdate(doc, UpdateListener.REMOVE);
         } finally {
-            broker.getBrokerPool().getProcessMonitor().endJob();
+            db.getProcessMonitor().endJob();
             if(doc != null) {
                 doc.getUpdateLock().release(Lock.WRITE_LOCK);
             }
@@ -1151,8 +1147,10 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             return;  //TODO should throw an exception!!! Otherwise we dont know if the document was removed
         }
         
+        final Database db = broker.getBrokerPool();
+        
         try {
-            broker.getBrokerPool().getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_BINARY, doc.getFileURI());
+            db.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_BINARY, doc.getFileURI());
             getLock().acquire(Lock.WRITE_LOCK);
             
             if(doc.getResourceType() != DocumentImpl.BINARY_FILE) {
@@ -1165,27 +1163,22 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             
             doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
 
-            DocumentTriggersVisitor triggersVisitor = null;
-            if(isTriggersEnabled()) {
-                triggersVisitor = getConfiguration(broker).getDocumentTriggerProxies().instantiateVisitor(broker);
-                triggersVisitor.beforeDeleteDocument(broker, transaction, doc);
-            }
+            DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled() ? getConfiguration(broker) : null);
             
+            trigger.beforeDeleteDocument(broker, transaction, doc);
 
             try {
-               broker.removeBinaryResource(transaction, (BinaryDocument) doc);
+                broker.removeBinaryResource(transaction, (BinaryDocument) doc);
             } catch (final IOException ex) {
                throw new PermissionDeniedException("Cannot delete file: " + doc.getURI().toString() + ": " + ex.getMessage(), ex);
             }
             
             documents.remove(doc.getFileURI().getRawCollectionPath());
             
-            if(isTriggersEnabled()) {
-                triggersVisitor.afterDeleteDocument(broker, transaction, doc.getURI());
-            }
+            trigger.afterDeleteDocument(broker, transaction, doc.getURI());
 
         } finally {
-            broker.getBrokerPool().getProcessMonitor().endJob();
+            db.getProcessMonitor().endJob();
             doc.getUpdateLock().release(Lock.WRITE_LOCK);
             getLock().release(Lock.WRITE_LOCK);
         }
@@ -1404,9 +1397,9 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
 //        
 //        if(isTriggersEnabled() && isCollectionConfigEnabled() && info.getTriggersVisitor() != null) {
             if(info.isCreating()) {
-                info.getTriggersVisitor().afterCreateDocument(broker, txn, document);
+                info.getTriggers().afterCreateDocument(broker, txn, document);
             } else {
-                info.getTriggersVisitor().afterUpdateDocument(broker, txn, document);
+                info.getTriggers().afterUpdateDocument(broker, txn, document);
             }
 //        }
         
@@ -1631,26 +1624,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 setCollectionConfigEnabled(false);
             }
             
-            final List<DocumentTrigger> triggers = new ArrayList<DocumentTrigger>();
-            
-            DocumentTriggersVisitor trigger = new DocumentTriggersVisitor(triggers);
-
-            DocumentTriggersVisitor masterTriggers = (DocumentTriggersVisitor) db.getDocumentTrigger();
-            //triggers.add(indexer);
-            if (masterTriggers != null)
-            	triggers.add(masterTriggers);
-            
-        	DocumentTriggersVisitor configTriggers = null;
-            if(isTriggersEnabled() && isCollectionConfigEnabled()) {
-            	configTriggers = getConfiguration(broker).getDocumentTriggerProxies().instantiateVisitor(broker);
-            	
-            	if (configTriggers != null)
-            		triggers.add(configTriggers);
-            }
-            
-            trigger.setOutputHandler(indexer);
-            trigger.setLexicalOutputHandler(indexer);
-            trigger.setValidating(true);
+            final DocumentTriggers trigger = new DocumentTriggers(broker, indexer, this, isTriggersEnabled() ? config : null);
             
             if(oldDoc == null) {
             	trigger.beforeCreateDocument(broker, transaction, getURI().append(docUri));
@@ -1663,6 +1637,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Scanning document " + getURI().append(docUri));
             }
+            
             doValidate.run(info);
             // new document is valid: remove old document
             if (oldDoc != null) {
@@ -1708,12 +1683,8 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 addDocument(transaction, broker, document);
             }
             
-            indexer.setValidating(false);
             trigger.setValidating(false);
-//        	masterTriggers.setValidating(false);
-//            if(configTriggers != null) {
-//            	configTriggers.setValidating(false);
-//            }
+
             return info;
         } finally {
             if (oldDoc != null && oldDocLocked) {
@@ -1905,22 +1876,19 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 metadata.setLastModified(modified.getTime());
             }
             blob.setContentLength(size);
+            
+            final DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled() ? getConfiguration(broker) : null);
+
             if (oldDoc == null) {
-                db.getDocumentTrigger().beforeCreateDocument(broker, transaction, blob.getURI());
+                trigger.beforeCreateDocument(broker, transaction, blob.getURI());
             } else {
-                db.getDocumentTrigger().beforeUpdateDocument(broker, transaction, oldDoc);
+                trigger.beforeUpdateDocument(broker, transaction, oldDoc);
             }
-            DocumentTriggersVisitor triggersVisitor = null;
-            if (isTriggersEnabled()) {
-                triggersVisitor = getConfiguration(broker).getDocumentTriggerProxies().instantiateVisitor(broker);
-                if (oldDoc == null) {
-                    triggersVisitor.beforeCreateDocument(broker, transaction, blob.getURI());
-                } else {
-                    triggersVisitor.beforeUpdateDocument(broker, transaction, oldDoc);
-                }
-            }
+
             if (oldDoc != null) {
-                LOG.debug("removing old document " + oldDoc.getFileURI());
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("removing old document " + oldDoc.getFileURI());
+                }
                 if (oldDoc instanceof BinaryDocument) {
                     broker.removeBinaryResource(transaction, (BinaryDocument) oldDoc);
                 } else {
@@ -1930,19 +1898,13 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             broker.storeBinaryResource(transaction, blob, is);
             addDocument(transaction, broker, blob, oldDoc);
             broker.storeXMLResource(transaction, blob);
+
             if (oldDoc == null) {
-                db.getDocumentTrigger().afterCreateDocument(broker, transaction, blob);
+                trigger.afterCreateDocument(broker, transaction, blob);
             } else {
-                db.getDocumentTrigger().afterUpdateDocument(broker, transaction, blob);
+                trigger.afterUpdateDocument(broker, transaction, blob);
             }
-            if (isTriggersEnabled()) {
-                //Strange ! What is the "if" clause for ? -pb
-                if (oldDoc == null) {
-                    triggersVisitor.afterCreateDocument(broker, transaction, blob);
-                } else {
-                    triggersVisitor.afterUpdateDocument(broker, transaction, blob);
-                }
-            }
+
             return blob;
         } finally {
             broker.getBrokerPool().getProcessMonitor().endJob();

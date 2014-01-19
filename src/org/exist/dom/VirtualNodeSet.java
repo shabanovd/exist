@@ -153,7 +153,7 @@ public class VirtualNodeSet extends AbstractNodeSet {
      * The method <code>getFirstParent</code>
      *
      * @param node a <code>NodeProxy</code> value
-     * @param first a <code>NodeProxy</code> value
+     * @param content a <code>NodeProxy</code> value
      * @param includeSelf a <code>boolean</code> value
      * @param recursions an <code>int</code> value
      * @return a <code>NodeProxy</code> value
@@ -167,7 +167,7 @@ public class VirtualNodeSet extends AbstractNodeSet {
      * The method <code>getFirstParent</code>
      *
      * @param node a <code>NodeProxy</code> value
-     * @param first a <code>NodeProxy</code> value
+     * @param content a <code>NodeProxy</code> value
      * @param includeSelf a <code>boolean</code> value
      * @param directParent a <code>boolean</code> value
      * @param recursions an <code>int</code> value

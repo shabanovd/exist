@@ -22,6 +22,7 @@ package org.exist.collections.triggers;
 import java.util.List;
 import java.util.Map;
 
+import org.exist.collections.Collection;
 import org.exist.storage.DBBroker;
 
 /**
@@ -32,5 +33,5 @@ public interface TriggerProxy<T extends Trigger> {
     
     public void setParameters(Map<String, List<? extends Object>> parameters);
     
-    public T newInstance(DBBroker broker) throws TriggerException;
+    public T newInstance(DBBroker broker, Collection collection) throws TriggerException;
 }

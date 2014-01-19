@@ -105,7 +105,8 @@ public interface Database {
 	 */
 	public boolean setSubject(Subject subject);
 
-	public DBBroker getBroker() throws EXistException; //TODO: remove 'throws EXistException'?
+	//TODO: remove 'throws EXistException'?
+	public DBBroker getBroker() throws EXistException; 
 	
 	public DBBroker authenticate(String username, Object credentials) throws AuthenticationException;
 	
@@ -156,14 +157,14 @@ public interface Database {
 	 */
 	public Collection<DocumentTrigger> getDocumentTriggers();
 
-	public DocumentTrigger getDocumentTrigger();
+	//public DocumentTrigger getDocumentTrigger();
 
 	/**
 	 * Master Collection triggers.
 	 */
 	public Collection<CollectionTrigger> getCollectionTriggers();
 
-	public CollectionTrigger getCollectionTrigger();
+	//public CollectionTrigger getCollectionTrigger();
 
 	public ProcessMonitor getProcessMonitor();
 

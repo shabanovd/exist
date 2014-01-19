@@ -31,21 +31,14 @@ import org.exist.storage.DBBroker;
  */
 public abstract class AbstractTriggersVisitor<T extends Trigger> implements TriggersVisitor<T> {
     
-    private final AbstractTriggerProxies<T> proxies;
     private List<T> triggers = null;
     
-    public AbstractTriggersVisitor(AbstractTriggerProxies<T> proxies) {
-        this.proxies = proxies;
-    }
-    
     public AbstractTriggersVisitor(List<T> triggers) {
-    	proxies = null;
         this.triggers = triggers;
     }
 
     @Override
     public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
-        triggers = proxies.instantiateTriggers(broker);
     }
 
     public List<T> getTriggers() {

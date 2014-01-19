@@ -22,6 +22,7 @@ package org.exist.collections.triggers;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfigurationException;
 import org.exist.storage.DBBroker;
@@ -86,6 +87,8 @@ import org.exist.storage.DBBroker;
  * @see org.exist.collections.triggers.DocumentTrigger
  */
 public interface Trigger {
+    
+    public static final Logger LOG = Logger.getLogger(Trigger.class);
 
     public final static int STORE_DOCUMENT_EVENT = 0;
     public final static int CREATE_COLLECTION_EVENT = 1;
@@ -126,7 +129,7 @@ public interface Trigger {
      *            actions. Please note: the broker instance used for
      *            configuration is probably different from the one passed to the
      *            prepare method. Don't store the broker object in your class.
-     * @param parent
+     * @param col
      *            the collection to which this trigger belongs.
      * @param parameters
      *            a Map containing any key/value parameters defined in the
@@ -134,5 +137,5 @@ public interface Trigger {
      * @throws CollectionConfigurationException
      *             if the trigger cannot be initialized.
      */
-    public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException;
+    public void configure(DBBroker broker, Collection col, Map<String, List<? extends Object>> parameters) throws TriggerException;
 }

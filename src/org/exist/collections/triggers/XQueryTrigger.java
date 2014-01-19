@@ -57,7 +57,6 @@ import org.exist.xquery.value.AnyURIValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
 import org.xml.sax.ContentHandler;
-import org.xml.sax.SAXException;
 
 /**
  * A trigger that executes a user XQuery statement when invoked.
@@ -535,19 +534,19 @@ public class XQueryTrigger extends FilteringTrigger implements DocumentTrigger, 
         }
     }
 
-    public void startDocument() throws SAXException {
-        originalOutputHandler = getOutputHandler();
-        // TODO : uncomment when it works
-        /*
-         * if (isValidating()) setOutputHandler(adapter);
-         */
-        super.startDocument();
-    }
-
-    public void endDocument() throws SAXException {
-        super.endDocument();
-
-        setOutputHandler(originalOutputHandler);
+//    public void startDocument() throws SAXException {
+//        originalOutputHandler = getOutputHandler();
+//        // TODO : uncomment when it works
+//        /*
+//         * if (isValidating()) setOutputHandler(adapter);
+//         */
+//        super.startDocument();
+//    }
+//
+//    public void endDocument() throws SAXException {
+//        super.endDocument();
+//
+//        setOutputHandler(originalOutputHandler);
 
         // if (!isValidating())
         // return;
@@ -593,7 +592,7 @@ public class XQueryTrigger extends FilteringTrigger implements DocumentTrigger, 
 
         // TODO : check that result is a document node
         // TODO : Stream result to originalOutputHandler
-    }
+//    }
 
     /**
      * Returns a String representation of the Trigger event

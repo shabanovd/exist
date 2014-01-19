@@ -126,12 +126,13 @@ public class STXTransformerTrigger extends FilteringTrigger implements DocumentT
     }
 
     private void prepare() {
-        final SAXResult result = new SAXResult();
-        result.setHandler(getOutputHandler());
-        result.setLexicalHandler(getLexicalOutputHandler());
-        handler.setResult(result);
-        setOutputHandler(handler);
-        setLexicalOutputHandler(handler);
+        //XXX: refactoring required!!!
+//        final SAXResult result = new SAXResult();
+//        result.setHandler(getOutputHandler());
+//        result.setLexicalHandler(getLexicalOutputHandler());
+//        handler.setResult(result);
+//        setOutputHandler(handler);
+//        setLexicalOutputHandler(handler);
     }
 
     @Override

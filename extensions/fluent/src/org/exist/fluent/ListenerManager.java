@@ -14,8 +14,10 @@ import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
+import org.xml.sax.ErrorHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 import org.xml.sax.ext.LexicalHandler;
 
 /**
@@ -251,7 +253,8 @@ public class ListenerManager {
 		private static final Logger LOG = Logger.getLogger(TriggerDispatcher.class);
 		private boolean validating;
 		private ContentHandler contentHandler;
-		private LexicalHandler lexicalHandler;
+                private LexicalHandler lexicalHandler;
+		private ErrorHandler errorHandler;
 		
 		public void configure(DBBroker broker, org.exist.collections.Collection parent, Map<String, List<? extends Object>> parameters)  {
 			// nothing to do
@@ -437,5 +440,20 @@ public class ListenerManager {
 		@Override
 		public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
 		}
+
+		@Override
+                public void warning(SAXParseException exception) throws SAXException {
+                    if (errorHandler != null) errorHandler.warning(exception);
+                }
+        
+                @Override
+                public void error(SAXParseException exception) throws SAXException {
+                    if (errorHandler != null) errorHandler.error(exception);
+                }
+                
+                @Override
+                public void fatalError(SAXParseException exception) throws SAXException {
+                    if (errorHandler != null) errorHandler.fatalError(exception);
+                }
 	}
 }

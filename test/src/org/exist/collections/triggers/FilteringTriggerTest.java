@@ -76,6 +76,8 @@ public class FilteringTriggerTest {
 
             assertEquals(26, trigger.count);
 
+            assertEquals(DOCUMENT_CONTENT, trigger.sb.toString());
+
         } catch (XMLDBException e) {
             e.printStackTrace();
             fail(e.getMessage());
