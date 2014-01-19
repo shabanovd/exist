@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2003-2012 The eXist Project
+ *  Copyright (C) 2003-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.collections.triggers;
 
@@ -28,32 +26,31 @@ import org.xml.sax.SAXException;
  */
 public class TriggerException extends SAXException {
 
-	private static final long serialVersionUID = -6501877347817156557L;
+    private static final long serialVersionUID = -6501877347817156557L;
 
-	public TriggerException() {
-		super();
-	}
+    public TriggerException() {
+        super();
+    }
 
-	/**
-	 * @param message
-	 */
-	public TriggerException(String message) {
-		super(message);
-	}
+    /**
+     * @param message
+     */
+    public TriggerException(String message) {
+        super(message);
+    }
 
-	/**
-	 * @param cause
-	 */
-	public TriggerException(Exception cause) {
-		super(cause);
-	}
+    /**
+     * @param cause
+     */
+    public TriggerException(Exception cause) {
+        super(cause);
+    }
 
-	/**
-	 * @param message
-	 * @param cause
-	 */
-	public TriggerException(String message, Exception cause) {
-		super(message, cause);
-	}
-
+    /**
+     * @param message
+     * @param cause
+     */
+    public TriggerException(String message, Exception cause) {
+        super(message, cause);
+    }
 }

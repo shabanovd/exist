@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2003-2012 The eXist Project
+ *  Copyright (C) 2003-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.collections.triggers;
 
@@ -33,9 +31,9 @@ import org.xml.sax.SAXException;
 import org.xml.sax.ext.LexicalHandler;
 
 /**
- * Abstract default implementation of a Trigger. This implementation just forwards
- * all SAX events to the output content handler.
- *  
+ * Abstract default implementation of a Trigger. This implementation just
+ * forwards all SAX events to the output content handler.
+ * 
  * @author wolf
  */
 public abstract class FilteringTrigger implements DocumentTrigger {
@@ -52,9 +50,10 @@ public abstract class FilteringTrigger implements DocumentTrigger {
     }
 
     /**
-     * Configure the trigger. The default implementation just stores the parent collection
-     * reference into the field {@link #collection collection}. Use method {@link #getCollection() getCollection}
-     * to later retrieve the collection. 
+     * Configure the trigger. The default implementation just stores the parent
+     * collection reference into the field {@link #collection collection}. Use
+     * method {@link #getCollection() getCollection} to later retrieve the
+     * collection.
      */
     @Override
     public void configure(DBBroker broker, Collection parent, Map<String, List<?>> parameters) throws TriggerException {
@@ -103,109 +102,109 @@ public abstract class FilteringTrigger implements DocumentTrigger {
 
     @Override
     public void setDocumentLocator(Locator locator) {
-    	if (outputHandler != null)
-    		outputHandler.setDocumentLocator(locator);
+        if (outputHandler != null)
+            outputHandler.setDocumentLocator(locator);
     }
 
     @Override
     public void startDocument() throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.startDocument();
+        if (outputHandler != null)
+            outputHandler.startDocument();
     }
 
     @Override
     public void endDocument() throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.endDocument();
+        if (outputHandler != null)
+            outputHandler.endDocument();
     }
 
     @Override
     public void startPrefixMapping(String prefix, String namespaceURI) throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.startPrefixMapping(prefix, namespaceURI);
+        if (outputHandler != null)
+            outputHandler.startPrefixMapping(prefix, namespaceURI);
     }
 
     @Override
     public void endPrefixMapping(String prefix) throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.endPrefixMapping(prefix);
+        if (outputHandler != null)
+            outputHandler.endPrefixMapping(prefix);
     }
 
     @Override
     public void startElement(String namespaceURI, String localName, String qname, Attributes attributes) throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.startElement(namespaceURI, localName, qname, attributes);
+        if (outputHandler != null)
+            outputHandler.startElement(namespaceURI, localName, qname, attributes);
     }
 
     @Override
     public void endElement(String namespaceURI, String localName, String qname) throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.endElement(namespaceURI, localName, qname);
+        if (outputHandler != null)
+            outputHandler.endElement(namespaceURI, localName, qname);
     }
 
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.characters(ch, start, length);
+        if (outputHandler != null)
+            outputHandler.characters(ch, start, length);
     }
 
     @Override
     public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.ignorableWhitespace(ch, start, length);
+        if (outputHandler != null)
+            outputHandler.ignorableWhitespace(ch, start, length);
     }
 
     @Override
     public void processingInstruction(String target, String data) throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.processingInstruction(target, data);
+        if (outputHandler != null)
+            outputHandler.processingInstruction(target, data);
     }
 
     @Override
     public void skippedEntity(String arg0) throws SAXException {
-    	if (outputHandler != null)
-    		outputHandler.skippedEntity(arg0);
+        if (outputHandler != null)
+            outputHandler.skippedEntity(arg0);
     }
 
     @Override
     public void startDTD(String name, String publicId, String systemId) throws SAXException {
-    	if (lexicalOutputHandler != null)
-    		lexicalOutputHandler.startDTD(name, publicId, systemId);
+        if (lexicalOutputHandler != null)
+            lexicalOutputHandler.startDTD(name, publicId, systemId);
     }
 
     @Override
     public void endDTD() throws SAXException {
-    	if (lexicalOutputHandler != null)
-    		lexicalOutputHandler.endDTD();
+        if (lexicalOutputHandler != null)
+            lexicalOutputHandler.endDTD();
     }
 
     @Override
     public void startEntity(String arg0) throws SAXException {
-    	if (lexicalOutputHandler != null)
-    		lexicalOutputHandler.startEntity(arg0);
+        if (lexicalOutputHandler != null)
+            lexicalOutputHandler.startEntity(arg0);
     }
 
     @Override
     public void endEntity(String arg0) throws SAXException {
-    	if (lexicalOutputHandler != null)
-    		lexicalOutputHandler.endEntity(arg0);
+        if (lexicalOutputHandler != null)
+            lexicalOutputHandler.endEntity(arg0);
     }
 
     @Override
     public void startCDATA() throws SAXException {
-    	if (lexicalOutputHandler != null)
-    		lexicalOutputHandler.startCDATA();
+        if (lexicalOutputHandler != null)
+            lexicalOutputHandler.startCDATA();
     }
 
     @Override
     public void endCDATA() throws SAXException {
-    	if (lexicalOutputHandler != null)
-    		lexicalOutputHandler.endCDATA();
+        if (lexicalOutputHandler != null)
+            lexicalOutputHandler.endCDATA();
     }
 
     @Override
     public void comment(char[] ch, int start, int length) throws SAXException {
-    	if (lexicalOutputHandler != null)
-    		lexicalOutputHandler.comment(ch, start, length);
+        if (lexicalOutputHandler != null)
+            lexicalOutputHandler.comment(ch, start, length);
     }
 }

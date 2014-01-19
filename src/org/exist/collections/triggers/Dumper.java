@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2003-2012 The eXist Project
+ *  Copyright (C) 2003-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.collections.triggers;
 
@@ -39,7 +37,9 @@ import org.exist.security.PermissionDeniedException;
  */
 public class Dumper extends FilteringTrigger implements DocumentTrigger {
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.exist.collections.FilteringTrigger#configure(java.util.Map)
      */
     @Override
@@ -47,27 +47,27 @@ public class Dumper extends FilteringTrigger implements DocumentTrigger {
         super.configure(broker, parent, parameters);
         System.out.println("parameters:");
 
-        for(final Entry<String, List<?>> entry : parameters.entrySet()) {
+        for (final Entry<String, List<?>> entry : parameters.entrySet()) {
             System.out.print(entry.getKey() + " = " + entry.getValue());
         }
     }
-	
+
     public void prepare(int event, DBBroker broker, Txn txn, XmldbURI documentName, DocumentImpl existingDocument) throws TriggerException {
 
         System.out.println("\nstoring document " + documentName + " into collection " + getCollection().getURI());
-        if(existingDocument != null) {
-            System.out.println("replacing document " + ((DocumentImpl)existingDocument).getFileURI());
+        if (existingDocument != null) {
+            System.out.println("replacing document " + ((DocumentImpl) existingDocument).getFileURI());
         }
         System.out.println("collection contents:");
         final DefaultDocumentSet docs = new DefaultDocumentSet();
-        
+
         try {
             getCollection().getDocuments(broker, docs);
         } catch (final PermissionDeniedException pde) {
             throw new TriggerException(pde.getMessage(), pde);
         }
-        
-        for (final Iterator<DocumentImpl> i = docs.getDocumentIterator(); i.hasNext(); ) {
+
+        for (final Iterator<DocumentImpl> i = docs.getDocumentIterator(); i.hasNext();) {
             System.out.println("\t" + i.next().getFileURI());
         }
     }
@@ -117,11 +117,11 @@ public class Dumper extends FilteringTrigger implements DocumentTrigger {
     public void afterDeleteDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
     }
 
-	@Override
-	public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-	}
+    @Override
+    public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+    }
 
-	@Override
-	public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-	}
+    @Override
+    public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+    }
 }

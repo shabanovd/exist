@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2010-2012 The eXist Project
+ *  Copyright (C) 2010-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.collections.triggers;
 
@@ -96,8 +94,10 @@ public class CSVExtractingTrigger extends FilteringTrigger {
     //the current node path of the SAX stream
     private NodePath currentNodePath = new NodePath();
 
-    private boolean capture = false; //flag to indicate whether to buffer character data for extraction of csv values
-    private StringBuilder charactersBuf = new StringBuilder(); //buffer for character data, which will then be parsed to extract csv values
+    //flag to indicate whether to buffer character data for extraction of csv values
+    private boolean capture = false; 
+    
+    private StringBuilder charactersBuf = new StringBuilder(); 
 
 
     @Override

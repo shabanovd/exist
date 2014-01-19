@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2003-2012 The eXist Project
+ *  Copyright (C) 2003-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.collections.triggers;
 
@@ -46,17 +44,18 @@ import org.xml.sax.SAXException;
 
 /**
  * STXTransformerTrigger applies an STX stylesheet to the input SAX stream,
- * using <a href="http://joost.sourceforge.net">Joost</a>. The stylesheet location
- * is identified by parameter "src". If the src parameter is just a path, the stylesheet
- * will be loaded from the database, otherwise, it is interpreted as an URI.
- *
+ * using <a href="http://joost.sourceforge.net">Joost</a>. The stylesheet
+ * location is identified by parameter "src". If the src parameter is just a
+ * path, the stylesheet will be loaded from the database, otherwise, it is
+ * interpreted as an URI.
+ * 
  * @author wolf
  */
 public class STXTransformerTrigger extends FilteringTrigger implements DocumentTrigger {
 
     protected Logger LOG = Logger.getLogger(getClass());
-    
-    private SAXTransformerFactory factory = (SAXTransformerFactory)TransformerFactory.newInstance("net.sf.joost.trax.TransformerFactoryImpl", getClass().getClassLoader());
+
+    private SAXTransformerFactory factory = (SAXTransformerFactory) TransformerFactory.newInstance("net.sf.joost.trax.TransformerFactoryImpl", getClass().getClassLoader());
     private TransformerHandler handler = null;
 
     private static STXTemplatesCache templatesCache = new STXTemplatesCache();
@@ -64,53 +63,56 @@ public class STXTransformerTrigger extends FilteringTrigger implements DocumentT
     @Override
     public void configure(DBBroker broker, Collection parent, Map<String, List<?>> parameters) throws TriggerException {
         super.configure(broker, parent, parameters);
-        final String stylesheet = (String)parameters.get("src").get(0);
-        if(stylesheet == null) {
-                throw new TriggerException("STXTransformerTrigger requires an attribute 'src'");
+        final String stylesheet = (String) parameters.get("src").get(0);
+        if (stylesheet == null) {
+            throw new TriggerException("STXTransformerTrigger requires an attribute 'src'");
         }
 
         /*
-        String origProperty = System.getProperty("javax.xml.transform.TransformerFactory");
-        System.setProperty("javax.xml.transform.TransformerFactory",  "net.sf.joost.trax.TransformerFactoryImpl");
-        factory = (SAXTransformerFactory)TransformerFactory.newInstance();
-        // reset property to previous setting
-        if(origProperty != null) {
-                System.setProperty("javax.xml.transform.TransformerFactory", origProperty);
-        }
+         * String origProperty =
+         * System.getProperty("javax.xml.transform.TransformerFactory");
+         * System.setProperty("javax.xml.transform.TransformerFactory",
+         * "net.sf.joost.trax.TransformerFactoryImpl"); factory =
+         * (SAXTransformerFactory)TransformerFactory.newInstance(); // reset
+         * property to previous setting if(origProperty != null) {
+         * System.setProperty("javax.xml.transform.TransformerFactory",
+         * origProperty); }
          */
 
-        /*ServiceLoader<TransformerFactory> loader = ServiceLoader.load(TransformerFactory.class);
-        for(TransformerFactory transformerFactory : loader) {
-            if(transformerFactory.getClass().getName().equals("net.sf.joost.trax.TransformerFactoryImpl")) {
-                    factory = transformerFactory.ne
-            }
-        }*/
+        /*
+         * ServiceLoader<TransformerFactory> loader =
+         * ServiceLoader.load(TransformerFactory.class); for(TransformerFactory
+         * transformerFactory : loader) {
+         * if(transformerFactory.getClass().getName
+         * ().equals("net.sf.joost.trax.TransformerFactoryImpl")) { factory =
+         * transformerFactory.ne } }
+         */
 
-        XmldbURI stylesheetUri=null;
+        XmldbURI stylesheetUri = null;
         try {
             stylesheetUri = XmldbURI.xmldbUriFor(stylesheet);
-        } catch(final URISyntaxException e) {
+        } catch (final URISyntaxException e) {
         }
-        //TODO: allow full XmldbURIs to be used as well.
-        if(stylesheetUri==null || stylesheet.indexOf(':') == Constants.STRING_NOT_FOUND) {
+        // TODO: allow full XmldbURIs to be used as well.
+        if (stylesheetUri == null || stylesheet.indexOf(':') == Constants.STRING_NOT_FOUND) {
 
             stylesheetUri = parent.getURI().resolveCollectionPath(stylesheetUri);
             DocumentImpl doc;
             try {
-                doc = (DocumentImpl)broker.getXMLResource(stylesheetUri);
-                if(doc == null) {
+                doc = (DocumentImpl) broker.getXMLResource(stylesheetUri);
+                if (doc == null) {
                     throw new TriggerException("stylesheet " + stylesheetUri + " not found in database");
                 }
-                if(doc instanceof BinaryDocument) {
+                if (doc instanceof BinaryDocument) {
                     throw new TriggerException("stylesheet " + stylesheetUri + " must be stored as an xml document and not a binary document!");
                 }
                 handler = factory.newTransformerHandler(templatesCache.getOrUpdateTemplate(broker, doc));
             } catch (final TransformerConfigurationException e) {
-                    throw new TriggerException(e.getMessage(), e);
+                throw new TriggerException(e.getMessage(), e);
             } catch (final PermissionDeniedException e) {
-                    throw new TriggerException(e.getMessage(), e);
+                throw new TriggerException(e.getMessage(), e);
             } catch (final SAXException e) {
-                    throw new TriggerException(e.getMessage(), e);
+                throw new TriggerException(e.getMessage(), e);
             }
         } else {
             try {
@@ -132,57 +134,56 @@ public class STXTransformerTrigger extends FilteringTrigger implements DocumentT
         setLexicalOutputHandler(handler);
     }
 
-	@Override
-	public void beforeCreateDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
-		prepare();
-	}
+    @Override
+    public void beforeCreateDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
+        prepare();
+    }
 
-	@Override
-	public void afterCreateDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
-	}
+    @Override
+    public void afterCreateDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
+    }
 
-	@Override
-	public void beforeUpdateDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
-		prepare();
-	}
+    @Override
+    public void beforeUpdateDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
+        prepare();
+    }
 
-	@Override
-	public void afterUpdateDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
-	}
+    @Override
+    public void afterUpdateDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
+    }
 
-	@Override
-	public void beforeCopyDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
-		prepare();
-	}
+    @Override
+    public void beforeCopyDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
+        prepare();
+    }
 
-	@Override
-	public void afterCopyDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
-	}
+    @Override
+    public void afterCopyDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
+    }
 
-	@Override
-	public void beforeMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
-		prepare();
-	}
+    @Override
+    public void beforeMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
+        prepare();
+    }
 
-	@Override
-	public void afterMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
-	}
+    @Override
+    public void afterMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
+    }
 
-	@Override
-	public void beforeDeleteDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
-		prepare();
-	}
+    @Override
+    public void beforeDeleteDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
+        prepare();
+    }
 
-	@Override
-	public void afterDeleteDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
-	}
+    @Override
+    public void afterDeleteDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
+    }
 
-	@Override
-	public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-	}
+    @Override
+    public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+    }
 
-
-	@Override
-	public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-	}
+    @Override
+    public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+    }
 }
