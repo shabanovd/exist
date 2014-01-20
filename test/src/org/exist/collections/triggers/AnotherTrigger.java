@@ -125,7 +125,9 @@ public class AnotherTrigger extends FilteringTrigger {
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
         
-        sb.append(ch);
+        for (int i = 0; i < length; i++) {
+            sb.append(ch[start + i]);
+        }
         
         super.characters(ch, start, length);
     }
