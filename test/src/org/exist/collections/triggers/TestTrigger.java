@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2011 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,12 +16,9 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.collections.triggers;
 
-import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentImpl;
@@ -46,7 +43,7 @@ import org.apache.log4j.Logger;
 public class TestTrigger extends FilteringTrigger implements DocumentTrigger {
 
     protected Logger LOG = Logger.getLogger(getClass());
-    
+
     private final static String TEMPLATE = "<?xml version=\"1.0\"?><events></events>";
 
     private DocumentImpl doc;
@@ -60,16 +57,14 @@ public class TestTrigger extends FilteringTrigger implements DocumentTrigger {
         try {
             this.doc = parent.getDocument(broker, docPath);
             if (this.doc == null) {
-                
-                
-        
+
                 LOG.debug("creating new file for collection contents");
 
                 // IMPORTANT: temporarily disable triggers on the collection.
                 // We would end up in infinite recursion if we don't do that
                 parent.setTriggersEnabled(false);
                 IndexInfo info = parent.validateXMLResource(transaction, broker, docPath, TEMPLATE);
-                //TODO : unlock the collection here ?
+                // TODO : unlock the collection here ?
                 parent.store(transaction, broker, info, TEMPLATE, false);
                 this.doc = info.getDocument();
 
@@ -83,7 +78,7 @@ public class TestTrigger extends FilteringTrigger implements DocumentTrigger {
         }
     }
 
-	private void addRecord(DBBroker broker, String xupdate) throws TriggerException {
+    private void addRecord(DBBroker broker, String xupdate) throws TriggerException {
         MutableDocumentSet docs = new DefaultDocumentSet();
         docs.add(doc);
         try {
@@ -105,75 +100,69 @@ public class TestTrigger extends FilteringTrigger implements DocumentTrigger {
             getCollection().setTriggersEnabled(true);
         }
 
-	}
+    }
 
-	@Override
-	public void beforeCreateDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
-        String xupdate = "<?xml version=\"1.0\"?>" +
-        "<xu:modifications version=\"1.0\" xmlns:xu=\"" + XUpdateProcessor.XUPDATE_NS + "\">" +
-        "   <xu:append select='/events'>" +
-        "       <xu:element name='event'>" +
-        "           <xu:attribute name='id'>STORE-DOCUMENT</xu:attribute>" +
-        "           <xu:attribute name='collection'>" + doc.getCollection().getURI() + "</xu:attribute>" +
-        "       </xu:element>" +
-        "   </xu:append>" +
-        "</xu:modifications>";
+    @Override
+    public void beforeCreateDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
+        String xupdate = "<?xml version=\"1.0\"?>" + "<xu:modifications version=\"1.0\" xmlns:xu=\"" + XUpdateProcessor.XUPDATE_NS + "\">" + "   <xu:append select='/events'>" + "       <xu:element name='event'>"
+                + "           <xu:attribute name='id'>STORE-DOCUMENT</xu:attribute>" + "           <xu:attribute name='collection'>" + doc.getCollection().getURI() + "</xu:attribute>" + "       </xu:element>" + "   </xu:append>"
+                + "</xu:modifications>";
 
         addRecord(broker, xupdate);
-	}
+    }
 
-	@Override
-	public void afterCreateDocument(DBBroker broker, Txn transaction, DocumentImpl document) {
-	}
+    @Override
+    public void afterCreateDocument(DBBroker broker, Txn transaction, DocumentImpl document) {
+    }
 
-	@Override
-	public void beforeUpdateDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
-	}
+    @Override
+    public void beforeUpdateDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
+    }
 
-	@Override
-	public void afterUpdateDocument(DBBroker broker, Txn transaction, DocumentImpl document) {
-	}
+    @Override
+    public void afterUpdateDocument(DBBroker broker, Txn transaction, DocumentImpl document) {
+    }
 
-	@Override
-	public void beforeCopyDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
-	}
+    @Override
+    public void beforeCopyDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
+    }
 
-	@Override
-	public void afterCopyDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) {
-	}
+    @Override
+    public void afterCopyDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) {
+    }
 
-	@Override
-	public void beforeMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
-	}
+    @Override
+    public void beforeMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
+    }
 
-	@Override
-	public void afterMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) {
-	}
+    @Override
+    public void afterMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) {
+    }
 
-	@Override
-	public void beforeDeleteDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
-        String xupdate = "<?xml version=\"1.0\"?>" +
-        "<xu:modifications version=\"1.0\" xmlns:xu=\"" + XUpdateProcessor.XUPDATE_NS + "\">" +
-        "   <xu:append select='/events'>" +
-        "       <xu:element name='event'>" +
-        "           <xu:attribute name='id'>REMOVE-DOCUMENT</xu:attribute>" +
-        "           <xu:attribute name='collection'>" + doc.getCollection().getURI() + "</xu:attribute>" +
-        "       </xu:element>" +
-        "   </xu:append>" +
-        "</xu:modifications>";
-        
+    @Override
+    public void beforeDeleteDocument(DBBroker broker, Txn transaction, DocumentImpl document) throws TriggerException {
+        String xupdate = "<?xml version=\"1.0\"?>"
+                + "<xu:modifications version=\"1.0\" xmlns:xu=\"" + XUpdateProcessor.XUPDATE_NS + "\">"
+                + "   <xu:append select='/events'>"
+                + "       <xu:element name='event'>"
+                + "           <xu:attribute name='id'>REMOVE-DOCUMENT</xu:attribute>"
+                + "           <xu:attribute name='collection'>" + doc.getCollection().getURI() + "</xu:attribute>"
+                + "       </xu:element>"
+                + "   </xu:append>"
+                + "</xu:modifications>";
+
         addRecord(broker, xupdate);
-	}
+    }
 
-	@Override
-	public void afterDeleteDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
-	}
+    @Override
+    public void afterDeleteDocument(DBBroker broker, Txn transaction, XmldbURI uri) throws TriggerException {
+    }
 
-	@Override
-	public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-	}
+    @Override
+    public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+    }
 
-	@Override
-	public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-	}
+    @Override
+    public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+    }
 }
