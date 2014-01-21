@@ -67,7 +67,7 @@ public class NodeSerializerThread extends Thread{
             NodeSerializer.serialize(serializer, node, outputProperties, bos);
             
         } catch (IOException ex) {
-            logger.error(ex);
+            logger.error(ex.getMessage(), ex);
             exception = ex;
             
         } finally {

@@ -114,7 +114,7 @@ public class XMLDBCreated extends XMLDBAbstractCollectionManipulator {
 	    return new DateTimeValue(date);
 
 	} catch(final XMLDBException e) {
-	    logger.error("Failed to retrieve creation date or modification time of specified resource or creation date of collection");
+	    logger.error("Failed to retrieve creation date or modification time of specified resource or creation date of collection", e);
 
 	    throw new XPathException(this, "Failed to retrieve creation date: " + e.getMessage(), e);
 	}

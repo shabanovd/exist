@@ -161,7 +161,7 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 			try {
 				plugin.sync(broker);
 			} catch (final Throwable e) {
-				LOG.error(e);
+				LOG.error(e.getMessage(), e);
 			}
 		}
 	}
@@ -172,7 +172,7 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 			try {
 				plugin.stop(broker);
 			} catch (final Throwable e) {
-				LOG.error(e);
+				LOG.error(e.getMessage(), e);
 			}
 		}
 	}

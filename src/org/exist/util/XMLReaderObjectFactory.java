@@ -196,10 +196,10 @@ public class XMLReaderObjectFactory extends BasePoolableObjectFactory {
             xmlReader.setFeature(featureName, value);
 
         } catch (final SAXNotRecognizedException ex) {
-            LOG.error("SAXNotRecognizedException: " + ex.getMessage());
+            LOG.error("SAXNotRecognizedException: " + ex.getMessage(), ex);
 
         } catch (final SAXNotSupportedException ex) {
-            LOG.error("SAXNotSupportedException:" + ex.getMessage());
+            LOG.error("SAXNotSupportedException:" + ex.getMessage(), ex);
         }
     }
 
@@ -208,10 +208,10 @@ public class XMLReaderObjectFactory extends BasePoolableObjectFactory {
             xmlReader.setProperty(propertyName, object);
 
         } catch (final SAXNotRecognizedException ex) {
-            LOG.error("SAXNotRecognizedException: " + ex.getMessage());
+            LOG.error("SAXNotRecognizedException: " + ex.getMessage(), ex);
 
         } catch (final SAXNotSupportedException ex) {
-            LOG.error("SAXNotSupportedException:" + ex.getMessage());
+            LOG.error("SAXNotSupportedException:" + ex.getMessage(), ex);
         }
     }
 

@@ -1174,7 +1174,7 @@ public class DOMFile extends BTree implements Lockable {
                                     try {
                                         prefix = new String(os.toByteArray(), "UTF-8");
                                     } catch (final UnsupportedEncodingException e) {
-                                        LOG.error("Can't decode prefix string");
+                                        LOG.error("Can't decode prefix string", e);
                                     }
                                     final String NsURI = ((NativeBroker)owner).getBrokerPool()
                                         .getSymbols().getNamespace(NSId);
@@ -1242,7 +1242,7 @@ public class DOMFile extends BTree implements Lockable {
             query(query, callBack);
         } catch (final TerminatedException e) {
             // Should never happen here
-            LOG.error("Method terminated");
+            LOG.error("Method terminated", e);
         }
         return callBack.getValues();
     }
@@ -1392,10 +1392,10 @@ public class DOMFile extends BTree implements Lockable {
             }
             return get(pointer);
         } catch (final BTreeException bte) {
-            LOG.error(bte);
+            LOG.error(bte.getMessage(), bte);
             return null;
         } catch (final IOException ioe) {
-            LOG.error(ioe);
+            LOG.error(ioe.getMessage(), ioe);
             return null;
         }
     }
@@ -1480,7 +1480,7 @@ public class DOMFile extends BTree implements Lockable {
                 writer.write(DLNBase.toBitString(data[key.start() + 4 + i]));
             }
         } catch (final Exception e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             e.printStackTrace();
             System.out.println(e.getMessage() + ": doc: " +
                     Integer.toString(ByteConversion.byteToInt(key.data(), key.start())));
@@ -1503,11 +1503,11 @@ public class DOMFile extends BTree implements Lockable {
             addValue(transaction, key, pointer);
         } catch (final IOException ioe) {
             //TODO : throw exception ?
-            LOG.error(ioe);
+            LOG.error(ioe.getMessage(), ioe);
             return KEY_NOT_FOUND;
         } catch (final BTreeException bte) {
             //TODO : throw exception ?
-            LOG.error(bte);
+            LOG.error(bte.getMessage(), bte);
             return KEY_NOT_FOUND;
         }
         return pointer;
@@ -1756,7 +1756,7 @@ public class DOMFile extends BTree implements Lockable {
             page.setDirty(true);
             dataCache.remove(page);
         } catch (final IOException ioe) {
-            LOG.error(ioe);
+            LOG.error(ioe.getMessage(), ioe);
             //TODO : rethrow exception ? -pb
         }
         if (currentDocument != null)
@@ -2571,7 +2571,7 @@ public class DOMFile extends BTree implements Lockable {
                 try {
                     System.arraycopy(page.data, offset, page.data, end, dlen - offset);
                 } catch(final ArrayIndexOutOfBoundsException e) {
-                    LOG.error(e);
+                    LOG.error(e.getMessage(), e);
                     SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
                         "; tid: " + loggable.tid +
                         "; offset: " + offset +
@@ -2757,7 +2757,7 @@ public class DOMFile extends BTree implements Lockable {
             } catch (final ArrayIndexOutOfBoundsException e) {
                 LOG.error("page: " + page.getPageNum()
                     + "; len = " + page.len +
-                    "; value = " + loggable.value.length);
+                    "; value = " + loggable.value.length, e);
                 throw e;
             }
         }
@@ -2779,7 +2779,7 @@ public class DOMFile extends BTree implements Lockable {
             //Position the stream at the very beginning of the record
             System.arraycopy(page.data, end, page.data, rec.offset - LENGTH_TID, dlen - end);
         } catch (final ArrayIndexOutOfBoundsException e) {
-        	LOG.error(e);
+        	LOG.error(e.getMessage(), e);
             SanityCheck.TRACE("Error while copying data on page " + page.getPageNum() +
                   "; tid: " + loggable.tid +
                   "; offset: " + (rec.offset - LENGTH_TID) +
@@ -2974,7 +2974,7 @@ public class DOMFile extends BTree implements Lockable {
                 page = getPage(pos);
                 load(page);
             } catch (final IOException ioe) {
-                LOG.error(ioe);
+                LOG.error(ioe.getMessage(), ioe);
                 ioe.printStackTrace();
                 //TODO  :throw exception ? -pb
             }
@@ -3001,7 +3001,7 @@ public class DOMFile extends BTree implements Lockable {
                     {currentDocument.getMetadata().incPageCount();}
                 return page;
             } catch (final IOException ioe) {
-                LOG.error(ioe);
+                LOG.error(ioe.getMessage(), ioe);
                 return null;
             }
         }
@@ -3129,7 +3129,7 @@ public class DOMFile extends BTree implements Lockable {
                     return;
                 }
             } catch (final IOException ioe) {
-                LOG.error(ioe);
+                LOG.error(ioe.getMessage(), ioe);
                 ioe.printStackTrace();
             }
             saved = true;
@@ -3145,7 +3145,7 @@ public class DOMFile extends BTree implements Lockable {
                 writeValue(page, data);
                 setDirty(false);
             } catch (final IOException ioe) {
-                LOG.error(ioe);
+                LOG.error(ioe.getMessage(), ioe);
                 //TODO : thow exception ? -pb
             }
         }
@@ -3265,7 +3265,7 @@ public class DOMFile extends BTree implements Lockable {
                     {currentDocument.getMetadata().incPageCount();}
                 return page;
             } catch (final IOException ioe) {
-                LOG.error(ioe);
+                LOG.error(ioe.getMessage(), ioe);
                 return null;
             }
         }

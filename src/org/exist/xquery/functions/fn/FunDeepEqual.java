@@ -200,7 +200,7 @@ public class FunDeepEqual extends CollatingFunction {
                 throw new RuntimeException("unexpected item type " + Type.getTypeName(a.getType()));
             }
         } catch (final XPathException e) {
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
             e.printStackTrace();
             return false;
         }

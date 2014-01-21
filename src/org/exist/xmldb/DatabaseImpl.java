@@ -201,7 +201,7 @@ public class DatabaseImpl implements Database {
               case ErrorCodes.NO_SUCH_COLLECTION:
               case ErrorCodes.INVALID_COLLECTION:
               case ErrorCodes.INVALID_RESOURCE:
-                LOG.info(e.getMessage());
+                LOG.info(e.getMessage(), e);
                 return null;
               default:
                 LOG.error(e.getMessage(), e);
@@ -249,7 +249,7 @@ public class DatabaseImpl implements Database {
               case ErrorCodes.NO_SUCH_COLLECTION:
               case ErrorCodes.INVALID_COLLECTION:
               case ErrorCodes.INVALID_RESOURCE:
-                LOG.info(e.getMessage());
+                LOG.info(e.getMessage(), e);
                 return null;
               default:
                 LOG.error(e.getMessage(), e);

@@ -313,7 +313,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 				}
                 
 			} catch (final AuthenticationException e) {
-				getLog().error("User can not be authenticated ("+username+").");
+				getLog().error("User can not be authenticated ("+username+").", e);
 			}
         }
         

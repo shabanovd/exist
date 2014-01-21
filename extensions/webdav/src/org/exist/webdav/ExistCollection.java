@@ -121,9 +121,9 @@ public class ExistCollection extends ExistResource {
             ownerGroup = permissions.getGroup().getName();
 
         } catch(PermissionDeniedException pde) {
-            LOG.error(pde);
+            LOG.error(pde.getMessage(), pde);
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
 
         } finally {
 
@@ -163,11 +163,11 @@ public class ExistCollection extends ExistResource {
             }
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             //return empty list
             return new ArrayList<XmldbURI>();
         } catch (PermissionDeniedException pde) {
-            LOG.error(pde);
+            LOG.error(pde.getMessage(), pde);
             //return empty list
             return new ArrayList<XmldbURI>();            
         } finally {
@@ -203,12 +203,12 @@ public class ExistCollection extends ExistResource {
             }
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             //return empty list
             return new ArrayList<XmldbURI>();
             
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             //return empty list
             return new ArrayList<XmldbURI>();
             
@@ -260,19 +260,19 @@ public class ExistCollection extends ExistResource {
 
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
 
         } catch (IOException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
 
         } catch (TriggerException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
 
 		} finally {
@@ -333,21 +333,21 @@ public class ExistCollection extends ExistResource {
 
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw e;
 
         } catch (IOException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw e;
 
         } catch (Throwable e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new EXistException(e);
 
@@ -460,32 +460,32 @@ public class ExistCollection extends ExistResource {
 
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new IOException(e);
 
         } catch (TriggerException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new IOException(e);
 
         } catch (SAXException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new IOException(e);
 
         } catch (LockException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new PermissionDeniedException(xmldbUri + "");
 
         } catch (IOException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw e;
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw e;
 
@@ -522,7 +522,7 @@ public class ExistCollection extends ExistResource {
             newNameUri = XmldbURI.xmldbUriFor(newName);
             
         } catch (URISyntaxException ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw new EXistException(ex.getMessage());
         }
 
@@ -576,22 +576,22 @@ public class ExistCollection extends ExistResource {
             throw new EXistException(e.getMessage());
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw e;
 
         } catch (IOException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new EXistException(e.getMessage());
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new EXistException(e.getMessage());
 
         } catch (TriggerException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new EXistException(e.getMessage());
 

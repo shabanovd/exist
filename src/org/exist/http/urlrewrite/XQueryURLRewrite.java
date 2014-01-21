@@ -634,7 +634,7 @@ public class XQueryURLRewrite extends HttpServlet {
 	        	if (user != null && user.isAuthenticated())
 	        		{defaultUser = user;}
 			} catch (final AuthenticationException e) {
-				LOG.error("User can not be authenticated ("+username+"), using default user.");
+				LOG.error("User can not be authenticated ("+username+"), using default user.", e);
 			}
 		}
     }

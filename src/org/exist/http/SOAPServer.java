@@ -1364,7 +1364,7 @@ public class SOAPServer
                 return data;
 
             } catch (final IOException ex) {
-                LOG.error(ex);
+                LOG.error(ex.getMessage(), ex);
             }
             
             return null;

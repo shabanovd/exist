@@ -210,7 +210,7 @@ public class HttpRequestWrapper implements RequestWrapper {
             }
 
         } catch (final FileUploadException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
         }
 
     }

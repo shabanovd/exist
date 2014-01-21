@@ -93,12 +93,12 @@ public class XMLDBRename extends XMLDBAbstractCollectionManipulator {
 				service.moveResource(doc, (XmldbURI) null, 
                         XmldbURI.xmldbUriFor(newName));
 			} catch (final XMLDBException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
 
 				throw new XPathException(this, "XMLDB exception caught: " + e.getMessage(), e);
                 
 			} catch (final URISyntaxException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
 
                 throw new XPathException(this, "URI exception: " + e.getMessage(), e);
             }
@@ -112,12 +112,12 @@ public class XMLDBRename extends XMLDBAbstractCollectionManipulator {
                         XmldbURI.xmldbUriFor(newName));
 
 			} catch (final XMLDBException e) {
-                logger.error("Cannot rename collection: " + e.getMessage());
+                logger.error("Cannot rename collection: " + e.getMessage(), e);
 
 				throw new XPathException(this, "Cannot rename collection: " + e.getMessage(), e);
                 
 			} catch (final URISyntaxException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
 
                 throw new XPathException(this, "URI exception: " + e.getMessage(), e);
             }

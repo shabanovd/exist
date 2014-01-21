@@ -1276,7 +1276,7 @@ public class BTree extends Paged implements Lockable {
                         keys[i] = new Value(t);
                     } catch (final Exception e) {
                         e.printStackTrace();
-                        LOG.error("prefixLen = " + prefixLen + "; i = " + i + "; nKeys = " + nKeys);
+                        LOG.error("prefixLen = " + prefixLen + "; i = " + i + "; nKeys = " + nKeys, e);
                         throw new IOException(e.getMessage());
                     }
                 } else {

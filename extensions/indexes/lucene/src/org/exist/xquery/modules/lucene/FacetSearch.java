@@ -200,7 +200,7 @@ public class FacetSearch extends BasicFunction {
 
         } catch (XPathException ex) {
             // Log and rethrow
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw ex;
         }
 
@@ -424,7 +424,7 @@ public class FacetSearch extends BasicFunction {
 
         } catch (Exception ex){
             //ex.printStackTrace();
-            LuceneIndexWorker.LOG.error(ex);
+            LuceneIndexWorker.LOG.error(ex.getMessage(), ex);
             throw new XPathException(ex);
         
         } finally {

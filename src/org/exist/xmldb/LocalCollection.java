@@ -893,7 +893,7 @@ public class LocalCollection extends Observable implements CollectionImpl {
             collection.deleteObservers();
         } catch(final Exception e) {
             transact.abort(txn);
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         } finally {
             transact.close(txn);

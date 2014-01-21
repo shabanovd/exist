@@ -2173,7 +2173,7 @@ public class XQueryContext implements BinaryValueManager, Context
                         try {
                             return getBroker().getBrokerPool().getSecurityManager().authenticate(user.toString(), password);
                         } catch (final AuthenticationException e) {
-                            LOG.error("User can not be authenticated: " + user.toString());
+                            LOG.error("User can not be authenticated: " + user.toString(), e);
                         }
                     } else {
                         if (req.getSession() != null) {

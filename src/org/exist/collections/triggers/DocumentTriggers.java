@@ -235,7 +235,7 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
             try {
                 trigger.afterCreateDocument(broker, txn, document);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }
@@ -253,7 +253,7 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
             try {
                 trigger.afterUpdateDocument(broker, txn, document);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }
@@ -271,7 +271,7 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
             try {
                 trigger.afterUpdateDocumentMetadata(broker, txn, document);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }
@@ -289,7 +289,7 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
             try {
                 trigger.afterCopyDocument(broker, txn, document, oldUri);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }
@@ -307,7 +307,7 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
             try {
                 trigger.afterMoveDocument(broker, txn, document, oldUri);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }
@@ -325,7 +325,7 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
             try {
                 trigger.afterDeleteDocument(broker, txn, uri);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }

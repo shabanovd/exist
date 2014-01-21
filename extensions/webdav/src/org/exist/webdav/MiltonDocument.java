@@ -298,7 +298,7 @@ public class MiltonDocument extends MiltonResource
                         existDocument.stream(counter);
 
                     } catch (Exception ex) {
-                        LOG.error(ex);
+                        LOG.error(ex.getMessage(), ex);
                     }
 
                     size = counter.getByteCount();
@@ -340,7 +340,7 @@ public class MiltonDocument extends MiltonResource
                         vtf.close();
 
                     } catch (Exception ex) {
-                        LOG.error(ex);
+                        LOG.error(ex.getMessage(), ex);
                     }
 
                     size = vtf.length();
@@ -560,7 +560,7 @@ public class MiltonDocument extends MiltonResource
 
         } catch (EXistException ex) {
             // unable to throw new ConflictException(this);
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
         }
     }
 

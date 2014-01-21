@@ -134,7 +134,7 @@ public class Constructor {
 			return obj;
 
         } catch (final Exception e) {
-			Configurator.LOG.error(e);
+			Configurator.LOG.error(e.getMessage(), e);
 		}
         return null;
 	}

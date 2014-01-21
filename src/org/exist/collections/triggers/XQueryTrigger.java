@@ -393,13 +393,13 @@ public class XQueryTrigger extends FilteringTrigger implements DocumentTrigger, 
 
         } catch (final XPathException e) {
             // Should never be reached
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
         } catch (final IOException e) {
             // Should never be reached
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
         } catch (final PermissionDeniedException e) {
             // Should never be reached
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
         }
 
         // execute the XQuery
@@ -413,7 +413,7 @@ public class XQueryTrigger extends FilteringTrigger implements DocumentTrigger, 
             LOG.error("Error during trigger finish", e);
         } catch (final PermissionDeniedException e) {
             // Should never be reached
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
         }
 
         TriggerStatePerThread.setTriggerRunningState(TriggerStatePerThread.NO_TRIGGER_RUNNING, this, null);

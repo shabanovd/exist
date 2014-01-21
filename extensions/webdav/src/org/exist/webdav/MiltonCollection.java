@@ -382,7 +382,7 @@ public class MiltonCollection extends MiltonResource
 
         } catch (EXistException ex) {
             // copyTo does not throw COnflictException
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
         }
     }
 
@@ -436,7 +436,7 @@ public class MiltonCollection extends MiltonResource
             writer.writeEndDocument();
 
         } catch (XMLStreamException ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw new IOException(ex.getMessage());
         }
     }

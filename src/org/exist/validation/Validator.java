@@ -161,11 +161,11 @@ public class Validator {
             driver.validate(new InputSource(stream));
 
         } catch(final IOException ex) {
-            logger.error(ex);
+            logger.error(ex.getMessage(), ex);
             report.setThrowable(ex);
 
         } catch(final Exception ex) {
-            logger.debug(ex);
+            logger.debug(ex.getMessage(), ex);
             report.setThrowable(ex);
 
         } finally {
@@ -247,11 +247,11 @@ public class Validator {
             }
 
         } catch(final IOException ex) {
-            logger.error(ex);
+            logger.error(ex.getMessage(), ex);
             report.setThrowable(ex);
 
         } catch(final Exception ex) {
-            logger.error(ex);
+            logger.error(ex.getMessage(), ex);
             report.setThrowable(ex);
 
         } finally {

@@ -78,7 +78,7 @@ public class Client implements Runnable {
             	//LOG.info(method.getResponseBodyAsString());
             }
 		} catch (Exception e) {
-			LOG.error(e);
+			LOG.error(e.getMessage(), e);
 		}
 	}
 	

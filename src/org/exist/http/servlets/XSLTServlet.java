@@ -277,7 +277,7 @@ public class XSLTServlet extends HttpServlet {
                 }
 
             } catch (final SAXParseException e) {
-                LOG.error(e.getMessage());
+                LOG.error(e.getMessage(), e);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
 
             } catch (final SAXException e) {
@@ -297,7 +297,7 @@ public class XSLTServlet extends HttpServlet {
             throw new ServletException("Exception while transforming node: " + e.getMessage(), e);
             
         } catch (final Throwable e){
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             throw new ServletException("An error occurred: " + e.getMessage(), e);
 
         } finally {

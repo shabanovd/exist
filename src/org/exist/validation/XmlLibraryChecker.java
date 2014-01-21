@@ -97,7 +97,7 @@ public class XmlLibraryChecker {
             parserClass = getClassName(classId);
             
         } catch (final Exception ex) {
-            logger.error(ex.getMessage());
+            logger.error(ex.getMessage(), ex);
         }
         return parserClass;
     }
@@ -117,7 +117,7 @@ public class XmlLibraryChecker {
             transformerClass = getClassName(classId);
 
         } catch (final Exception ex) {
-            logger.error(ex.getMessage());
+            logger.error(ex.getMessage(), ex);
         }
         return transformerClass;    
     }

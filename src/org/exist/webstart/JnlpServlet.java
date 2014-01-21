@@ -103,13 +103,13 @@ public class JnlpServlet extends HttpServlet {
             }
 
         } catch(final EOFException ex) {
-            logger.debug(ex.getMessage());
+            logger.debug(ex.getMessage(), ex);
 
         } catch(final SocketException ex) {
-            logger.debug(ex.getMessage());
+            logger.debug(ex.getMessage(), ex);
 
         } catch (final Throwable e){
-            logger.error(e);
+            logger.error(e.getMessage(), e);
             throw new ServletException("An error occurred: " + e.getMessage());
         }
         

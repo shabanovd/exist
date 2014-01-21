@@ -96,14 +96,14 @@ public class EmbeddedDownloadThread extends Thread {
             ed.stream(xmldbURL, bos, subject);
             
         } catch (IOException ex) {
-            logger.error(ex);
+            logger.error(ex.getMessage(), ex);
             exception = ex;
             
         } finally {
             try { // NEEDED!
                 bos.close();
             } catch (final IOException ex) {
-                logger.debug(ex);
+                logger.debug(ex.getMessage(), ex);
             }
             logger.debug("Thread stopped." );
         }

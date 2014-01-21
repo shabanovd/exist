@@ -157,7 +157,7 @@ public class XMLDBSetMimeType extends BasicFunction {
 
         } catch (final Exception e) {
             txnManager.abort(txn);
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
             throw new XPathException(this, e);
 
         } finally {

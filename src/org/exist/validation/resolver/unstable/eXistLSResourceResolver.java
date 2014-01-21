@@ -59,7 +59,7 @@ public class eXistLSResourceResolver implements LSResourceResolver {
             lsInput.setByteStream(is);
 
         } catch (final Exception ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
             lsInput=null;            
         } 
 

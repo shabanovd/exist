@@ -122,7 +122,7 @@ public class CounterFunctions extends BasicFunction {
                 }
 
             } catch (EXistException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
                 return Sequence.EMPTY_SEQUENCE;
             }
 
@@ -138,7 +138,7 @@ public class CounterFunctions extends BasicFunction {
                 }
 
             } catch (EXistException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
                 return Sequence.EMPTY_SEQUENCE;
             }
 

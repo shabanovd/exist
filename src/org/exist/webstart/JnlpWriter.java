@@ -211,7 +211,7 @@ public class JnlpWriter {
             writer.close();
 
         } catch (final Throwable ex) {
-            logger.error(ex);
+            logger.error(ex.getMessage(), ex);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.getMessage());
         }
 

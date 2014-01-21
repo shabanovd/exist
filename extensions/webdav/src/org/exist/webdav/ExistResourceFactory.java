@@ -106,7 +106,7 @@ public class ExistResourceFactory implements ResourceFactory {
             }
             
         } catch (Throwable ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
         }
         
     }

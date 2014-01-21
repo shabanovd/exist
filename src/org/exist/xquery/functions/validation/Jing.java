@@ -164,15 +164,15 @@ public class Jing extends BasicFunction  {
             driver.validate(instance);
             
         } catch (final MalformedURLException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
             report.setException(ex);
 
         } catch (final IOException ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             report.setException(ex);
 
         } catch (final Throwable ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             report.setException(ex);
 
         } finally {

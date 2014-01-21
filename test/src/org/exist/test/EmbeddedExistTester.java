@@ -102,7 +102,7 @@ public class EmbeddedExistTester {
             xqService = (XQueryService) rootCollection.getService("XQueryService", "1.0");
 
         } catch (Throwable ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             fail(ex.getMessage());
         }
     }
@@ -117,7 +117,7 @@ public class EmbeddedExistTester {
             database = null;
 
         } catch (Exception ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             fail(ex.getMessage());
         }
     }

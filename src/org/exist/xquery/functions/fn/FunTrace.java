@@ -115,7 +115,7 @@ public class FunTrace extends BasicFunction {
                             serializer.serialize((NodeValue) next, sw);
 
                         } catch (final SAXException ex) {
-                            LOG.error(ex.getMessage());
+                            LOG.error(ex.getMessage(), ex);
                         }
                         value = sw.toString();
 

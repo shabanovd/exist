@@ -139,12 +139,12 @@ public class EmbeddedDownload {
             }
         } catch (final IOException ex) {
             //ex.printStackTrace();
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw ex;
             
         } catch (final Exception ex) {
             //ex.printStackTrace();
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw new IOException(ex.getMessage(), ex);
             
         } finally {

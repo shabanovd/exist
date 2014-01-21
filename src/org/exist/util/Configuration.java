@@ -455,7 +455,7 @@ public class Configuration implements ErrorHandler
             // problems with test cases and jar dependencies
             LOG.error( "Configuration problem: class not found for module '" + uri
                     + "' (ClassNotFoundException); class:'" + clazz 
-                    + "'; message:'" + e.getMessage() + "'");
+                    + "'; message:'" + e.getMessage() + "'", e);
 
         } catch( final NoClassDefFoundError e ) {
             LOG.error( "Module " + uri + " could not be initialized due to a missing "

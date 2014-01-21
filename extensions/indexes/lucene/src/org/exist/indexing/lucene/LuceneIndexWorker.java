@@ -787,7 +787,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         } catch (Exception e){
             //ex.printStackTrace();
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             throw new XPathException(e);
         
         } finally {

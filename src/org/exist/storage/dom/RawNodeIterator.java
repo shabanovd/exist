@@ -114,7 +114,7 @@ public class RawNodeIterator {
             try {
                 lock.acquire(Lock.READ_LOCK);
             } catch (final LockException e) {
-                LOG.error("Failed to acquire read lock on " + db.getFile().getName());
+                LOG.error("Failed to acquire read lock on " + db.getFile().getName(), e);
                 //TODO : throw exception here ? -pb
                 return null;
             }
@@ -170,7 +170,7 @@ public class RawNodeIterator {
                         nextValue = new Value(odata);
                     } catch(final Exception e) {
                         LOG.error("Exception while loading overflow value: " + e.getMessage() +
-                            "; originating page: " + page.page.getPageInfo());
+                            "; originating page: " + page.page.getPageInfo(), e);
                     }
                     // normal node
                 } else {

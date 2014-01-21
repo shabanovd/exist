@@ -149,7 +149,7 @@ public class EXistServlet extends AbstractExistHttpServlet {
             }
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         } catch (final Throwable e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             throw new ServletException("An unknown error occurred: " + e.getMessage(), e);
         } finally {
             if (broker != null) {
@@ -314,7 +314,7 @@ public class EXistServlet extends AbstractExistHttpServlet {
             }
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         } catch (final Throwable e) {
-            getLog().error(e);
+            getLog().error(e.getMessage(), e);
             throw new ServletException("An unknown error occurred: " + e.getMessage(), e);
         } finally {
             getPool().release(broker);
@@ -371,7 +371,7 @@ public class EXistServlet extends AbstractExistHttpServlet {
             }
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         } catch (final Throwable e) {
-            getLog().error(e);
+            getLog().error(e.getMessage(), e);
             throw new ServletException("An unknown error occurred: " + e.getMessage(), e);
 
         } finally {
@@ -469,7 +469,7 @@ public class EXistServlet extends AbstractExistHttpServlet {
             }
             response.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
         } catch (final Throwable e) {
-            getLog().error(e);
+            getLog().error(e.getMessage(), e);
             throw new ServletException("An unknown error occurred: " + e.getMessage(), e);
         } finally {
             getPool().release(broker);

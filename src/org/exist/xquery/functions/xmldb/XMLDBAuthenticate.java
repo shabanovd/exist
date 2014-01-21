@@ -168,7 +168,7 @@ public class XMLDBAuthenticate extends BasicFunction {
             	final SecurityManager sm = BrokerPool.getInstance().getSecurityManager();
             	user = sm.authenticate(userName, password);
             } catch (final AuthenticationException e) {
-                logger.error("Unable to authenticate user: " + userName + " " + getLocation());
+                logger.error("Unable to authenticate user: " + userName + " " + getLocation(), e);
                 return BooleanValue.FALSE;
             } catch (final EXistException e) {
                 logger.error("Unable to authenticate user: " + userName + " " + getLocation(), e);

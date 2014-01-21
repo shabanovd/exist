@@ -92,7 +92,7 @@ public class XMLDBMove extends XMLDBAbstractCollectionManipulator {
                 final CollectionManagementServiceImpl service = (CollectionManagementServiceImpl) collection.getService("CollectionManagementService", "1.0");
                 service.moveResource(doc, destination, null);
             } catch (final XMLDBException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
                 throw new XPathException(this, "XMLDB exception caught: " + e.getMessage(), e);
             }
         } else {
@@ -102,11 +102,11 @@ public class XMLDBMove extends XMLDBAbstractCollectionManipulator {
                         destination, null);
 
             } catch (final XMLDBException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
                 throw new XPathException(this, "Cannot move collection: " + e.getMessage(), e);
 
             } catch (final URISyntaxException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
                 throw new XPathException(this, "URI exception: " + e.getMessage(), e);
             }
         }

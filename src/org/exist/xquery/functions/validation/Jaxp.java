@@ -263,15 +263,15 @@ public class Jaxp extends BasicFunction {
 
 
         } catch (final MalformedURLException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
             report.setException(ex);
 
         } catch (final IOException ex) {
-            LOG.error(ex.getCause());
+            LOG.error(ex.getMessage(), ex);
             report.setException(ex);
 
         } catch (final Throwable ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             report.setException(ex);
 
         } finally {
@@ -337,10 +337,10 @@ public class Jaxp extends BasicFunction {
             xmlReader.setFeature(featureName, value);
             
         } catch (final SAXNotRecognizedException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
 
         } catch (final SAXNotSupportedException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
         }
     }
 
@@ -350,10 +350,10 @@ public class Jaxp extends BasicFunction {
             xmlReader.setProperty(XMLReaderObjectFactory.APACHE_PROPERTIES_ENTITYRESOLVER, entityResolver);
 
         } catch (final SAXNotRecognizedException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
 
         } catch (final SAXNotSupportedException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
         }
     }
 

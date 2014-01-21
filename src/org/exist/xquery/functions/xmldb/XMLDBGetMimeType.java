@@ -89,7 +89,7 @@ public class XMLDBGetMimeType extends BasicFunction {
 					return new StringValue(((DocumentImpl)doc).getMetadata().getMimeType());
 				}
 			} catch(final Exception e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
 				throw new XPathException(this, e);
 			} finally {
 				//release all locks

@@ -193,7 +193,7 @@ public class Jaxv extends BasicFunction  {
                 
             } catch (final IllegalArgumentException ex) {
                 final String msg = "Schema language '" + schemaLang + "' is not supported. " + ex.getMessage();
-                LOG.error(msg);
+                LOG.error(msg, ex);
                 throw new XPathException(msg);
             }
             
@@ -210,11 +210,11 @@ public class Jaxv extends BasicFunction  {
 
 
         } catch (final MalformedURLException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
             report.setException(ex);
 
         } catch (final Throwable ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             report.setException(ex);
 
         } finally {

@@ -130,7 +130,7 @@ public class Collations {
                 }
                 return (Collator) collatorClass.newInstance();
             } catch (final Exception e) {
-                logger.error("The specified collator class " + uri + " could not be found");
+                logger.error("The specified collator class " + uri + " could not be found", e);
                 throw new XPathException(
                         ErrorCodes.FOCH0002, 
                         "The specified collator class " + uri + " could not be found", e);

@@ -94,7 +94,7 @@ public class CollectionTriggers implements CollectionTrigger {
             try {
                 trigger.afterCreateCollection(broker, txn, collection);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }
@@ -112,7 +112,7 @@ public class CollectionTriggers implements CollectionTrigger {
             try {
                 trigger.afterCopyCollection(broker, txn, collection, oldUri);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }
@@ -130,7 +130,7 @@ public class CollectionTriggers implements CollectionTrigger {
             try {
                 trigger.afterMoveCollection(broker, txn, collection, oldUri);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }
@@ -148,7 +148,7 @@ public class CollectionTriggers implements CollectionTrigger {
             try {
                 trigger.afterDeleteCollection(broker, txn, uri);
             } catch (Exception e) {
-                Trigger.LOG.error(e);
+                Trigger.LOG.error(e.getMessage(), e);
             }
         }
     }

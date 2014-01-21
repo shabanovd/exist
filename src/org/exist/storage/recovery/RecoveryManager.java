@@ -158,9 +158,9 @@ public class RecoveryManager {
                             // are errors. Otherwise, an exception is thrown, which will stop the db initialization
                             broker.getBrokerPool().reportStatus(BrokerPool.SIGNAL_ABORTED);
                             if (restartOnError) {
-                                LOG.error("Aborting recovery. eXist-db detected an error during recovery. This may not be fatal. Database will start up, but corruptions are likely.");
+                                LOG.error("Aborting recovery. eXist-db detected an error during recovery. This may not be fatal. Database will start up, but corruptions are likely.", e);
                             } else {
-                                LOG.error("Aborting recovery. eXist-db detected an error during recovery. This may not be fatal. Please consider running a consistency check via the export tool and create a backup if problems are reported. The db should come up again if you restart it.");
+                                LOG.error("Aborting recovery. eXist-db detected an error during recovery. This may not be fatal. Please consider running a consistency check via the export tool and create a backup if problems are reported. The db should come up again if you restart it.", e);
                                 throw e;
                             }
                         }

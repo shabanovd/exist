@@ -101,7 +101,7 @@ public class XMLDBHasLock extends XMLDBAbstractCollectionManipulator {
 			    throw new XPathException(this, "Unable to locate resource " + args[1].getStringValue());
 			}
 		} catch (final XMLDBException e) {
-            logger.error("Failed to retrieve user lock");
+            logger.error("Failed to retrieve user lock", e);
 			throw new XPathException(this, "Failed to retrieve user lock", e);
 		}
 	}

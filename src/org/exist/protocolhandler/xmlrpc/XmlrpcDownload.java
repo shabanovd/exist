@@ -101,11 +101,11 @@ public class XmlrpcDownload {
             }
             
         } catch (final IOException ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw ex;
             
         } catch (final Exception ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw new IOException(ex.getMessage(), ex);
                        
         } finally {

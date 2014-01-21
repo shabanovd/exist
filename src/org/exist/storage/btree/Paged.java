@@ -260,7 +260,7 @@ public abstract class Paged {
             raf.close();
         } catch (final IOException e) {
             //TODO : forward the exception ? -pb
-            LOG.error("Failed to close data file: " + file.getAbsolutePath());
+            LOG.error("Failed to close data file: " + file.getAbsolutePath(), e);
         }
         file.delete();
     }

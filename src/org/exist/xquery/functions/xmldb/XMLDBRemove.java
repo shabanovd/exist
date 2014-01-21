@@ -82,7 +82,7 @@ public class XMLDBRemove extends XMLDBAbstractCollectionManipulator {
                 }
 				collection.removeResource(resource);
 			} catch (final XMLDBException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
                 throw new XPathException(this, "XMLDB exception caught: " + e.getMessage(), e);
 			}
 		} else {
@@ -91,7 +91,7 @@ public class XMLDBRemove extends XMLDBAbstractCollectionManipulator {
 					collection.getService("CollectionManagementService", "1.0");
 				service.removeCollection(collection.getName());
 			} catch (final XMLDBException e) {
-                logger.error("Cannot remove collection: " + e.getMessage());
+                logger.error("Cannot remove collection: " + e.getMessage(), e);
                 throw new XPathException(this, "Cannot remove collection: " + e.getMessage(), e);
 			}
 		}

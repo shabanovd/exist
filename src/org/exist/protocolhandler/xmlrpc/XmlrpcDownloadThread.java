@@ -61,7 +61,7 @@ public class XmlrpcDownloadThread extends Thread {
             xuc.stream(xmldbURL, bos);
             
         } catch (IOException ex) {
-            logger.error(ex);
+            logger.error(ex.getMessage(), ex);
             exception = ex;
             
         } finally {

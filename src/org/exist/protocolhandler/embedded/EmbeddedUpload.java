@@ -95,7 +95,7 @@ public class EmbeddedUpload {
             
         } catch(final IOException ex){
             //ex.printStackTrace();
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw ex;
             
         } finally {

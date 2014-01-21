@@ -1666,7 +1666,7 @@ public class BFile extends BTree {
                     return true;
                 } catch (final IOException e) {
                     LOG.error("IO exception occurred while saving page "
-                            + getPageNum());
+                            + getPageNum(), e);
                 }
             }
             return false;

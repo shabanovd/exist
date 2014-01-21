@@ -127,7 +127,7 @@ public class ValueIndexFactory {
                 s = new String(data, start + (ValueIndexFactory.LENGTH_VALUE_TYPE),
                     len - (ValueIndexFactory.LENGTH_VALUE_TYPE), "UTF-8");
             } catch (final UnsupportedEncodingException e) {
-                LOG.error(e);
+                LOG.error(e.getMessage(), e);
                 throw new EXistException(e);
             }
             return new DecimalValue(new BigDecimal(s));

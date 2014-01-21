@@ -192,7 +192,7 @@ public class ExtPhrase extends ExtFulltext {
                         Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
                 matchers[i] = patterns[i].matcher("");
             } catch (final PatternSyntaxException e) {
-                logger.error("malformed pattern" + e.getMessage());
+                logger.error("malformed pattern" + e.getMessage(), e);
                 return Sequence.EMPTY_SEQUENCE;
             }
         }

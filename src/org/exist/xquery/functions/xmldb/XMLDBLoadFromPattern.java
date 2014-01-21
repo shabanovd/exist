@@ -190,7 +190,7 @@ public class XMLDBLoadFromPattern extends XMLDBAbstractCollectionManipulator {
                     //TODO : use dedicated function in XmldbURI
                     stored.add(new StringValue(col.getName() + "/" + resource.getId()));
                 } catch(final XMLDBException e) {
-                    logger.error("Could not store file " + files[j].getAbsolutePath() + ": " + e.getMessage());
+                    logger.error("Could not store file " + files[j].getAbsolutePath() + ": " + e.getMessage(), e);
                 }
             }
         }

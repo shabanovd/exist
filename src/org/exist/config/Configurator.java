@@ -582,7 +582,7 @@ public class Configurator {
             final Class<?> clazz = Class.forName(clazzName);
             configurable =  create(conf, instance, clazz);
         } catch (final ClassNotFoundException cnfe) {
-            LOG.error("Class [" + clazzName + "] not found, skip instance creation.");
+            LOG.error("Class [" + clazzName + "] not found, skip instance creation.", cnfe);
             configurable = null;
         }
         return configurable;
@@ -1272,7 +1272,7 @@ public class Configurator {
             
         } catch (final Exception e) {
 
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
 
             if (fullURI != null) {
                 saving.remove(fullURI);

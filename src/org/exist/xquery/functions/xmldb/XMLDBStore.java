@@ -222,7 +222,7 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
 				"XMLDB reported an exception while storing document" + e, e);
 
 		} catch (final SAXException e) {
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
 			throw new XPathException(this, "SAX reported an exception while storing document",	e);
 		}
 
@@ -234,7 +234,7 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
                 //TODO : use dedicated function in XmldbURI
 				return new StringValue(collection.getName() + "/" + resource.getId());
 			} catch (final XMLDBException e) {
-                logger.error(e.getMessage());
+                logger.error(e.getMessage(), e);
 				throw new XPathException(this, "XMLDB reported an exception while retrieving the " +
 						"stored document", e);
 			}

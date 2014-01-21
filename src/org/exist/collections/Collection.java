@@ -518,7 +518,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                     }
                 }
             } catch(final LockException e) {
-                LOG.error(e.getMessage());
+                LOG.error(e.getMessage(), e);
                 throw e;
             } finally {
                 getLock().release(Lock.READ_LOCK);

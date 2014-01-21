@@ -875,7 +875,7 @@ public class NativeBroker extends DBBroker {
                     entry.read(is);
                     
                 } catch (final UnsupportedEncodingException e) {
-                    LOG.error("Unable to encode '" + uri + "' in UTF-8");
+                    LOG.error("Unable to encode '" + uri + "' in UTF-8", e);
                 } catch (final LockException e) {
                     LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());
                 } catch (final IOException e) {
@@ -932,7 +932,7 @@ public class NativeBroker extends DBBroker {
                         {collectionsCache.add(collection);}
                 //TODO : rethrow exceptions ? -pb
                 } catch (final UnsupportedEncodingException e) {
-                    LOG.error("Unable to encode '" + uri + "' in UTF-8");
+                    LOG.error("Unable to encode '" + uri + "' in UTF-8", e);
                     return null;
                 } catch (final LockException e) {
                     LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());

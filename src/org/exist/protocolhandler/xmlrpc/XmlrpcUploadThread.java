@@ -56,7 +56,7 @@ public class XmlrpcUploadThread extends Thread {
             uploader.stream(xmldbURL, bis);
             
         } catch (IOException ex) {
-            logger.error(ex);
+            logger.error(ex.getMessage(), ex);
             exception = ex;
             
         } finally {

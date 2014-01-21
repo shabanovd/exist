@@ -69,7 +69,7 @@ public class MiltonResource implements Resource {
             try {
                 datatypeFactory = DatatypeFactory.newInstance();
             } catch (DatatypeConfigurationException ex) {
-                LOG.error(ex);
+                LOG.error(ex.getMessage(), ex);
             }
         }
     }
@@ -262,7 +262,7 @@ public class MiltonResource implements Resource {
             
         } catch (URISyntaxException ex){
             // oops
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
 
         }
         return retval;
@@ -280,7 +280,7 @@ public class MiltonResource implements Resource {
 
         } catch (URISyntaxException ex) {
             // oops
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
         }
         return path;
     }

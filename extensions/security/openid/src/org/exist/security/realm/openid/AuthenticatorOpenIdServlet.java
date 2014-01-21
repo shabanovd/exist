@@ -387,13 +387,13 @@ public class AuthenticatorOpenIdServlet extends HttpServlet {
 				return principal; 
 			}
 		} catch (OpenIDException e) {
-			LOG.error(e);
+			LOG.error(e.getMessage(), e);
 		} catch (ConfigurationException e) {
-			LOG.error(e);
+			LOG.error(e.getMessage(), e);
 		} catch (PermissionDeniedException e) {
-			LOG.error(e);
+			LOG.error(e.getMessage(), e);
 		} catch (EXistException e) {
-			LOG.error(e);
+			LOG.error(e.getMessage(), e);
 		}
 
 		return null;

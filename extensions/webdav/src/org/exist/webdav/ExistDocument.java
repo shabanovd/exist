@@ -121,10 +121,10 @@ public class ExistDocument extends ExistResource {
             contentLength = document.getContentLength();
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
 
         } finally {
 
@@ -197,7 +197,7 @@ public class ExistDocument extends ExistResource {
                     }
 
                 } catch (SAXException e) {
-                    LOG.error(e);
+                    LOG.error(e.getMessage(), e);
                     throw new IOException(String.format("Error while serializing XML document: %s", e.getMessage()), e);
                 }
 
@@ -208,11 +208,11 @@ public class ExistDocument extends ExistResource {
             }
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             throw new IOException(e.getMessage());
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             throw e;
 
         } finally {
@@ -288,15 +288,15 @@ public class ExistDocument extends ExistResource {
             txnManager.abort(txn);
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
 
         } catch (TriggerException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
 
         } finally {
@@ -366,11 +366,11 @@ public class ExistDocument extends ExistResource {
 
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             return null;
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             return null;
 
         } finally {
@@ -468,14 +468,14 @@ public class ExistDocument extends ExistResource {
 
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             if (txnManager != null) {
                 txnManager.abort(txn);
             }
             throw e;
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             //dead code, remove?
             if (txnManager != null) {
                 txnManager.abort(txn);
@@ -484,7 +484,7 @@ public class ExistDocument extends ExistResource {
             throw e;
 
         } catch (TriggerException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             //dead code, remove?
             if (txnManager != null) {
                 txnManager.abort(txn);
@@ -564,17 +564,17 @@ public class ExistDocument extends ExistResource {
 
         } catch (EXistException e) {
             txnManager.abort(txn);
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             throw e;
 
         } catch (PermissionDeniedException e) {
             txnManager.abort(txn);
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             throw e;
 
         } catch (TriggerException e) {
             txnManager.abort(txn);
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             throw new EXistException(e);
 
 		} finally {
@@ -604,7 +604,7 @@ public class ExistDocument extends ExistResource {
         try {
             newNameUri = XmldbURI.xmldbUriFor(newName);
         } catch (URISyntaxException ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw new EXistException(ex.getMessage());
         }
 
@@ -671,22 +671,22 @@ public class ExistDocument extends ExistResource {
             throw new EXistException(e.getMessage());
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw e;
 
         } catch (IOException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new EXistException(e.getMessage());
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new EXistException(e.getMessage());
 
         } catch (TriggerException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             txnManager.abort(txn);
             throw new EXistException(e.getMessage());
 
@@ -789,14 +789,14 @@ public class ExistDocument extends ExistResource {
 
 
         } catch (EXistException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             if (txnManager != null) {
                 txnManager.abort(txn);
             }
             throw e;
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e);
+            LOG.error(e.getMessage(), e);
             //dead code, remove?
             if (txnManager != null) {
                 txnManager.abort(txn);

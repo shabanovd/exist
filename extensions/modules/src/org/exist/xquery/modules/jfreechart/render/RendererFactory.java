@@ -56,13 +56,13 @@ public class RendererFactory {
 
 
         } catch (ClassNotFoundException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
             
         } catch (InstantiationException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
             
         } catch (IllegalAccessException ex) {
-            LOG.error(ex.getMessage());
+            LOG.error(ex.getMessage(), ex);
         }
 
         // If no object was consructed, fallback to default.

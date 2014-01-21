@@ -174,7 +174,7 @@ public class JFreeCharting extends BasicFunction {
             
 
         } catch (Exception ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw new XPathException(this, ex.getMessage());
         }
 
@@ -228,7 +228,7 @@ public class JFreeCharting extends BasicFunction {
             
 
         } catch (IOException ex) {
-            LOG.error(ex);
+            LOG.error(ex.getMessage(), ex);
             throw new XPathException(this, "IO issue while serializing image. " + ex.getMessage());
 
         } finally {

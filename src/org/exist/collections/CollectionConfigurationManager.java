@@ -287,8 +287,8 @@ public class CollectionConfigurationManager {
                     } catch (final CollectionConfigurationException e) {
                         final String message = "Failed to read configuration document " + confDoc.getFileURI() + " in " + configCollection.getURI() + ". "
                                 + e.getMessage();
-                        LOG.error(message);
-                        System.out.println(message);
+                        LOG.error(message, e);
+                        //System.out.println(message);
                     }
                     
                     latch.write(new Callable<Void>() {

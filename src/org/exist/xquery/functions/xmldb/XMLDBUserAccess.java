@@ -140,7 +140,7 @@ public class XMLDBUserAccess extends BasicFunction {
                 return null == home ? Sequence.EMPTY_SEQUENCE : new AnyURIValue(home);
             }
         } catch(final XMLDBException e) {
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
             throw new XPathException(this, "Failed to query user " + userName, e);
         } finally {
             if(null != collection) {

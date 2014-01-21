@@ -317,15 +317,15 @@ public class ScheduleFunctions extends BasicFunction
                 ( ( UserJavaJob )job ).setName( jobName );
             }
             catch( ClassNotFoundException cnfe ) {
-                LOG.error( cnfe );
+                LOG.error( cnfe.getMessage(), cnfe );
                 return( BooleanValue.FALSE );
             }
             catch( IllegalAccessException iae ) {
-                LOG.error( iae );
+                LOG.error( iae.getMessage(), iae );
                 return( BooleanValue.FALSE );
             }
             catch( InstantiationException ie ) {
-                LOG.error( ie );
+                LOG.error( ie.getMessage(), ie );
                 return( BooleanValue.FALSE );
             }
         }

@@ -275,7 +275,7 @@ public abstract class BaseHTTPClientFunction extends BasicFunction
                         + proxyDomain + "')"));
             }
         } catch (final IOException ex) {
-            logger.error("Failed to read proxy configuration from '" + configFile + "'");
+            logger.error("Failed to read proxy configuration from '" + configFile + "'", ex);
         } finally {
             if(is != null) {
                 try {

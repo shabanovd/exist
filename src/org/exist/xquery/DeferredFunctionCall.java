@@ -100,7 +100,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.getCardinality();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return 0;
         }
     }
@@ -111,7 +111,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.getDocumentSet();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return null;
         }
     }
@@ -122,7 +122,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.getCollectionIterator();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return null;
         }
     }
@@ -133,7 +133,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.getItemType();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return Type.ANY_TYPE;
         }
     }
@@ -144,7 +144,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.getItemCount();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return 0;
         }
     }
@@ -166,7 +166,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.hasMany();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return false;
         }
     }
@@ -177,7 +177,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.hasOne();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return false;
         }
     }
@@ -198,7 +198,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.isEmpty();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return false;
         }
     }
@@ -209,7 +209,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.isPersistentSet();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return false;
         }
     }
@@ -220,7 +220,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             return sequence.itemAt(pos);
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
             return null;
         }
     }
@@ -236,7 +236,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             sequence.removeDuplicates();
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
         }
     }
 
@@ -246,7 +246,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             sequence.setIsCached(cached);
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
         }
     }
 
@@ -256,7 +256,7 @@ public abstract class DeferredFunctionCall implements Sequence {
             sequence.setSelfAsContext(contextId);
         } catch (XPathException e) {
             caughtException = e;
-            LOG.error("Exception in deferred function: " + e.getMessage());
+            LOG.error("Exception in deferred function: " + e.getMessage(), e);
         }
     }
 

@@ -68,7 +68,7 @@ public class EmbeddedUploadThread extends Thread {
             uploader.stream(xmldbURL, bis, subject);
             
         } catch (IOException ex) {
-            logger.error(ex);
+            logger.error(ex.getMessage(), ex);
             exception = ex;
             
         } finally {

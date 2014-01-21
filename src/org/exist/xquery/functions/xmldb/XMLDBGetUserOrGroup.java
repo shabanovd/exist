@@ -110,7 +110,7 @@ public class XMLDBGetUserOrGroup extends XMLDBPermissions {
 
 
         } catch (final XMLDBException xe) {
-            logger.error("Unable to retrieve resource permissions");
+            logger.error("Unable to retrieve resource permissions", xe);
             throw new XPathException(this, "Unable to retrieve resource permissions", xe);
         }
 	}

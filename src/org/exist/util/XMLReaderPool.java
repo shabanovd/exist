@@ -108,10 +108,10 @@ public class XMLReaderPool extends StackObjectPool<XMLReader> {
             object=xmlReader.getProperty(propertyName);
 
         } catch (final SAXNotRecognizedException ex) {
-            LOG.error("SAXNotRecognizedException: " + ex.getMessage());
+            LOG.error("SAXNotRecognizedException: " + ex.getMessage(), ex);
 
         } catch (final SAXNotSupportedException ex) {
-            LOG.error("SAXNotSupportedException:" + ex.getMessage());
+            LOG.error("SAXNotSupportedException:" + ex.getMessage(), ex);
         }
         return object;
     }

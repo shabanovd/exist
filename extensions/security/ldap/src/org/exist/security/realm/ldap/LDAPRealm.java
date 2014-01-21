@@ -1133,7 +1133,7 @@ public class LDAPRealm extends AbstractRealm {
                 }
             }
         } catch(final NamingException ne) {
-            LOG.error(ne);
+            LOG.error(ne.getMessage(), ne);
         } finally {
             if(ctx != null) {
                 LdapUtils.closeContext(ctx);

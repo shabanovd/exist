@@ -210,7 +210,7 @@ public class TryCatchExpression extends AbstractExpression {
 
                 // If an error hasn't been catched, throw new one
                 if (!errorMatched) {
-                    LOG.error(throwable);
+                    LOG.error(throwable.getMessage(), throwable);
                     throw new XPathException(throwable);
                 }
 
