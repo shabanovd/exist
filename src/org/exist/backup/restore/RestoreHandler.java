@@ -252,6 +252,9 @@ public class RestoreHandler extends DefaultHandler {
 
                 reader.setContentHandler(handler);
                 reader.parse(is);
+            } catch(SAXException e) {
+                listener.error("Could not parser for processing sub-collection: " + descriptor.getSymbolicPath(name, false));
+                throw e;
             } catch(final ParserConfigurationException pce) {
                 listener.error("Could not initalise SAXParser for processing sub-collection: " + descriptor.getSymbolicPath(name, false));
             } catch(final IOException ioe) {
