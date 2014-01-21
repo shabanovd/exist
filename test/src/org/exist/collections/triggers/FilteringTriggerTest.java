@@ -26,6 +26,7 @@ import org.exist.TestUtils;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.xmldb.DatabaseInstanceManager;
+import org.exist.xmldb.IndexQueryService;
 import org.exist.xmldb.XmldbURI;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -60,6 +61,14 @@ public class FilteringTriggerTest {
         "        <stock test=\"valueTest\">22</stock>\n" +
         "    </item>\n" +
         "</test>";
+    
+    private final static String COLLECTION_CONFIG = 
+            "<exist:collection xmlns:exist='http://exist-db.org/collection-config/1.0'>"
+            + "  <exist:triggers>"
+            + "     <exist:trigger class='org.exist.collections.triggers.StoreTrigger'/>"
+            + "  </exist:triggers>"
+            + "</exist:collection>";
+
 
     private final static String BASE_URI = "xmldb:exist://";
 
@@ -111,6 +120,38 @@ public class FilteringTriggerTest {
             broker = db.get(db.getSecurityManager().getSystemSubject());
 
             Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+
+            Resource resource = root.createResource("data.xml", "XMLResource");
+            resource.setContent(DOCUMENT2_CONTENT);
+            root.storeResource(resource);
+
+            resource = root.createResource("data.xml", "XMLResource");
+
+            assertEquals(DOCUMENT3_CONTENT, resource.getContent().toString());
+
+        } catch (XMLDBException e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            if (broker != null)
+                broker.release();
+        }
+    }
+
+    @Test
+    public void saxEventModificationsAtXConf() throws EXistException {
+
+        BrokerPool db = BrokerPool.getInstance();
+
+        DBBroker broker = null;
+
+        try {
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+
+            Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+
+            IndexQueryService idxConf = (IndexQueryService) root.getService("IndexQueryService", "1.0");
+            idxConf.configureCollection(COLLECTION_CONFIG);
 
             Resource resource = root.createResource("data.xml", "XMLResource");
             resource.setContent(DOCUMENT2_CONTENT);
