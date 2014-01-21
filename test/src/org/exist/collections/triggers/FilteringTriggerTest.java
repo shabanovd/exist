@@ -40,13 +40,26 @@ import org.xmldb.api.modules.CollectionManagementService;
 
 public class FilteringTriggerTest {
 
-    private final static String DOCUMENT_CONTENT = 
+    private final static String DOCUMENT1_CONTENT = 
         "<test>"
         + "<item id='1'><price>5.6</price><stock>22</stock></item>"
         + "<item id='2'><price>7.4</price><stock>43</stock></item>"
         + "<item id='3'><price>18.4</price><stock>5</stock></item>"
         + "<item id='4'><price>65.54</price><stock>16</stock></item>"
         + "</test>";
+
+    private final static String DOCUMENT2_CONTENT = 
+            "<test>"
+            + "<item id='1'><price>5.6</price><stock>22</stock></item>"
+            + "</test>";
+
+    private final static String DOCUMENT3_CONTENT = 
+        "<test test=\"valueTest\">\n" +
+        "    <item id=\"1\" test=\"valueTest\">\n" +
+        "        <price test=\"valueTest\">5.6</price>\n" +
+        "        <stock test=\"valueTest\">22</stock>\n" +
+        "    </item>\n" +
+        "</test>";
 
     private final static String BASE_URI = "xmldb:exist://";
 
@@ -67,14 +80,45 @@ public class FilteringTriggerTest {
             Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
 
             Resource resource = root.createResource("data.xml", "XMLResource");
-            resource.setContent(DOCUMENT_CONTENT);
+            resource.setContent(DOCUMENT1_CONTENT);
             root.storeResource(resource);
 
             assertEquals(3, AnotherTrigger.createDocumentEvents);
 
             assertEquals(26, AnotherTrigger.count);
 
-            assertEquals(DOCUMENT_CONTENT, AnotherTrigger.sb.toString());
+            assertEquals(DOCUMENT1_CONTENT, AnotherTrigger.sb.toString());
+
+        } catch (XMLDBException e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            if (broker != null)
+                broker.release();
+        }
+    }
+
+    @Test
+    public void saxEventModifications() throws EXistException {
+
+        BrokerPool db = BrokerPool.getInstance();
+
+        db.registerDocumentTrigger(StoreTrigger.class);
+
+        DBBroker broker = null;
+
+        try {
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+
+            Collection root = DatabaseManager.getCollection(BASE_URI + testCollection, "admin", "");
+
+            Resource resource = root.createResource("data.xml", "XMLResource");
+            resource.setContent(DOCUMENT2_CONTENT);
+            root.storeResource(resource);
+
+            resource = root.createResource("data.xml", "XMLResource");
+
+            assertEquals(DOCUMENT3_CONTENT, resource.getContent().toString());
 
         } catch (XMLDBException e) {
             e.printStackTrace();
