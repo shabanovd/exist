@@ -69,13 +69,14 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
             docTriggers = config.documentTriggers();
         }
         
-        java.util.Collection<DocumentTrigger> masterTriggers = broker.getDatabase().getDocumentTriggers();
+        java.util.Collection<TriggerProxy<? extends DocumentTrigger>> masterTriggers = broker.getDatabase().getDocumentTriggers();
         
         triggers = new ArrayList<DocumentTrigger>( masterTriggers.size() + (docTriggers == null ? 0 : docTriggers.size()) );
         
-        for (DocumentTrigger instance : masterTriggers) {
+        for (TriggerProxy<? extends DocumentTrigger> docTrigger : masterTriggers) {
             
-            //XXX: clone?!
+            DocumentTrigger instance = docTrigger.newInstance(broker, collection);
+
             register(instance);
         }
         

@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.exist.collections.Collection;
 import org.exist.storage.DBBroker;
-import org.exist.xmldb.XmldbURI;
 
 /**
  *
@@ -35,20 +34,20 @@ public abstract class AbstractTriggerProxy<T extends Trigger> implements Trigger
     private final Class<? extends T> clazz;
     private Map<String, List<? extends Object>> parameters;
     
-    /**
-     * The database Collection URI of where the configuration for this Trigger came from
-     * typically somewhere under /db/system/config/db/
-     */
-    private final XmldbURI collectionConfigurationURI;
+//    /**
+//     * The database Collection URI of where the configuration for this Trigger came from
+//     * typically somewhere under /db/system/config/db/
+//     */
+//    private final XmldbURI collectionConfigurationURI;
 
-    public AbstractTriggerProxy(Class<? extends T> clazz, XmldbURI collectionConfigurationURI) {
+    public AbstractTriggerProxy(Class<? extends T> clazz) {
         this.clazz = clazz;
-        this.collectionConfigurationURI = collectionConfigurationURI;
+//        this.collectionConfigurationURI = collectionConfigurationURI;
     }
     
-    public AbstractTriggerProxy(Class<? extends T> clazz, XmldbURI collectionConfigurationURI, Map<String, List<? extends Object>> parameters) {
+    public AbstractTriggerProxy(Class<? extends T> clazz, Map<String, List<? extends Object>> parameters) {
         this.clazz = clazz;
-        this.collectionConfigurationURI = collectionConfigurationURI;
+//        this.collectionConfigurationURI = collectionConfigurationURI;
         this.parameters = parameters;
     }
 
@@ -56,9 +55,9 @@ public abstract class AbstractTriggerProxy<T extends Trigger> implements Trigger
         return clazz;
     }
     
-    protected XmldbURI getCollectionConfigurationURI() {
-        return collectionConfigurationURI;
-    }
+//    protected XmldbURI getCollectionConfigurationURI() {
+//        return collectionConfigurationURI;
+//    }
     
     @Override
     public void setParameters(Map<String, List<? extends Object>> parameters) {

@@ -27,6 +27,8 @@ import java.util.Collection;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.triggers.CollectionTrigger;
 import org.exist.collections.triggers.DocumentTrigger;
+import org.exist.collections.triggers.DocumentTriggerProxy;
+import org.exist.collections.triggers.TriggerProxy;
 import org.exist.debuggee.Debuggee;
 import org.exist.dom.SymbolTable;
 import org.exist.indexing.IndexManager;
@@ -155,14 +157,18 @@ public interface Database {
 	/**
 	 * Master document triggers.
 	 */
-	public Collection<DocumentTrigger> getDocumentTriggers();
+	public Collection<TriggerProxy<? extends DocumentTrigger>> getDocumentTriggers();
 
 	//public DocumentTrigger getDocumentTrigger();
 
 	/**
 	 * Master Collection triggers.
 	 */
-	public Collection<CollectionTrigger> getCollectionTriggers();
+	public Collection<TriggerProxy<? extends CollectionTrigger>> getCollectionTriggers();
+	
+	public void registerDocumentTrigger(Class<? extends DocumentTrigger> clazz);
+
+	public void registerCollectionTrigger(Class<? extends CollectionTrigger> clazz);
 
 	//public CollectionTrigger getCollectionTrigger();
 

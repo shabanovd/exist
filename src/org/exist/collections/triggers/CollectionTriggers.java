@@ -52,13 +52,14 @@ public class CollectionTriggers implements CollectionTrigger {
             colTriggers = config.collectionTriggers();
         }
         
-        java.util.Collection<CollectionTrigger> masterTriggers = broker.getDatabase().getCollectionTriggers();
+        java.util.Collection<TriggerProxy<? extends CollectionTrigger>> masterTriggers = broker.getDatabase().getCollectionTriggers();
         
         triggers = new ArrayList<CollectionTrigger>( masterTriggers.size() + (colTriggers == null ? 0 : colTriggers.size()) );
         
-        for (CollectionTrigger instance : masterTriggers) {
+        for (TriggerProxy<? extends CollectionTrigger> colTrigger : masterTriggers) {
             
-            //XXX: clone?!
+            CollectionTrigger instance = colTrigger.newInstance(broker, collection);
+            
             register(instance);
         }
         

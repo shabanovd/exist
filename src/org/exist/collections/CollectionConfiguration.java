@@ -311,12 +311,12 @@ public class CollectionConfiguration {
 
             boolean added = false;
             if(DocumentTrigger.class.isAssignableFrom(clazz)) {
-                docTriggers.add(new DocumentTriggerProxy((Class<? extends DocumentTrigger>)clazz, collectionConfigurationURI, parameters));
+                docTriggers.add(new DocumentTriggerProxy((Class<? extends DocumentTrigger>)clazz, parameters)); //collectionConfigurationURI, parameters));
                 added = true;
             }
             
             if(CollectionTrigger.class.isAssignableFrom(clazz)) {
-                colTriggers.add(new CollectionTriggerProxy((Class<? extends CollectionTrigger>)clazz, collectionConfigurationURI, parameters));
+                colTriggers.add(new CollectionTriggerProxy((Class<? extends CollectionTrigger>)clazz, parameters)); //collectionConfigurationURI, parameters));
                 added = true;
             } 
             

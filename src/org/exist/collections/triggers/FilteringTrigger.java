@@ -42,9 +42,9 @@ import org.xml.sax.ext.LexicalHandler;
 public abstract class FilteringTrigger implements DocumentTrigger {
 
     // The output handlers to which SAX events should be forwarded
-    private ContentHandler contentHandler = null;
-    private LexicalHandler lexicalHandler = null;
-    private ErrorHandler errorHandler = null;
+    private ContentHandler nextContentHandler = null;
+    private LexicalHandler nextLexicalHandler = null;
+    private ErrorHandler nextErrorHandler = null;
     
     private Collection collection = null;
     private boolean validating = true;
@@ -76,136 +76,136 @@ public abstract class FilteringTrigger implements DocumentTrigger {
 
     @Override
     public void setDocumentLocator(Locator locator) {
-        if (contentHandler != null)
-            contentHandler.setDocumentLocator(locator);
+        if (nextContentHandler != null)
+            nextContentHandler.setDocumentLocator(locator);
     }
 
     @Override
     public void startDocument() throws SAXException {
-        if (contentHandler != null)
-            contentHandler.startDocument();
+        if (nextContentHandler != null)
+            nextContentHandler.startDocument();
     }
 
     @Override
     public void endDocument() throws SAXException {
-        if (contentHandler != null)
-            contentHandler.endDocument();
+        if (nextContentHandler != null)
+            nextContentHandler.endDocument();
     }
 
     @Override
     public void startPrefixMapping(String prefix, String namespaceURI) throws SAXException {
-        if (contentHandler != null)
-            contentHandler.startPrefixMapping(prefix, namespaceURI);
+        if (nextContentHandler != null)
+            nextContentHandler.startPrefixMapping(prefix, namespaceURI);
     }
 
     @Override
     public void endPrefixMapping(String prefix) throws SAXException {
-        if (contentHandler != null)
-            contentHandler.endPrefixMapping(prefix);
+        if (nextContentHandler != null)
+            nextContentHandler.endPrefixMapping(prefix);
     }
 
     @Override
     public void startElement(String namespaceURI, String localName, String qname, Attributes attributes) throws SAXException {
-        if (contentHandler != null)
-            contentHandler.startElement(namespaceURI, localName, qname, attributes);
+        if (nextContentHandler != null)
+            nextContentHandler.startElement(namespaceURI, localName, qname, attributes);
     }
 
     @Override
     public void endElement(String namespaceURI, String localName, String qname) throws SAXException {
-        if (contentHandler != null)
-            contentHandler.endElement(namespaceURI, localName, qname);
+        if (nextContentHandler != null)
+            nextContentHandler.endElement(namespaceURI, localName, qname);
     }
 
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
-        if (contentHandler != null)
-            contentHandler.characters(ch, start, length);
+        if (nextContentHandler != null)
+            nextContentHandler.characters(ch, start, length);
     }
 
     @Override
     public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
-        if (contentHandler != null)
-            contentHandler.ignorableWhitespace(ch, start, length);
+        if (nextContentHandler != null)
+            nextContentHandler.ignorableWhitespace(ch, start, length);
     }
 
     @Override
     public void processingInstruction(String target, String data) throws SAXException {
-        if (contentHandler != null)
-            contentHandler.processingInstruction(target, data);
+        if (nextContentHandler != null)
+            nextContentHandler.processingInstruction(target, data);
     }
 
     @Override
     public void skippedEntity(String arg0) throws SAXException {
-        if (contentHandler != null)
-            contentHandler.skippedEntity(arg0);
+        if (nextContentHandler != null)
+            nextContentHandler.skippedEntity(arg0);
     }
 
     @Override
     public void startDTD(String name, String publicId, String systemId) throws SAXException {
-        if (lexicalHandler != null)
-            lexicalHandler.startDTD(name, publicId, systemId);
+        if (nextLexicalHandler != null)
+            nextLexicalHandler.startDTD(name, publicId, systemId);
     }
 
     @Override
     public void endDTD() throws SAXException {
-        if (lexicalHandler != null)
-            lexicalHandler.endDTD();
+        if (nextLexicalHandler != null)
+            nextLexicalHandler.endDTD();
     }
 
     @Override
     public void startEntity(String arg0) throws SAXException {
-        if (lexicalHandler != null)
-            lexicalHandler.startEntity(arg0);
+        if (nextLexicalHandler != null)
+            nextLexicalHandler.startEntity(arg0);
     }
 
     @Override
     public void endEntity(String arg0) throws SAXException {
-        if (lexicalHandler != null)
-            lexicalHandler.endEntity(arg0);
+        if (nextLexicalHandler != null)
+            nextLexicalHandler.endEntity(arg0);
     }
 
     @Override
     public void startCDATA() throws SAXException {
-        if (lexicalHandler != null)
-            lexicalHandler.startCDATA();
+        if (nextLexicalHandler != null)
+            nextLexicalHandler.startCDATA();
     }
 
     @Override
     public void endCDATA() throws SAXException {
-        if (lexicalHandler != null)
-            lexicalHandler.endCDATA();
+        if (nextLexicalHandler != null)
+            nextLexicalHandler.endCDATA();
     }
 
     @Override
     public void comment(char[] ch, int start, int length) throws SAXException {
-        if (lexicalHandler != null)
-            lexicalHandler.comment(ch, start, length);
+        if (nextLexicalHandler != null)
+            nextLexicalHandler.comment(ch, start, length);
     }
     
     public void warning(SAXParseException exception) throws SAXException {
-        if (errorHandler != null)
-            errorHandler.warning(exception);
+        if (nextErrorHandler != null)
+            nextErrorHandler.warning(exception);
     }
 
     public void error(SAXParseException exception) throws SAXException {
-        if (errorHandler != null)
-            errorHandler.error(exception);
+        if (nextErrorHandler != null)
+            nextErrorHandler.error(exception);
     }
     
     public void fatalError(SAXParseException exception) throws SAXException {
-        if (errorHandler != null)
-            errorHandler.fatalError(exception);
+        if (nextErrorHandler != null)
+            nextErrorHandler.fatalError(exception);
     }
 
     protected void next(FilteringTrigger nextTrigger) {
-        contentHandler = nextTrigger;
-        lexicalHandler = nextTrigger;
-        errorHandler = nextTrigger;
+        nextContentHandler = nextTrigger;
+        nextLexicalHandler = nextTrigger;
+        nextErrorHandler = nextTrigger;
     }
 
     protected void next(Indexer indexer) {
-        contentHandler = indexer;
-        lexicalHandler = indexer;
-        errorHandler = indexer;
+        nextContentHandler = indexer;
+        nextLexicalHandler = indexer;
+        nextErrorHandler = indexer;
     }
 }

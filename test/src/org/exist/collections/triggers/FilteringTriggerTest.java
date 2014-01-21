@@ -57,9 +57,7 @@ public class FilteringTriggerTest {
 
         BrokerPool db = BrokerPool.getInstance();
 
-        AnotherTrigger trigger = new AnotherTrigger();
-
-        db.getDocumentTriggers().add(trigger);
+        db.registerDocumentTrigger(AnotherTrigger.class);
 
         DBBroker broker = null;
 
@@ -72,11 +70,11 @@ public class FilteringTriggerTest {
             resource.setContent(DOCUMENT_CONTENT);
             root.storeResource(resource);
 
-            assertEquals(3, trigger.createDocumentEvents);
+            assertEquals(3, AnotherTrigger.createDocumentEvents);
 
-            assertEquals(26, trigger.count);
+            assertEquals(26, AnotherTrigger.count);
 
-            assertEquals(DOCUMENT_CONTENT, trigger.sb.toString());
+            assertEquals(DOCUMENT_CONTENT, AnotherTrigger.sb.toString());
 
         } catch (XMLDBException e) {
             e.printStackTrace();

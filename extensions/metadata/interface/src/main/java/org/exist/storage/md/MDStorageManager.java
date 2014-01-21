@@ -96,8 +96,8 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 		
 		inject(db, md);
 
-		db.getDocumentTriggers().add(new DocumentEvents());
-		db.getCollectionTriggers().add(new CollectionEvents());
+		db.registerDocumentTrigger(DocumentEvents.class);
+		db.registerCollectionTrigger(CollectionEvents.class);
 		
 		//XXX: configuration is not loaded
 //		try {

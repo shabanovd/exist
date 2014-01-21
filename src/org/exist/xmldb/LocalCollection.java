@@ -32,13 +32,16 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.Properties;
 import java.util.Random;
+
 import javax.xml.transform.OutputKeys;
+
 import org.apache.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.DocumentImpl;
+import org.exist.dom.DocumentMetadata;
 import org.exist.dom.LockToken;
 import org.exist.security.Account;
 import org.exist.security.Permission;
@@ -863,12 +866,13 @@ public class LocalCollection extends Observable implements CollectionImpl {
                 }
                 //Notice : the document should now have a Lock.WRITE_LOCK update lock
                 //TODO : check that no exception occurs in order to allow it to be released
-                info.getDocument().getMetadata().setMimeType(res.getMimeType());
+                final DocumentMetadata metadata = info.getDocument().getMetadata();
+                metadata.setMimeType(res.getMimeType());
                 if (res.datecreated  != null) {
-                    info.getDocument().getMetadata().setCreated(res.datecreated.getTime());
+                    metadata.setCreated(res.datecreated.getTime());
                 }
                 if (res.datemodified != null) {
-                    info.getDocument().getMetadata().setLastModified(res.datemodified.getTime());
+                    metadata.setLastModified(res.datemodified.getTime());
                 }
             } finally {
                 if(collection != null) {

@@ -1171,7 +1171,7 @@ public class BrokerPool implements Database {
             final CollectionConfigurationManager manager = getConfigurationManager();
             final CollectionConfiguration collConf = manager.getOrCreateCollectionConfiguration(broker.getDatabase(), collection);
             
-            final DocumentTriggerProxy triggerProxy = new DocumentTriggerProxy(ConfigurationDocumentTrigger.class, collection.getURI());
+            final DocumentTriggerProxy triggerProxy = new DocumentTriggerProxy(ConfigurationDocumentTrigger.class); //, collection.getURI());
             collConf.documentTriggers().add(triggerProxy);  
         }
     }
@@ -2141,17 +2141,27 @@ public class BrokerPool implements Database {
         return new File((String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR));
     }
 
-    private final List<DocumentTrigger> documentTriggers = new ArrayList<DocumentTrigger>(); 
-    private final List<CollectionTrigger> collectionTriggers = new ArrayList<CollectionTrigger>(); 
+    private final List<TriggerProxy<? extends DocumentTrigger>> documentTriggers = new ArrayList<TriggerProxy<? extends DocumentTrigger>>(); 
+    private final List<TriggerProxy<? extends CollectionTrigger>> collectionTriggers = new ArrayList<TriggerProxy<? extends CollectionTrigger>>(); 
 
     @Override
-    public List<DocumentTrigger> getDocumentTriggers() {
+    public List<TriggerProxy<? extends DocumentTrigger>> getDocumentTriggers() {
         return documentTriggers;
     }
 
     @Override
-    public List<CollectionTrigger> getCollectionTriggers() {
+    public List<TriggerProxy<? extends CollectionTrigger>> getCollectionTriggers() {
         return collectionTriggers;
+    }
+    
+    @Override
+    public void registerDocumentTrigger(Class<? extends DocumentTrigger> clazz) {
+        documentTriggers.add(new DocumentTriggerProxy(clazz));
+    }
+
+    @Override
+    public void registerCollectionTrigger(Class<? extends CollectionTrigger> clazz) {
+        collectionTriggers.add(new CollectionTriggerProxy(clazz));
     }
 
     public PluginsManager getPluginsManager() {

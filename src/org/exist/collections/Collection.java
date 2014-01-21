@@ -1389,19 +1389,11 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
         setCollectionConfigEnabled(true);
         broker.deleteObservers();
         
-//        if(info.isCreating()) {
-//            db.getDocumentTrigger().afterCreateDocument(broker, transaction, document);
-//        } else {
-//            db.getDocumentTrigger().afterUpdateDocument(broker, transaction, document);
-//        }
-//        
-//        if(isTriggersEnabled() && isCollectionConfigEnabled() && info.getTriggersVisitor() != null) {
-            if(info.isCreating()) {
-                info.getTriggers().afterCreateDocument(broker, txn, document);
-            } else {
-                info.getTriggers().afterUpdateDocument(broker, txn, document);
-            }
-//        }
+        if(info.isCreating()) {
+            info.getTriggers().afterCreateDocument(broker, txn, document);
+        } else {
+            info.getTriggers().afterUpdateDocument(broker, txn, document);
+        }
         
         db.getNotificationService().notifyUpdate(document, (info.isCreating() ? UpdateListener.ADD : UpdateListener.UPDATE));
         //Is it a collection configuration file ?
@@ -1615,7 +1607,6 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             info.setOldDocPermissions(oldDoc != null ? oldDoc.getPermissions() : null);
             indexer.setDocument(document, config);
             addObserversToIndexer(broker, indexer);
-            indexer.setValidating(true);
             
             if(CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE_URI.equals(docUri)) {
                 // we are updating collection.xconf. Notify configuration manager
@@ -1625,15 +1616,16 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             }
             
             final DocumentTriggers trigger = new DocumentTriggers(broker, indexer, this, isTriggersEnabled() ? config : null);
+            trigger.setValidating(true);
             
+            info.setTriggersVisitor(trigger);
+
             if(oldDoc == null) {
             	trigger.beforeCreateDocument(broker, transaction, getURI().append(docUri));
             } else {
             	trigger.beforeUpdateDocument(broker, transaction, oldDoc);
             }
             
-            info.setTriggersVisitor(trigger);
-
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Scanning document " + getURI().append(docUri));
             }
