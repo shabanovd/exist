@@ -46,6 +46,7 @@ import org.exist.indexing.lucene.PlainTextIndexConfig.PlainTextField;
 import org.exist.memtree.MemTreeBuilder;
 import org.exist.memtree.NodeImpl;
 import org.exist.numbering.NodeId;
+import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.*;
 import org.exist.storage.lock.Lock;
@@ -1276,6 +1277,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         
         String url;
         String name;
+        String owner;
         String mimeType;
         long createdTime;
         long lastModified;
@@ -1288,6 +1290,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             createdTime = currentCol.getCreationTime();
             lastModified = currentCol.getCreationTime();
             
+            Permission perm = currentCol.getPermissionsNoLock();
+            
+            owner = perm.getOwner().getName();
+            
         } else {
             url = currentDoc.getURI().toString();
             name = currentDoc.getFileURI().toString();
@@ -1298,6 +1304,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             
             createdTime = metadata.getCreated();
             lastModified = metadata.getLastModified();
+            
+            owner = currentDoc.getPermissions().getOwner().getName();
         }
         
         Field fld = new Field("eXist:file-name", name, metaFT);
@@ -1309,6 +1317,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         metas.add(fld);
 
         paths.add(new CategoryPath("eXist:file-path", url));
+
+        fld = new Field("eXist:owner", owner, metaFT);
+        metas.add(fld);
 
         //DocumentMetadata
 
