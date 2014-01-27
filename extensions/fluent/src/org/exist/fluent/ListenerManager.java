@@ -7,18 +7,12 @@ import org.apache.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.CollectionTrigger;
 import org.exist.collections.triggers.DocumentTrigger;
+import org.exist.collections.triggers.SAXTrigger;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.DocumentImpl;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
-import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.Locator;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
-import org.xml.sax.ext.LexicalHandler;
 
 /**
  * Internal class not for public use; needs to be public due to external instantiation requirements.
@@ -249,96 +243,14 @@ public class ListenerManager {
 	 *
 	 * @author <a href="mailto:piotr@ideanest.com">Piotr Kaminski</a>
 	 */
-	public static class TriggerDispatcher implements DocumentTrigger, CollectionTrigger {
+	public static class TriggerDispatcher extends SAXTrigger implements DocumentTrigger, CollectionTrigger {
 		private static final Logger LOG = Logger.getLogger(TriggerDispatcher.class);
-		private boolean validating;
-		private ContentHandler contentHandler;
-                private LexicalHandler lexicalHandler;
-		private ErrorHandler errorHandler;
 		
 		public void configure(DBBroker broker, org.exist.collections.Collection parent, Map<String, List<? extends Object>> parameters)  {
 			// nothing to do
 		}
-		public boolean isValidating() {
-			return validating;
-		}
-		public void setValidating(boolean validating) {
-			this.validating = validating;
-		}
-		public void setOutputHandler(ContentHandler handler) {
-			this.contentHandler = handler;
-		}
-		public void setLexicalOutputHandler(LexicalHandler handler) {
-			this.lexicalHandler = handler;
-		}
-		public ContentHandler getOutputHandler() {
-			return contentHandler;
-		}
-		public ContentHandler getInputHandler() {
-			return this;
-		}
-		public LexicalHandler getLexicalOutputHandler() {
-			return lexicalHandler;
-		}
-		public LexicalHandler getLexicalInputHandler() {
-			return this;
-		}
 		public Logger getLogger() {
 			return LOG;
-		}
-		public void characters(char[] ch, int start, int length) throws SAXException {
-		    if (contentHandler != null) contentHandler.characters(ch, start, length);
-		}
-		public void endDocument() throws SAXException {
-		    if (contentHandler != null) contentHandler.endDocument();
-		}
-		public void endElement(String uri, String localName, String qName) throws SAXException {
-		    if (contentHandler != null) contentHandler.endElement(uri, localName, qName);
-		}
-		public void endPrefixMapping(String prefix) throws SAXException {
-		    if (contentHandler != null) contentHandler.endPrefixMapping(prefix);
-		}
-		public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
-		    if (contentHandler != null) contentHandler.ignorableWhitespace(ch, start, length);
-		}
-		public void processingInstruction(String target, String data) throws SAXException {
-		    if (contentHandler != null) contentHandler.processingInstruction(target, data);
-		}
-		public void setDocumentLocator(Locator locator) {
-		    if (contentHandler != null) contentHandler.setDocumentLocator(locator);
-		}
-		public void skippedEntity(String name) throws SAXException {
-		    if (contentHandler != null) contentHandler.skippedEntity(name);
-		}
-		public void startDocument() throws SAXException {
-		    if (contentHandler != null) contentHandler.startDocument();
-		}
-		public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
-		    if (contentHandler != null) contentHandler.startElement(uri, localName, qName, atts);
-		}
-		public void startPrefixMapping(String prefix, String uri) throws SAXException {
-		    if (contentHandler != null) contentHandler.startPrefixMapping(prefix, uri);
-		}
-		public void comment(char[] ch, int start, int length) throws SAXException {
-		    if (lexicalHandler != null) lexicalHandler.comment(ch, start, length);
-		}
-		public void endCDATA() throws SAXException {
-		    if (lexicalHandler != null) lexicalHandler.endCDATA();
-		}
-		public void endDTD() throws SAXException {
-		    if (lexicalHandler != null) lexicalHandler.endDTD();
-		}
-		public void endEntity(String name) throws SAXException {
-		    if (lexicalHandler != null) lexicalHandler.endEntity(name);
-		}
-		public void startCDATA() throws SAXException {
-		    if (lexicalHandler != null) lexicalHandler.startCDATA();
-		}
-		public void startDTD(String name, String publicId, String systemId) throws SAXException {
-		    if (lexicalHandler != null) lexicalHandler.startDTD(name, publicId, systemId);
-		}
-		public void startEntity(String name) throws SAXException {
-		    if (lexicalHandler != null) lexicalHandler.startEntity(name);
 		}
 
 		@Override
@@ -440,20 +352,5 @@ public class ListenerManager {
 		@Override
 		public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
 		}
-
-		@Override
-                public void warning(SAXParseException exception) throws SAXException {
-                    if (errorHandler != null) errorHandler.warning(exception);
-                }
-        
-                @Override
-                public void error(SAXParseException exception) throws SAXException {
-                    if (errorHandler != null) errorHandler.error(exception);
-                }
-                
-                @Override
-                public void fatalError(SAXParseException exception) throws SAXException {
-                    if (errorHandler != null) errorHandler.fatalError(exception);
-                }
 	}
 }
