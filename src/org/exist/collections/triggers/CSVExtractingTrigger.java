@@ -83,7 +83,7 @@ import org.xml.sax.SAXException;
  *
  * @author Adam Retter <adam@exist-db.org>
  */
-public class CSVExtractingTrigger extends FilteringTrigger {
+public class CSVExtractingTrigger extends SAXTrigger {
 
     //the separator characted for CSV files
     private String separator;

@@ -35,7 +35,7 @@ import org.exist.security.PermissionDeniedException;
 /**
  * @author wolf
  */
-public class Dumper extends FilteringTrigger implements DocumentTrigger {
+public class Dumper extends SAXTrigger implements DocumentTrigger {
 
     /*
      * (non-Javadoc)

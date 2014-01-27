@@ -50,7 +50,7 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     private LexicalHandler lexicalHandler;
     private ErrorHandler errorHandler;
     
-    private FilteringTrigger last = null;
+    private SAXTrigger last = null;
     
     private final List<DocumentTrigger> triggers;
     
@@ -109,9 +109,9 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     }
 
     private void register(DocumentTrigger trigger) {
-        if (trigger instanceof FilteringTrigger) {
+        if (trigger instanceof SAXTrigger) {
             
-            FilteringTrigger filteringTrigger = (FilteringTrigger) trigger;
+            SAXTrigger filteringTrigger = (SAXTrigger) trigger;
             
             if (last == null) {
                 contentHandler = filteringTrigger;

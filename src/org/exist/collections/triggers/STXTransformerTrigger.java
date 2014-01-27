@@ -26,7 +26,6 @@ import java.util.Map;
 import javax.xml.transform.Templates;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.sax.SAXResult;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamSource;
@@ -51,7 +50,7 @@ import org.xml.sax.SAXException;
  * 
  * @author wolf
  */
-public class STXTransformerTrigger extends FilteringTrigger implements DocumentTrigger {
+public class STXTransformerTrigger extends SAXTrigger implements DocumentTrigger {
 
     protected Logger LOG = Logger.getLogger(getClass());
 

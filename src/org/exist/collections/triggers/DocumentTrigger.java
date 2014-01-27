@@ -24,9 +24,6 @@ import org.exist.dom.DocumentImpl;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.ext.LexicalHandler;
 
 /**
  * Interface for triggers that react to document-related events.
@@ -73,7 +70,7 @@ import org.xml.sax.ext.LexicalHandler;
  * 
  * @author wolf
  */
-public interface DocumentTrigger extends Trigger, ContentHandler, LexicalHandler, ErrorHandler {
+public interface DocumentTrigger extends Trigger {
 
     /**
      * This method is called once before the database will actually parse the input data. You may take any action

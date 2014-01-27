@@ -64,7 +64,7 @@ import org.exist.xquery.value.DateTimeValue;
  * @author Mark Spanbroek
  * @see org.exist.collections.triggers.Trigger
  */
-public class HistoryTrigger extends FilteringTrigger implements DocumentTrigger {
+public class HistoryTrigger extends SAXTrigger implements DocumentTrigger {
 
     protected XmldbURI rootPath = XmldbURI.ROOT_COLLECTION_URI.append("history");
 

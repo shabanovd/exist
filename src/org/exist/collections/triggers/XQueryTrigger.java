@@ -81,7 +81,7 @@ import org.xml.sax.ContentHandler;
  * @author Adam Retter <adam.retter@devon.gov.uk>
  * @author Evgeny Gazdovsky <gazdovsky@gmail.com>
  */
-public class XQueryTrigger extends FilteringTrigger implements DocumentTrigger, CollectionTrigger {
+public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, CollectionTrigger {
 
     protected Logger LOG = Logger.getLogger(getClass());
 
