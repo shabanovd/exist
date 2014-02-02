@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.exist.collections.Collection;
-import org.exist.collections.triggers.FilteringTrigger;
+import org.exist.collections.triggers.SAXTrigger;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.DocumentImpl;
 import org.exist.storage.DBBroker;
@@ -34,7 +34,7 @@ import org.exist.xmldb.XmldbURI;
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  * 
  */
-public class DocumentEvents extends FilteringTrigger {
+public class DocumentEvents extends SAXTrigger {
 
     @Override
     public void configure(DBBroker broker, Collection parent, Map<String, List<?>> parameters) throws TriggerException {
