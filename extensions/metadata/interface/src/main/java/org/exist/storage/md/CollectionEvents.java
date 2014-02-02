@@ -59,7 +59,7 @@ public class CollectionEvents implements CollectionTrigger {
         try {
             MDStorageManager._.md.addMetas(collection);
         } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e);
+            MDStorageManager.LOG.fatal(e,e);
         }
 
         index(collection);
@@ -75,7 +75,7 @@ public class CollectionEvents implements CollectionTrigger {
         try {
             MDStorageManager._.md.copyMetas(oldUri, collection);
         } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e);
+            MDStorageManager.LOG.fatal(e,e);
         }
 
         index(collection);
@@ -90,7 +90,7 @@ public class CollectionEvents implements CollectionTrigger {
                 try {
                     MDStorageManager._.md.moveMetas(collection.getURI().append(doc.getFileURI()), newUri.append(doc.getFileURI()));
                 } catch (Throwable e) {
-                    MDStorageManager.LOG.fatal(e);
+                    MDStorageManager.LOG.fatal(e,e);
                 }
             }
         } catch (PermissionDeniedException e) {
@@ -104,7 +104,7 @@ public class CollectionEvents implements CollectionTrigger {
         try {
             MDStorageManager._.md.moveMetas(oldUri, collection.getURI());
         } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e);
+            MDStorageManager.LOG.fatal(e,e);
         }
 
         // removeIndex(oldUri);
@@ -117,7 +117,7 @@ public class CollectionEvents implements CollectionTrigger {
             try {
                 MDStorageManager._.md.delMetas(doc.getURI());
             } catch (Throwable e) {
-                MDStorageManager.LOG.fatal(e);
+                MDStorageManager.LOG.fatal(e,e);
             }
         }
 
@@ -156,7 +156,7 @@ public class CollectionEvents implements CollectionTrigger {
         try {
             MDStorageManager._.md.delMetas(uri);
         } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e);
+            MDStorageManager.LOG.fatal(e,e);
         }
     }
 
@@ -167,7 +167,7 @@ public class CollectionEvents implements CollectionTrigger {
                 worker.indexCollection(col);
             }
         } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e);
+            MDStorageManager.LOG.fatal(e,e);
         }
     }
 }

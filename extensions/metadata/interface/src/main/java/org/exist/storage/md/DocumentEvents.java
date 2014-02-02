@@ -50,7 +50,7 @@ public class DocumentEvents extends FilteringTrigger {
         try {
             MDStorageManager._.md.addMetas(document);
         } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e);
+            MDStorageManager.LOG.fatal(e,e);
         }
     }
 
@@ -83,7 +83,7 @@ public class DocumentEvents extends FilteringTrigger {
         try {
             MDStorageManager._.md.moveMetas(oldUri, document.getURI());
         } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e);
+            MDStorageManager.LOG.fatal(e,e);
         }
     }
 
@@ -97,7 +97,7 @@ public class DocumentEvents extends FilteringTrigger {
         try {
             MDStorageManager._.md.delMetas(uri);
         } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e);
+            MDStorageManager.LOG.fatal(e,e);
         }
     }
 
