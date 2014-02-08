@@ -138,8 +138,8 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
         lock = new ReentrantReadWriteLock(path);
     }
 
-    public boolean isTriggersEnabled() {
-        return triggersEnabled;
+    public boolean isTriggersEnabled(DBBroker broker) {
+        return broker.isTriggersEnabled() && triggersEnabled;
     }
 
     public final void setPath(XmldbURI path) {
@@ -1089,7 +1089,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             
             doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
             
-            boolean useTriggers = isTriggersEnabled();
+            boolean useTriggers = isTriggersEnabled(broker);
             if (CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE_URI.equals(docUri)) {
                 // we remove a collection.xconf configuration file: tell the configuration manager to
                 // reload the configuration.
@@ -1163,7 +1163,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             
             doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
             
-            DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled() ? getConfiguration(broker) : null);
+            DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled(broker) ? getConfiguration(broker) : null);
 
             trigger.beforeDeleteDocument(broker, transaction, doc);
 
@@ -1615,7 +1615,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 setCollectionConfigEnabled(false);
             }
             
-            final DocumentTriggers trigger = new DocumentTriggers(broker, indexer, this, isTriggersEnabled() ? config : null);
+            final DocumentTriggers trigger = new DocumentTriggers(broker, indexer, this, isTriggersEnabled(broker) ? config : null);
             trigger.setValidating(true);
             
             info.setTriggers(trigger);
@@ -1869,7 +1869,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             }
             blob.setContentLength(size);
             
-            final DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled() ? getConfiguration(broker) : null);
+            final DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled(broker) ? getConfiguration(broker) : null);
             
             if (oldDoc == null) {
                 trigger.beforeCreateDocument(broker, transaction, blob.getURI());

@@ -67,36 +67,41 @@ public class SystemImport {
         //login
         final DBBroker broker = db.authenticate(username, credentials);
         try {
-        	//set the new password
-	        setAdminCredentials(broker, newCredentials);
-	
-	        //get the backup descriptors, can be more than one if it was an incremental backup
-	        final Stack<BackupDescriptor> descriptors = getBackupDescriptors(f);
+            //set the new password
+            setAdminCredentials(broker, newCredentials);
+            
+            broker.disableTriggers();
+            try {
+                //get the backup descriptors, can be more than one if it was an incremental backup
+                final Stack<BackupDescriptor> descriptors = getBackupDescriptors(f);
 	        
-	        final SAXParserFactory saxFactory = SAXParserFactory.newInstance();
-	        saxFactory.setNamespaceAware(true);
-	        saxFactory.setValidating(false);
-	        final SAXParser sax = saxFactory.newSAXParser();
-	        final XMLReader reader = sax.getXMLReader();
+                final SAXParserFactory saxFactory = SAXParserFactory.newInstance();
+                saxFactory.setNamespaceAware(true);
+                saxFactory.setValidating(false);
+                final SAXParser sax = saxFactory.newSAXParser();
+                final XMLReader reader = sax.getXMLReader();
 	        
-	        try {
-	            listener.restoreStarting();
+                try {
+                    listener.restoreStarting();
 	
-	            while(!descriptors.isEmpty()) {
-	                final BackupDescriptor descriptor = descriptors.pop();
-	                final EXistInputSource is = descriptor.getInputSource();
-	                is.setEncoding( "UTF-8" );
-	
-	                final SystemImportHandler handler = new SystemImportHandler(broker, listener, uri, descriptor);
-	                
-	                reader.setContentHandler(handler);
-	                reader.parse(is);
-	            }
-	        } finally {
-	            listener.restoreFinished();
-	        }
+                    while(!descriptors.isEmpty()) {
+                        final BackupDescriptor descriptor = descriptors.pop();
+                        final EXistInputSource is = descriptor.getInputSource();
+                        is.setEncoding( "UTF-8" );
+
+                        final SystemImportHandler handler = new SystemImportHandler(broker, listener, uri, descriptor);
+
+                        reader.setContentHandler(handler);
+                        reader.parse(is);
+                    }
+                } finally {
+                    listener.restoreFinished();
+                }
+            } finally {
+                broker.enableTriggers();
+            }                
         } finally {
-        	db.release(broker);
+            db.release(broker);
         }
     }
     

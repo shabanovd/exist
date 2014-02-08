@@ -835,7 +835,20 @@ public abstract class DBBroker extends Observable {
 
     public abstract void readCollectionEntry(SubCollectionEntry entry);
 
-	public void release() {
-		pool.release(this);
-	}
+    public void release() {
+        pool.release(this);
+    }
+
+    private boolean triggersEnabled = true;
+    public boolean isTriggersEnabled() {
+        return triggersEnabled;
+    }
+
+    public void enableTriggers() {
+        triggersEnabled = true;
+    }
+
+    public void disableTriggers() {
+        triggersEnabled = false;
+    }
 }
