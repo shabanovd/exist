@@ -1375,8 +1375,14 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
             for (PendingDoc pending : nodesToWrite) {
                 final Document doc = new Document();
-                fDocId.setLongValue(pending.document.getDocId());
-                doc.add(fDocId);
+                
+                if (pending.document != null) {
+                    fDocId.setLongValue(pending.document.getDocId());
+                    doc.add(fDocId);
+                    
+                    fDocIdIdx.setIntValue(pending.document.getDocId());
+                    doc.add(fDocIdIdx);
+                }
 
                 // store the node id
                 if (pending.nodeId != null) {
@@ -1413,9 +1419,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 	                doc.add(fld);
                 }
 
-                fDocIdIdx.setIntValue(pending.document.getDocId());
-                doc.add(fDocIdIdx);
-                
                 for (Field meta : pending._metas) {
                     doc.add(meta);
                 }
@@ -1644,11 +1647,11 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
 
-	@Override
-	public void indexCollection(Collection col) {
-		currentCol = col;
-		broker.getIndexController().setURL(col.getURI());
-		
+    @Override
+    public void indexCollection(Collection col) {
+        currentCol = col;
+        broker.getIndexController().setURL(col.getURI());
+
         metas = new ArrayList<Field>();
         paths = new ArrayList<CategoryPath>();
         
@@ -1659,7 +1662,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     	write();
     	
     	currentCol = null;
-	}
+    }
 
     @Override
     public void indexBinary(BinaryDocument doc) {
