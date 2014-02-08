@@ -1660,7 +1660,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         
     	indexText(null, null, null, null, null);
         
-    	write();
+//    	write();
     	
     	currentCol = null;
     }
