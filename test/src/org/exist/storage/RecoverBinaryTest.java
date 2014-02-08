@@ -21,46 +21,47 @@
  */
 package org.exist.storage;
 
-import static org.junit.Assert.*;
-
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.FileInputStream;
 
-import org.exist.CommonMethods;
 import org.exist.collections.Collection;
 import org.exist.dom.BinaryDocument;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
+import org.exist.util.Configuration;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * @author wolf
  *
  */
-public class RecoverBinaryTest extends CommonMethods {
-	
-	protected static BrokerPool pool;
+public class RecoverBinaryTest {
+    
+    private BrokerPool pool;
 
     @Test
-	public void test() throws Exception {
-    	start();
-		testStore();
-		stop();
-		
-		start();
-		testLoad();
-	}
-    
-    public void testStore() {
-    	BrokerPool.FORCE_CORRUPTION = true;
+    public void storeAndLoad() {
+        store();
+        tearDown();
+        setUp();
+        load();
+    }
+
+    private void store() {
+        BrokerPool.FORCE_CORRUPTION = true;
         DBBroker broker = null;
         try {
-        	assertNotNull(pool);
+            System.out.println("store() ...\n");
+                assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
             TransactionManager transact = pool.getTransactionManager();
@@ -84,7 +85,7 @@ public class RecoverBinaryTest extends CommonMethods {
                 os.write(buf, 0, count);
             }
             BinaryDocument doc = 
-				root.addBinaryResource(transaction, broker, TestConstants.TEST_BINARY_URI, os.toByteArray(),	"text/text");
+                                root.addBinaryResource(transaction, broker, TestConstants.TEST_BINARY_URI, os.toByteArray(),    "text/text");
             assertNotNull(doc);
             
             transact.commit(transaction);
@@ -96,21 +97,21 @@ public class RecoverBinaryTest extends CommonMethods {
             
             //TODO : remove ?
             transact.getJournal().flushToLog(true);
-		} catch (Exception e) {            
-	        fail(e.getMessage());             
+                } catch (Exception e) {            
+                fail(e.getMessage());             
         } finally {
             if (pool != null) pool.release(broker);
         }
     }
     
-    public void testLoad() {
+    private void load() {
         BrokerPool.FORCE_CORRUPTION = false;
         DBBroker broker = null;
         try {
-        	System.out.println("testRead() ...\n");
-        	assertNotNull(pool);
-        	broker = pool.get(pool.getSecurityManager().getSystemSubject());
-        	assertNotNull(broker);
+                System.out.println("load() ...\n");
+                assertNotNull(pool);
+                broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                assertNotNull(broker);
             BinaryDocument binDoc = (BinaryDocument) broker.getXMLResource(TestConstants.TEST_COLLECTION_URI.append(TestConstants.TEST_BINARY_URI), Lock.READ_LOCK);
             assertNotNull("Binary document is null", binDoc);
             InputStream is = broker.getBinaryResource(binDoc);
@@ -119,20 +120,28 @@ public class RecoverBinaryTest extends CommonMethods {
             is.close();
             String data = new String(bdata);
             assertNotNull(data);
-            System.out.println(data);
-		} catch (Exception e) {            
-	        fail(e.getMessage());
-	    } finally {
+            //System.out.println(data);
+                } catch (Exception e) {            
+                fail(e.getMessage());
+            } finally {
             if (pool != null) pool.release(broker);
         }
     }
-    
-    public void start() {
-    	pool = startDB();
+
+    @Before
+    public void setUp() {
+        try {
+            Configuration config = new Configuration();
+            BrokerPool.configure(1, 5, config);
+            pool = BrokerPool.getInstance();
+        } catch (Exception e) {            
+            fail(e.getMessage());
+        }
     }
 
-    public void stop() {
-    	stopDB();
-    	pool = null;
+    @After
+    public void tearDown() {
+        BrokerPool.stopAll(false);
+        pool = null;
     }
 }

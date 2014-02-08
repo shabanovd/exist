@@ -254,8 +254,8 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
     @Override
     public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean includeSelf) {
-        if (node.getNodeType() == Node.ATTRIBUTE_NODE)
-            return null;
+//        if (node.getNodeType() == Node.ATTRIBUTE_NODE)
+//            return null;
         if (config == null)
             return null;
         NodePath p = new NodePath(path);
@@ -386,6 +386,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         } catch (IOException e) {
             LOG.warn("Error while deleting lucene index entries: " + e.getMessage(), e);
         } finally {
+            nodesToRemove = null;
             index.releaseWriter(writer);
         }
     }

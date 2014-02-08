@@ -1172,7 +1172,7 @@ public class BrokerPool implements Database {
             final CollectionConfiguration collConf = manager.getOrCreateCollectionConfiguration(broker.getDatabase(), collection);
             
             final DocumentTriggerProxy triggerProxy = new DocumentTriggerProxy(ConfigurationDocumentTrigger.class); //, collection.getURI());
-            collConf.documentTriggers().add(triggerProxy);  
+            collConf.documentTriggers().add(triggerProxy);
         }
     }
 
@@ -2136,13 +2136,13 @@ public class BrokerPool implements Database {
         }
     }
 
-    @Override
-    public File getStoragePlace() {
-        return new File((String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR));
-    }
+	@Override
+	public File getStoragePlace() {
+		return new File((String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR));
+	}
 
-    private final List<TriggerProxy<? extends DocumentTrigger>> documentTriggers = new ArrayList<TriggerProxy<? extends DocumentTrigger>>(); 
-    private final List<TriggerProxy<? extends CollectionTrigger>> collectionTriggers = new ArrayList<TriggerProxy<? extends CollectionTrigger>>(); 
+    private final List<TriggerProxy<? extends DocumentTrigger>> documentTriggers = new ArrayList<TriggerProxy<? extends DocumentTrigger>>();
+    private final List<TriggerProxy<? extends CollectionTrigger>> collectionTriggers = new ArrayList<TriggerProxy<? extends CollectionTrigger>>();
 
     @Override
     public List<TriggerProxy<? extends DocumentTrigger>> getDocumentTriggers() {
@@ -2153,7 +2153,7 @@ public class BrokerPool implements Database {
     public List<TriggerProxy<? extends CollectionTrigger>> getCollectionTriggers() {
         return collectionTriggers;
     }
-    
+
     @Override
     public void registerDocumentTrigger(Class<? extends DocumentTrigger> clazz) {
         documentTriggers.add(new DocumentTriggerProxy(clazz));
@@ -2163,14 +2163,14 @@ public class BrokerPool implements Database {
     public void registerCollectionTrigger(Class<? extends CollectionTrigger> clazz) {
         collectionTriggers.add(new CollectionTriggerProxy(clazz));
     }
-
-    public PluginsManager getPluginsManager() {
-        return pluginManager;
-    }
-
-    protected MetaStorage metaStorage = null;
-
-    public MetaStorage getMetaStorage() {
-        return metaStorage;
-    }
+	    
+	public PluginsManager getPluginsManager() {
+		return pluginManager;
+	}
+	
+	protected MetaStorage metaStorage = null;
+	
+	public MetaStorage getMetaStorage() {
+	    return metaStorage;
+	}
 }

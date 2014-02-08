@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2003-2014 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -129,7 +129,7 @@ public interface Trigger {
      *            actions. Please note: the broker instance used for
      *            configuration is probably different from the one passed to the
      *            prepare method. Don't store the broker object in your class.
-     * @param col
+     * @param parent
      *            the collection to which this trigger belongs.
      * @param parameters
      *            a Map containing any key/value parameters defined in the
@@ -137,5 +137,5 @@ public interface Trigger {
      * @throws CollectionConfigurationException
      *             if the trigger cannot be initialized.
      */
-    public void configure(DBBroker broker, Collection col, Map<String, List<? extends Object>> parameters) throws TriggerException;
+    public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException;
 }

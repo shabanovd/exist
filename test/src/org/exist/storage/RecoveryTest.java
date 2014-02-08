@@ -21,14 +21,10 @@
  */
 package org.exist.storage;
 
-import static org.junit.Assert.*;
-
 import java.io.InputStream;
 import java.io.File;
 import java.io.StringWriter;
 import java.io.Writer;
-
-import org.exist.CommonMethods;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.BinaryDocument;
@@ -40,13 +36,18 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
+import org.exist.util.Configuration;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
+import org.junit.After;
 import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -56,7 +57,7 @@ import org.xml.sax.SAXException;
  * @author wolf
  *
  */
-public class RecoveryTest extends CommonMethods {
+public class RecoveryTest {
     
     private static String directory = "samples/shakespeare";
     
@@ -73,23 +74,21 @@ public class RecoveryTest extends CommonMethods {
         "  <title>Hello</title>" +
         "  <para>Hello World!</para>" +
         "</test>";
-    
-    @Test
-	public void test() throws Exception {
-		testStore();
-		stopDB();
-		
-		testRead();
-	}
-    
-    private void testStore() {
-        BrokerPool.FORCE_CORRUPTION = true;
 
-        BrokerPool pool = startDB();
-    	assertNotNull(pool);
-        
+    @Test
+    public void storeAndRead() {
+        store();
+        tearDown();
+        read();
+    }
+
+    private void store() {
+        BrokerPool.FORCE_CORRUPTION = true;
+        BrokerPool pool = null;        
         DBBroker broker = null;
         try {
+        	pool = startDB();
+        	assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);            
             TransactionManager transact = pool.getTransactionManager();
@@ -163,32 +162,30 @@ public class RecoveryTest extends CommonMethods {
             transact.getJournal().flushToLog(true);
             System.out.println("Transaction interrupted ...");
             
-            DOMFile domDb = ((NativeBroker)broker).getDOMFile();
-            assertNotNull(domDb);
-            Writer writer = new StringWriter();
-            domDb.dump(writer);
-            System.out.println(writer.toString());
+            //DOMFile domDb = ((NativeBroker)broker).getDOMFile();
+            //assertNotNull(domDb);
+            //Writer writer = new StringWriter();
+            //domDb.dump(writer);
+            //System.out.println(writer.toString());
 	    } catch (Exception e) {            
 	        fail(e.getMessage());
 	        e.printStackTrace();
         } finally {
-        	pool.release(broker);
+        	if (pool != null) pool.release(broker);
         }
     }
-    
-    private void testRead() {
-    	System.out.println("testRead() ...\n");
 
-    	BrokerPool.FORCE_CORRUPTION = false;
-        
-        BrokerPool pool = startDB();
-    	assertNotNull(pool);
-
-    	DBBroker broker = null;           
+    private void read() {
+        BrokerPool.FORCE_CORRUPTION = false;
+        BrokerPool pool = null;
+        DBBroker broker = null;           
         TransactionManager transact = null;
         Txn transaction = null;
         
         try {
+        	System.out.println("testRead() ...\n");
+        	pool = startDB();
+        	assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             Serializer serializer = broker.getSerializer();
             serializer.reset();
@@ -197,14 +194,14 @@ public class RecoveryTest extends CommonMethods {
             assertNotNull("Document '" + XmldbURI.ROOT_COLLECTION + "/test/test2/hamlet.xml' should not be null", doc);
             String data = serializer.serialize(doc);
             assertNotNull(data);
-            System.out.println(data);
+            //System.out.println(data);
             doc.getUpdateLock().release(Lock.READ_LOCK);
             
             doc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test/test2/test_string.xml"), Lock.READ_LOCK);
             assertNotNull("Document '" + XmldbURI.ROOT_COLLECTION + "/test/test2/test_string.xml' should not be null", doc);
             data = serializer.serialize(doc);
             assertNotNull(data);
-            System.out.println(data);            
+            //System.out.println(data);
             doc.getUpdateLock().release(Lock.READ_LOCK);
             
             File files[] = dir.listFiles();
@@ -220,7 +217,8 @@ public class RecoveryTest extends CommonMethods {
             System.out.println("Found: " + seq.getItemCount());
             for (SequenceIterator i = seq.iterate(); i.hasNext(); ) {
                 Item next = i.nextItem();
-                System.out.println(serializer.serialize((NodeValue) next));
+                String value = serializer.serialize((NodeValue) next);
+                //System.out.println(value);
             }
             
             BinaryDocument binDoc = (BinaryDocument) broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append(TestConstants.TEST_BINARY_URI), Lock.READ_LOCK);
@@ -237,7 +235,7 @@ public class RecoveryTest extends CommonMethods {
             assertNotNull(domDb);
             Writer writer = new StringWriter();
             domDb.dump(writer);
-            System.out.println(writer.toString());
+            //System.out.println(writer.toString());
             
             transact = pool.getTransactionManager();
             assertNotNull(transact);
@@ -253,13 +251,29 @@ public class RecoveryTest extends CommonMethods {
             transact.commit(transaction);
             System.out.println("Transaction commited ...");
 	    } catch (Exception e) {         
-			if (transact != null) {
-				transact.abort(transaction);
-			}
-	        e.printStackTrace();
+               if (transact!=null) {
+	    	transact.abort(transaction);
+               }
 	        fail(e.getMessage());
+	        e.printStackTrace();
         } finally {
-        	pool.release(broker);
+        	if (pool != null) pool.release(broker);
         }
+    }
+    
+    protected BrokerPool startDB() {
+        try {
+            Configuration config = new Configuration();
+            BrokerPool.configure(1, 5, config);
+            return BrokerPool.getInstance();
+        } catch (Exception e) {            
+            fail(e.getMessage());
+        }
+        return null;
+    }
+
+    @After
+    public void tearDown() {
+        BrokerPool.stopAll(false);
     }
 }

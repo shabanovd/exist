@@ -142,6 +142,7 @@ public class ConfigurationImpl extends ProxyElement<ElementAtExist> implements C
                         }
                     } else {
                         props.put(name, child.getNodeValue());
+                        names.add(name);
                     }
                 }
             }
@@ -194,10 +195,12 @@ public class ConfigurationImpl extends ProxyElement<ElementAtExist> implements C
 
     @Override
     public Map<String, String> getPropertyMap(String name) {
-        if (props.containsKey(name))
-            return null;
-
         final Map<String, String> map = new HashMap<String, String>();
+
+        if (hasProperty(name)) {
+            map.put(name, getProperty(name));
+            return map;
+        }
         
         Node child = getFirstChild();
         while (child != null) {

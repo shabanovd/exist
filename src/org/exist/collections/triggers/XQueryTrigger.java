@@ -67,84 +67,83 @@ import org.xml.sax.ContentHandler;
  * Any additional parameters will be declared as external variables with the
  * type xs:string
  * 
- * These external variables for the Trigger are accessible to the user XQuery
- * statement <code>xxx:type</code> : the type of event for the Trigger. Either
- * "prepare" or "finish" <code>xxx:collection</code> : the uri of the collection
- * from which the event is triggered <code>xxx:uri</code> : the uri of the
- * document or collection from which the event is triggered
- * <code>xxx:new-uri</code> : the new uri of the document or collection from
- * which the event is triggered <code>xxx:event</code> : the kind of triggered
- * event xxx is the namespace prefix within the XQuery, can be set by the
- * variable "bindingPrefix"
+ * These external variables for the Trigger are accessible to the user XQuery statement
+ * <code>xxx:type</code> : the type of event for the Trigger. Either "prepare" or "finish"
+ * <code>xxx:collection</code> : the uri of the collection from which the event is triggered
+ * <code>xxx:uri</code> : the uri of the document or collection from which the event is triggered
+ * <code>xxx:new-uri</code> : the new uri of the document or collection from which the event is triggered
+ * <code>xxx:event</code> : the kind of triggered event
+ * xxx is the namespace prefix within the XQuery, can be set by the variable "bindingPrefix"
  * 
  * @author Pierrick Brihaye <pierrick.brihaye@free.fr>
  * @author Adam Retter <adam.retter@devon.gov.uk>
  * @author Evgeny Gazdovsky <gazdovsky@gmail.com>
- */
+*/
 public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, CollectionTrigger {
 
-    protected Logger LOG = Logger.getLogger(getClass());
+        protected Logger LOG = Logger.getLogger(getClass());
+    
+	private final static String NAMESPACE = "http://exist-db.org/xquery/trigger";
 
-    private final static String NAMESPACE = "http://exist-db.org/xquery/trigger";
+	private final static String EVENT_TYPE_PREPARE = "prepare";
+	private final static String EVENT_TYPE_FINISH = "finish";
+	
+	private final static String DEFAULT_BINDING_PREFIX = "local:";
+	
+	public final static String [] EVENTS = {
+		"CREATE-DOCUMENT", //0
+		"CREATE-COLLECTION", //1
+		"UPDATE-DOCUMENT", //2
+		"UPDATE-COLLECTION", //3 ???
+		"COPY-DOCUMENT", //4
+		"COPY-COLLECTION", //5
+		"MOVE-DOCUMENT", //6
+		"MOVE-COLLECTION", //7
+		"DELETE-DOCUMENT", //8
+		"DELETE-COLLECTION" //9
+	};
+	
+	public final static QName beforeCreateCollection = new QName("before-create-collection", NAMESPACE); 
+	public final static QName afterCreateCollection = new QName("after-create-collection", NAMESPACE); 
 
-    private final static String EVENT_TYPE_PREPARE = "prepare";
-    private final static String EVENT_TYPE_FINISH = "finish";
+	public final static QName beforeUpdateCollection = new QName("before-update-collection", NAMESPACE); 
+	public final static QName afterUpdateCollection = new QName("after-update-collection", NAMESPACE); 
+	
+	public final static QName beforeCopyCollection = new QName("before-copy-collection", NAMESPACE); 
+	public final static QName afterCopyCollection = new QName("after-copy-collection", NAMESPACE); 
 
-    private final static String DEFAULT_BINDING_PREFIX = "local:";
+	public final static QName beforeMoveCollection = new QName("before-move-collection", NAMESPACE); 
+	public final static QName afterMoveCollection = new QName("after-move-collection", NAMESPACE); 
 
-    public final static String[] EVENTS = { "CREATE-DOCUMENT", // 0
-            "CREATE-COLLECTION", // 1
-            "UPDATE-DOCUMENT", // 2
-            "UPDATE-COLLECTION", // 3 ???
-            "COPY-DOCUMENT", // 4
-            "COPY-COLLECTION", // 5
-            "MOVE-DOCUMENT", // 6
-            "MOVE-COLLECTION", // 7
-            "DELETE-DOCUMENT", // 8
-            "DELETE-COLLECTION" // 9
-    };
+	public final static QName beforeDeleteCollection = new QName("before-delete-collection", NAMESPACE); 
+	public final static QName afterDeleteCollection = new QName("after-delete-collection", NAMESPACE); 
 
-    public final static QName beforeCreateCollection = new QName("before-create-collection", NAMESPACE);
-    public final static QName afterCreateCollection = new QName("after-create-collection", NAMESPACE);
+	public final static QName beforeCreateDocument = new QName("before-create-document", NAMESPACE); 
+	public final static QName afterCreateDocument = new QName("after-create-document", NAMESPACE); 
 
-    public final static QName beforeUpdateCollection = new QName("before-update-collection", NAMESPACE);
-    public final static QName afterUpdateCollection = new QName("after-update-collection", NAMESPACE);
+	public final static QName beforeUpdateDocument = new QName("before-update-document", NAMESPACE); 
+	public final static QName afterUpdateDocument = new QName("after-update-document", NAMESPACE); 
+	
+	public final static QName beforeCopyDocument = new QName("before-copy-document", NAMESPACE); 
+	public final static QName afterCopyDocument = new QName("after-copy-document", NAMESPACE); 
 
-    public final static QName beforeCopyCollection = new QName("before-copy-collection", NAMESPACE);
-    public final static QName afterCopyCollection = new QName("after-copy-collection", NAMESPACE);
+	public final static QName beforeMoveDocument = new QName("before-move-document", NAMESPACE); 
+	public final static QName afterMoveDocument = new QName("after-move-document", NAMESPACE); 
 
-    public final static QName beforeMoveCollection = new QName("before-move-collection", NAMESPACE);
-    public final static QName afterMoveCollection = new QName("after-move-collection", NAMESPACE);
+	public final static QName beforeDeleteDocument = new QName("before-delete-document", NAMESPACE); 
+	public final static QName afterDeleteDocument = new QName("after-delete-document", NAMESPACE); 
 
-    public final static QName beforeDeleteCollection = new QName("before-delete-collection", NAMESPACE);
-    public final static QName afterDeleteCollection = new QName("after-delete-collection", NAMESPACE);
-
-    public final static QName beforeCreateDocument = new QName("before-create-document", NAMESPACE);
-    public final static QName afterCreateDocument = new QName("after-create-document", NAMESPACE);
-
-    public final static QName beforeUpdateDocument = new QName("before-update-document", NAMESPACE);
-    public final static QName afterUpdateDocument = new QName("after-update-document", NAMESPACE);
-
-    public final static QName beforeCopyDocument = new QName("before-copy-document", NAMESPACE);
-    public final static QName afterCopyDocument = new QName("after-copy-document", NAMESPACE);
-
-    public final static QName beforeMoveDocument = new QName("before-move-document", NAMESPACE);
-    public final static QName afterMoveDocument = new QName("after-move-document", NAMESPACE);
-
-    public final static QName beforeDeleteDocument = new QName("before-delete-document", NAMESPACE);
-    public final static QName afterDeleteDocument = new QName("after-delete-document", NAMESPACE);
-
-    private SAXAdapter adapter;
-    private Set<TriggerEvents.EVENTS> events;
-    private Collection collection = null;
-    private String strQuery = null;
-    private String urlQuery = null;
-    private Properties userDefinedVariables = new Properties();
-
-    /** Namespace prefix associated to trigger */
-    private String bindingPrefix = null;
-    private XQuery service;
-    private ContentHandler originalOutputHandler;
+	private SAXAdapter adapter;
+	private Set<TriggerEvents.EVENTS> events;
+	private Collection collection = null;
+	private String strQuery = null;
+	private String urlQuery = null;
+	private Properties userDefinedVariables = new Properties();
+	
+	/** Namespace prefix associated to trigger */
+	private String bindingPrefix = null;
+	private XQuery service;
+	private ContentHandler originalOutputHandler;
 
     public final static String PEPARE_EXCEIPTION_MESSAGE = "Error during trigger prepare";
 
@@ -526,176 +525,180 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
         }
 
         if (!isBefore) {
-            TriggerStatePerThread.setTriggerRunningState(TriggerStatePerThread.NO_TRIGGER_RUNNING, this, null);
-            TriggerStatePerThread.setTransaction(null);
-            LOG.debug("Trigger fired 'after'");
-        } else {
-            LOG.debug("Trigger fired 'before'");
-        }
-    }
+        	TriggerStatePerThread.setTriggerRunningState(TriggerStatePerThread.NO_TRIGGER_RUNNING, this, null);
+        	TriggerStatePerThread.setTransaction(null);
+        	LOG.debug("Trigger fired 'after'");
+        } else
+        	{LOG.debug("Trigger fired 'before'");}
+	}
 
-//    public void startDocument() throws SAXException {
-//        originalOutputHandler = getOutputHandler();
-//        // TODO : uncomment when it works
-//        /*
-//         * if (isValidating()) setOutputHandler(adapter);
-//         */
-//        super.startDocument();
-//    }
+//	public void startDocument() throws SAXException
+//	{
+//		originalOutputHandler = getOutputHandler();
+//		//TODO : uncomment when it works
+//		/*
+//		if (isValidating()) 
+//			setOutputHandler(adapter);	
+//		*/	
+//		super.startDocument();
+//	}	
 //
-//    public void endDocument() throws SAXException {
-//        super.endDocument();
+//	public void endDocument() throws SAXException
+//	{
+//		super.endDocument();
+//		
+//		setOutputHandler(originalOutputHandler);
+//		
+//		//if (!isValidating())
+//		//		return;				
+//		
+//        //XQueryContext context = service.newContext(AccessContext.TRIGGER);
+//        //TODO : futher initializations ?
+//        // CompiledXQuery compiledQuery;
+//        
+//        //try {
+//        	
+//        	// compiledQuery = 
+//        	//service.compile(context, query);
+//        	
+//        	//context.declareVariable(bindingPrefix + "validating", new BooleanValue(isValidating()));
+//        	//if (adapter.getDocument() == null)
+//        		//context.declareVariable(bindingPrefix + "document", Sequence.EMPTY_SEQUENCE);
+//        	//TODO : find the right method ;-)
+//        	/*
+//        	else
+//        		context.declareVariable(bindingPrefix + "document", (DocumentImpl)adapter.getDocument());
+//        	*/
+//	        	        
+//        //} catch (XPathException e) {
+//        	//query = null; //prevents future use
+//        //	throw new SAXException("Error during endDocument", e);
+//	    //} catch (IOException e) {
+//        	//query = null; //prevents future use
+//        //	throw new SAXException("Error during endDocument", e);
+//	    //}
 //
-//        setOutputHandler(originalOutputHandler);
-
-        // if (!isValidating())
-        // return;
-
-        // XQueryContext context = service.newContext(AccessContext.TRIGGER);
-        // TODO : futher initializations ?
-        // CompiledXQuery compiledQuery;
-
-        // try {
-
-        // compiledQuery =
-        // service.compile(context, query);
-
-        // context.declareVariable(bindingPrefix + "validating", new
-        // BooleanValue(isValidating()));
-        // if (adapter.getDocument() == null)
-        // context.declareVariable(bindingPrefix + "document",
-        // Sequence.EMPTY_SEQUENCE);
-        // TODO : find the right method ;-)
-        /*
-         * else context.declareVariable(bindingPrefix + "document",
-         * (DocumentImpl)adapter.getDocument());
-         */
-
-        // } catch (XPathException e) {
-        // query = null; //prevents future use
-        // throw new SAXException("Error during endDocument", e);
-        // } catch (IOException e) {
-        // query = null; //prevents future use
-        // throw new SAXException("Error during endDocument", e);
-        // }
-
-        // TODO : uncomment when it works
-        /*
-         * try { //TODO : should we provide another contextSet ? NodeSet
-         * contextSet = NodeSet.EMPTY_SET; //Sequence result =
-         * service.execute(compiledQuery, contextSet); //TODO : should we have a
-         * special processing ? LOG.debug("done.");
-         * 
-         * } catch (XPathException e) { query = null; //prevents future use
-         * throw new SAXException("Error during endDocument", e); }
-         */
-
-        // TODO : check that result is a document node
-        // TODO : Stream result to originalOutputHandler
-//    }
-
-    /**
-     * Returns a String representation of the Trigger event
-     * 
-     * @param event
-     *            The Trigger event
-     * 
-     * @return The String representation
-     */
-    public static String eventToString(int event) {
-        return EVENTS[event];
+//	    //TODO : uncomment when it works
+//	    /*
+//        try {
+//        	//TODO : should we provide another contextSet ?
+//	        NodeSet contextSet = NodeSet.EMPTY_SET;	        
+//			//Sequence result = service.execute(compiledQuery, contextSet);
+//			//TODO : should we have a special processing ?
+//			LOG.debug("done.");
+//			
+//        } catch (XPathException e) {
+//        	query = null; //prevents future use
+//        	throw new SAXException("Error during endDocument", e);
+//		}	
+//		*/		
+//		
+//        //TODO : check that result is a document node
+//		//TODO : Stream result to originalOutputHandler 
+//	}
+    
+	/**
+	 * Returns a String representation of the Trigger event
+	 * 
+	 * @param event The Trigger event
+	 * 
+	 * @return The String representation
+	 */
+    public static String eventToString(int event)
+    {
+    	return EVENTS[event];
     }
-
-    // Collection's methods
+    
+    //Collection's methods
 
     @Override
     public void beforeCreateCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.CREATE_COLLECTION)) {
-            prepare(1, broker, txn, uri, (XmldbURI) null, true);
-        } else {
-            execute(true, broker, txn, beforeCreateCollection, uri);
+            if (events.contains(TriggerEvents.EVENTS.CREATE_COLLECTION)) {
+                    prepare(1, broker, txn, uri, (XmldbURI) null, true);
+            } else {
+                execute(true, broker, txn, beforeCreateCollection, uri);
         }
     }
 
     @Override
     public void afterCreateCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.CREATE_COLLECTION)) {
-            finish(1, broker, txn, collection.getURI(), (XmldbURI) null, true);
-        } else {
-            execute(false, broker, txn, afterCreateCollection, collection.getURI());
+            if (events.contains(TriggerEvents.EVENTS.CREATE_COLLECTION)) {
+                    finish(1, broker, txn, collection.getURI(), (XmldbURI) null, true);
+            } else {
+                execute(false, broker, txn, afterCreateCollection, collection.getURI());
         }
 
     }
 
     @Override
     public void beforeCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.COPY_COLLECTION)) {
-            prepare(5, broker, txn, collection.getURI(), newUri, true);
-        } else {
-            execute(true, broker, txn, beforeCopyCollection, collection.getURI(), newUri);
+            if (events.contains(TriggerEvents.EVENTS.COPY_COLLECTION)) {
+                    prepare(5, broker, txn, collection.getURI(), newUri, true);
+            } else {
+                execute(true, broker, txn, beforeCopyCollection, collection.getURI(), newUri);
         }
     }
 
     @Override
     public void afterCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.COPY_COLLECTION)) {
-            finish(5, broker, txn, collection.getURI(), newUri, true);
-        } else {
-            execute(false, broker, txn, afterCopyCollection, collection.getURI(), newUri);
+            if (events.contains(TriggerEvents.EVENTS.COPY_COLLECTION)) {
+                    finish(5, broker, txn, collection.getURI(), newUri, true);
+            } else {
+                execute(false, broker, txn, afterCopyCollection, collection.getURI(), newUri);
         }
     }
 
     @Override
     public void beforeMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI newUri) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.MOVE_COLLECTION)) {
-            prepare(7, broker, txn, collection.getURI(), newUri, true);
-        } else {
-            execute(true, broker, txn, beforeMoveCollection, collection.getURI(), newUri);
+            if (events.contains(TriggerEvents.EVENTS.MOVE_COLLECTION)) {
+                    prepare(7, broker, txn, collection.getURI(), newUri, true);
+            } else {
+                execute(true, broker, txn, beforeMoveCollection, collection.getURI(), newUri);
         }
     }
 
     @Override
     public void afterMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.MOVE_COLLECTION)) {
-            finish(7, broker, txn, oldUri, collection.getURI(), true);
-        } else {
-            execute(false, broker, txn, afterMoveCollection, oldUri, collection.getURI());
+            if (events.contains(TriggerEvents.EVENTS.MOVE_COLLECTION)) {
+                    finish(7, broker, txn, oldUri, collection.getURI(), true);
+            } else {
+                execute(false, broker, txn, afterMoveCollection, oldUri, collection.getURI());
         }
     }
 
     @Override
     public void beforeDeleteCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.DELETE_COLLECTION)) {
-            prepare(9, broker, txn, collection.getURI(), (XmldbURI) null, true);
-        } else {
-            execute(true, broker, txn, beforeDeleteCollection, collection.getURI());
+            if (events.contains(TriggerEvents.EVENTS.DELETE_COLLECTION)) {
+                    prepare(9, broker, txn, collection.getURI(), (XmldbURI) null, true);
+            } else {
+                execute(true, broker, txn, beforeDeleteCollection, collection.getURI());
         }
     }
 
     @Override
     public void afterDeleteCollection(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.DELETE_COLLECTION)) {
-            finish(9, broker, txn, collection.getURI(), (XmldbURI) null, true);
-        } else {
-            execute(false, broker, txn, afterDeleteCollection, uri);
+            if (events.contains(TriggerEvents.EVENTS.DELETE_COLLECTION)) {
+                    finish(9, broker, txn, collection.getURI(), (XmldbURI) null, true);
+            } else {
+                execute(false, broker, txn, afterDeleteCollection, uri);
         }
     }
 
     @Override
     public void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.CREATE_DOCUMENT)) {
-            prepare(0, broker, txn, uri, (XmldbURI) null, false);
-        } else {
-            execute(true, broker, txn, beforeCreateDocument, uri);
+            if (events.contains(TriggerEvents.EVENTS.CREATE_DOCUMENT)) {
+                    prepare(0, broker, txn, uri, (XmldbURI) null, false);
+            } else {
+                execute(true, broker, txn, beforeCreateDocument, uri);
         }
     }
 
     @Override
     public void afterCreateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-        if (events.contains(TriggerEvents.EVENTS.CREATE_DOCUMENT)) {
-            finish(0, broker, txn, document.getURI(), (XmldbURI) null, false);
-        } else {
-            execute(false, broker, txn, afterCreateDocument, document.getURI());
+            if (events.contains(TriggerEvents.EVENTS.CREATE_DOCUMENT)) {
+                    finish(0, broker, txn, document.getURI(), (XmldbURI) null, false);
+            } else {
+                execute(false, broker, txn, afterCreateDocument, document.getURI());
         }
     }
 

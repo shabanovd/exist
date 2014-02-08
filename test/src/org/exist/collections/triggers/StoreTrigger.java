@@ -33,7 +33,7 @@ import java.util.Map;
 /**
  * Test trigger to check if trigger configuration is working properly.
  */
-public class StoreTrigger extends FilteringTrigger {
+public class StoreTrigger extends SAXTrigger {
     
     public void configure(DBBroker broker, org.exist.collections.Collection parent, Map<String, List<?>> parameters) throws TriggerException {
         super.configure(broker, parent, parameters);

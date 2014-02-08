@@ -24,8 +24,9 @@ package org.exist.collections.triggers;
  * forwards all SAX events to the output content handler.
  * 
  * @author wolf
+ * 
+ * @deprecated use SAXTrigger
  */
-@Deprecated
 public abstract class FilteringTrigger extends SAXTrigger {
 
 }

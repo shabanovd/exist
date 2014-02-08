@@ -21,13 +21,10 @@
  */
 package org.exist.storage;
 
-import static org.junit.Assert.*;
-
 import java.io.*;
 import java.util.Date;
 import java.util.Iterator;
 
-import org.exist.CommonMethods;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
@@ -37,37 +34,39 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
+import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
 import org.exist.util.LockException;
 import org.exist.util.MimeType;
 import org.exist.xmldb.XmldbURI;
+import org.junit.After;
 import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
-public class RecoverBinaryTest2 extends CommonMethods {
-
+public class RecoverBinaryTest2 {
+    
     private static String directory = "webapp/resources";
     
     //private static File dir = new File(directory);
-    
+
     @Test
-	public void test() throws Exception {
-		testStore();
-		stopDB();
-		
-		testRead();
-		stopDB();
+    public void storeAndRead() {
+        store();
+        tearDown();
+        read();
+        tearDown();
+        read2();
+    }
 
-		testRead2();
-	}
-    
-    public void testStore() {
+    //@Test
+    public void store() {
         BrokerPool.FORCE_CORRUPTION = true;
-        
-        BrokerPool pool = startDB();        
-        assertNotNull(pool);
-
+        BrokerPool pool = null;        
         DBBroker broker = null;
         try {
+            pool = startDB();
+            assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);            
             TransactionManager transact = pool.getTransactionManager();
@@ -94,16 +93,16 @@ public class RecoverBinaryTest2 extends CommonMethods {
             pool.release(broker);
         }
     }
-    
-    public void testRead() {
-        System.out.println("testRead2() ...\n");
 
+    //@Test
+    public void read() {
         BrokerPool.FORCE_CORRUPTION = false;
-        BrokerPool pool = startDB();
-        assertNotNull(pool);        
-        
+        BrokerPool pool = null;
         DBBroker broker = null;
         try {
+            System.out.println("testRead2() ...\n");
+            pool = startDB();
+            assertNotNull(pool);        
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
 
@@ -132,8 +131,9 @@ public class RecoverBinaryTest2 extends CommonMethods {
                 pool.release(broker);
         }
     }
-    
-    public void testRead2() {
+
+    //@Test
+    public void read2() {
         BrokerPool.FORCE_CORRUPTION = false;
         BrokerPool pool = null;
         DBBroker broker = null;
@@ -195,5 +195,22 @@ public class RecoverBinaryTest2 extends CommonMethods {
                 }
             }
         }
+    }
+    
+    protected BrokerPool startDB() {
+        try {
+            Configuration config = new Configuration();
+            BrokerPool.configure(1, 5, config);
+            return BrokerPool.getInstance();
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }
+        return null;
+    }
+
+    @After
+    public void tearDown() {
+        BrokerPool.stopAll(false);
     }
 }

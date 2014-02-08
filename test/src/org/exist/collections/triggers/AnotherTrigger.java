@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * Test trigger to check if trigger configuration is working properly.
  */
-public class AnotherTrigger extends FilteringTrigger {
+public class AnotherTrigger extends SAXTrigger {
     
     protected static StringBuilder sb = null;
 

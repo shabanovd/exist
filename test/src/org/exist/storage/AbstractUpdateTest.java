@@ -21,9 +21,6 @@
  */
 package org.exist.storage;
 
-import static org.junit.Assert.*;
-
-import org.exist.CommonMethods;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DocumentImpl;
@@ -32,15 +29,19 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
+import org.exist.util.Configuration;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
+import org.junit.After;
 import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
-public abstract class AbstractUpdateTest extends CommonMethods {
+public abstract class AbstractUpdateTest {
 
 	protected static XmldbURI TEST_COLLECTION_URI = XmldbURI.ROOT_COLLECTION_URI.append("test");
     protected static String TEST_XML = 
@@ -48,16 +49,15 @@ public abstract class AbstractUpdateTest extends CommonMethods {
         "<products/>";
 
     @Test
-    public void testRead() {        
+    public void read() {
     	BrokerPool.FORCE_CORRUPTION = false;         
         
-        BrokerPool pool = startDB();
-        assertNotNull(pool);
-
+        BrokerPool pool = null;
         DBBroker broker = null;
         try {
         	System.out.println("testRead() ...\n");  
         	
+        	pool = startDB();
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             Serializer serializer = broker.getSerializer();
             serializer.reset();
@@ -81,7 +81,7 @@ public abstract class AbstractUpdateTest extends CommonMethods {
         } catch (Exception e) {            
             fail(e.getMessage());
         } finally {
-            pool.release(broker);
+            if (pool != null) pool.release(broker);
         }
     }
 
@@ -112,4 +112,20 @@ public abstract class AbstractUpdateTest extends CommonMethods {
 	    }  
 	    return info;
     }
+    
+    protected BrokerPool startDB() {
+        try {
+            Configuration config = new Configuration();
+            BrokerPool.configure(1, 5, config);
+            return BrokerPool.getInstance();
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        return null;
+    }
+
+    @After
+    public void tearDown() {
+        BrokerPool.stopAll(false);
+    }    
 }

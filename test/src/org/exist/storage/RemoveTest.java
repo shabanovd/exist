@@ -21,8 +21,6 @@
  */
 package org.exist.storage;
 
-import static org.junit.Assert.*;
-
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentImpl;
@@ -36,22 +34,23 @@ import org.exist.test.TestConstants;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xupdate.Modification;
 import org.exist.xupdate.XUpdateProcessor;
-import org.junit.Test;
 import org.xml.sax.InputSource;
+import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.io.StringReader;
 
 public class RemoveTest extends AbstractUpdateTest {
-
-	@Test
-	public void testUpdate() {
+    
+    @Test
+    public void update() {
         BrokerPool.FORCE_CORRUPTION = true;
-
-        BrokerPool pool = startDB();
-    	assertNotNull(pool);
-        
+        BrokerPool pool = null;        
         DBBroker broker = null;
         try {
+        	pool = startDB();
+        	assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);            
             TransactionManager mgr = pool.getTransactionManager();

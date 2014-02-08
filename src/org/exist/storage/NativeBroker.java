@@ -54,8 +54,10 @@ import org.exist.collections.CollectionConfigurationException;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.triggers.CollectionTrigger;
 import org.exist.collections.triggers.CollectionTriggers;
+import org.exist.collections.triggers.CollectionTriggersVisitor;
 import org.exist.collections.triggers.DocumentTrigger;
 import org.exist.collections.triggers.DocumentTriggers;
+import org.exist.collections.triggers.DocumentTriggersVisitor;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.*;
 import org.exist.indexing.StreamListener;
@@ -685,7 +687,10 @@ public class NativeBroker extends DBBroker {
                 Collection sub;
                 Collection current = getCollection(XmldbURI.ROOT_COLLECTION_URI);
                 if (current == null) {
-                    LOG.debug("Creating root collection '" + XmldbURI.ROOT_COLLECTION_URI + "'");
+                    
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Creating root collection '" + XmldbURI.ROOT_COLLECTION_URI + "'");
+                    }
                     
                     final CollectionTrigger trigger = new CollectionTriggers(this);
                     
@@ -761,7 +766,7 @@ public class NativeBroker extends DBBroker {
                         final CollectionTrigger trigger = new CollectionTriggers(this, current);
                         
                         trigger.beforeCreateCollection(this, transaction, path);
-            	        
+                        
                         sub = new Collection(this, path);
 			
                         sub.setId(getNextCollectionId(transaction));
@@ -1071,9 +1076,9 @@ public class NativeBroker extends DBBroker {
                 final XmldbURI parentName = collection.getParentURI();
                 final Collection parent = parentName == null ? collection : getCollection(parentName);
 
-                final CollectionTrigger triggers = new CollectionTriggers(this, parent);
-
-                triggers.beforeCopyCollection(this, transaction, collection, dstURI);
+                final CollectionTrigger trigger = new CollectionTriggers(this, parent);
+                
+                trigger.beforeCopyCollection(this, transaction, collection, dstURI);
 
                 //atomically check all permissions in the tree to ensure a copy operation will succeed before starting copying
                 checkPermissionsForCopy(collection, destination.getURI());
@@ -1082,7 +1087,7 @@ public class NativeBroker extends DBBroker {
                 
                 final Collection newCollection = doCopyCollection(transaction, docTrigger, collection, destination, newName);
 
-                triggers.afterCopyCollection(this, transaction, newCollection, srcURI);
+                trigger.afterCopyCollection(this, transaction, newCollection, srcURI);
             } finally {
                 lock.release(Lock.WRITE_LOCK);
                 pool.getProcessMonitor().endJob();
@@ -1222,7 +1227,7 @@ public class NativeBroker extends DBBroker {
             final XmldbURI dstURI = destination.getURI().append(newName);
 
             final CollectionTrigger trigger = new CollectionTriggers(this, parent);
-
+            
             trigger.beforeMoveCollection(this, transaction, collection, dstURI);
             
             // sourceDir must be known in advance, because once moveCollectionRecursive
@@ -1319,6 +1324,7 @@ public class NativeBroker extends DBBroker {
             } finally {
                 lock.release(Lock.WRITE_LOCK);
             }
+            
             trigger.afterMoveCollection(this, transaction, collection, srcURI);
             
             for(final Iterator<XmldbURI> i = collection.collectionIterator(this); i.hasNext(); ) {
@@ -1589,7 +1595,7 @@ public class NativeBroker extends DBBroker {
                 return true;
                 
             }
-		} finally {
+        } finally {
             pool.getProcessMonitor().endJob();
         }
     }
@@ -2037,17 +2043,17 @@ public class NativeBroker extends DBBroker {
 
     public void storeMetadata(final Txn transaction, final DocumentImpl doc) throws TriggerException {
     	final Collection col = doc.getCollection();
-        final DocumentTrigger trigger = new DocumentTriggers(this, col);
-
-        trigger.beforeUpdateDocumentMetadata(this, transaction, doc);
+    	final DocumentTrigger trigger = new DocumentTriggers(this, col);
+    	
+    	trigger.beforeUpdateDocumentMetadata(this, transaction, doc);
 
     	storeXMLResource(transaction, doc);
     	
     	trigger.afterUpdateDocumentMetadata(this, transaction, doc);
     }
 
-	private File getCollectionFile(File dir,XmldbURI uri,boolean create) throws IOException {
-       return getCollectionFile(dir,null,uri,create);
+    private File getCollectionFile(File dir,XmldbURI uri,boolean create) throws IOException {
+        return getCollectionFile(dir,null,uri,create);
     }
     
     public File getCollectionBinaryFileFsPath(XmldbURI uri) {
@@ -2475,7 +2481,7 @@ public class NativeBroker extends DBBroker {
                 final XmldbURI oldUri = doc.getURI();
                 
                 final DocumentTrigger trigger = new DocumentTriggers(this, collection);
-
+                
                 if(oldDoc == null) {
                     if(!destination.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
                         throw new PermissionDeniedException("Account '" + getSubject().getName() + "' does not have write access on the destination collection '" + destination.getURI() + "'.");

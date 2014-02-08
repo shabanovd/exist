@@ -21,11 +21,7 @@
  */
 package org.exist.storage;
 
-import static org.junit.Assert.*;
-
 import java.io.File;
-
-import org.exist.CommonMethods;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DocumentImpl;
@@ -34,27 +30,44 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
+import org.exist.util.Configuration;
 import org.exist.xmldb.CollectionManagementServiceImpl;
 import org.exist.xmldb.XmldbURI;
+import org.junit.After;
 import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import org.xml.sax.InputSource;
 import org.xmldb.api.DatabaseManager;
+import org.xmldb.api.base.Database;
 import org.xmldb.api.base.Resource;
 
-public class CopyCollectionTest extends CommonMethods {
+public class CopyCollectionTest {
 
+    @Test
+    public void storeAndRead() {
+        store();
+        tearDown();
+        read();
+    }
 
-	@Test
-	public void test() throws Exception {
-		testStore();
-		testRead();
-		testStoreAborted();
-		testReadAborted();
-	}
-	
-	public void testStore() {
+    @Test
+    public void storeAndReadAborted() {
+        storeAborted();
+        tearDown();
+        readAborted();
+    }
+
+    @Test
+    public void storeAndReadXmldb() {
+        xmldbStore();
+        tearDown();
+        xmldbRead();
+    }
+
+    private void store() {
         BrokerPool.FORCE_CORRUPTION = true;
-        BrokerPool pool = startDB(true);
+        BrokerPool pool = startDB();
         DBBroker broker = null;
         
         try {
@@ -91,15 +104,15 @@ public class CopyCollectionTest extends CommonMethods {
             pool.release(broker);
         }
     }
-    
-    public void testRead() {
+
+    private void read() {
         BrokerPool.FORCE_CORRUPTION = false;
         BrokerPool pool = null;
         DBBroker broker = null;
         
         try {
         	System.out.println("testRead() ...\n");  
-        	pool = startDB(true);
+        	pool = startDB();
         	assertNotNull(pool);
         	broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
@@ -119,14 +132,14 @@ public class CopyCollectionTest extends CommonMethods {
             if (pool != null) pool.release(broker);
         }
     }
-    
-    public void testStoreAborted() {
+
+    private void storeAborted() {
         BrokerPool.FORCE_CORRUPTION = true;
         BrokerPool pool = null;
 
         DBBroker broker = null;
         try {
-        	pool = startDB(true);
+        	pool = startDB();
         	assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
@@ -172,15 +185,15 @@ public class CopyCollectionTest extends CommonMethods {
             if (pool != null) pool.release(broker);
         }
     }
-    
-    public void testReadAborted() {
+
+    private void readAborted() {
         BrokerPool.FORCE_CORRUPTION = false;
         BrokerPool pool = null;
         DBBroker broker = null;
        
         try {
         	System.out.println("testReadAborted() ...\n");
-        	pool = startDB(true);
+        	pool = startDB();
         	assertNotNull(pool);
         	broker = pool.get(pool.getSecurityManager().getSystemSubject());
         	assertNotNull(broker);
@@ -196,12 +209,12 @@ public class CopyCollectionTest extends CommonMethods {
             pool.release(broker);
         }
     }
-    
-    public void testXMLDBStore() {
+
+    private void xmldbStore() {
         BrokerPool.FORCE_CORRUPTION = false;
         BrokerPool pool = null;
         try {
-        	pool = startDB(true);
+        	pool = startDB();
         	assertNotNull(pool);
 	        org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "");
 	        assertNotNull(root);
@@ -236,13 +249,13 @@ public class CopyCollectionTest extends CommonMethods {
 	        fail(e.getMessage()); 
 	    }
     }
-    
-    public void testXMLDBRead() {    	
+
+    private void xmldbRead() {
         BrokerPool.FORCE_CORRUPTION = false;
         BrokerPool pool = null;
         
         try {
-        	pool = startDB(true);
+        	pool = startDB();
         	assertNotNull(pool);
 	        org.xmldb.api.base.Collection test = DatabaseManager.getCollection(XmldbURI.LOCAL_DB + "/destination/test3", "admin", "");
 	        assertNotNull(test);
@@ -252,14 +265,34 @@ public class CopyCollectionTest extends CommonMethods {
 	        
 	        org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "");
 	        assertNotNull(root);
-	        
 	        CollectionManagementServiceImpl mgr = (CollectionManagementServiceImpl) 
 	            root.getService("CollectionManagementService", "1.0");
 	        assertNotNull(mgr);
-	        
 	        mgr.removeCollection("destination");
 	    } catch (Exception e) {            
 	        fail(e.getMessage()); 
 	    }        
+    }
+    
+    protected BrokerPool startDB() {
+        try {
+            Configuration config = new Configuration();
+            BrokerPool.configure(1, 5, config);
+            
+            // initialize driver
+            Database database = (Database) Class.forName("org.exist.xmldb.DatabaseImpl").newInstance();
+            database.setProperty("create-database", "true");
+            DatabaseManager.registerDatabase(database);
+
+            return BrokerPool.getInstance();
+        } catch (Exception e) {            
+            fail(e.getMessage());
+        }
+        return null;
+    }
+
+    @After
+    public void tearDown() {
+        BrokerPool.stopAll(false);
     }
 }

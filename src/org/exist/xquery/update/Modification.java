@@ -48,12 +48,7 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.util.hashtable.Int2ObjectHashMap;
-import org.exist.xquery.AbstractExpression;
-import org.exist.xquery.AnalyzeContextInfo;
-import org.exist.xquery.Cardinality;
-import org.exist.xquery.Expression;
-import org.exist.xquery.XPathException;
-import org.exist.xquery.XQueryContext;
+import org.exist.xquery.*;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.NodeValue;
 import org.exist.xquery.value.Sequence;
@@ -111,6 +106,14 @@ public abstract class Modification extends AbstractExpression
 		if (value != null)
 			{value.resetState(postOptimization);}
 	}
+
+    @Override
+    public void accept(ExpressionVisitor visitor) {
+        select.accept(visitor);
+        if (value != null) {
+            value.accept(visitor);
+        }
+    }
 
 	/* (non-Javadoc)
 	 * @see org.exist.xquery.Expression#analyze(org.exist.xquery.Expression, int)
@@ -294,13 +297,12 @@ public abstract class Modification extends AbstractExpression
 	private void prepareTrigger(Txn transaction, DocumentImpl doc) throws TriggerException {
 
 	    final Collection col = doc.getCollection();
-	    final DBBroker broker = context.getBroker();
-	    
+            final DBBroker broker = context.getBroker();
+            
             final DocumentTrigger trigger = new DocumentTriggers(broker, col);
             
             //prepare the trigger
             trigger.beforeUpdateDocument(context.getBroker(), transaction, doc);
-            
             triggers.put(doc.getDocId(), trigger);
 	}
 	
@@ -313,9 +315,9 @@ public abstract class Modification extends AbstractExpression
 	 */
 	private void finishTrigger(Txn transaction, DocumentImpl doc) throws TriggerException {
             //finish the trigger
-            final DocumentTrigger triggersVisitor = triggers.get(doc.getDocId());
-            if(triggersVisitor != null) {
-                triggersVisitor.afterUpdateDocument(context.getBroker(), transaction, doc);
+            final DocumentTrigger trigger = triggers.get(doc.getDocId());
+            if(trigger != null) {
+                trigger.afterUpdateDocument(context.getBroker(), transaction, doc);
             }
 	}
 	

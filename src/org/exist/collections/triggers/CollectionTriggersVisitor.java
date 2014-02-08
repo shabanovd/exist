@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2011-2014 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@
 package org.exist.collections.triggers;
 
 import java.util.List;
-
 import org.apache.log4j.Logger;
 
 /**
@@ -29,8 +28,8 @@ import org.apache.log4j.Logger;
  */
 public class CollectionTriggersVisitor extends AbstractTriggersVisitor<CollectionTrigger> {
 
-    protected final static Logger LOG = Logger.getLogger(CollectionTriggersVisitor.class);
-
+    protected Logger LOG = Logger.getLogger(getClass());
+    
     public CollectionTriggersVisitor(List<CollectionTrigger> triggers) {
         super(triggers);
     }

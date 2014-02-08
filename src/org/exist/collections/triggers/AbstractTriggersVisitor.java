@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2011-2014 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -30,18 +30,18 @@ import org.exist.storage.DBBroker;
  * @author aretter
  */
 public abstract class AbstractTriggersVisitor<T extends Trigger> implements TriggersVisitor<T> {
-    
-    private List<T> triggers = null;
+
+    private List<T> triggers;
     
     public AbstractTriggersVisitor(List<T> triggers) {
         this.triggers = triggers;
     }
-
+    
     @Override
     public void configure(DBBroker broker, Collection parent, Map<String, List<? extends Object>> parameters) throws TriggerException {
     }
-
-    public List<T> getTriggers() {
+    
+    public List<T> getTriggers() throws TriggerException {
         return triggers;
     }
 }

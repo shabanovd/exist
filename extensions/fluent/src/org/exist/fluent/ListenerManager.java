@@ -347,10 +347,14 @@ public class ListenerManager {
 
 		@Override
 		public void beforeUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+                    EventKey key = new EventKey(document.getURI().toString(), Trigger.BEFORE_UPDATE_META);
+                    INSTANCE.fire(key, document, null, true);
 		}
 		
 		@Override
 		public void afterUpdateDocumentMetadata(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
+                    EventKey key = new EventKey(document.getURI().toString(), Trigger.AFTER_UPDATE_META);
+                    INSTANCE.fire(key, document, null, true);
 		}
 	}
 }

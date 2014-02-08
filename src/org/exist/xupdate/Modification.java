@@ -315,11 +315,11 @@ public abstract class Modification {
 	 * @throws TriggerException 
 	 */
 	private void prepareTrigger(Txn transaction, DocumentImpl doc) throws TriggerException {
-	    
+            
 	    final Collection col = doc.getCollection();
-	    
+	        
             final DocumentTrigger trigger = new DocumentTriggers(broker, col);
-
+            
             trigger.beforeUpdateDocument(broker, transaction, doc);
             
             triggers.put(doc.getDocId(), trigger);

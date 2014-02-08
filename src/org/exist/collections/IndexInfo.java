@@ -61,7 +61,7 @@ public class IndexInfo {
     }
 
     //XXX: make protected
-    public void setTriggersVisitor(DocumentTriggers triggersVisitor) {
+    public void setTriggers(DocumentTriggers triggersVisitor) {
         this.docTriggers = triggersVisitor;
     }
 
@@ -90,8 +90,8 @@ public class IndexInfo {
         if(entityResolver != null) {
             reader.setEntityResolver(entityResolver);
         }
-        LexicalHandler lexicalHandler = docTriggers == null ? indexer : docTriggers; //.getLexicalInputHandler();
-        ContentHandler contentHandler = docTriggers == null ? indexer : docTriggers; //.getInputHandler();
+        final LexicalHandler lexicalHandler = docTriggers == null ? indexer : docTriggers;
+        final ContentHandler contentHandler = docTriggers == null ? indexer : docTriggers;
         reader.setProperty(Namespaces.SAX_LEXICAL_HANDLER, lexicalHandler);
         reader.setContentHandler(contentHandler);
         reader.setErrorHandler(indexer);

@@ -1162,9 +1162,9 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             }
             
             doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
-
-            DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled() ? getConfiguration(broker) : null);
             
+            DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled() ? getConfiguration(broker) : null);
+
             trigger.beforeDeleteDocument(broker, transaction, doc);
 
             try {
@@ -1618,14 +1618,14 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             final DocumentTriggers trigger = new DocumentTriggers(broker, indexer, this, isTriggersEnabled() ? config : null);
             trigger.setValidating(true);
             
-            info.setTriggersVisitor(trigger);
+            info.setTriggers(trigger);
 
             if(oldDoc == null) {
-            	trigger.beforeCreateDocument(broker, transaction, getURI().append(docUri));
+                trigger.beforeCreateDocument(broker, transaction, getURI().append(docUri));
             } else {
-            	trigger.beforeUpdateDocument(broker, transaction, oldDoc);
+                trigger.beforeUpdateDocument(broker, transaction, oldDoc);
             }
-            
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Scanning document " + getURI().append(docUri));
             }
@@ -1870,7 +1870,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             blob.setContentLength(size);
             
             final DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled() ? getConfiguration(broker) : null);
-
+            
             if (oldDoc == null) {
                 trigger.beforeCreateDocument(broker, transaction, blob.getURI());
             } else {
@@ -1890,7 +1890,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             broker.storeBinaryResource(transaction, blob, is);
             addDocument(transaction, broker, blob, oldDoc);
             broker.storeXMLResource(transaction, blob);
-
+            
             if (oldDoc == null) {
                 trigger.afterCreateDocument(broker, transaction, blob);
             } else {

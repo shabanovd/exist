@@ -40,7 +40,7 @@ import org.apache.log4j.Logger;
 /**
  * Test trigger to check if trigger configuration is working properly.
  */
-public class TestTrigger extends FilteringTrigger implements DocumentTrigger {
+public class TestTrigger extends SAXTrigger implements DocumentTrigger {
 
     protected Logger LOG = Logger.getLogger(getClass());
 
