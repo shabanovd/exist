@@ -410,6 +410,9 @@ public class QueryNodes {
 
 		@Override
 		public void collect(int doc) {
+		    if (this.nodeIdValues == null) {
+		        return;
+		    }
 			try {
 				final float score = scorer.score();
 
