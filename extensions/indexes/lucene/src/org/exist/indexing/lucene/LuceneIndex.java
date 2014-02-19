@@ -12,6 +12,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.exist.Database;
+import org.exist.EXistException;
 import org.exist.backup.RawDataBackup;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfiguration;
@@ -42,9 +43,11 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
 
     public final static String ID = LuceneIndex.class.getName();
 
-	private static final String DIR_NAME = "lucene";
-	
-	public static final boolean DEBUG = false;
+    private static final String DIR_NAME = "lucene";
+
+    public static final boolean DEBUG = false;
+    
+    protected SymbolTable symbols = null;
 
     protected Directory directory;
     protected Analyzer defaultAnalyzer;
@@ -119,8 +122,7 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
             LOG.debug("Opening Lucene index directory: " + dir.getAbsolutePath());
         if (dir.exists()) {
             if (!dir.isDirectory())
-                throw new DatabaseConfigurationException("Lucene index location is not a directory: " +
-                    dir.getAbsolutePath());
+                throw new DatabaseConfigurationException("Lucene index location is not a directory: " + dir.getAbsolutePath());
         } else
             dir.mkdirs();
         IndexWriter writer = null;
@@ -131,11 +133,21 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
             writer = getWriter();
             
         } catch (IOException e) {
-            throw new DatabaseConfigurationException("Exception while reading lucene index directory: " +
-                e.getMessage(), e);
+            throw new DatabaseConfigurationException("Exception while reading lucene index directory: " + e.getMessage(), e);
         } finally {
             releaseWriter(writer);
         }
+        
+        //init size must be prime
+        try {
+            symbols = new SymbolTable(1031, new File(dir, "symbols.dbx"));
+        } catch (EXistException e) {
+            throw new DatabaseConfigurationException("Symbols table can not be initialized.", e);
+        }
+    }
+    
+    public SymbolTable getSymbolTable() {
+        return symbols;
     }
 
     @Override
@@ -152,6 +164,8 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
             }
             taxonomyDirectory.close();
             directory.close();
+            
+            symbols.close();
         } catch (IOException e) {
             throw new DBException("Caught exception while closing lucene indexes: " + e.getMessage());
         }

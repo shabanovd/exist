@@ -1227,7 +1227,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     return;
                 
                 if (value instanceof String) {
-                    if (((String) value).isEmpty())
+                    String toIndex = (String) value;
+                    if (toIndex.isEmpty())
                         return;
                     
                     String name = key.getLocalName();//LuceneUtil.encodeQName(key, index.getBrokerPool().getSymbols());
@@ -1236,33 +1237,44 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     if (config != null)
                     	fieldConfig = config.getFieldType(name);
                     
-                    org.apache.lucene.document.FieldType ft = null;
-                    if (fieldConfig != null)
+                    org.apache.lucene.document.FieldType ft = defaultFT;
+                    if (fieldConfig != null) {
                         ft  = fieldConfig.getFieldType();
-                    
-                    if (ft == null) {
-                        ft = defaultFT;
+                        
+                        if (fieldConfig.isSymbolized()) {
+                            try {
+                                toIndex = index.symbols.getIdtoHexString(toIndex);
+                            } catch (Throwable e) {
+                                LOG.error(e, e);
+                                //skip to avoid storage corruption
+                            }
+                        };
                     }
                     
                     Field fld;
                     
                     try {
                         if (fieldConfig == null || fieldConfig.numericType == null) {
-                            fld = new Field(name, (String)value, ft);
+                            fld = new Field(name, toIndex, ft);
+                            
                         } else if (fieldConfig.numericType == NumericType.DOUBLE) {
-                            fld = new DoubleField(name, Double.valueOf((String)value), ft);
+                            fld = new DoubleField(name, Double.valueOf(toIndex), ft);
+                            
                         } else if (fieldConfig.numericType == NumericType.FLOAT) {
-                            fld = new FloatField(name, Float.valueOf((String)value), ft);
+                            fld = new FloatField(name, Float.valueOf(toIndex), ft);
+                            
                         } else if (fieldConfig.numericType == NumericType.INT) {
-                            fld = new IntField(name, Integer.valueOf((String)value), ft);
+                            fld = new IntField(name, Integer.valueOf(toIndex), ft);
+                            
                         } else if (fieldConfig.numericType == NumericType.LONG) {
-                            fld = new LongField(name, Long.valueOf((String)value), ft);
+                            fld = new LongField(name, Long.valueOf(toIndex), ft);
+                            
                         } else {
-                            fld = new Field(name, (String)value, ft);
+                            fld = new Field(name, toIndex, ft);
                         }
                     } catch (NumberFormatException e) {
                         LOG.error(e.getMessage(), e);
-                        fld = new Field(name, (String)value, ft);
+                        fld = new Field(name, toIndex, ft);
                     }
                     
                     if (fieldConfig != null && fieldConfig.getBoost() > 0)
@@ -1271,7 +1283,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     metas.add(fld);
                     //System.out.println(" "+name+" = "+value.toString());
                     
-                    paths.add(new CategoryPath(name, (String)value));
+                    paths.add(new CategoryPath(name, toIndex));
                 }
             }
         });

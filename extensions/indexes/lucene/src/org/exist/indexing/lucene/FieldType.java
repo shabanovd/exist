@@ -26,6 +26,7 @@ public class FieldType {
 	
 	protected boolean isStore = false;
 	protected boolean isTokenized = false;
+        protected boolean isSymbolized = false;
 	
 	protected NumericType numericType = null;
 	
@@ -64,7 +65,11 @@ public class FieldType {
 		return isTokenized;
 	}
 	
-	public void setNumericType(String str) {
+        public boolean isSymbolized() {
+            return isSymbolized;
+    }
+
+        public void setNumericType(String str) {
 		numericType = NumericType.valueOf(str);
 //		throw new IllegalArgumentException("Unknown numeric-type '"+numericTypeAttr+"'.");
 	}

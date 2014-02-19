@@ -84,6 +84,14 @@ public class FacetMatchListenerTest extends FacetAbstract {
         "	</index>" +
         "</collection>";
 
+    private static String CONF3 =
+        "<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
+        "       <index>" +
+        "       <text qname=\"para\"/>" +
+        "       <text qname=\"term\"/>" +
+        "       </index>" +
+        "</collection>";
+
     private static String MATCH_START = "<exist:match xmlns:exist=\"http://exist.sourceforge.net/NS/exist\">";
     private static String MATCH_END = "</exist:match>";
 

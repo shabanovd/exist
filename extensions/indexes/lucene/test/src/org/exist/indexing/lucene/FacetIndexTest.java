@@ -119,6 +119,26 @@ public class FacetIndexTest extends FacetAbstract {
             "   </index>" +
             "</collection>";
 
+    private static String COLLECTION_CONFIG7 =
+            "<collection xmlns='http://exist-db.org/collection-config/1.0'>" +
+            "   <index xmlns:tei='http://www.tei-c.org/ns/1.0'>" +
+            "       <lucene>" +
+            "           <text qname='article'>" +
+            "               <ignore qname='note'/>" +
+            "               <inline qname='s'/>" +
+            "           </text>" +
+            "           <text qname='p'>" +
+            "               <ignore qname='note'/>" +
+            "               <inline qname='s'/>" +
+            "           </text>" +
+            "           <text qname='head'/>" +
+            "           <ignore qname='note1'/>" +
+            "           <inline qname='s2'/>" +
+            "           <fieldType id='"+STATUS+"' symbolized='yes'/>" +
+            "       </lucene>" +
+            "   </index>" +
+            "</collection>";
+
     private static Map<String, String> metas1 = new HashMap<String, String>();
     static {
         metas1.put(STATUS, "draft");
@@ -569,6 +589,111 @@ public class FacetIndexTest extends FacetAbstract {
     }
     
     @Test
+    public void testSymbolized() {
+        System.out.println("Test symbolized ...");
+        
+        configureAndStore(COLLECTION_CONFIG7, 
+                new Resource[] {
+                    new Resource("test1.xml", XML1, metas1),
+                    new Resource("test2.xml", XML1, metas2),
+                    new Resource("test3.xml", XML1, metas3),
+                    new Resource("test4.xml", XML1, metas4),
+                    new Resource("test5.xml", XML1, metas5),
+                    new Resource("test6.xml", XML1, metas6),
+                });
+        
+        final ArrayList<DocumentImpl> myHits = new ArrayList<DocumentImpl>();
+        
+        Counter<DocumentImpl> cb = new Counter<DocumentImpl>() {
+            @Override
+            public void found(AtomicReader reader, int docNum, DocumentImpl document, float score) {
+                super.found(reader, docNum, document, score);
+                myHits.add( document );
+                //System.out.println("Found! uri (IN TEST QUERY): " + document.getURI().toASCIIString() + " " + score);
+            }
+            
+            public void reset() {
+                super.reset();
+                
+                myHits.clear();
+            }
+        };
+        
+        DBBroker broker = null;
+        try {
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+            assertNotNull(broker);
+
+            final LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
+            
+            FacetSearchParams fsp = new FacetSearchParams(
+                new CountFacetRequest(new CategoryPath(STATUS), 100)
+            );
+
+            MutableDocumentSet docs = new DefaultDocumentSet(1031);
+            broker.getCollection(XmldbURI.xmldbUriFor("/db")).allDocs(broker, docs, true);
+
+            List<QName> qNames = new ArrayList<QName>();
+            qNames = worker.getDefinedIndexes(qNames);
+
+
+            // Parse the query with no default field:
+            Analyzer analyzer = new StandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE);
+
+            String[] fields = new String[qNames.size()];
+            int i = 0;
+            for (QName qName : qNames) {
+                fields[i] = LuceneUtil.encodeQName(qName, db.getSymbols());
+                i++;
+            }
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, fields, analyzer);
+            Query query = parser.parse("a*");
+
+
+            // Sort by status & creation date:
+            List<FacetResult> results = QueryDocuments.query(
+                    worker, docs, query, fsp, cb, 
+                    200, 
+                    new org.apache.lucene.search.Sort(
+                        new SortField(STATUS, SortField.Type.STRING, true),
+                        new SortField(CREATED, SortField.Type.STRING, true)
+                ));
+            System.out.println("Hits: "+myHits.size());
+            debug(results);
+            
+            String encoded = worker.index.getSymbolTable().getIdtoHexString("in review");
+            
+            assertNotNull(encoded);
+            
+            String decoded = worker.index.getSymbolTable().getSymbolFromHexString(encoded);
+            
+            assertEquals("in review", decoded);
+            
+//            String[] mustBe = new String[] {
+//                "/db/test/test1.xml",
+//                "/db/test/test3.xml",
+//                "/db/test/test2.xml",
+//                "/db/test/test4.xml",
+//                "/db/test/test6.xml",
+//                "/db/test/test5.xml",
+//            };
+//            
+//            for (int index = 0; index < myHits.size(); index++) {
+//                assertEquals("at index "+index, mustBe[index], myHits.get(index).getURI().toString());
+//            }
+//
+//            cb.reset();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            db.release(broker);
+        }
+    }
+
+    
+    @Test
     public void testsPossibleNPE() {
         System.out.println("Test NPE ...");
         
@@ -787,9 +912,9 @@ public class FacetIndexTest extends FacetAbstract {
     }
     
     private void debug(List<FacetResult> results) {
-	    for (FacetResult result : results) {
-	    	System.out.println(result);
-	    }
+        for (FacetResult result : results) {
+            System.out.println(result);
+        }
     }
 }
 

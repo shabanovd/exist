@@ -113,6 +113,7 @@ public class LuceneConfigXML {
 	//private final static String BOOST_ATTRIB = "boost";
 	private final static String STORE_ATTRIB = "store";
 	private final static String TOKENIZED_ATTR = "tokenized";
+        private final static String SYMBOLIZED_ATTR = "symbolized";
 	
     private static FieldType parseFieldType(Element config, AnalyzerConfig analyzers) throws DatabaseConfigurationException {
     	FieldType type = new FieldType();
@@ -166,6 +167,11 @@ public class LuceneConfigXML {
         	type.isTokenized = tokenizedAttr.equalsIgnoreCase("yes");
         }
         
+        String symbolizedAttr = config.getAttribute(SYMBOLIZED_ATTR);
+        if (symbolizedAttr != null && symbolizedAttr.length() > 0) {
+                type.isSymbolized = symbolizedAttr.equalsIgnoreCase("yes");
+        }
+
         return type;
     }
     
