@@ -41,6 +41,7 @@ import java.io.File;
 import org.exist.backup.restore.listener.AbstractRestoreListener;
 import org.exist.backup.restore.listener.RestoreListener;
 
+@Deprecated
 public class Restore extends BasicFunction {
 
 	protected final static Logger logger = Logger.getLogger(Restore.class);

@@ -47,7 +47,7 @@ public class FnExport extends BasicFunction {
 		new QName("export", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
 	
 	protected final static String DESCRIPTION =
-		"Restore the database or a section of the database (admin user only).";
+		"Export to backup the database or a section of the database (admin user only).";
 
 	protected final static FunctionParameterSequenceType DIRorFILE = 
 		new FunctionParameterSequenceType("dir-or-file", Type.STRING, Cardinality.EXACTLY_ONE,

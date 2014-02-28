@@ -48,10 +48,10 @@ public class FnImport extends BasicFunction {
 	protected final static Logger logger = Logger.getLogger(FnImport.class);
 
 	protected final static QName NAME = 
-			new QName("import", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
+	        new QName("import", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
 
 	protected final static String DESCRIPTION = 
-		"Restore the database or a section of the database (admin user only).";
+		"Import from backup the database or a section of the database (admin user only).";
 	
 	protected final static FunctionParameterSequenceType DIRorFILE =
 		new FunctionParameterSequenceType("dir-or-file", Type.STRING, Cardinality.EXACTLY_ONE,
