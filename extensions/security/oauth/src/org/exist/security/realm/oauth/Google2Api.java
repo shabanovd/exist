@@ -48,6 +48,7 @@ public class Google2Api extends DefaultApi20 {
 						"Must provide a valid url as callback. Google does not support OOB");
 
 		String scope = "https://www.googleapis.com/auth/userinfo.profile";
+		//String scope = "email%20profile";
 		//config.getScope();
 
 		return String.format(SCOPED_AUTHORIZE_URL, 
