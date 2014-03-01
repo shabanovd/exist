@@ -590,6 +590,7 @@ public class BrokerPool implements Database {
 	private Lock globalXUpdateLock = new ReentrantReadWriteLock("xupdate");
 
     private Subject serviceModeUser = null;
+    private DBBroker serviceBroker = null;
     private boolean inServiceMode = false;
 
     //the time that the database was started
@@ -1598,10 +1599,12 @@ public class BrokerPool implements Database {
 		
 		//No active broker : get one ASAP
 	
-        while (serviceModeUser != null && user != null && !user.equals(serviceModeUser)) {
+        while ((serviceModeUser != null && user != null && !user.equals(serviceModeUser)) || (serviceBroker != null)) {
             try {
                 LOG.debug("Db instance is in service mode. Waiting for db to become available again ...");
-                wait();
+                synchronized (this) {
+                    wait();
+                }
             } catch (final InterruptedException e) {
             }
         }
@@ -1716,13 +1719,14 @@ public class BrokerPool implements Database {
 	}
 
     public DBBroker enterServiceMode(Subject user) throws PermissionDeniedException {
-        if (!user.hasDbaRole())
-            {throw new PermissionDeniedException("Only users of group dba can switch the db to service mode");}
+        if (!user.hasDbaRole()) {
+            throw new PermissionDeniedException("Only users of group dba can switch the db to service mode");
+        }
         
         serviceModeUser = user;
         synchronized (this) {
             if (activeBrokers.size() != 0) {
-                while(!inServiceMode) {
+                while(!inServiceMode && serviceBroker == null) {
                     try {
                         wait();
                     } catch (final InterruptedException e) {
@@ -1741,15 +1745,53 @@ public class BrokerPool implements Database {
     }
 
     public void exitServiceMode(Subject user) throws PermissionDeniedException {
-        if (!user.equals(serviceModeUser))
-            {throw new PermissionDeniedException("The db has been locked by a different user");}
+        if (!user.equals(serviceModeUser)) {
+            throw new PermissionDeniedException("The db has been locked by a different user");
+        }
+        
         serviceModeUser = null;
         inServiceMode = false;
         synchronized (this) {
             this.notifyAll();
         }
     }
-
+    
+    public void enterServiceMode(DBBroker broker) throws PermissionDeniedException {
+        if (!broker.getSubject().hasDbaRole()) {
+            throw new PermissionDeniedException("Only users of group dba can switch the db to service mode");
+        }
+    
+        serviceBroker = broker;
+        synchronized (this) {
+            while(!inServiceMode) {
+                if (activeBrokers.size() > 1) {
+                    try {
+                        wait();
+                    } catch (final InterruptedException e) {
+                    }
+                } else {
+                    inServiceMode = true;
+                }
+            }
+        }
+        
+        checkpoint = true;
+        sync(broker, Sync.MAJOR_SYNC);
+        checkpoint = false;
+    }
+    
+    public void exitServiceMode(DBBroker broker) throws PermissionDeniedException {
+        if (broker != serviceBroker) {
+            throw new PermissionDeniedException("The db has been locked by a broker");
+        }
+        
+        serviceBroker = null;
+        inServiceMode = false;
+        synchronized (this) {
+            this.notifyAll();
+        }
+    }
+    
     public void reportStatus(String message) {
         if (statusReporter != null)
             {statusReporter.setStatus(message);}
