@@ -128,6 +128,7 @@ public abstract class DBBroker extends Observable {
         indexController = new IndexController(this);
     }
     
+    public abstract File getDataFolder();
 
     /**
      * Set the user that is currently using this DBBroker object.

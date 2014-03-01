@@ -200,6 +200,7 @@ public class NativeBroker extends DBBroker {
     protected int nodesCountThreshold = DEFAULT_NODES_BEFORE_MEMORY_CHECK;
 
     protected String dataDir;
+    protected File fsDataDir;
     protected File fsDir;
     protected File fsBackupDir;
     protected int pageSize;
@@ -234,14 +235,21 @@ public class NativeBroker extends DBBroker {
         dataDir = (String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
         if (dataDir == null)
             {dataDir = DEFAULT_DATA_DIR;}
+        
+        fsDataDir = new File(dataDir);
+        if (!fsDataDir.exists()) {
+            if (!fsDataDir.mkdirs()) {
+                throw new EXistException("Cannot create data directory: "+fsDataDir);
+            }
+         }
 
-        fsDir = new File(new File(dataDir),"fs");
+        fsDir = new File(fsDataDir,"fs");
         if (!fsDir.exists()) {
            if (!fsDir.mkdir()) {
               throw new EXistException("Cannot make collection filesystem directory: "+fsDir);
            }
         }
-        fsBackupDir = new File(new File(dataDir),"fs.journal");
+        fsBackupDir = new File(fsDataDir,"fs.journal");
         if (!fsBackupDir.exists()) {
            if (!fsBackupDir.mkdir()) {
               throw new EXistException("Cannot make collection filesystem directory: "+fsBackupDir);
@@ -294,6 +302,10 @@ public class NativeBroker extends DBBroker {
             LOG.debug(e.getMessage(), e);
             throw new EXistException(e);
         }
+    }
+    
+    public File getDataFolder() {
+        return fsDataDir;
     }
 
     @Override
