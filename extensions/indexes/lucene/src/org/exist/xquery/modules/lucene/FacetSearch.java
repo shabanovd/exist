@@ -106,10 +106,10 @@ public class FacetSearch extends BasicFunction {
     		new FunctionParameterSequenceType("max-hits", Type.INTEGER, Cardinality.EXACTLY_ONE, "max hits");
 
     private static final FunctionParameterSequenceType FACET = 
-    		new FunctionParameterSequenceType("facet-request", Type.NODE, Cardinality.ONE_OR_MORE, "facet request");
+    		new FunctionParameterSequenceType("facet-request", Type.NODE, Cardinality.ZERO_OR_MORE, "facet request");
 
     private static final FunctionParameterSequenceType SORT = 
-    		new FunctionParameterSequenceType("sort-criteria", Type.NODE, Cardinality.ONE_OR_MORE, "sort criteria");
+    		new FunctionParameterSequenceType("sort-criteria", Type.NODE, Cardinality.ZERO_OR_MORE, "sort criteria");
 
     private static final FunctionParameterSequenceType HIGHLIGHT = 
     		new FunctionParameterSequenceType("highlight", Type.BOOLEAN, Cardinality.EXACTLY_ONE, "highlight matcher(s)");
@@ -425,7 +425,7 @@ public class FacetSearch extends BasicFunction {
         } catch (Exception ex){
             //ex.printStackTrace();
             LuceneIndexWorker.LOG.error(ex.getMessage(), ex);
-            throw new XPathException(ex);
+            throw new XPathException(this, ex);
         
         } finally {
             index.releaseSearcher(searcher);
@@ -438,7 +438,9 @@ public class FacetSearch extends BasicFunction {
     protected FacetSearchParams parseFacetRequests(Sequence optSeq) throws XPathException {
 
         if (optSeq.isEmpty()) 
-        	throw new XPathException(this, "Facet request can't be ZERO");
+            return null;
+//        if (optSeq.isEmpty()) 
+//        	throw new XPathException(this, "Facet request can't be ZERO");
         
         if (optSeq.getItemCount() > 1) 
         	throw new XPathException(this, "Facet request can't be MANY");

@@ -218,7 +218,7 @@ public abstract class QueryFacetCollector extends Collector {
     List<FacetResult> facetResults = null;
     
     public List<FacetResult> getFacetResults() throws IOException {
-        if (facetResults == null) {
+        if (facetResults == null && searchParams != null) {
             finish();
             facetResults = accumulate();
         }
