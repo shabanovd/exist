@@ -44,7 +44,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.exist.Database;
@@ -77,13 +76,7 @@ public class QueryDocuments {
             searcher = index.getSearcher();
             final TaxonomyReader taxonomyReader = index.getTaxonomyReader();
             
-            FieldValueHitQueue<MyEntry> queue;
-            if (sort == null) {
-                queue = FieldValueHitQueue.create(new SortField[0], maxHits);
-                
-            } else {
-                queue = FieldValueHitQueue.create(sort.getSort(), maxHits);
-            }
+            FieldValueHitQueue<MyEntry> queue = FieldValueHitQueue.create(sort.getSort(), maxHits);
 
             ComparatorCollector collector = new ComparatorCollector(queue, maxHits, docs, callback, searchParams, taxonomyReader);
             
@@ -106,6 +99,14 @@ public class QueryDocuments {
             Query query, FacetSearchParams searchParams,
             SearchCallback<DocumentImpl> callback) 
                     throws IOException, ParseException, TerminatedException {
+        
+        return query(worker, docs, query, searchParams, callback, -1);
+    }
+    
+    public static List<FacetResult> query(LuceneIndexWorker worker, DocumentSet docs,
+            Query query, FacetSearchParams searchParams,
+            SearchCallback<DocumentImpl> callback, int maxHits) 
+                    throws IOException, ParseException, TerminatedException {
 
         final LuceneIndex index = worker.index;
 
@@ -114,7 +115,7 @@ public class QueryDocuments {
             searcher = index.getSearcher();
             final TaxonomyReader taxonomyReader = index.getTaxonomyReader();
 
-            DocumentHitCollector collector = new DocumentHitCollector(docs, callback, searchParams, taxonomyReader);
+            DocumentHitCollector collector = new DocumentHitCollector(maxHits, docs, callback, searchParams, taxonomyReader);
 
             searcher.search(query, collector);
             
@@ -142,7 +143,7 @@ public class QueryDocuments {
             searcher = index.getSearcher();
             final TaxonomyReader taxonomyReader = index.getTaxonomyReader();
 
-            DocumentHitCollector collector = new DocumentHitCollector(docs, callback, searchParams, taxonomyReader);
+            DocumentHitCollector collector = new DocumentHitCollector(-1, docs, callback, searchParams, taxonomyReader);
 
             for (QName qname : qnames) {
 
@@ -166,10 +167,13 @@ public class QueryDocuments {
     }
     
     private static class DocumentHitCollector extends QueryFacetCollector {
+        
+        protected final int numHits;
 
         protected final SearchCallback<DocumentImpl> callback;
 
         private DocumentHitCollector(
+                final int numHits,
                 final DocumentSet docs, 
                 final SearchCallback<DocumentImpl> callback,
                 
@@ -179,11 +183,15 @@ public class QueryDocuments {
             
             super(docs, searchParams, taxonomyReader);
             
+            this.numHits = numHits;
             this.callback = callback;
         }
 
         @Override
         public void collect(int doc) throws IOException {
+            if (numHits > 0 && totalHits > numHits) {
+                return;
+            }
 			try {
 				float score = scorer.score();
 
@@ -245,7 +253,7 @@ public class QueryDocuments {
 
             final TaxonomyReader taxonomyReader) {
     		
-    		super(docs, callback, searchParams, taxonomyReader);
+    		super(-1, docs, callback, searchParams, taxonomyReader);
     		
 			this.queue = queue;
 			comparators = queue.getComparators();

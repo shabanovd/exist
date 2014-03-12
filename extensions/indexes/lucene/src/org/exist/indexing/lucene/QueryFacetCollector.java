@@ -100,8 +100,13 @@ public abstract class QueryFacetCollector extends Collector {
         this.taxonomyReader = taxonomyReader;
         
 //        this.facetArrays = new FacetArrays(taxonomyReader.getSize());
-        this.facetArrays = new FacetArrays(
-                PartitionsUtils.partitionSize(searchParams.indexingParams, taxonomyReader));
+        if (searchParams == null) {
+            this.facetArrays = null;
+            
+        } else {
+            this.facetArrays = new FacetArrays(
+                    PartitionsUtils.partitionSize(searchParams.indexingParams, taxonomyReader));
+        }
         
         docbits = new DefaultDocumentSet(1031);//docs.getDocumentCount());
         //docbits = new FixedBitSet(docs.getDocumentCount());

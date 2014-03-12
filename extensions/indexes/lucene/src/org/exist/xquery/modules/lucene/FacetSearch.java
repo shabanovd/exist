@@ -345,7 +345,11 @@ public class FacetSearch extends BasicFunction {
 				};
 				
 	            // Perform actual search
+		if (sortCriteria == null) {
+                    results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits);
+		} else {
 	            results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits, sortCriteria);
+		}
             } else {
 	            SearchCallback<DocumentImpl> cb = new SearchCallback<DocumentImpl>() {
 	            	
@@ -376,7 +380,11 @@ public class FacetSearch extends BasicFunction {
 				};
 				
 	            // Perform actual search
+		if (sortCriteria == null) {
+                    results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits);
+		} else {
 	            results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits, sortCriteria);
+		}
             }
             
             if (results != null) {

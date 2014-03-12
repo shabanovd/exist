@@ -119,10 +119,18 @@ public class QueryNodes {
 			index.releaseSearcher(searcher);
 		}
 	}
+        public static List<FacetResult> query(LuceneIndexWorker worker,
+                QName qname, int contextId, DocumentSet docs, Query query,
+                FacetSearchParams searchParams, SearchCallback<NodeProxy> callback)
+                throws IOException, ParseException, TerminatedException {
+            
+            return query(worker, qname, contextId, docs, query, searchParams, callback, Integer.MAX_VALUE);
+            
+        }
 
 	public static List<FacetResult> query(LuceneIndexWorker worker,
 			QName qname, int contextId, DocumentSet docs, Query query,
-			FacetSearchParams searchParams, SearchCallback<NodeProxy> callback)
+			FacetSearchParams searchParams, SearchCallback<NodeProxy> callback, int maxHits)
 			throws IOException, ParseException, TerminatedException {
 
 		final LuceneIndex index = worker.index;
@@ -135,7 +143,7 @@ public class QueryNodes {
 			final TaxonomyReader taxonomyReader = index.getTaxonomyReader();
 
 			NodeHitCollector collector = new NodeHitCollector(db,
-					worker, query, qname, contextId, docs, callback,
+					worker, maxHits, query, qname, contextId, docs, callback,
 					searchParams, taxonomyReader);
 
 			searcher.search(query, collector);
@@ -166,7 +174,7 @@ public class QueryNodes {
 			final TaxonomyReader taxonomyReader = index.getTaxonomyReader();
 
 			NodeHitCollector collector = 
-					new NodeHitCollector(db, worker, null, null, contextId, docs, callback,
+					new NodeHitCollector(db, worker, -1, null, null, contextId, docs, callback,
 					searchParams, taxonomyReader);
 
 			for (QName qname : qnames) {
@@ -204,6 +212,8 @@ public class QueryNodes {
 
 		protected final Database db;
 		private final LuceneIndexWorker worker;
+		
+		private final int maxHits;
 		private Query query;
 
 		private String field = null;
@@ -213,6 +223,8 @@ public class QueryNodes {
 		protected final SearchCallback<NodeProxy> callback;
 
 		private NodeHitCollector(final Database db, final LuceneIndexWorker worker, 
+		        
+		        final int maxHits,
 				
 				final Query query,
 	
@@ -227,6 +239,8 @@ public class QueryNodes {
 
 			this.db = db;
 			this.worker = worker;
+			
+			this.maxHits = maxHits;
 			this.query = query;
 
 			this.qname = qname;
@@ -244,6 +258,9 @@ public class QueryNodes {
 
 		@Override
 		public void collect(int doc) {
+		    if (maxHits > 0 && totalHits > maxHits) {
+		        return;
+		    }
 			try {
 				float score = scorer.score();
 				int docId = (int) this.docIdValues.get(doc);
@@ -372,7 +389,7 @@ public class QueryNodes {
 
 				final TaxonomyReader taxonomyReader) {
 
-			super(db, worker, query, qname, contextId, docs, callback,
+			super(db, worker, -1, query, qname, contextId, docs, callback,
 					searchParams, taxonomyReader);
 
 			this.queue = queue;
