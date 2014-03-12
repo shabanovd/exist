@@ -50,6 +50,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -90,8 +91,14 @@ public class QueryNodes {
 			searcher = index.getSearcher();
 			final TaxonomyReader taxonomyReader = index.getTaxonomyReader();
 
-			FieldValueHitQueue<MyEntry> queue = 
-					FieldValueHitQueue.create(sort.getSort(), maxHits);
+                        FieldValueHitQueue<MyEntry> queue;
+                        if (sort == null) {
+                            queue = FieldValueHitQueue.create(new SortField[0], maxHits);
+                            
+                        } else {
+                            queue = FieldValueHitQueue.create(sort.getSort(), maxHits);
+                        }
+			
 
 			ComparatorCollector collector = new ComparatorCollector(
 					db, worker, query, qname, contextId, queue,
@@ -428,6 +435,10 @@ public class QueryNodes {
 
 				++totalHits;
 				if (queueFull) {
+				    if (comparators.length == 0) {
+				        return;
+				    }
+				    
 					// Fastmatch: return if this hit is not competitive
 					for (int i = 0;; i++) {
 						final int c = reverseMul[i] * comparators[i].compareBottom(doc);
