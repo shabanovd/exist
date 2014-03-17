@@ -1663,6 +1663,8 @@ public class BrokerPool implements Database {
 			return;
 		}
 		
+		getTransactionManager().closeCurrent();
+		
 		synchronized (this) {
 			//Broker is no more used : inactivate it
 			for (int i = 0; i < inactiveBrokers.size(); i++) {

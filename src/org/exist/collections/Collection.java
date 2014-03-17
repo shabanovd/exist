@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.TreeMap;
+
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.log4j.Logger;
 import org.exist.Database;
@@ -125,8 +126,12 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
     private boolean isTempCollection;
 
     private Permission permissions;
+    
+    private Database db;
 
     public Collection(final DBBroker broker, final XmldbURI path) {
+        db = broker.getDatabase();
+        
         //The permissions assigned to this collection
         permissions = PermissionFactory.getDefaultCollectionPermission();
 
@@ -1575,7 +1580,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
      */
     private IndexInfo validateXMLResourceInternal(final Txn transaction, final DBBroker broker, final XmldbURI docUri, final CollectionConfiguration config, final ValidateBlock doValidate) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException, IOException {
         //Make the necessary operations if we process a collection configuration document
-        checkConfigurationDocument(transaction, broker, docUri);
+        checkConfigurationDocument(broker, docUri);
         
         final Database db = broker.getBrokerPool();
         
@@ -1682,11 +1687,214 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             db.getProcessMonitor().endJob();
         }
     }
+    
+    public void storeXML(XmldbURI docUri, final InputSource source) throws EXistException, SAXException, PermissionDeniedException, LockException, IOException {
+        
+        if (db.isReadOnly()) {
+            throw new PermissionDeniedException("Database is read-only");
+        }
+        
+        if (docUri != null && docUri.numSegments() != 1) {
+            throw new EXistException("Illigal document name '"+docUri+"'");
+        }
+        
+        final DBBroker broker = db.getActiveBroker();
+        
+        //Make the necessary operations if we process a collection configuration document
+        checkConfigurationDocument(broker, docUri);
+        
+        Txn transaction = db.getTransactionManager().current();
+        
+        final CollectionConfiguration config;
 
-    private void checkConfigurationDocument(final Txn transaction, final DBBroker broker, final XmldbURI docUri) throws EXistException, PermissionDeniedException, LockException {
+        if(CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE_URI.equals(docUri)) {
+            // we are updating collection.xconf
+            config = null;
+        } else {
+            config = getConfiguration(broker);
+            
+        }
+        
+//        if(info.isCreating()) {
+//            // create
+//            * 
+//            if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.WRITE)) {
+//                throw new PermissionDeniedException("Permission denied to write collection: " + path);
+//            }
+//        } else {
+//            // update
+//
+//            final Permission oldDocPermissions = info.getOldDocPermissions();
+//            if(!((oldDocPermissions.getOwner().getId() != broker.getSubject().getId()) | (oldDocPermissions.validate(broker.getSubject(), Permission.WRITE)))) {
+//                throw new PermissionDeniedException("A resource with the same name already exists in the target collection '" + path + "', and you do not have write access on that resource.");
+//            }
+//        }
+//        */
+//
+//        if(LOG.isDebugEnabled()) {
+//            LOG.debug("storing document " + document.getDocId() + " ...");
+//        }
+        
+        DocumentImpl oldDoc = null;
+        DocumentImpl document = null;
+        
+        boolean oldDocLocked = false;
+        try {
+            db.getProcessMonitor().startJob(ProcessMonitor.ACTION_STORE_DOC, docUri); 
+            getLock().acquire(Lock.WRITE_LOCK);   
+            
+            document = new DocumentImpl((BrokerPool) db, this, docUri);
+            document.getUpdateLock().acquire(Lock.WRITE_LOCK);
+            
+            //check old document same place
+            oldDoc = documents.get(docUri.getRawCollectionPath());
+            checkPermissionsForAddDocument(broker, oldDoc);
+            checkCollectionConflict(docUri);
+            manageDocumentInformation(oldDoc, document);
+            
+            //create indexer
+            Indexer indexer = new Indexer(broker, transaction);
+            indexer.setDocument(document, config);
+            indexer.setValidating(false);
+
+            //create index info
+            IndexInfo info = new IndexInfo(indexer, config);
+            info.setCreating(oldDoc == null);
+            info.setOldDocPermissions(oldDoc != null ? oldDoc.getPermissions() : null);
+            
+            addObserversToIndexer(broker, indexer);
+            
+            final DocumentTriggers trigger = new DocumentTriggers(broker, indexer, this, isTriggersEnabled() ? config : null);
+            trigger.setValidating(false);
+            
+            info.setTriggers(trigger);
+
+            if (oldDoc == null) {
+                trigger.beforeCreateDocument(broker, transaction, getURI().append(docUri));
+            } else {
+                trigger.beforeUpdateDocument(broker, transaction, oldDoc);
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Scanning document " + getURI().append(docUri));
+            }
+            
+            XMLReader reader = getReader(broker, true, config);
+            info.setReader(reader, null);
+            
+            try {
+                InputSource closeShieldedInputSource = closeShieldInputSource(source);
+                
+                reader.parse(closeShieldedInputSource);
+            } catch(final SAXException e) {
+                throw new SAXException("The XML parser reported a problem: " + e.getMessage(), e);
+            } catch(final IOException e) {
+                throw new EXistException(e);
+            } finally {
+                releaseReader(broker, info, reader);
+            }
+            
+            document.setDocId(broker.getNextResourceId(transaction, this));
+            
+            //store new document
+            broker.storeXMLResource(transaction, document);
+            broker.flush();
+            broker.closeDocument();
+            //broker.checkTree(document);
+            LOG.debug("document stored.");
+            
+            documents.put(document.getFileURI().getRawCollectionPath(), document);
+            
+            // new document is valid: remove old document
+            if (oldDoc != null) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("removing old document " + oldDoc.getFileURI());
+                }
+                oldDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+                oldDocLocked = true;
+                if (oldDoc.getResourceType() == DocumentImpl.BINARY_FILE) {
+                    //TODO : use a more elaborated method ? No triggers...
+                    broker.removeBinaryResource(transaction, (BinaryDocument) oldDoc);
+                    //documents.remove(oldDoc.getFileURI().getRawCollectionPath());
+                    
+                    //document.setDocId(broker.getNextResourceId(transaction, this));
+                    //addDocument(transaction, broker, document);
+                } else {
+                    //TODO : use a more elaborated method ? No triggers...
+                    broker.removeXMLResource(transaction, oldDoc, false);
+//                    oldDoc.copyOf(document, true);
+//                    indexer.setDocumentObject(oldDoc);
+//                    //old has become new at this point
+//                    document = oldDoc;
+//                    oldDocLocked = false;               
+                }
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("removed old document " + oldDoc.getFileURI());
+                }
+            } else {
+                //This lock is released in storeXMLInternal()
+                //TODO : check that we go until there to ensure the lock is released
+//              if (transaction != null)
+//                      transaction.acquireLock(document.getUpdateLock(), Lock.WRITE_LOCK);
+//              else
+                document.getUpdateLock().acquire(Lock.WRITE_LOCK);
+                
+                //document.setDocId(broker.getNextResourceId(transaction, this));
+                addDocument(transaction, broker, document);
+            }
+            
+            
+            setCollectionConfigEnabled(true);
+            broker.deleteObservers();
+            
+            if (oldDoc == null) {
+                trigger.afterCreateDocument(broker, transaction, document);
+            } else {
+                trigger.afterUpdateDocument(broker, transaction, document);
+            }
+            
+            db.getNotificationService().notifyUpdate(document, (info.isCreating() ? UpdateListener.ADD : UpdateListener.UPDATE));
+
+        } finally {
+            if (oldDoc != null && oldDocLocked) {
+                oldDoc.getUpdateLock().release(Lock.WRITE_LOCK);
+            }
+            getLock().release(Lock.WRITE_LOCK);
+            
+            document.getUpdateLock().release(Lock.WRITE_LOCK);
+
+            db.getProcessMonitor().endJob();
+        }
+
+        //Is it a collection configuration file ?
+        final XmldbURI docName = document.getFileURI();
+        //WARNING : there is no reason to lock the collection since setPath() is normally called in a safe way
+        //TODO: *resolve* URI against CollectionConfigurationManager.CONFIG_COLLECTION_URI 
+        if (getURI().startsWith(XmldbURI.CONFIG_COLLECTION_URI)
+                && docName.endsWith(CollectionConfiguration.COLLECTION_CONFIG_SUFFIX_URI)) {
+            broker.sync(Sync.MAJOR_SYNC);
+            final CollectionConfigurationManager manager = broker.getBrokerPool().getConfigurationManager();
+            if(manager != null) {
+                try {
+                    manager.invalidate(getURI(), broker.getBrokerPool());
+                    manager.loadConfiguration(broker, this);
+                } catch(final PermissionDeniedException pde) {
+                    throw new EXistException(pde.getMessage(), pde);
+                } catch(final LockException le) {
+                    throw new EXistException(le.getMessage(), le);
+                } catch(final CollectionConfigurationException e) { 
+                    // DIZ: should this exception really been thrown? bugid=1807744
+                    throw new EXistException("Error while reading new collection configuration: " + e.getMessage(), e);
+                }
+            }
+        }
+    }
+
+
+    private void checkConfigurationDocument(final DBBroker broker, final XmldbURI docUri) throws EXistException, PermissionDeniedException, LockException {
         //Is it a collection configuration file ?
         //TODO : use XmldbURI.resolve() !
-        if (!getURI().startsWith(XmldbURI.CONFIG_COLLECTION_URI)) {
+        if (!getURI().startsWith(CollectionConfiguration.CONFIG_COLLECTION_URI)) {
             return;
         }
         if(!docUri.endsWith(CollectionConfiguration.COLLECTION_CONFIG_SUFFIX_URI)) {
@@ -1698,18 +1906,11 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             final DocumentImpl confDoc = i.next();
             final XmldbURI currentConfDocName = confDoc.getFileURI();
             if(currentConfDocName != null && !currentConfDocName.equals(docUri)) {
-                throw new EXistException("Could not store configuration '" + docUri + "': A configuration document with a different name ("
-                    + currentConfDocName + ") already exists in this collection (" + getURI() + ")");
+                throw new EXistException(
+                    "Could not store configuration '" + docUri + "': "
+                    + "A configuration document with a different name (" + currentConfDocName + ") already exists in this collection (" + getURI() + ")");
             }
         }
-        //broker.saveCollection(transaction, this);
-        //CollectionConfigurationManager confMgr = broker.getBrokerPool().getConfigurationManager();
-        //if(confMgr != null)
-            //try {
-                //confMgr.reload(broker, this);
-            // catch (CollectionConfigurationException e) {
-                //throw new EXistException("An error occurred while reloading the updated collection configuration: " + e.getMessage(), e);
-        //}
     }
 
     /** add observers to the indexer

@@ -34,6 +34,8 @@ import org.exist.util.LockException;
 public class Txn {
 
     public enum State { STARTED, ABORTED, COMMITTED };
+    
+    private TransactionManager tm;
 
     private long id;
 
@@ -45,7 +47,8 @@ public class Txn {
     
     private String originId;
 
-    public Txn(long transactionId) {
+    public Txn(TransactionManager tm, long transactionId) {
+        this.tm = tm;
         this.id = transactionId;
         this.state = State.STARTED;
     }
@@ -123,5 +126,17 @@ public class Txn {
      */
     public void setOriginId(String id) {
         originId = id;
+    }
+    
+    public void abort() {
+        tm.abort(this);
+    }
+
+    public void commit() throws TransactionException {
+        tm.commit(this);
+    }
+
+    public void close() {
+        tm.close(this);
     }
 }

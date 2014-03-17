@@ -52,7 +52,10 @@ public class CollectionConfiguration {
     public final static String COLLECTION_CONFIG_SUFFIX = ".xconf"; 
     public final static XmldbURI COLLECTION_CONFIG_SUFFIX_URI = XmldbURI.create(COLLECTION_CONFIG_SUFFIX); 
     public final static String DEFAULT_COLLECTION_CONFIG_FILE = "collection" + COLLECTION_CONFIG_SUFFIX; 
-    public final static XmldbURI DEFAULT_COLLECTION_CONFIG_FILE_URI = XmldbURI.create(DEFAULT_COLLECTION_CONFIG_FILE); 
+    public final static XmldbURI DEFAULT_COLLECTION_CONFIG_FILE_URI = XmldbURI.create(DEFAULT_COLLECTION_CONFIG_FILE);
+    
+    /** /db/system/config */
+    public final static XmldbURI CONFIG_COLLECTION_URI = XmldbURI.SYSTEM.append("config");
 
     public final static String NAMESPACE = "http://exist-db.org/collection-config/1.0";
 
