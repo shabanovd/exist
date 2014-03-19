@@ -21,6 +21,8 @@
  */
 package org.exist.storage;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.io.File;
 import java.util.Iterator;
 
@@ -29,6 +31,8 @@ import junit.textui.TestRunner;
 
 import org.exist.collections.Collection;
 import org.exist.dom.DocumentImpl;
+import org.exist.storage.lock.Lock;
+import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
@@ -144,7 +148,35 @@ public class NIOConcurrentStoreTest extends TestCase {
             tm.close(txn);
             
             db.release(broker);
+            broker = null;
         }
+        
+        try {
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+            
+            Serializer serializer = broker.getSerializer();
+            serializer.reset();
+            
+            DocumentImpl doc = broker.getXMLResource(test1.getURI().append("test.xml"), Lock.READ_LOCK);
+            assertNotNull("Document '" + test1.getURI().append("test.xml") + "' should not be null", doc);
+            
+            String data = serializer.serialize(doc);
+            assertNotNull(data);
+            
+            doc.getUpdateLock().release(Lock.READ_LOCK);
+            
+            System.out.println(data);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        } finally {
+            tm.close(txn);
+            
+            db.release(broker);
+            broker = null;
+        }
+
     }
 
     

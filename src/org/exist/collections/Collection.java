@@ -36,6 +36,7 @@ import org.apache.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.Indexer;
+import org.exist.NIOIndexer;
 import org.exist.collections.triggers.*;
 import org.exist.dom.*;
 import org.exist.security.Account;
@@ -1753,7 +1754,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             manageDocumentInformation(oldDoc, document);
             
             //create indexer
-            Indexer indexer = new Indexer(broker, transaction);
+            NIOIndexer indexer = new NIOIndexer(broker, transaction);
             indexer.setDocument(document, config);
             indexer.setValidating(false);
 

@@ -23,7 +23,6 @@ package org.exist;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Observable;
 import java.util.Stack;
 
 //import javax.xml.parsers.ParserConfigurationException;
@@ -57,14 +56,9 @@ import org.exist.xquery.value.StringValue;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.Attributes;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.ErrorHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
-//import org.xml.sax.SAXNotRecognizedException;
-//import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.SAXParseException;
-import org.xml.sax.ext.LexicalHandler;
 
 /**
  * Parses a given input document via SAX, stores it to the database and handles
@@ -73,8 +67,9 @@ import org.xml.sax.ext.LexicalHandler;
  * @author wolf
  * 
  */
-public class Indexer extends Observable implements ContentHandler,
-        LexicalHandler, ErrorHandler {
+public class NIOIndexer extends Indexer { 
+//    extends Observable implements ContentHandler,
+//        LexicalHandler, ErrorHandler {
 
     private static final int CACHE_CHILD_COUNT_MAX = 0x10000;
 
@@ -94,7 +89,7 @@ public class Indexer extends Observable implements ContentHandler,
     public static final String PROPERTY_PRESERVE_WS_MIXED_CONTENT = "indexer.preserve-whitespace-mixed-content";
 
     protected DBBroker broker = null;
-    protected Txn transaction;
+    protected Txn txn;
 
     protected StreamListener indexListener;
 
@@ -107,7 +102,6 @@ public class Indexer extends Observable implements ContentHandler,
     protected IndexSpec indexSpec = null;
 
     protected boolean insideDTD = false;
-    private boolean validate = false;
     protected int level = 0;
     protected Locator locator = null;
     protected int normalize = XMLString.SUPPRESS_BOTH;
@@ -131,7 +125,7 @@ public class Indexer extends Observable implements ContentHandler,
      * phase. later, when storing the nodes, we already know the child count and
      * don't need to update the element a second time.
      */
-    private int childCnt[] = new int[0x1000];
+    private int childCnt[] = null; //new int[0x1000];
 
     // the current position in childCnt
     private int elementCnt = 0;
@@ -157,8 +151,8 @@ public class Indexer extends Observable implements ContentHandler,
      *@param broker
      *@exception EXistException
      */
-    public Indexer(DBBroker broker, Txn transaction) throws EXistException {
-    	this(broker, transaction, false);
+    public NIOIndexer(DBBroker broker, Txn txn) throws EXistException {
+    	this(broker, txn, false);
     }
     
     /**
@@ -167,19 +161,19 @@ public class Indexer extends Observable implements ContentHandler,
      * 
      *@param broker
      *            The database broker to use.
-     *@param transaction
+     *@param txn
      *            The transaction to use for indexing
      *@param priv
      *            used by the security manager to indicate that it needs
      *            privileged access to the db.
      *@exception EXistException
      */
-    public Indexer(DBBroker broker, Txn transaction, boolean priv)
-            throws EXistException {
+    public NIOIndexer(DBBroker broker, Txn txn, boolean priv) throws EXistException {
+        super(broker, txn, priv);
+        
         this.broker = broker;
-        this.transaction = transaction;
-        // TODO : move the configuration in the constructor or in a dedicated
-        // method
+        this.txn = txn;
+        // TODO : move the configuration in the constructor or in a dedicated method
         final Configuration config = broker.getConfiguration();
         final String suppressWS = (String) config
             .getProperty(PROPERTY_SUPPRESS_WHITESPACE);
@@ -198,13 +192,8 @@ public class Indexer extends Observable implements ContentHandler,
     }
 
     public void setValidating(boolean validate) {
-        this.validate = validate;
-        if (!validate) {
-            broker.getIndexController().setDocument(document,
-                    StreamListener.STORE);
-            this.indexListener = broker.getIndexController()
-                .getStreamListener();
-        }
+        broker.getIndexController().setDocument(document, StreamListener.STORE);
+        this.indexListener = broker.getIndexController().getStreamListener();
     }
 
     /**
@@ -267,9 +256,9 @@ public class Indexer extends Observable implements ContentHandler,
         if (stack.empty()) {
             comment.setNodeId(broker.getBrokerPool().getNodeFactory()
                     .createInstance(nodeFactoryInstanceCnt++));
-            if (!validate) {
-                broker.storeNode(transaction, comment, currentPath, indexSpec);
-            }
+
+            broker.storeNode(txn, comment, currentPath, indexSpec);
+
             document.appendChild(comment);
         } else {
             final ElementImpl last = stack.peek();
@@ -277,17 +266,16 @@ public class Indexer extends Observable implements ContentHandler,
                 text.setData(charBuf);
                 text.setOwnerDocument(document);
                 last.appendChildInternal(prevNode, text);
-                if (!validate) {
-                    storeText();
-                }
+
+                storeText();
+
                 setPrevious(text);
                 charBuf.reset();
             }
             last.appendChildInternal(prevNode, comment);
             setPrevious(comment);
-            if (!validate) {
-                broker.storeNode(transaction, comment, currentPath, indexSpec);
-            }
+
+            broker.storeNode(txn, comment, currentPath, indexSpec);
         }
     }
 
@@ -298,12 +286,12 @@ public class Indexer extends Observable implements ContentHandler,
                 final CDATASectionImpl cdata = new CDATASectionImpl(charBuf);
                 cdata.setOwnerDocument(document);
                 last.appendChildInternal(prevNode, cdata);
-                if (!validate) {
-                    broker.storeNode(transaction, cdata, currentPath, indexSpec);
-                    if (indexListener != null) {
-                        indexListener.characters(transaction, cdata, currentPath);
-                    }
+
+                broker.storeNode(txn, cdata, currentPath, indexSpec);
+                if (indexListener != null) {
+                    indexListener.characters(txn, cdata, currentPath);
                 }
+
                 setPrevious(cdata);
                 if (!nodeContentStack.isEmpty()) {
                     for (final XMLString next : nodeContentStack) {
@@ -321,11 +309,10 @@ public class Indexer extends Observable implements ContentHandler,
     }
 
     public void endDocument() {
-        if (!validate) {
-            progress.finish();
-            setChanged();
-            notifyObservers(progress);
-        }
+        progress.finish();
+        setChanged();
+        notifyObservers(progress);
+
         //LOG.debug("elementCnt = " + childCnt.length);
     }
 
@@ -347,35 +334,37 @@ public class Indexer extends Observable implements ContentHandler,
                     text.setData(normalized);
                     text.setOwnerDocument(document);
                     last.appendChildInternal(prevNode, text);
-                    if (!validate)
-                        {storeText();}
+
+                    storeText();
+                    
                     setPrevious(text);
                 }
                 charBuf.reset();
             }
             stack.pop();
             XMLString elemContent = null;
-            if (!validate && RangeIndexSpec.hasQNameOrValueIndex(last.getIndexType())) {
+            if (RangeIndexSpec.hasQNameOrValueIndex(last.getIndexType())) {
                 elemContent = nodeContentStack.pop();
             }
-            if (!validate) {
-                final String content = elemContent == null ?
-                        null : elemContent.toString();
-                broker.endElement(last, currentPath, content);
-                if (indexListener != null)
-                    {indexListener.endElement(transaction, last, currentPath);}
+
+            final String content = elemContent == null ? null : elemContent.toString();
+            broker.endElement(last, currentPath, content);
+            if (indexListener != null) {
+                indexListener.endElement(txn, last, currentPath);
             }
+
             currentPath.removeLastComponent();
-            if (validate) {
-                if (childCnt != null)
-                    {setChildCount(last);}
-            } else {
-                document.setOwnerDocument(document);
-                if ((childCnt == null && last.getChildCount() > 0)
-                    || (childCnt != null && childCnt[last.getPosition()] != last.getChildCount())) {
-                    broker.updateNode(transaction, last, false);
-                }
+//            if (validate) {
+//                if (childCnt != null)
+//                    {setChildCount(last);}
+//            } else {
+            //XXX: NO CHILD HERE ... RECODE!
+            document.setOwnerDocument(document);
+            if ((childCnt == null && last.getChildCount() > 0)
+                || (childCnt != null && childCnt[last.getPosition()] != last.getChildCount())) {
+                broker.updateNode(txn, last, false);
             }
+//            }
             setPrevious(last);
             level--;
         }
@@ -429,9 +418,9 @@ public class Indexer extends Observable implements ContentHandler,
         if (stack.isEmpty()) {
             pi.setNodeId(broker.getBrokerPool().getNodeFactory()
                 .createInstance(nodeFactoryInstanceCnt++));
-            if (!validate) {
-                broker.storeNode(transaction, pi, currentPath, indexSpec);
-            }
+
+            broker.storeNode(txn, pi, currentPath, indexSpec);
+
             document.appendChild(pi);
         } else {
             final ElementImpl last = stack.peek();
@@ -443,18 +432,17 @@ public class Indexer extends Observable implements ContentHandler,
                     text.setData(normalized);
                     text.setOwnerDocument(document);
                     last.appendChildInternal(prevNode, text);
-                    if (!validate) {
-                        storeText();
-                    }
+
+                    storeText();
+
                     setPrevious(text);
                 }
                 charBuf.reset();
             }
             last.appendChildInternal(prevNode, pi);
             setPrevious(pi);
-            if (!validate) {
-                broker.storeNode(transaction, pi, currentPath, indexSpec);
-            }
+
+            broker.storeNode(txn, pi, currentPath, indexSpec);
         }
     }
 
@@ -489,8 +477,9 @@ public class Indexer extends Observable implements ContentHandler,
                 text.setData(charBuf);
                 text.setOwnerDocument(document);
                 last.appendChildInternal(prevNode, text);
-                if (!validate)
-                    {storeText();}
+
+                storeText();
+                
                 setPrevious(text);
                 charBuf.reset();
             }
@@ -509,11 +498,11 @@ public class Indexer extends Observable implements ContentHandler,
     }
 
     public void startDocument() {
-        if (!validate) {
-            progress = new ProgressIndicator(currentLine, 100);
-            document.setChildCount(0);
-            elementCnt = 0;
-        }
+
+        progress = new ProgressIndicator(currentLine, 100);
+        document.setChildCount(0);
+        elementCnt = 0;
+
         docSize = 0;
 
         /* 
@@ -555,8 +544,9 @@ public class Indexer extends Observable implements ContentHandler,
                             text.setData(charBuf);
                             text.setOwnerDocument(document);
                             last.appendChildInternal(prevNode, text);
-                            if (!validate)
-                                {storeText();}
+
+                            storeText();
+                            
                             setPrevious(text);
                         }
                     }
@@ -567,8 +557,9 @@ public class Indexer extends Observable implements ContentHandler,
                     text.setData(charBuf);
                     text.setOwnerDocument(document);
                     last.appendChildInternal(prevNode, text);
-                    if (!validate)
-                        {storeText();}
+
+                    storeText();
+                    
                     setPrevious(text);
                 }
                 charBuf.reset();
@@ -594,18 +585,15 @@ public class Indexer extends Observable implements ContentHandler,
             stack.push(node);
             currentPath.addComponent(qn);
             node.setPosition(elementCnt++);
-            if (!validate) {
-                if (childCnt != null) {
-                    node.setChildCount(childCnt[node.getPosition()]);
-                }
-                storeElement(node);
+
+            if (childCnt != null) {
+                node.setChildCount(childCnt[node.getPosition()]);
             }
+            storeElement(node);
+
         } else {
-            if (validate) {
-                node = new ElementImpl(qn);
-            } else {
-                node = new ElementImpl(qn);
-            }
+            node = new ElementImpl(qn);
+
             rootNode = node;
             setPrevious(null);
             node.setOwnerDocument(document);
@@ -619,12 +607,12 @@ public class Indexer extends Observable implements ContentHandler,
             stack.push(node);
             currentPath.addComponent(qn);
             node.setPosition(elementCnt++);
-            if (!validate) {
-                if (childCnt != null) {
-                    node.setChildCount(childCnt[node.getPosition()]);
-                }
-                storeElement(node);
+
+            if (childCnt != null) {
+                node.setChildCount(childCnt[node.getPosition()]);
             }
+            storeElement(node);
+
             document.appendChild(node);
         }
         level++;
@@ -670,11 +658,10 @@ public class Indexer extends Observable implements ContentHandler,
                 }
                 node.appendChildInternal(prevNode, attr);
                 setPrevious(attr);
-                if (!validate) {
-                    broker.storeNode(transaction, attr, currentPath, indexSpec);
-                    if (indexListener != null)
-                        {indexListener.attribute(transaction, attr, currentPath);}
-                }
+
+                broker.storeNode(txn, attr, currentPath, indexSpec);
+                if (indexListener != null)
+                    {indexListener.attribute(txn, attr, currentPath);}
             }
         }
         if (attrLength > 0)
@@ -682,12 +669,11 @@ public class Indexer extends Observable implements ContentHandler,
         // notify observers about progress every 100 lines
         if (locator != null) {
             currentLine = locator.getLineNumber();
-            if (!validate) {
-                progress.setValue(currentLine);
-                if (progress.changed()) {
-                    setChanged();
-                    notifyObservers(progress);
-                }
+
+            progress.setValue(currentLine);
+            if (progress.changed()) {
+                setChanged();
+                notifyObservers(progress);
             }
         }
         ++docSize;
@@ -699,16 +685,16 @@ public class Indexer extends Observable implements ContentHandler,
                 next.append(charBuf);
             }
         }
-        broker.storeNode(transaction, text, currentPath, indexSpec);
+        broker.storeNode(txn, text, currentPath, indexSpec);
         if (indexListener != null) {
-            indexListener.characters(transaction, text, currentPath);
+            indexListener.characters(txn, text, currentPath);
         }
     }
 
     private void storeElement(ElementImpl node) {
-        broker.storeNode(transaction, node, currentPath, indexSpec);
+        broker.storeNode(txn, node, currentPath, indexSpec);
         if (indexListener != null)
-            {indexListener.startElement(transaction, node, currentPath);}
+            {indexListener.startElement(txn, node, currentPath);}
         node.setChildCount(0);
         if (RangeIndexSpec.hasQNameOrValueIndex(node.getIndexType())) {
             final XMLString contentBuf = new XMLString();
@@ -719,16 +705,16 @@ public class Indexer extends Observable implements ContentHandler,
     public void startEntity(String name) {
         // while validating, all entities are put into a map
         // to cache them for later use
-        if (validate) {
-            if (entityMap == null)
-                {entityMap = new HashMap<String, String>();}
-            currentEntityName = name;
-        }
+
+        if (entityMap == null)
+            {entityMap = new HashMap<String, String>();}
+        currentEntityName = name;
+
     }
 
     public void endEntity(String name) {
         // store the entity into a map for later
-        if (validate && currentEntityValue != null) {
+        if (currentEntityValue != null) {
             entityMap.put(currentEntityName, currentEntityValue.toString());
             currentEntityName = null;
             currentEntityValue.reset();
@@ -736,12 +722,12 @@ public class Indexer extends Observable implements ContentHandler,
     }
 
     public void skippedEntity(String name) {
-        if (!validate && entityMap != null) {
+        if (entityMap != null) {
             final String value = entityMap.get(name);
             if (value != null)
                 {characters(value.toCharArray(), 0, value.length());}
         }
-	}
+    }
 
     public void startPrefixMapping(String prefix, String uri) {
         // skip the eXist namespace
