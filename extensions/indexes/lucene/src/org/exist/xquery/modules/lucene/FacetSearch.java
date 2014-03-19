@@ -512,7 +512,16 @@ public class FacetSearch extends BasicFunction {
     			throw new XPathException(this, "Field name can't be empty or undefined.");
     		
     		if ("__score__".equalsIgnoreCase(field)) {
-                    sortFields.add(SortField.FIELD_SCORE);
+    		
+    		    SortField scoreField = SortField.FIELD_SCORE;
+                    //sortFields.add(SortField.FIELD_SCORE);
+                    sortFields.add(
+                        new SortField(
+                            scoreField.getField(), 
+                            scoreField.getType(), 
+                            reverse
+                        )
+                    );
     		    
     		} else {
     		    sortFields.add(new SortField(field, type, reverse));

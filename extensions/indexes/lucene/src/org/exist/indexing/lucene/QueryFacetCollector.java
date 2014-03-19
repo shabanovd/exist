@@ -223,9 +223,15 @@ public abstract class QueryFacetCollector extends Collector {
     List<FacetResult> facetResults = null;
     
     public List<FacetResult> getFacetResults() throws IOException {
-        if (facetResults == null && searchParams != null) {
+        if (facetResults == null) {
+            
             finish();
-            facetResults = accumulate();
+            
+            if (searchParams != null) {
+                facetResults = accumulate();
+            } else {
+                facetResults = new ArrayList<FacetResult>();
+            }
         }
         return facetResults;
     }

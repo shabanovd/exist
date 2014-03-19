@@ -22,6 +22,7 @@
 package org.exist.indexing.lucene;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -46,6 +47,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.PriorityQueue;
 import org.exist.Database;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
@@ -277,14 +279,24 @@ public class QueryDocuments {
             //System.out.println(maxDoc);
             callback.totalHits(queue.size());
             
-        	MyEntry entry;
-    		while ((entry = queue.pop()) != null) {
-    			collect(entry.doc, entry.document, entry.score);
-    		}
+            Object[] array = LuceneUtil.getHeapArray(queue);
+            
+            for (int i = array.length - 1; i >= 0; i--) {
+                MyEntry entry = (MyEntry) array[i];
+                
+                if (entry != null) {
+                    collect(entry.doc, entry.document, entry.score);
+                }
+            }
+            
+//        	MyEntry entry;
+//    		while ((entry = queue.pop()) != null) {
+//    			collect(entry.doc, entry.document, entry.score);
+//    		}
 
     		super.finish();
     	}
-    	
+
 		final void updateBottom(int doc, float score, DocumentImpl document) {
 			// bottom.score is already set to Float.NaN in add().
 			bottom.doc = docNumber(docBase, doc);
@@ -310,28 +322,29 @@ public class QueryDocuments {
                 return;	
             
             docbits.add(storedDocument);
+            System.out.println(score);
           
 	        ++totalHits;
 	        if (queueFull) {
 	            if (comparators.length == 0) {
 	                return;
 	            }
-	          // Fastmatch: return if this hit is not competitive
-	          for (int i = 0;; i++) {
-	            final int c = reverseMul[i] * comparators[i].compareBottom(doc);
-	            if (c < 0) {
-	              // Definitely not competitive.
-	              return;
-	            } else if (c > 0) {
-	              // Definitely competitive.
-	              break;
-	            } else if (i == comparators.length - 1) {
-	              // Here c=0. If we're at the last comparator, this doc is not
-	              // competitive, since docs are visited in doc Id order, which means
-	              // this doc cannot compete with any other document in the queue.
-	              return;
+	            // Fastmatch: return if this hit is not competitive
+	            for (int i = 0;; i++) {
+	              final int c = reverseMul[i] * comparators[i].compareBottom(doc);
+	              if (c < 0) {
+	                // Definitely not competitive.
+	                return;
+	              } else if (c > 0) {
+	                // Definitely competitive.
+	                break;
+	              } else if (i == comparators.length - 1) {
+	                // Here c=0. If we're at the last comparator, this doc is not
+	                // competitive, since docs are visited in doc Id order, which means
+	                // this doc cannot compete with any other document in the queue.
+	                return;
+	              }
 	            }
-	          }
 
 	          // This hit is competitive - replace bottom element in queue & adjustTop
 	          for (int i = 0; i < comparators.length; i++) {

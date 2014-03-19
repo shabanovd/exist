@@ -1,6 +1,7 @@
 package org.exist.indexing.lucene;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -11,6 +12,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PriorityQueue;
 import org.exist.dom.QName;
 import org.exist.dom.SymbolTable;
 import org.exist.numbering.NodeId;
@@ -179,5 +181,19 @@ public class LuceneUtil {
     private static Query rewrite(MultiTermQuery query, IndexReader reader) throws IOException {
         query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
         return query.rewrite(reader);
+    }
+    
+    protected static Object[] getHeapArray(PriorityQueue queue) {
+        try {
+            Method method = PriorityQueue.class.getDeclaredMethod("getHeapArray");
+            method.setAccessible(true);
+    
+            Object res = method.invoke(queue);
+    
+            return (Object[]) res;
+    
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -35,14 +35,9 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldValueHitQueue;
 import org.apache.lucene.search.IndexSearcher;
@@ -413,10 +408,20 @@ public class QueryNodes {
 
 			callback.totalHits(queue.size());
 			
-			MyEntry entry;
-			while ((entry = queue.pop()) != null) {
-				collect(entry.doc, entry.document, entry.node, entry.score);
-			}
+		            Object[] array = LuceneUtil.getHeapArray(queue);
+		            
+		            for (int i = array.length - 1; i >= 0; i--) {
+		                MyEntry entry = (MyEntry) array[i];
+		                
+		                if (entry != null) {
+		                    collect(entry.doc, entry.document, entry.node, entry.score);
+		                }
+		            }
+			
+//			MyEntry entry;
+//			while ((entry = queue.pop()) != null) {
+//				collect(entry.doc, entry.document, entry.node, entry.score);
+//			}
 
 			super.finish();
 		}
@@ -455,24 +460,22 @@ public class QueryNodes {
 				    if (comparators.length == 0) {
 				        return;
 				    }
-				    
-					// Fastmatch: return if this hit is not competitive
-					for (int i = 0;; i++) {
-						final int c = reverseMul[i] * comparators[i].compareBottom(doc);
-						if (c < 0) {
-							// Definitely not competitive.
-							return;
-						} else if (c > 0) {
-							// Definitely competitive.
-							break;
-						} else if (i == comparators.length - 1) {
-							// Here c=0. If we're at the last comparator, this
-							// doc is not competitive, since docs are visited 
-							// in doc Id order, which means this doc 
-							// cannot compete with any other document in the queue.
-							return;
-						}
-					}
+				        // Fastmatch: return if this hit is not competitive
+				        for (int i = 0;; i++) {
+				          final int c = reverseMul[i] * comparators[i].compareBottom(doc);
+				          if (c < 0) {
+				            // Definitely not competitive.
+				            return;
+				          } else if (c > 0) {
+				            // Definitely competitive.
+				            break;
+				          } else if (i == comparators.length - 1) {
+				            // Here c=0. If we're at the last comparator, this doc is not
+				            // competitive, since docs are visited in doc Id order, which means
+				            // this doc cannot compete with any other document in the queue.
+				            return;
+				          }
+				        }
 
 					// This hit is competitive - replace bottom element in queue & adjustTop
 					for (int i = 0; i < comparators.length; i++) {
