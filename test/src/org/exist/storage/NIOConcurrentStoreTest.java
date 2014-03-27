@@ -119,8 +119,7 @@ public class NIOConcurrentStoreTest extends TestCase {
         
         setupCollections();
         
-        TransactionManager tm = db.getTransactionManager();
-        Txn txn = tm.beginTransaction();
+        Txn txn = db.getTransactionManager().beginTransaction();
 
         DBBroker broker = null;
         try {
@@ -140,12 +139,12 @@ public class NIOConcurrentStoreTest extends TestCase {
                 System.err.println("Error found while parsing document: " + f.getName() + ": " + e.getMessage());
             }
             
-            tm.commit(txn);
+            txn.commit();
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());
         } finally {
-            tm.close(txn);
+            txn.close();
             
             db.release(broker);
             broker = null;
@@ -171,8 +170,6 @@ public class NIOConcurrentStoreTest extends TestCase {
             e.printStackTrace();
             fail(e.getMessage());
         } finally {
-            tm.close(txn);
-            
             db.release(broker);
             broker = null;
         }

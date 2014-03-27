@@ -1704,7 +1704,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
         //Make the necessary operations if we process a collection configuration document
         checkConfigurationDocument(broker, docUri);
         
-        Txn transaction = db.getTransactionManager().current();
+        Txn txn = db.getTransactionManager().current();
         
         final CollectionConfiguration config;
 
@@ -1744,17 +1744,17 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_STORE_DOC, docUri); 
             getLock().acquire(Lock.WRITE_LOCK);   
             
-            document = new DocumentImpl((BrokerPool) db, this, docUri);
-            document.getUpdateLock().acquire(Lock.WRITE_LOCK);
-            
             //check old document same place
             oldDoc = documents.get(docUri.getRawCollectionPath());
             checkPermissionsForAddDocument(broker, oldDoc);
             checkCollectionConflict(docUri);
             manageDocumentInformation(oldDoc, document);
             
+            document = new DocumentImpl((BrokerPool) db, this, docUri);
+            document.getUpdateLock().acquire(Lock.WRITE_LOCK);
+
             //create indexer
-            NIOIndexer indexer = new NIOIndexer(broker, transaction);
+            NIOIndexer indexer = new NIOIndexer(broker, txn);
             indexer.setDocument(document, config);
             indexer.setValidating(false);
 
@@ -1770,10 +1770,13 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             
             info.setTriggers(trigger);
 
+            //get id for document's revision
+            document.setDocId(broker.getNextResourceId(txn, this));
+
             if (oldDoc == null) {
-                trigger.beforeCreateDocument(broker, transaction, getURI().append(docUri));
+                trigger.beforeCreateDocument(broker, txn, getURI().append(docUri));
             } else {
-                trigger.beforeUpdateDocument(broker, transaction, oldDoc);
+                trigger.beforeUpdateDocument(broker, txn, oldDoc);
             }
 
             if (LOG.isDebugEnabled()) {
@@ -1787,6 +1790,9 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 InputSource closeShieldedInputSource = closeShieldInputSource(source);
                 
                 reader.parse(closeShieldedInputSource);
+                
+                //XXX: in case of exception rollback 
+                
             } catch(final SAXException e) {
                 throw new SAXException("The XML parser reported a problem: " + e.getMessage(), e);
             } catch(final IOException e) {
@@ -1795,18 +1801,17 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 releaseReader(broker, info, reader);
             }
             
-            document.setDocId(broker.getNextResourceId(transaction, this));
-            
             //store new document
-            broker.storeXMLResource(transaction, document);
+            broker.storeXMLResource(txn, document);
             broker.flush();
             broker.closeDocument();
             //broker.checkTree(document);
             LOG.debug("document stored.");
             
+            //document is valid and stored, add/replace reference at collection
             documents.put(document.getFileURI().getRawCollectionPath(), document);
             
-            // new document is valid: remove old document
+            //remove old document
             if (oldDoc != null) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("removing old document " + oldDoc.getFileURI());
@@ -1815,14 +1820,14 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 oldDocLocked = true;
                 if (oldDoc.getResourceType() == DocumentImpl.BINARY_FILE) {
                     //TODO : use a more elaborated method ? No triggers...
-                    broker.removeBinaryResource(transaction, (BinaryDocument) oldDoc);
+                    broker.removeBinaryResource(txn, (BinaryDocument) oldDoc);
                     //documents.remove(oldDoc.getFileURI().getRawCollectionPath());
                     
                     //document.setDocId(broker.getNextResourceId(transaction, this));
                     //addDocument(transaction, broker, document);
                 } else {
                     //TODO : use a more elaborated method ? No triggers...
-                    broker.removeXMLResource(transaction, oldDoc, false);
+                    broker.removeXMLResource(txn, oldDoc, false);
 //                    oldDoc.copyOf(document, true);
 //                    indexer.setDocumentObject(oldDoc);
 //                    //old has become new at this point
@@ -1832,16 +1837,6 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("removed old document " + oldDoc.getFileURI());
                 }
-            } else {
-                //This lock is released in storeXMLInternal()
-                //TODO : check that we go until there to ensure the lock is released
-//              if (transaction != null)
-//                      transaction.acquireLock(document.getUpdateLock(), Lock.WRITE_LOCK);
-//              else
-                document.getUpdateLock().acquire(Lock.WRITE_LOCK);
-                
-                //document.setDocId(broker.getNextResourceId(transaction, this));
-                addDocument(transaction, broker, document);
             }
             
             
@@ -1849,9 +1844,9 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             broker.deleteObservers();
             
             if (oldDoc == null) {
-                trigger.afterCreateDocument(broker, transaction, document);
+                trigger.afterCreateDocument(broker, txn, document);
             } else {
-                trigger.afterUpdateDocument(broker, transaction, document);
+                trigger.afterUpdateDocument(broker, txn, document);
             }
             
             db.getNotificationService().notifyUpdate(document, (info.isCreating() ? UpdateListener.ADD : UpdateListener.UPDATE));

@@ -186,14 +186,12 @@ public class NIOIndexer extends Indexer {
                 {normalize = 0;}
         }
         Boolean temp;
-        if ((temp = (Boolean) config
-                .getProperty(PROPERTY_PRESERVE_WS_MIXED_CONTENT)) != null)
-            {suppressWSmixed = temp.booleanValue();}
+        if ((temp = (Boolean) config.getProperty(PROPERTY_PRESERVE_WS_MIXED_CONTENT)) != null) {
+            suppressWSmixed = temp.booleanValue();
+        }
     }
 
     public void setValidating(boolean validate) {
-        broker.getIndexController().setDocument(document, StreamListener.STORE);
-        this.indexListener = broker.getIndexController().getStreamListener();
     }
 
     /**
@@ -202,11 +200,11 @@ public class NIOIndexer extends Indexer {
      * 
      * @param doc
      */
-    public void setDocument(DocumentImpl doc,
-            CollectionConfiguration collectionConfig) {
+    public void setDocument(DocumentImpl doc, CollectionConfiguration collectionConfig) {
         document = doc;
-        if (collectionConfig != null)
-            {indexSpec = collectionConfig.getIndexConfiguration();}
+        if (collectionConfig != null) {
+            indexSpec = collectionConfig.getIndexConfiguration();
+        }
         // reset internal fields
         level = 0;
         currentPath.reset();
@@ -216,6 +214,9 @@ public class NIOIndexer extends Indexer {
         indexListener = null;
         rootNode = null;
         setPrevious(null);
+        
+        broker.getIndexController().setDocument(document, StreamListener.STORE);
+        this.indexListener = broker.getIndexController().getStreamListener();
     }
 
     /**
