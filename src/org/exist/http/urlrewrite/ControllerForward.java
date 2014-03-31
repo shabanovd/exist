@@ -27,7 +27,6 @@ import org.exist.xmldb.XmldbURI;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import java.io.IOException;
 
@@ -47,7 +46,12 @@ public class ControllerForward extends URLRewrite {
      *  If there is no server-name attribute on the root tag, then the server name is ignored while performing the URL rewriting.
      *  
      */
-	private String serverName = null;
+    private String serverName = null;
+    
+    private ControllerForward(ControllerForward instance) {
+        super(instance);
+        this.target = instance.target;
+    }
 
     public ControllerForward(Element config, String uri) {
         super(config, uri);
@@ -95,4 +99,9 @@ public class ControllerForward extends URLRewrite {
 	public String getServerName() {
 		return serverName;
 	}
+
+    @Override
+    public URLRewrite makeClone() {
+        return new ControllerForward(this);
+    }
 }

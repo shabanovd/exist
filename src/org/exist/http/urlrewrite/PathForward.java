@@ -25,7 +25,6 @@ import org.exist.http.urlrewrite.XQueryURLRewrite.RequestWrapper;
 import org.w3c.dom.Element;
 
 import javax.servlet.RequestDispatcher;
-import javax.servlet.FilterConfig;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +34,13 @@ public class PathForward extends Forward {
     private ServletConfig filterConfig;
     private String servletName = null;
 
+    public PathForward(PathForward instance) {
+        super(instance);
+        
+        filterConfig = instance.filterConfig;
+        servletName = instance.servletName;
+    }
+    
     public PathForward(ServletConfig filterConfig, Element config, String uri) throws ServletException {
         super(config, uri);
         this.filterConfig = filterConfig;
@@ -64,5 +70,10 @@ public class PathForward extends Forward {
             {return request.getRequestDispatcher(target);}
         else
             {return filterConfig.getServletContext().getRequestDispatcher(target);}
+    }
+
+    @Override
+    public URLRewrite makeClone() {
+        return new PathForward(this);
     }
 }

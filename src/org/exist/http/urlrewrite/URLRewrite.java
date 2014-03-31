@@ -28,8 +28,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
-import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -56,7 +56,37 @@ public abstract class URLRewrite {
     protected Map<String, List<String>> parameters = null;
     protected Map<String, String> headers = null;
     protected boolean absolute = false;
-    
+
+    protected URLRewrite(URLRewrite instance) {
+        uri = instance.uri;
+        target = instance.target;
+        prefix = instance.prefix;
+        method = instance.method;
+        absolute = instance.absolute;
+
+        if (instance.attributes != null) {
+            attributes = new HashMap<String, String>();
+            attributes.putAll(instance.attributes);
+        }
+
+        if (instance.parameters != null) {
+            parameters = new HashMap<String, List<String>>();
+            
+            for (Entry<String, List<String>> entry : instance.parameters.entrySet()) {
+                
+                List<String> values = new ArrayList<String>();
+                values.addAll(entry.getValue());
+                
+                parameters.put(entry.getKey(), values);
+            }
+        }
+        
+        if (instance.headers != null) {
+            headers = new HashMap<String, String>();
+            headers.putAll(instance.headers);
+        }
+    }
+
     protected URLRewrite(Element config, String uri) {
         this.uri = uri;
         if (config != null && config.hasAttribute("absolute"))
@@ -242,4 +272,6 @@ public abstract class URLRewrite {
         }
         return sb.toString();
     }
+
+    public abstract URLRewrite makeClone();
 }
