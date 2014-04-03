@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2013 The eXist Project
+ *  Copyright (C) 2013-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,17 +16,12 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.indexing.lucene;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.params.FacetSearchParams;
@@ -47,7 +42,6 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.PriorityQueue;
 import org.exist.Database;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
@@ -69,10 +63,6 @@ public class QueryDocuments {
 
         final LuceneIndex index = worker.index;
         
-        
-        Set<String> fieldsToLoad = new HashSet<String>();
-        fieldsToLoad.add(LuceneUtil.FIELD_DOC_ID);
-
         IndexSearcher searcher = null;
         try {
             searcher = index.getSearcher();
@@ -264,6 +254,38 @@ public class QueryDocuments {
 			this.numHits = numHits;
 		}
     	
+    	private void check() {
+    	    
+    	    System.out.println("==============================");
+    	    
+            Object[] array = LuceneUtil.getHeapArray(queue);
+            
+            float last = Float.MAX_VALUE;
+            
+            for (int i = array.length - 1; i >= 0; i--) {
+                MyEntry entry = (MyEntry) array[i];
+                
+                if (entry != null) {
+                    if (comparators[0].value(entry.slot).equals(entry.score)) {
+                        System.out.print("+");
+                    } else {
+                        System.out.print("-");
+                    }
+                    
+                    if (last >= entry.score) {
+                        System.out.print("+");
+                        
+                        
+                        last  = entry.score;
+                    } else {
+                        System.out.print("-");
+                    }
+
+                    System.out.println(" "+entry.score+" "+entry.document);
+                }
+            }
+    	}
+    	
     	@Override
     	protected void finish() {
             if (bits != null) {
@@ -279,14 +301,18 @@ public class QueryDocuments {
             //System.out.println(maxDoc);
             callback.totalHits(queue.size());
             
-            Object[] array = LuceneUtil.getHeapArray(queue);
+            int size = queue.size();
             
-            for (int i = array.length - 1; i >= 0; i--) {
-                MyEntry entry = (MyEntry) array[i];
-                
-                if (entry != null) {
-                    collect(entry.doc, entry.document, entry.score);
-                }
+            MyEntry[] array = new MyEntry[size];
+            
+            for (int i = size - 1; i >= 0; i--) {
+                array[i] = queue.pop();
+            }
+
+            MyEntry entry = null;
+            for (int i = 0; i < size; i++) {
+                entry = array[i];
+                collect(entry.doc, entry.document, entry.score);
             }
             
 //        	MyEntry entry;
@@ -294,7 +320,7 @@ public class QueryDocuments {
 //    			collect(entry.doc, entry.document, entry.score);
 //    		}
 
-    		super.finish();
+    		//super.finish();
     	}
 
 		final void updateBottom(int doc, float score, DocumentImpl document) {
@@ -308,10 +334,6 @@ public class QueryDocuments {
 		
 	      @Override
 	      public void collect(int doc) throws IOException {
-	        final float score = scorer.score();
-//	        if (score > maxScore) {
-//	          maxScore = score;
-//	        }
 
           	int docId = (int) this.docIdValues.get(doc);
             if (docbits.contains(docId))
@@ -322,7 +344,11 @@ public class QueryDocuments {
                 return;	
             
             docbits.add(storedDocument);
-            System.out.println(score);
+
+            final float score = scorer.score();
+//            System.out.println(score + " " + storedDocument.getDocumentURI());
+            
+            //check();
           
 	        ++totalHits;
 	        if (queueFull) {
@@ -360,11 +386,14 @@ public class QueryDocuments {
 	        	
 	          // Startup transient: queue hasn't gathered numHits yet
 	          final int slot = totalHits - 1;
+	          
 	          // Copy hit into queue
 	          for (int i = 0; i < comparators.length; i++) {
 	            comparators[i].copy(slot, doc);
 	          }
+	          
 	          add(slot, doc, score, storedDocument);
+	          
 	          if (queueFull) {
 	            for (int i = 0; i < comparators.length; i++) {
 	              comparators[i].setBottom(bottom.slot);
@@ -412,6 +441,11 @@ public class QueryDocuments {
 				maxDoc = doca;
 			
 			return doca;
+		}
+		
+		@Override
+		public boolean acceptsDocsOutOfOrder() {
+		    return true;
 		}
 
     }

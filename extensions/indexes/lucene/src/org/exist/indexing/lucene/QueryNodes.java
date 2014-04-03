@@ -408,15 +408,29 @@ public class QueryNodes {
 
 			callback.totalHits(queue.size());
 			
-		            Object[] array = LuceneUtil.getHeapArray(queue);
+		            int size = queue.size();
 		            
-		            for (int i = array.length - 1; i >= 0; i--) {
-		                MyEntry entry = (MyEntry) array[i];
-		                
-		                if (entry != null) {
-		                    collect(entry.doc, entry.document, entry.node, entry.score);
-		                }
+		            MyEntry[] array = new MyEntry[size];
+		            
+		            for (int i = size - 1; i >= 0; i--) {
+		                array[i] = queue.pop();
 		            }
+
+		            MyEntry entry = null;
+		            for (int i = 0; i < size; i++) {
+		                entry = array[i];
+		                collect(entry.doc, entry.document, entry.node, entry.score);
+		            }
+			
+//		            Object[] array = LuceneUtil.getHeapArray(queue);
+//		            
+//		            for (int i = array.length - 1; i >= 0; i--) {
+//		                MyEntry entry = (MyEntry) array[i];
+//		                
+//		                if (entry != null) {
+//		                    collect(entry.doc, entry.document, entry.node, entry.score);
+//		                }
+//		            }
 			
 //			MyEntry entry;
 //			while ((entry = queue.pop()) != null) {
