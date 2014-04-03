@@ -197,7 +197,7 @@ public class XQueryURLRewrite extends HttpServlet {
             // Secondly try basic authentication
             final String auth = request.getHeader("Authorization");
             if (auth != null) {
-                requestUser = authenticator.authenticate(request, response, true);
+                requestUser = authenticator.authenticate(request, response);
                 if (requestUser != null) {
                     user = requestUser;
                 }

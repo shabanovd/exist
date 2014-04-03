@@ -35,6 +35,7 @@ import org.apache.log4j.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,11 +45,6 @@ public class ModuleCall extends URLRewrite {
     private final static Logger LOG = Logger.getLogger(ModuleCall.class);
     
     private FunctionCall call;
-
-    private ModuleCall(ModuleCall instance) {
-        super(instance);
-        this.call = instance.call;
-    }
 
     public ModuleCall(Element config, XQueryContext context, String uri) throws ServletException {
         super(config, uri);
@@ -92,10 +88,5 @@ public class ModuleCall extends URLRewrite {
         } catch (final XPathException e) {
             throw new ServletException("Called function threw exception: " + e.getMessage(), e);
         }
-    }
-
-    @Override
-    public URLRewrite makeClone() {
-        return new ModuleCall(this);
     }
 }

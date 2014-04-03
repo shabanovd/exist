@@ -19,6 +19,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -144,7 +145,7 @@ public class RewriteConfig {
             final Mapping m = mappings.get(i);
             final String matchedString = m.match(path);
             if (matchedString != null) {
-                final URLRewrite action = m.action.makeClone();
+                final URLRewrite action = m.action;
                 
                 /*
                  * If the URLRewrite is a ControllerForward, then test to see if there is a condition

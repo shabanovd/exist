@@ -26,15 +26,12 @@ import org.w3c.dom.Element;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import java.io.IOException;
 
 public class Redirect extends URLRewrite {
 
-    public Redirect(Redirect instance) {
-        super(instance);
-    }
-    
     public Redirect(Element config, String uri) throws ServletException {
         super(config, uri);
         final String redirectTo = config.getAttribute("url");
@@ -50,10 +47,5 @@ public class Redirect extends URLRewrite {
     public void doRewrite(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         setHeaders(new HttpResponseWrapper(response));
         response.sendRedirect(target);
-    }
-
-    @Override
-    public URLRewrite makeClone() {
-        return new Redirect(this);
     }
 }

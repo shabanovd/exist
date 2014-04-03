@@ -29,13 +29,8 @@ import org.w3c.dom.Element;
 
 public class PassThrough extends Forward {
 
-    private ServletConfig servletConfig;
-
-    private PassThrough(PassThrough instance) {
-        super(instance);
-        servletConfig = instance.servletConfig;
-    }
-    
+	private ServletConfig servletConfig;
+	
     public PassThrough(ServletConfig servletConfig, HttpServletRequest request) {
         super(null, request.getRequestURI());
         this.servletConfig = servletConfig;
@@ -53,9 +48,4 @@ public class PassThrough extends Forward {
 		// always forward to the servlet engine's default servlet
         return servletConfig.getServletContext().getNamedDispatcher("default");
 	}
-
-    @Override
-    public URLRewrite makeClone() {
-        return new PassThrough(this);
-    }
 }
