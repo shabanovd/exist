@@ -38,11 +38,13 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
+import org.exist.Namespaces;
 import org.exist.collections.Collection;
 import org.exist.dom.BinaryDocument;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentMetadata;
 import org.exist.dom.QName;
+import org.exist.security.ACLPermission;
 import org.exist.security.Permission;
 import org.exist.storage.DBBroker;
 import org.exist.storage.MetaStreamListener;
@@ -50,6 +52,7 @@ import org.exist.storage.lock.Lock;
 import org.exist.storage.md.MetaData;
 import org.exist.storage.md.Metas;
 import org.exist.storage.serializers.Serializer;
+import org.exist.util.serializer.SAXSerializer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -63,6 +66,8 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.AttributesImpl;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -113,12 +118,24 @@ public class CreateRevision extends BasicFunction {
             
             String url = item.getStringValue();
             
-            if (url.endsWith("/")) {
-                throw new XPathException(this, "unimplemented");
-            } else {
+//            if (url.endsWith("/")) {
+//                throw new XPathException(this, "unimplemented");
+//            } else {
                 
                 try {
                     XmldbURI uri = XmldbURI.create(url);
+                    
+                    Metas metas = md.getMetas(uri);
+                    if (metas == null) {
+                        //XXX: log
+                        return null;
+                    }
+
+                    String uuid = metas.getUUID();
+                    if (uuid == null) {
+                        //XXX: log
+                        return null;
+                    }
                     
                     DocumentImpl doc = broker.getXMLResource(uri, Lock.READ_LOCK);
                     if (doc == null) {
@@ -126,16 +143,18 @@ public class CreateRevision extends BasicFunction {
                         
                         if (col == null) continue;
 
-                        Path folder = revFolder(md, rcFolder, uri);
+                        Path folder = revFolder(uuid, rcFolder, uri);
                         
                         if (folder == null) continue;
 
-                        processMetas(md, col, null, folder);
+                        Files.createDirectories(folder);
+
+                        processMetas(md, uuid, col, null, folder);
                     } else {
                         try {
-                            Path folder = revFolder(md, rcFolder, uri);
+                            Path folder = revFolder(uuid, rcFolder, uri);
                             
-                            if (folder ==null) continue;
+                            if (folder == null) continue;
                             
                             Path dataFile;
                             
@@ -146,8 +165,11 @@ public class CreateRevision extends BasicFunction {
                                 dataFile = folder.resolve("data.xml");
     
                                 Writer writer = Files.newBufferedWriter(dataFile, ENCODING);
-    
-                                serializer.serialize(doc, writer);
+                                try {
+                                    serializer.serialize(doc, writer);
+                                } finally {
+                                    writer.close();
+                                }
                                 
                                 break;
     
@@ -171,7 +193,7 @@ public class CreateRevision extends BasicFunction {
                                 continue;
                             }
                             
-                            processMetas(md, null, doc, folder);
+                            processMetas(md, uuid, null, doc, folder);
     
                         } finally {
                             doc.getUpdateLock().release(Lock.READ_LOCK);
@@ -182,49 +204,42 @@ public class CreateRevision extends BasicFunction {
                     //XXX: log
                     e.printStackTrace();
                 }
-            }
+//            }
             
         }
         
         return Sequence.EMPTY_SEQUENCE;
     }
     
-    private Path revFolder(MetaData md, Path rcFolder, XmldbURI uri) throws IOException {
-        Metas metas = md.getMetas(uri);
-        
-        if (metas == null) {
-            //XXX: log
-            return null;
-        }
-
-        String docId = metas.getUUID();
-        if (docId == null) {
-            //XXX: log
-            return null;
-        }
+    private Path revFolder(String docId, Path rcFolder, XmldbURI uri) throws IOException {
         
         Path folder = rcFolder
                 .resolve(docId.substring(0, 4))
-                .resolve(docId.substring(3, 7))
+                .resolve(docId.substring(4, 8))
                 .resolve(docId);
         
         long nextId = revNextId(folder);
         
-        folder = folder.resolve(String.valueOf(nextId));
-
-        return folder;
+        for (int i = 0; i < 5; i++) {
+            Path dir = folder.resolve(String.valueOf(nextId));
+            if (!Files.exists(dir))
+                return dir;
+        }
+        
+        throw new IOException("can't get new id for revision");
     }
 
     private long revNextId(Path fileFolder) {
         return System.currentTimeMillis();
     }
 
-    private void processMetas(MetaData md, Collection col, DocumentImpl doc, Path folder) throws XMLStreamException, IOException {
+    private void processMetas(MetaData md, String uuid, Collection col, DocumentImpl doc, Path folder) throws XMLStreamException, IOException {
         XmldbURI uri;
         String url;
         String name;
-        String owner;
         String mimeType;
+
+        Permission perm;
         long createdTime;
         long lastModified;
         
@@ -237,9 +252,7 @@ public class CreateRevision extends BasicFunction {
             createdTime = col.getCreationTime();
             lastModified = col.getCreationTime();
             
-            Permission perm = col.getPermissionsNoLock();
-            
-            owner = perm.getOwner().getName();
+            perm = col.getPermissionsNoLock();
             
         } else {
             uri = doc.getURI();
@@ -253,7 +266,7 @@ public class CreateRevision extends BasicFunction {
             createdTime = metadata.getCreated();
             lastModified = metadata.getLastModified();
             
-            owner = doc.getPermissions().getOwner().getName();
+            perm = doc.getPermissions();
         }
         
         GregorianCalendar date = new GregorianCalendar(GMT);
@@ -265,21 +278,30 @@ public class CreateRevision extends BasicFunction {
         
         writer.writeStartDocument();
         writer.writeStartElement("RCS", "metas", "http://exist-db.org/RCS");
-        writer.writeNamespace("eXist", "http://exist-db.org/");
+        writer.writeDefaultNamespace(Namespaces.EXIST_NS);
         writer.writeNamespace(MetaData.PREFIX, MetaData.NAMESPACE_URI);
         
         write(writer, "file-name", name);
         write(writer, "file-path", url);
-        write(writer, "owner", owner);
         write(writer, "meta-type", mimeType);
         
         date.setTimeInMillis(createdTime);
         write(writer, "created", DatatypeConverter.printDateTime(date));
         
         date.setTimeInMillis(lastModified);
-        write(writer, "created", DatatypeConverter.printDateTime(date));
+        write(writer, "lastModified", DatatypeConverter.printDateTime(date));
+        
+
+        writer.writeStartElement("permission");
+        writeUnixStylePermissionAttributes(writer, perm);
+        if(perm instanceof ACLPermission) {
+            writeACLPermission(writer, (ACLPermission)perm);
+        }
+        writer.writeEndElement();
+
 
         writer.writeStartElement(MetaData.PREFIX, "metas", MetaData.NAMESPACE_URI);
+        writer.writeAttribute(MetaData.PREFIX, MetaData.NAMESPACE_URI, "uuid", uuid);
 
         md.streamMetas(uri, new MetaStreamListener() {
 
@@ -309,9 +331,39 @@ public class CreateRevision extends BasicFunction {
         writer.flush();
         writer.close();
     }
+    
+    public static void writeUnixStylePermissionAttributes(XMLStreamWriter writer, Permission permission) throws XMLStreamException {
+        if (permission == null) return;
+
+        writer.writeAttribute("owner", permission.getOwner().getName());
+        writer.writeAttribute("group", permission.getGroup().getName());
+        writer.writeAttribute("mode", Integer.toOctalString(permission.getMode()));
+    }
+    
+    public static void writeACLPermission(XMLStreamWriter writer, ACLPermission acl) throws XMLStreamException {
+        if (acl == null) return;
+        
+        writer.writeStartElement("acl");
+        
+        writer.writeAttribute("version", Short.toString(acl.getVersion()));
+
+        for(int i = 0; i < acl.getACECount(); i++) {
+            writer.writeStartElement("ace");
+            
+            writer.writeAttribute("index", Integer.toString(i));
+            writer.writeAttribute("target", acl.getACETarget(i).name());
+            writer.writeAttribute("who", acl.getACEWho(i));
+            writer.writeAttribute("access_type", acl.getACEAccessType(i).name());
+            writer.writeAttribute("mode", Integer.toOctalString(acl.getACEMode(i)));
+
+            writer.writeEndElement();
+        }
+        
+        writer.writeEndElement();
+    }
 
     private void write(XMLStreamWriter writer, String name, String value) throws XMLStreamException {
-        writer.writeStartElement("eXist", name, "http://exist-db.org/");
+        writer.writeStartElement(name);
         writer.writeCharacters(value);
         writer.writeEndElement();
     }
