@@ -19,10 +19,19 @@
  */
 package org.exist.xquery.functions.system;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStreamReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.ProcessBuilder.Redirect;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
@@ -87,30 +96,96 @@ public class FnSnapshot extends BasicFunction {
         
         File dataFolder = broker.getDataFolder();
         
+        File dist = new File(dirOrFile);
+        if (dist.exists()) {
+            throw new XPathException(this, "Distanation folder does exist ("+dist.getAbsolutePath()+")");
+        }
+        if (!dist.mkdirs()) {
+            throw new XPathException(this, "Distanation folder can't be created ("+dist.getAbsolutePath()+")");
+        }
+        
+        File loggerFile = new File(dist, "snapshot.log");
+        
+        FileWriter logger;
         try {
+            logger = new FileWriter(loggerFile);
+        } catch (IOException e) {
+            throw new XPathException(this, "Snapshot jornal can't be open ("+loggerFile.getAbsolutePath()+")");
+        }
+        
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        df.setTimeZone(tz);
+        
+        try {
+            logger.write(df.format(new Date())+" start snapshot, entering service mode ...\n");
+            
             db.enterServiceMode(broker);
+
+            logger.write(df.format(new Date())+" enter service mode, running 'cp' ...\n");
             
-            Process p = Runtime.getRuntime().exec("cp -R " + dataFolder.getAbsolutePath() + " " + dirOrFile);
-            
-            p.waitFor();
-            
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = "";                       
-            while ((line = reader.readLine())!= null) {
+            //Process p = Runtime.getRuntime().exec("cp -R " + dataFolder.getAbsolutePath() + " " + dirOrFile);
+            //int code = p.waitFor();
+            //BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            //String line = "";                       
+            //while ((line = reader.readLine())!= null) {
                 //output.append(line + "\n");
-            }
+            //}
             
-            return new IntegerValue( p.exitValue() );
+            ProcessBuilder builder = new ProcessBuilder("cp", "-R", dataFolder.getAbsolutePath(), dirOrFile);
+            
+            builder.redirectError(Redirect.INHERIT);
+            
+            Process process = builder.start();
+            
+            InputStream stream = process.getInputStream();
+            
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            
+            IOUtils.copy(stream, bytes);
+            
+            int exitCode = process.waitFor();
+            
+            logger.write(df.format(new Date())+" 'cp' exit code "+exitCode+"\n");
+
+            logger.write(bytes.toString());
+
+            return new IntegerValue( exitCode );
             
         } catch (final Exception e) {
+            try {
+                logger.write(df.format(new Date())+" ERROR\n");
+                logger.write(e.getMessage());
+                logger.write(ExceptionUtils.getStackTrace(e));
+            } catch (IOException ex) {}
+            
             throw new XPathException(this, "snapshot failed with exception: " + e.getMessage(), e);
         } finally {
+            try {
+                logger.write(df.format(new Date())+" exitting service mode ...\n");
+            } catch (IOException e) {}
+                
             try {
                 db.exitServiceMode(broker);
             } catch (PermissionDeniedException e) {
                 //can't be
+                
+                try {
+                    logger.write(df.format(new Date())+" ERROR during exitting service mode\n");
+                    logger.write(e.getMessage());
+                    logger.write(ExceptionUtils.getStackTrace(e));
+                } catch (IOException ex) {}
+
                 LOG.error(e, e);
             }
+
+            try {
+                logger.write(df.format(new Date())+" exit service mode, done\n");
+            } catch (IOException e) {}
+            
+            try {
+                logger.close();
+            } catch (IOException e) {}
         }
     }
 }
