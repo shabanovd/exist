@@ -705,6 +705,10 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
         }
     }
     
+    public int countSubCollection() {
+        return subCollections.size();
+    }
+
     /**
      * Determines if this Collection has any documents, or sub-collections
      */
