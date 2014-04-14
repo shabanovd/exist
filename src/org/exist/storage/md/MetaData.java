@@ -38,10 +38,10 @@ import org.exist.xmldb.XmldbURI;
  */
 public abstract class MetaData implements MetaStorage {
 
-    protected static MetaData _ = null;
+    private static MetaData instance = null;
 
     public static MetaData get() {
-        return _;
+        return instance;
     }
 
     public final static String PREFIX = "md";

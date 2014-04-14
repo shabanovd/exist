@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -36,7 +34,6 @@ import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TimeZone;
 
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.stream.XMLOutputFactory;
@@ -76,7 +73,7 @@ public class RCSManager implements Constants {
     
     private static RCSManager instance = null;
     
-    public static RCSManager getInstance() {
+    public static RCSManager get() {
         return instance;
     }
     

@@ -73,7 +73,7 @@ public class CreateRevision extends BasicFunction {
     @Override
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
         
-        RCSManager manager = RCSManager.getInstance();
+        RCSManager manager = RCSManager.get();
         
         ResponseBuilder rb = new ResponseBuilder();
         
