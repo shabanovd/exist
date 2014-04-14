@@ -88,24 +88,24 @@ public class MetasImpl implements Metas {
     public Meta put(String key, Object value) {
 		MetaImpl m = (MetaImpl)get(key);
 		if (m == null)
-			return MetaDataImpl._.addMeta(this, key, value);
+			return MetaDataImpl.instance.addMeta(this, key, value);
 		
 		else {
 			m.setValue(value);
 
-			MetaDataImpl._.addMeta(m);
+			MetaDataImpl.instance.addMeta(m);
 		}
-		MetaDataImpl._.indexMetas(this);
+		MetaDataImpl.instance.indexMetas(this);
 		
 		return m;
 	}
 
 	public Meta get(String key) {
-		return MetaDataImpl._.getMeta(this, key);
+		return MetaDataImpl.instance.getMeta(this, key);
 	}
 
     public void delete(String key) {
-        MetaDataImpl._.delMeta(uuid, key);
+        MetaDataImpl.instance.delMeta(uuid, key);
     }
 
     protected void setURL(String url) {
@@ -115,7 +115,7 @@ public class MetasImpl implements Metas {
 	public List<Meta> metas() {
 		List<Meta> metas = new ArrayList<Meta>();
 		
-		EntityCursor<MetaImpl> sub = MetaDataImpl._.getMetaKeys(this);
+		EntityCursor<MetaImpl> sub = MetaDataImpl.instance.getMetaKeys(this);
 		try {
 			
 			for (MetaImpl m : sub) {
@@ -134,10 +134,10 @@ public class MetasImpl implements Metas {
 //	}
 
 	public void delete() {
-	    MetaDataImpl._.delMetas(this);
+	    MetaDataImpl.instance.delMetas(this);
 	}
 
 	public void restore(String uuid, String key, String value) {
-		MetaDataImpl._._addMeta(this, uuid, key, value);
+		MetaDataImpl.instance._addMeta(this, uuid, key, value);
 	}
 }

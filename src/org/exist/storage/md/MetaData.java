@@ -38,7 +38,7 @@ import org.exist.xmldb.XmldbURI;
  */
 public abstract class MetaData implements MetaStorage {
 
-    private static MetaData instance = null;
+    protected static MetaData instance = null;
 
     public static MetaData get() {
         return instance;

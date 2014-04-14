@@ -140,7 +140,7 @@ public class ExtractorWorker implements IndexWorker {
 	}
 
 	@Override
-	public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean includeSelf) {
+	public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf) {
 		return null;
 	}
 
@@ -173,7 +173,7 @@ public class ExtractorWorker implements IndexWorker {
 	}
 
 	@Override
-	public void removeCollection(Collection collection, DBBroker broker) throws PermissionDeniedException {
+	public void removeCollection(Collection collection, DBBroker broker, boolean reindex) throws PermissionDeniedException {
 	}
 
 	@Override

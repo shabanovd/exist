@@ -87,7 +87,7 @@ public class MetaImpl implements Meta {
 	
 	public void setValue(Object value) {
 		if (value instanceof DocumentImpl) {
-			this.value = MetaData._.getMetas((DocumentImpl) value).getUUID();
+			this.value = MetaData.get().getMetas((DocumentImpl) value).getUUID();
 			//TODO: set link to master doc?
 		} else
 			this.value = value.toString(); 
@@ -98,6 +98,6 @@ public class MetaImpl implements Meta {
 	}
 	
 	public void delete() {
-	    MetaDataImpl._.delMeta(object, key);
+	    MetaDataImpl.instance.delMeta(object, key);
 	}
 }

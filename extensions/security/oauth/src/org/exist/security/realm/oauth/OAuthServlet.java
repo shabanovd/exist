@@ -112,22 +112,22 @@ public class OAuthServlet extends HttpServlet {
 	        req.addBodyParameter("grant_type", "authorization_code");
 	        
 	        String responce = req.send().getBody();
+
 	        JSONTokener tokener = new JSONTokener(responce);
 	        try {
-                    JSONObject root = new JSONObject(tokener);
-                    String access_token = root.getString("access_token");
-                    
-                    String token = OAuthEncoder.decode(access_token);
-                    accessToken = new Token(token, "", responce);
-                    
-                } catch (JSONException e) {
-                    throw new IOException(e);
-                }
+	            JSONObject root = new JSONObject(tokener);
+	            String access_token = root.getString("access_token");
+
+	            String token = OAuthEncoder.decode(access_token);
+	            accessToken = new Token(token, "", responce);
+
+	        } catch (JSONException e) {
+	            throw new IOException(e);
+	        }
 	        
 	        //accessToken = api.getAccessTokenExtractor().extract(req.send().getBody());
-        } else {
+        } else
             accessToken = service.getAccessToken(EMPTY_TOKEN, verifier);
-        }
         
         try {
             OAuthRealm._.getServiceBulderByPath(path).saveAccessToken(request, service, accessToken);
@@ -136,6 +136,7 @@ public class OAuthServlet extends HttpServlet {
         }
         
         String returnToPage = (String)request.getSession().getAttribute(RETURN_TO_PAGE);
+        
         if (returnToPage != null) {
             response.sendRedirect(returnToPage);
         } else {

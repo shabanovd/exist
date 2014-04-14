@@ -229,7 +229,7 @@ public class RangeIndexConfigElement {
         return analyzer;
     }
 
-    public boolean isCaseSensitive() {
+    public boolean isCaseSensitive(String fieldName) {
         return caseSensitive;
     }
 

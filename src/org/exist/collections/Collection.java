@@ -628,6 +628,9 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
      */
     @Override
     public boolean allowUnload() {
+        if (getURI().startsWith(CollectionConfigurationManager.ROOT_COLLECTION_CONFIG_URI)) {
+            return false;
+        }
         for(final DocumentImpl doc : documents.values()) {
             if(doc.isLockedForWrite()) {
                 return false;
@@ -910,7 +913,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
         }
     }
 
-    final public Permission getPermissionsNoLock() {
+    public Permission getPermissionsNoLock() {
         return permissions;
     }
 
@@ -1100,7 +1103,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 useTriggers = false;
                 final CollectionConfigurationManager confMgr = db.getConfigurationManager();
                 if (confMgr != null) {
-                    confMgr.invalidate(getURI());
+                    confMgr.invalidate(getURI(), broker.getBrokerPool());
                 }
             }
             
@@ -1410,7 +1413,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
             final CollectionConfigurationManager manager = broker.getBrokerPool().getConfigurationManager();
             if(manager != null) {
                 try {
-                    manager.invalidate(getURI());
+                    manager.invalidate(getURI(), broker.getBrokerPool());
                     manager.loadConfiguration(broker, this);
                 } catch(final PermissionDeniedException pde) {
                     throw new EXistException(pde.getMessage(), pde);
@@ -1658,7 +1661,7 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
                 } else {
                     //TODO : use a more elaborated method ? No triggers...
                     broker.removeXMLResource(transaction, oldDoc, false);
-                    oldDoc.copyOf(document);
+                    oldDoc.copyOf(document, true);
                     indexer.setDocumentObject(oldDoc);
                     //old has become new at this point
                     document = oldDoc;

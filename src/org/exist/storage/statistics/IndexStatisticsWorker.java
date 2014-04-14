@@ -95,7 +95,7 @@ public class IndexStatisticsWorker implements IndexWorker {
         return mode;
     }
 
-    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean includeSelf) {
+    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf) {
         return null;
     }
 
@@ -162,7 +162,7 @@ public class IndexStatisticsWorker implements IndexWorker {
         }
     }
 
-    public void removeCollection(Collection collection, DBBroker broker) {
+    public void removeCollection(Collection collection, DBBroker broker, boolean reindex) {
     }
 
     public boolean checkIndex(DBBroker broker) {

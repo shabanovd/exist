@@ -28,7 +28,6 @@ import org.exist.config.Configuration;
 import org.exist.config.Configurator;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsAttribute;
-import org.exist.config.annotation.ConfigurationFieldAsElement;
 import org.scribe.builder.ServiceBuilder;
 import org.scribe.builder.api.Api;
 import org.scribe.builder.api.FacebookApi;
@@ -58,7 +57,7 @@ public class Service implements Configurable {
     @ConfigurationFieldAsAttribute("provider")
     String provider;
 
-    @ConfigurationFieldAsElement("return-url")
+    @ConfigurationFieldAsAttribute("return-url")
     String return_url;
 
     public Service(OAuthRealm realm, Configuration config) {
@@ -71,7 +70,10 @@ public class Service implements Configurable {
     }
 
     public ServiceBuilder getServiceBuilder() {
-        return new ServiceBuilder().provider(getProviderClass()).apiKey(apiKey).apiSecret(apiSecret);
+        return new ServiceBuilder()
+            .provider(getProviderClass())
+            .apiKey(apiKey)
+            .apiSecret(apiSecret);
     }
 
     private String getProvider() {
@@ -95,14 +97,15 @@ public class Service implements Configurable {
     public void saveAccessToken(HttpServletRequest request, OAuthService service, Token accessToken) throws Exception {
         String provider = getProvider().toLowerCase();
 
-        if (provider.equalsIgnoreCase("facebook"))
+        if (provider.equalsIgnoreCase("facebook")) {
             ServiceFacebook.saveAccessToken(request, service, accessToken);
         
-        else if (provider.equalsIgnoreCase("google"))
+        } else if (provider.equalsIgnoreCase("google")) {
             ServiceGoogle.saveAccessToken(request, service, accessToken);
         
-        else
+        } else {
             throw new IllegalArgumentException("Unknown provider '" + provider + "'");
+        }
     }
 
     public String getApiKey() {
@@ -112,7 +115,7 @@ public class Service implements Configurable {
     public String getApiSecret() {
         return apiSecret;
     }
-
+    
     public String getReturnURL() {
         return return_url;
     }

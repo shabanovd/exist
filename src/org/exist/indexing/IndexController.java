@@ -55,8 +55,8 @@ public class IndexController {
     protected DBBroker broker;
     protected StreamListener listener = null;    
     protected DocumentImpl currentDoc = null;
-    protected XmldbURI currentURL = null;
     protected int currentMode = StreamListener.UNKNOWN;
+    protected XmldbURI currentURL = null;
 
     public IndexController(DBBroker broker) {
         this.broker = broker;
@@ -162,10 +162,6 @@ public class IndexController {
     public DocumentImpl getDocument() {
         return currentDoc;
     }
-    
-    public void setURL(XmldbURI uri) {
-		currentURL = uri;
-	}
 
     /**
      * Returns the mode for the next operation.
@@ -187,6 +183,10 @@ public class IndexController {
         setDocument(doc);
         setMode(mode);
     }
+    
+    public void setURL(XmldbURI uri) {
+        currentURL = uri;
+    }
 
     /**
      * Flushes all index workers.
@@ -203,32 +203,12 @@ public class IndexController {
      * @param collection the collection to remove
      * @param broker the broker that will perform the operation
      */
-    public void removeCollection(Collection collection, DBBroker broker)
+    public void removeCollection(Collection collection, DBBroker broker, boolean reindex)
             throws PermissionDeniedException {
         for (final IndexWorker indexWorker : indexWorkers.values()) {
-            indexWorker.removeCollection(collection, broker);
+            indexWorker.removeCollection(collection, broker, reindex);
         }
     }
-    
-    public void indexBinary(BinaryDocument doc) {
-        setDocument(doc, StreamListener.STORE);
-        //setMode(StreamListener.STORE);
-        
-        for (final IndexWorker worker : indexWorkers.values()) {
-            worker.indexBinary(doc);
-        }
-    }
-    
-
-    public void removeIndex(BinaryDocument doc) {
-        setDocument(doc, StreamListener.REMOVE_BINARY);
-        //setMode(StreamListener.REMOVE_BINARY);
-        
-        for (final IndexWorker worker : indexWorkers.values()) {
-            worker.removeIndex(doc.getURI());
-        }
-    }
-
 
     /**
      * Re-index all nodes below the specified root node, using the given mode.
@@ -251,36 +231,33 @@ public class IndexController {
     /**
      * When adding or removing nodes to or from the document tree, it might become
      * necessary to re-index some parts of the tree, in particular if indexes are defined
-     * on mixed content nodes. This method will call
-     * {@link IndexWorker#getReindexRoot(org.exist.dom.StoredNode, org.exist.storage.NodePath, boolean)}
-     * on each configured index. It will then return the top-most root.
+     * on mixed content nodes. This method will return the top-most root.
      *
      * @param node the node to be modified.
      * @param path the NodePath of the node
      * @return the top-most root node to be re-indexed
      */
-    public StoredNode getReindexRoot(StoredNode node, NodePath path) {
-        return getReindexRoot(node, path, false);
+    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert) {
+        return getReindexRoot(node, path, insert, false);
     }
 
     /**
      * When adding or removing nodes to or from the document tree, it might become
      * necessary to re-index some parts of the tree, in particular if indexes are defined
-     * on mixed content nodes. This method will call
-     * {@link IndexWorker#getReindexRoot(org.exist.dom.StoredNode, org.exist.storage.NodePath, boolean)}
-     * on each configured index. It will then return the top-most root.
+     * on mixed content nodes. This method will return the top-most root.
      *
      * @param node the node to be modified.
      * @param path path the NodePath of the node
      * @param includeSelf if set to true, the current node itself will be included in the check
      * @return the top-most root node to be re-indexed
      */
-    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean includeSelf) {
+    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf) {
         StoredNode next, top = null;
         for (final IndexWorker indexWorker : indexWorkers.values()) {
-            next = indexWorker.getReindexRoot(node, path, includeSelf);
-            if (next != null && (top == null || top.getNodeId().isDescendantOf(next.getNodeId())))
-                {top = next;}
+            next = indexWorker.getReindexRoot(node, path, insert, includeSelf);
+            if (next != null && (top == null || top.getNodeId().isDescendantOf(next.getNodeId()))) {
+                top = next;
+            }
         }
         if (top != null && top.getNodeId().equals(node.getNodeId()))
             {top = node;}
@@ -439,10 +416,29 @@ public class IndexController {
     public void streamMetas(MetaStreamListener listener) {
         MetaStorage ms = broker.getDatabase().getMetaStorage();
         if (ms != null) {
-	        if (currentDoc != null)
-	            ms.streamMetas(currentDoc.getURI(), listener);
-	        else if (currentURL != null)
-	            ms.streamMetas(currentURL, listener);
+                if (currentDoc != null)
+                    ms.streamMetas(currentDoc.getURI(), listener);
+                else if (currentURL != null)
+                    ms.streamMetas(currentURL, listener);
+        }
+    }
+    
+    public void indexBinary(BinaryDocument doc) {
+        setDocument(doc, StreamListener.STORE);
+        //setMode(StreamListener.STORE);
+        
+        for (final IndexWorker worker : indexWorkers.values()) {
+            worker.indexBinary(doc);
+        }
+    }
+    
+
+    public void removeIndex(BinaryDocument doc) {
+        setDocument(doc, StreamListener.REMOVE_BINARY);
+        //setMode(StreamListener.REMOVE_BINARY);
+        
+        for (final IndexWorker worker : indexWorkers.values()) {
+            worker.removeIndex(doc.getURI());
         }
     }
 }

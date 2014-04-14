@@ -105,7 +105,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private int mode = 0;
     private final org.exist.indexing.ngram.NGramIndex index;
     private char[] buf = new char[1024];
-//    private int currentChar = 0;
+    private int currentChar = 0;
     private DocumentImpl currentDoc = null;
     private final DBBroker broker;
     @SuppressWarnings("unused")
@@ -345,7 +345,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     @Override
-    public void removeCollection(Collection collection, DBBroker broker) {
+    public void removeCollection(Collection collection, DBBroker broker, boolean reindex) {
         if (LOG.isDebugEnabled())
             LOG.debug("Dropping NGram index for collection " + collection.getURI());
         final Lock lock = index.bf.getLock();
@@ -430,7 +430,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     @Override
-    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map<?,?> hints) {
+    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map hints) {
         List<QName> qnames = hints == null ? null : (List<QName>)hints.get(QNAMES_KEY);
         //Expects a StringValue
         Object start = hints == null ? null : hints.get(START_VALUE);
@@ -514,7 +514,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     @Override
-    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean includeSelf) {
+    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf) {
         if (node.getNodeType() == Node.ATTRIBUTE_NODE)
             return null;
         IndexSpec indexConf = node.getDocument().getCollection().getIndexConfiguration(broker);
@@ -595,13 +595,13 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
 
-//    private void checkBuffer() {
-//        if (currentChar + index.getN() > buf.length) {
-//            buf = new char[1024];
-//            Arrays.fill(buf, ' ');
-//            currentChar = 0;
-//        }
-//    }
+    private void checkBuffer() {
+        if (currentChar + index.getN() > buf.length) {
+            buf = new char[1024];
+            Arrays.fill(buf, ' ');
+            currentChar = 0;
+        }
+    }
 
     private Map<QName, ?> config;
     private Stack<XMLString> contentStack = null;
@@ -635,7 +635,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         contentStack = null;
         IndexSpec indexConf = document.getCollection().getIndexConfiguration(broker);
         if (indexConf != null)
-            config = (Map<QName, ?>) indexConf.getCustomIndexSpec(NGramIndex.ID);
+            config = (Map<QName, ?>) indexConf.getCustomIndexSpec(org.exist.indexing.ngram.NGramIndex.ID);
         mode = newMode;
     }
 
@@ -1117,9 +1117,9 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
 
-	@Override
-	public void indexCollection(Collection col) {
-	}
+    @Override
+    public void indexCollection(Collection col) {
+    }
 
     @Override
     public void indexBinary(BinaryDocument doc) {

@@ -80,6 +80,7 @@ public class CollectionCache extends LRUCache {
     protected void removeOne(Cacheable item) {
         boolean removed = false;
         SequencedLongHashMap.Entry<Cacheable> next = map.getFirstEntry();
+        int tries = 0;
         do {
             final Cacheable cached = next.getValue();
             if(cached.getKey() != item.getKey()) {
@@ -89,7 +90,7 @@ public class CollectionCache extends LRUCache {
                     try {
                         if (cached.allowUnload()) {
                             if(pool.getConfigurationManager()!=null) { // might be null during db initialization
-                                pool.getConfigurationManager().invalidate(old.getURI());
+                                pool.getConfigurationManager().invalidate(old.getURI(), null);
                             }
                             names.remove(old.getURI().getRawCollectionPath());
                             cached.sync(true);
@@ -100,11 +101,15 @@ public class CollectionCache extends LRUCache {
                         lock.release(Lock.READ_LOCK);
                     }
                 }
-            } else {
+            }
+            if (!removed) {
                 next = next.getNext();
-                if(next == null) {
-                    LOG.info("Unable to remove entry");
+                if (next == null && tries < 2) {
                     next = map.getFirstEntry();
+                    tries++;
+                } else {
+                    LOG.info("Unable to remove entry");
+                    removed = true;
                 }
             }
         } while(!removed);
@@ -116,7 +121,7 @@ public class CollectionCache extends LRUCache {
         super.remove(item);
         names.remove(col.getURI().getRawCollectionPath());
         if(pool.getConfigurationManager() != null) // might be null during db initialization
-           {pool.getConfigurationManager().invalidate(col.getURI());}
+           {pool.getConfigurationManager().invalidate(col.getURI(), null);}
     }
 
     /**
