@@ -36,6 +36,8 @@ import org.apache.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.Indexer;
+import org.exist.Resource;
+import org.exist.ResourceMetadata;
 import org.exist.collections.triggers.*;
 import org.exist.dom.*;
 import org.exist.security.Account;
@@ -79,7 +81,7 @@ import static org.exist.collections.CollectionConfiguration.COLLECTION_CONFIG_SU
  *
  * @author wolf
  */
-public class Collection extends Observable implements Comparable<Collection>, Cacheable {
+public class Collection extends Observable implements Resource, Comparable<Collection>, Cacheable {
 
     public static int LENGTH_COLLECTION_ID = 4; //sizeof int
 
@@ -2231,6 +2233,29 @@ public class Collection extends Observable implements Comparable<Collection>, Ca
     public QNameRangeIndexSpec getIndexByQNameConfiguration(final DBBroker broker, final QName qname) {
         final IndexSpec idxSpec = getIndexConfiguration(broker);
         return (idxSpec == null) ? null : idxSpec.getIndexByQName(qname);
+    }
+
+    @Override
+    public ResourceMetadata getMetadata() {
+        return new CollectionMetadata();
+    }
+    
+    class CollectionMetadata implements ResourceMetadata {
+
+        @Override
+        public String getMimeType() {
+            return "collection";
+        }
+
+        @Override
+        public long getCreated() {
+            return getCreated();
+        }
+
+        @Override
+        public long getLastModified() {
+            return getCreated();
+        }
     }
 
     /*
