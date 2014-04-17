@@ -31,13 +31,13 @@ import java.util.List;
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
-public class Resource {
+public class RCSResource {
     
     Path location;
 
     String uuid;
 
-    protected Resource(Path location) {
+    protected RCSResource(Path location) {
         
         uuid = location.getFileName().toString();
         

@@ -30,12 +30,12 @@ import java.nio.file.Path;
  */
 public class Revision implements Comparable<Revision> {
     
-    Resource resource;
+    RCSResource resource;
     long id;
     
     Path location;
 
-    protected Revision(Resource resource, Path location) {
+    protected Revision(RCSResource resource, Path location) {
         
         id = Long.parseLong( location.getFileName().toString() );
         
