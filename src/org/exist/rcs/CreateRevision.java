@@ -19,6 +19,8 @@
  */
 package org.exist.rcs;
 
+import java.nio.file.Path;
+
 import org.exist.dom.QName;
 import org.exist.memtree.MemTreeBuilder;
 import org.exist.memtree.NodeImpl;
@@ -144,6 +146,18 @@ public class CreateRevision extends BasicFunction {
             attribs.addAttribute("", "msg", "msg", "CDATA", msg);
             
             builder.startElement("", "entry", "entry", attribs);
+            builder.endElement();
+        }
+
+        @Override
+        public void error(Path location, Exception e) {
+            attribs.clear();
+            
+            attribs.addAttribute("", "location", "location", "CDATA", location.toString());
+            attribs.addAttribute("", "status", "status", "CDATA", "error");
+            attribs.addAttribute("", "msg", "msg", "CDATA", e.getMessage());
+            
+            builder.startElement("", "FS-entry", "FS-entry", attribs);
             builder.endElement();
         }
     }

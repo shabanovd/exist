@@ -36,11 +36,14 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
 
 import javax.xml.bind.DatatypeConverter;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -73,12 +76,20 @@ import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceIterator;
 import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
 public class RCSManager implements Constants {
+    
+    final static String XML_DATA = "data.xml";
+    final static String BIN_DATA = "data.bin";
+    
+    final static int UNKNOWN = -1;
+    final static int EQ = 0;
+    final static int DIFF = 1;
     
     private static RCSManager instance = null;
     
@@ -243,16 +254,16 @@ public class RCSManager implements Constants {
                     h.error(uri, "can't create revision folder");
                     return;
                 }
-                
-                MessageDigest digest = getMessageDigest();
+                Files.createDirectories(folder);
+
+                MessageDigest digest = messageDigest();
 
                 Path dataFile;
                 
                 switch (doc.getResourceType()) {
                 case XML_FILE:
-                    Files.createDirectories(folder);
                     
-                    dataFile = folder.resolve("data.xml");
+                    dataFile = folder.resolve(XML_DATA);
 
                     if (digest == null) {
                         try (Writer writer = Files.newBufferedWriter(dataFile, ENCODING)) {
@@ -275,9 +286,8 @@ public class RCSManager implements Constants {
                     break;
 
                 case BINARY_FILE:
-                    Files.createDirectories(folder);
                     
-                    dataFile = folder.resolve("data.bin");
+                    dataFile = folder.resolve(BIN_DATA);
 
                     try (InputStream is = broker.getBinaryResource((BinaryDocument)doc)) {
                         if (digest == null) {
@@ -340,7 +350,7 @@ public class RCSManager implements Constants {
     private void processMetas(String uuid, Resource resource, Path folder, Handler h) throws XMLStreamException, IOException {
         Path file = folder.resolve(FILE_META);
         
-        MessageDigest digest = getMessageDigest();
+        MessageDigest digest = messageDigest();
 
         try (OutputStream metaFile = Files.newOutputStream(file)) {
             
@@ -357,24 +367,26 @@ public class RCSManager implements Constants {
         writeDigest(file, digest);
     }
     
+    private Path digestPath(Path file) {
+        return file.getParent().resolve(file.getFileName()+".sha1");
+    }
+    
+    private byte[] digestHex(MessageDigest digest) {
+        return Hex.encodeHexString( digest.digest() ).getBytes();
+    }
+
     private void writeDigest(Path file, MessageDigest digest) throws IOException {
         if (digest == null) return;
         
-        Files.write(
-            file.getParent().resolve(file.getFileName()+".sha1"), 
-            Hex.encodeHexString( 
-                digest.digest() 
-            ).getBytes()
-        );
+        Files.write( digestPath(file), digestHex(digest) );
     }
     
-    private MessageDigest getMessageDigest() {
+    private MessageDigest messageDigest() throws IOException {
         try {
             return MessageDigest.getInstance(MessageDigestAlgorithms.SHA_1);
         } catch (NoSuchAlgorithmException e) {
+            throw new IOException(e);
         }
-        
-        return null;
     }
     
     private void processMetas(String uuid, Resource resource, OutputStream stream, Handler h) throws XMLStreamException, IOException {
@@ -506,11 +518,15 @@ public class RCSManager implements Constants {
 
     private void write(XMLStreamWriter writer, String name, String value) throws XMLStreamException {
         writer.writeStartElement(name);
+        writer.writeAttribute(name, value);
         writer.writeCharacters(value);
         writer.writeEndElement();
     }
 
     public void restore(Path location, Handler h) throws IOException {
+        
+        DBBroker broker = db.getActiveBroker();
+        
         try (DirectoryStream<Path> firstDirs = Files.newDirectoryStream(location)) {
             for (Path firstDir : firstDirs) {
 
@@ -521,7 +537,7 @@ public class RCSManager implements Constants {
                             
                             for (Path thirdDir : thirdDirs) {
                                 
-                                restoreResource(thirdDir, h);
+                                restoreResource(broker, thirdDir, h);
                             }
                         }
                     }
@@ -530,34 +546,102 @@ public class RCSManager implements Constants {
         }
     }
     
-    private void restoreResource(Path location, Handler h) throws IOException {
-        Path rev = lastRev(location);
-        if (rev != null) {
+    private int checkHash(DBBroker broker, Path location, DocumentImpl doc) throws IOException, SAXException {
+        
+        Path file;
+        MessageDigest digest = messageDigest();
+        
+        OutputStream out = new FakeOutputStream();
+        DigestOutputStream digestStream = new DigestOutputStream(out, digest);
+        
+        switch (doc.getResourceType()) {
+        case XML_FILE:
             
-            XmldbURI uri;
-            String url;
-            String name;
-            String mimeType;
-
-            Permission perm;
-            long createdTime;
-            long lastModified;
+            file = location.resolve(XML_DATA);
             
-            Path meta = rev.resolve(FILE_META);
+            Writer writerStream = new OutputStreamWriter(
+                digestStream, 
+                ENCODING.newEncoder()
+            );
             
-            if (Files.exists( rev.resolve("data.xml") )) {
-                
-            } else if (Files.exists( rev.resolve("data.bin") )) {
-                
-            } else {
-                
+            Serializer serializer = serializer(broker);
+            
+            try (Writer writer = new BufferedWriter(writerStream)) {
+                serializer.serialize(doc, writer);
             }
             
-            System.out.println(rev);
+            break;
+
+        case BINARY_FILE:
+            
+            file = location.resolve(BIN_DATA);
+
+            try (InputStream is = broker.getBinaryResource((BinaryDocument)doc)) {
+                IOUtils.copy(is, digestStream);
+            }
+
+            break;
+        
+        default:
+            //h.error(uri, "unknown type");
+            return UNKNOWN;
+        }
+        
+        //XXX: make safer
+        
+        byte[] revHash = Files.readAllBytes(digestPath(file));
+        
+        byte[] calcHash = digestHex(digest);
+        
+        if (Arrays.equals(revHash, calcHash)) {
+            return EQ;
+        }
+        
+        return DIFF;
+    }
+    
+    private void restoreResource(DBBroker broker, Path location, Handler h) throws IOException {
+        Path rev = lastRev(location);
+        if (rev == null) {
+            //h.error(location, "no revisions");
+            return;
+        }
+            
+        try {
+            Path meta = rev.resolve(FILE_META);
+            
+            SAXParserFactory parserFactor = SAXParserFactory.newInstance();
+            SAXParser parser = parserFactor.newSAXParser();
+            
+            MetasHandler dh = new MetasHandler();
+            
+            try (InputStream metaStream = Files.newInputStream(meta)) {
+                parser.parse(metaStream, dh);
+            }
+            
+            DocumentImpl doc = broker.getResource(dh.uri, Permission.WRITE);
+            
+            if (doc != null) {
+                switch (checkHash(broker, rev, doc)) {
+                case EQ:
+                    return;
+                case UNKNOWN:
+                    return;
+                }
+            }
+            
+            //XXX: code
+
+            if (broker.getCollection(dh.uri) == null)
+                System.out.println("restore "+dh.uri);
+            
+        } catch (Exception e) {
+            h.error(location, e);
+            return;
         }
     }
     
-    public Path lastRev(Path location) throws IOException {
+    protected Path lastRev(Path location) throws IOException {
         Path revFolder = null;
         long last = 0;
         try (DirectoryStream<Path> revs = Files.newDirectoryStream(location)) {
@@ -574,5 +658,77 @@ public class RCSManager implements Constants {
         }
         
         return revFolder;
+    }
+    
+    class MetasHandler extends DefaultHandler {
+        
+        String parentUuid;
+        
+        XmldbURI uri;
+        String name;
+        String mimeType;
+
+        long createdTime;
+        long lastModified;
+        
+        //Permission perm;
+
+        String content = null;
+        
+        @Override
+        public void endElement(String uri, String localName, String qName) throws SAXException {
+            super.endElement(uri, localName, qName);
+            
+            if (content == null) return;
+            
+            switch(qName){
+            case EL_FILE_NAME:
+                this.name = content;
+                break;
+            case EL_FILE_PATH:
+                this.uri = XmldbURI.create(content);
+                break;
+            case PARENT_UUID:
+                parentUuid = content;
+                break;
+            case EL_META_TYPE:
+                mimeType = content;
+                break;
+            case EL_CREATED:
+                createdTime = DatatypeConverter.parseDateTime(content).getTimeInMillis();
+                break;
+            case EL_LAST_MODIFIED:
+                lastModified = DatatypeConverter.parseDateTime(content).getTimeInMillis();
+                break;
+            }
+            
+            content = null;
+        }
+        
+        @Override
+        public void characters(char[] ch, int start, int length) throws SAXException {
+            content = String.copyValueOf(ch, start, length).trim();
+            
+            super.characters(ch, start, length);
+        }
+    }
+    
+    
+    class FakeOutputStream extends OutputStream {
+
+        @Override
+        public void write(int b) throws IOException {}
+        
+        @Override
+        public void write(byte b[]) throws IOException {}
+
+        @Override
+        public void write(byte b[], int off, int len) throws IOException {}
+
+        @Override
+        public void flush() throws IOException {}
+
+        @Override
+        public void close() throws IOException {}
     }
 }

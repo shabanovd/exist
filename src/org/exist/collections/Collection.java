@@ -2249,7 +2249,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 
         @Override
         public long getCreated() {
-            return getCreated();
+            return Collection.this.getCreationTime();
         }
 
         @Override

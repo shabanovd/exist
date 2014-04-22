@@ -32,7 +32,7 @@ public interface Constants {
     final static Charset ENCODING = StandardCharsets.UTF_8;
     final static TimeZone GMT = TimeZone.getTimeZone("GMT+0:00");
     
-    final static String FILE_META = "metas";
+    final static String FILE_META = "metas.xml";
     
     final static String NONE = "NONE";
     

@@ -19,6 +19,8 @@
  */
 package org.exist.rcs;
 
+import java.nio.file.Path;
+
 import org.exist.xmldb.XmldbURI;
 
 /**
@@ -32,5 +34,7 @@ public interface Handler {
     void error(XmldbURI uri, Exception e);
 
     void error(XmldbURI uri, String msg);
+
+    void error(Path location, Exception e);
     
 }
