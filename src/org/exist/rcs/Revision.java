@@ -50,6 +50,10 @@ public class Revision implements Comparable<Revision> {
         this.resource = resource;
         this.location = location;
     }
+    
+    public long id() {
+        return id;
+    }
 
     @Override
     public int compareTo(Revision o) {

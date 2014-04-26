@@ -17,17 +17,14 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.rcs;
+package org.exist.rcs.xquery;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
 import javax.xml.stream.XMLStreamException;
 
 import org.exist.dom.QName;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.NodeImpl;
-import org.exist.xmldb.XmldbURI;
+import org.exist.rcs.RCSManager;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -38,18 +35,17 @@ import org.exist.xquery.value.FunctionReturnSequenceType;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
-import org.xml.sax.helpers.AttributesImpl;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
-public class CreateRevision extends BasicFunction {
+public class FnCommit extends BasicFunction {
     
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
             new QName("commit", Module.NAMESPACE_URI, Module.PREFIX),
-            "Create current document state revision.",
+            "Create commit.",
             new SequenceType[]{
                 new FunctionParameterSequenceType("msg", Type.STRING, Cardinality.EXACTLY_ONE,
                 "Commit's log message"),
@@ -71,7 +67,7 @@ public class CreateRevision extends BasicFunction {
         
     };
 
-    public CreateRevision(XQueryContext context, FunctionSignature signature) {
+    public FnCommit(XQueryContext context, FunctionSignature signature) {
         super(context, signature);
     }
 
@@ -89,83 +85,5 @@ public class CreateRevision extends BasicFunction {
         }
         
         return rb.report();
-    }
-    
-    class ResponseBuilder implements Handler {
-        
-        final MemTreeBuilder builder;
-        
-        final int nodeNr;
-        
-        AttributesImpl attribs;
-        
-        public ResponseBuilder() {
-
-            builder = new MemTreeBuilder();
-            builder.startDocument();
-            
-            // start root element
-            nodeNr = builder.startElement("", "results", "results", null);
-            
-            builder.namespaceNode("exist", "http://exist.sourceforge.net/NS/exist");
-
-            attribs = new AttributesImpl();
-        }
-        
-        public NodeImpl report() {
-            // finish root element
-            builder.endElement();
-            
-            //System.out.println(builder.getDocument().toString());
-            
-            return builder.getDocument().getNode(nodeNr);
-        }
-
-        @Override
-        public void processed(XmldbURI uri) {
-            attribs.clear();
-            
-            attribs.addAttribute("", "uri", "uri", "CDATA", uri.toString());
-            attribs.addAttribute("", "status", "status", "CDATA", "processed");
-            
-            builder.startElement("", "entry", "entry", attribs);
-            builder.endElement();
-        }
-
-        @Override
-        public void error(XmldbURI uri, Exception e) {
-            attribs.clear();
-            
-            attribs.addAttribute("", "uri", "uri", "CDATA", uri.toString());
-            attribs.addAttribute("", "status", "status", "CDATA", "exception");
-            attribs.addAttribute("", "msg", "msg", "CDATA", e.getMessage());
-            
-            builder.startElement("", "entry", "entry", attribs);
-            builder.endElement();
-        }
-
-        @Override
-        public void error(XmldbURI uri, String msg) {
-            attribs.clear();
-            
-            attribs.addAttribute("", "uri", "uri", "CDATA", uri.toString());
-            attribs.addAttribute("", "status", "status", "CDATA", "error");
-            attribs.addAttribute("", "msg", "msg", "CDATA", msg);
-            
-            builder.startElement("", "entry", "entry", attribs);
-            builder.endElement();
-        }
-
-        @Override
-        public void error(Path location, Exception e) {
-            attribs.clear();
-            
-            attribs.addAttribute("", "location", "location", "CDATA", location.toString());
-            attribs.addAttribute("", "status", "status", "CDATA", "error");
-            attribs.addAttribute("", "msg", "msg", "CDATA", e.getMessage());
-            
-            builder.startElement("", "FS-entry", "FS-entry", attribs);
-            builder.endElement();
-        }
     }
 }

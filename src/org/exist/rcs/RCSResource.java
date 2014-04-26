@@ -44,6 +44,16 @@ public class RCSResource {
         this.location = location;
     }
     
+    public Revision revision(long id) throws IOException {
+        
+        Path dir = location.resolve(String.valueOf(id));
+        
+        if (Files.notExists(dir)) throw new IOException("Revision '"+id+"' of resource '"+uuid+"' does not exist");
+        
+        return new Revision(this, dir);
+    }
+    
+    
     public List<Revision> revisions() throws IOException {
         List<Revision> revs = new ArrayList<Revision>();
         

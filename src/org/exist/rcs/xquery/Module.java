@@ -17,7 +17,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.rcs;
+package org.exist.rcs.xquery;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +38,7 @@ public class Module extends AbstractInternalModule {
     public final static String RELEASED_IN_VERSION = "eXist-2.2";
 
     public static final FunctionDef[] functions = {
-        new FunctionDef(CreateRevision.signatures[0], CreateRevision.class)
+        new FunctionDef(FnCommit.signatures[0], FnCommit.class)
     };
     
     public Module(Map<String, List<? extends Object>> parameters) {
