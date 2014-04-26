@@ -19,7 +19,10 @@
  */
 package org.exist.rcs;
 
+import java.io.IOException;
 import java.nio.file.Path;
+
+import javax.xml.stream.XMLStreamException;
 
 import org.exist.dom.QName;
 import org.exist.memtree.MemTreeBuilder;
@@ -79,7 +82,11 @@ public class CreateRevision extends BasicFunction {
         
         ResponseBuilder rb = new ResponseBuilder();
         
-        manager.commit(args[0].getStringValue(), args[1], rb);
+        try {
+            manager.commit(args[0].getStringValue(), args[1], rb);
+        } catch (IOException | XMLStreamException e) {
+            throw new XPathException(this, e);
+        }
         
         return rb.report();
     }

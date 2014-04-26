@@ -20,9 +20,17 @@
 package org.exist.rcs;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import org.exist.Database;
+import org.exist.memtree.DocumentBuilderReceiver;
+import org.exist.memtree.DocumentImpl;
+import org.exist.memtree.MemTreeBuilder;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -59,15 +67,45 @@ public class Revision implements Comparable<Revision> {
         return Files.exists(location.resolve("data.xml"));
     }
     
-    public OutputStream getData() throws IOException {
+    public InputStream getData() throws IOException {
         if (Files.exists(location.resolve("data.xml"))) {
-            return Files.newOutputStream(location.resolve("data.xml"));
+            return Files.newInputStream(location.resolve("data.xml"));
         }
         
         if (Files.exists(location.resolve("data.xml"))) {
-            return Files.newOutputStream(location.resolve("data.bin"));
+            return Files.newInputStream(location.resolve("data.bin"));
         }
         
-        return null;
+        throw new IOException("no data");
+    }
+
+    public DocumentImpl getXML(Database db) throws IOException, SAXException {
+        
+        XMLReader reader = null;
+
+        try (InputStream is = getData()) {
+
+            InputSource src = new InputSource(is);
+
+            reader = db.getParserPool().borrowXMLReader();
+            
+            MemTreeBuilder builder = new MemTreeBuilder();
+            builder.startDocument();
+            
+            DocumentBuilderReceiver receiver = new DocumentBuilderReceiver(builder, true);
+            reader.setContentHandler(receiver);
+            reader.setProperty("http://xml.org/sax/properties/lexical-handler", receiver);
+
+            reader.parse(src);
+            
+            builder.endDocument();
+            
+            return builder.getDocument();
+
+        } finally {
+            if (reader != null) {
+                db.getParserPool().returnXMLReader(reader);
+            }
+        }
     }
 }

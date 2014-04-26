@@ -852,4 +852,8 @@ public abstract class DBBroker extends Observable {
     public void disableTriggers() {
         triggersEnabled = false;
     }
+
+    public Txn beginTx() {
+        return getDatabase().getTransactionManager().beginTransaction();
+    }
 }

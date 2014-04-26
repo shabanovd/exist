@@ -1068,6 +1068,21 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             getLock().release(Lock.WRITE_LOCK);
         }
     }
+    
+    public void removeResource(Txn txn, DBBroker broker, DocumentImpl doc) throws PermissionDeniedException, LockException, TriggerException {
+        if (doc == null) return;
+        
+        if (doc.getCollection() != this) {
+            throw new PermissionDeniedException("illegal: doc '"+doc.getURI()+"' does not belong col '"+getURI()+"'.");
+        }
+        
+        if(doc.getResourceType() == DocumentImpl.BINARY_FILE) {
+            removeBinaryResource(txn, broker, doc);
+        } else {
+            removeXMLResource(txn, broker, doc);
+        }
+    }
+
 
     /**
      * Remove the specified document from the collection.
@@ -1095,6 +1110,52 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             if (doc == null) {
                 return; //TODO should throw an exception!!! Otherwise we dont know if the document was removed
             }
+            
+            doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+            
+            boolean useTriggers = isTriggersEnabled(broker);
+            if (CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE_URI.equals(docUri)) {
+                // we remove a collection.xconf configuration file: tell the configuration manager to
+                // reload the configuration.
+                useTriggers = false;
+                final CollectionConfigurationManager confMgr = db.getConfigurationManager();
+                if (confMgr != null) {
+                    confMgr.invalidate(getURI(), broker.getBrokerPool());
+                }
+            }
+            
+            DocumentTriggers trigger = new DocumentTriggers(broker, null, this, useTriggers ? getConfiguration(broker) : null);
+            
+            trigger.beforeDeleteDocument(broker, txn, doc);
+            
+            broker.removeXMLResource(txn, doc);
+            documents.remove(docUri.getRawCollectionPath());
+            
+            trigger.afterDeleteDocument(broker, txn, getURI().append(docUri));
+            
+            db.getNotificationService().notifyUpdate(doc, UpdateListener.REMOVE);
+        } finally {
+            db.getProcessMonitor().endJob();
+            if(doc != null) {
+                doc.getUpdateLock().release(Lock.WRITE_LOCK);
+            }
+            getLock().release(Lock.WRITE_LOCK);
+        }
+    }
+    
+    private void removeXMLResource(Txn txn, DBBroker broker, DocumentImpl doc) throws PermissionDeniedException, TriggerException, LockException {
+        
+        if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.WRITE)) {
+            throw new PermissionDeniedException("Permission denied to write collection: " + path);
+        }
+        
+        XmldbURI docUri = doc.getFileURI();
+        
+        final BrokerPool db = broker.getBrokerPool();
+        try {
+            db.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_XML, docUri);
+
+            getLock().acquire(Lock.WRITE_LOCK);
             
             doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
             
