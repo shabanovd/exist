@@ -42,6 +42,7 @@ import org.exist.storage.NotificationService;
 import org.exist.storage.ProcessMonitor;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.util.Configuration;
+import org.exist.util.XMLReaderPool;
 import org.exist.xquery.PerformanceStats;
 
 /**
@@ -184,7 +185,9 @@ public interface Database {
 
     public MetaStorage getMetaStorage();
 
-	public int getPageSize();
+    public int getPageSize();
 
     public boolean isTransactional();
+
+    public XMLReaderPool getParserPool();
 }
