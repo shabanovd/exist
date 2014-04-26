@@ -31,10 +31,12 @@ import org.exist.util.LockException;
  * @author wolf
  *
  */
-public class Txn {
+public class Txn implements AutoCloseable {
 
     public enum State { STARTED, ABORTED, COMMITTED };
 
+    private TransactionManager tm;
+    
     private long id;
 
     private State state;
@@ -45,7 +47,8 @@ public class Txn {
     
     private String originId;
 
-    public Txn(long transactionId) {
+    public Txn(TransactionManager tm, long transactionId) {
+        this.tm = tm;
         this.id = transactionId;
         this.state = State.STARTED;
     }
@@ -123,5 +126,18 @@ public class Txn {
      */
     public void setOriginId(String id) {
         originId = id;
+    }
+    
+    public void success() throws TransactionException {
+        tm.commit(this);
+    }
+
+    public void failure() {
+        tm.abort(this);
+    }
+
+    @Override
+    public void close() {
+        tm.close(this);
     }
 }
