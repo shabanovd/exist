@@ -119,27 +119,26 @@ public class DiskUsage implements DiskUsageMBean {
        final File[] files = dir.listFiles(new JournalFilenameFilter());
        return files.length;
     }
-}
-class DbxFilenameFilter implements FilenameFilter {
 
-    public boolean accept(File directory, String name) {
-        if (name.endsWith(".dbx")) {
-            return true;
-        } else {
-            return false;
+    class DbxFilenameFilter implements FilenameFilter {
+
+        public boolean accept(File directory, String name) {
+            if (name.endsWith(".dbx")) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    class JournalFilenameFilter implements FilenameFilter {
+
+        public boolean accept(File directory, String name) {
+            if (name.endsWith(".log")) {
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 }
-
-class JournalFilenameFilter implements FilenameFilter {
-
-    public boolean accept(File directory, String name) {
-        if (name.endsWith(".log")) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-}
-
-
