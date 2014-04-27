@@ -81,6 +81,8 @@ import org.exist.xquery.value.SequenceIterator;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import com.sun.xml.internal.txw2.output.IndentingXMLStreamWriter;
+
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
@@ -105,10 +107,11 @@ public class RCSManager implements Constants {
     MetaData md;
     
     Path rcFolder;
+    Path uuidFolder;
     Path commitLogsFolder;
     Path snapshotLogsFolder;
     
-    public RCSManager(PluginsManager manager) throws PermissionDeniedException {
+    public RCSManager(PluginsManager manager) throws PermissionDeniedException, IOException {
         db = manager.getDatabase();
 
         md = MetaData.get();
@@ -116,14 +119,19 @@ public class RCSManager implements Constants {
         Path dbData = FileSystems.getDefault().getPath(db.getActiveBroker().getDataFolder().getAbsolutePath());
         rcFolder = dbData.resolve("RCS");
         
+        uuidFolder = rcFolder.resolve("uuids");
         commitLogsFolder = rcFolder.resolve("commits");
+        snapshotLogsFolder = rcFolder.resolve("snapshots");
+        
+        Files.createDirectories(commitLogsFolder);
+        Files.createDirectories(snapshotLogsFolder);
         
         instance = this;
     }
     
     public RCSResource resource(String uuid) {
         
-        Path location = resourceFolder(uuid, rcFolder);
+        Path location = resourceFolder(uuid, uuidFolder);
         
         if (Files.notExists(location)) return null;
         
@@ -133,16 +141,17 @@ public class RCSManager implements Constants {
     public void snapshot(Collection collection, Handler h) throws PermissionDeniedException, LockException, XMLStreamException, IOException {
 
         DBBroker broker = db.getActiveBroker();
-        Serializer serializer = serializer(broker);
         
         Path logPath = logPath(snapshotLogsFolder);
         String snapshotId = logPath.getFileName().toString();
         
         try (BufferedWriter commitLogStream = Files.newBufferedWriter(logPath, ENCODING)) {
-            XMLOutputFactory outputFactory = XMLOutputFactory.newInstance();
+            XMLOutputFactory xof = XMLOutputFactory.newInstance();
             
-            XMLStreamWriter log = outputFactory.createXMLStreamWriter(commitLogStream);
-        
+            //XMLStreamWriter log = xof.createXMLStreamWriter(commitLogStream);
+            
+            XMLStreamWriter log = new IndentingXMLStreamWriter(xof.createXMLStreamWriter(commitLogStream));
+            
             log.writeStartDocument();
             
             log.writeStartElement("RCS", "snapshot-log", "http://exist-db.org/RCS");
@@ -151,15 +160,14 @@ public class RCSManager implements Constants {
             
             log.writeAttribute("id", snapshotId);
 
-            process(broker, serializer, log, collection, logPath, h);
+            process(broker, log, collection, logPath, h);
             
             log.writeEndElement();
             log.writeEndDocument();
         }
-            
     }
 
-    private void process(DBBroker broker, Serializer serializer, XMLStreamWriter log, Collection collection, Path logPath, Handler h) 
+    private void process(DBBroker broker, XMLStreamWriter log, Collection collection, Path logPath, Handler h) 
         throws PermissionDeniedException, LockException, XMLStreamException {
         
         List<Collection> toProcess = new ArrayList<Collection>();
@@ -179,22 +187,7 @@ public class RCSManager implements Constants {
                     while (docs.hasNext()) {
                         DocumentImpl doc = docs.next();
                         
-                        XmldbURI uri = doc.getURI();
-                        
-                        log.writeStartElement("entry");
-                        log.writeAttribute("uri", uri.toString());
-                        
-                        try {
-                            Path folder = makeRevision(broker, serializer, null, uri, doc, logPath, h);
-                            
-                            log.writeAttribute("path", folder.toString());
-                        } catch (Exception e) {
-                            h.error(doc.getURI(), e);
-                            
-                            log.writeAttribute("error", e.getMessage());
-                        }
-                        
-                        log.writeEndElement();
+                        processEntry(doc, broker, log, logPath, h);
                     }
                     
                     List<Collection> next = new ArrayList<Collection>(col.countSubCollection());
@@ -209,14 +202,26 @@ public class RCSManager implements Constants {
                         
                         if (childColl != null) {
                             
-                            try {
-                                childColl.getLock().acquire(Lock.READ_LOCK);
-                                next.add(childColl);
+                            childColl.getLock().acquire(Lock.READ_LOCK);
+                            next.add(childColl);
                             
-                                makeRevision(broker, serializer, uri, logPath, h);
+                            log.writeStartElement("entry");
+                            log.writeAttribute("uri", uri.toString());
+                
+                            try {
+                                Path folder = makeRevision(broker, null, uri, childColl, logPath, h);
+                                
+                                if (folder != null) {
+                                    log.writeAttribute("path", rcFolder.relativize(folder).toString());
+                                }
+                                
                             } catch (Exception e) {
                                 h.error(uri, e);
+
+                                log.writeAttribute("error", e.getMessage());
                             }
+                            
+                            log.writeEndElement();
                         }
                     }
                     nexts.addAll(next);
@@ -236,13 +241,41 @@ public class RCSManager implements Constants {
             }
         }
     }
+    
+    private void processEntry(DocumentImpl doc, DBBroker broker, XMLStreamWriter log, Path logPath, Handler h) throws XMLStreamException {
+        XmldbURI uri = doc.getURI();
+        
+        log.writeStartElement("entry");
+        log.writeAttribute("uri", uri.toString());
+        
+        try {
+            
+            doc.getUpdateLock().acquire(Lock.READ_LOCK);
+
+            Path folder = null;
+            try {
+                folder = makeRevision(broker, null, uri, doc, logPath, h);
+            } finally {
+                doc.getUpdateLock().release(Lock.READ_LOCK);
+            }
+            
+            if (folder != null) {
+                log.writeAttribute("path", rcFolder.relativize(folder).toString());
+            }
+            
+        } catch (Exception e) {
+            h.error(doc.getURI(), e);
+            
+            log.writeAttribute("error", e.getMessage());
+        }
+
+        log.writeEndElement();
+        
+    }
 
     public void commit(String msg, Sequence urls, Handler h) throws IOException, XMLStreamException, XPathException {
         
-        
         DBBroker broker = db.getActiveBroker();
-        
-        Serializer serializer = serializer(broker);
         
         Path logPath = logPath(commitLogsFolder);
         
@@ -274,13 +307,17 @@ public class RCSManager implements Constants {
                 
                 XmldbURI uri = XmldbURI.create(url);
                 
+                //processEntry(doc, broker, serializer, log, logPath, h);
+                
                 log.writeStartElement("entry");
                 log.writeAttribute("uri", uri.toString());
     
                 try {
-                    Path folder = makeRevision(broker, serializer, uri, logPath, h);
+                    Path folder = makeRevision(broker, uri, logPath, h);
                     
-                    log.writeAttribute("path", folder.toString());
+                    if (folder != null) {
+                        log.writeAttribute("path", rcFolder.relativize(folder).toString());
+                    }
                     
                 } catch (Exception e) {
                     h.error(uri, e);
@@ -315,7 +352,7 @@ public class RCSManager implements Constants {
         return serializer;
     }
     
-    private Path makeRevision(DBBroker broker, Serializer serializer, XmldbURI uri, Path logPath, Handler h) 
+    private Path makeRevision(DBBroker broker, XmldbURI uri, Path logPath, Handler h) 
             throws IOException, PermissionDeniedException, SAXException, XMLStreamException {
 
         String uuid = null;
@@ -336,7 +373,12 @@ public class RCSManager implements Constants {
 
         } else {
 
-            makeRevision(broker, serializer, uuid, uri, doc, logPath, h);
+            try {
+                makeRevision(broker, uuid, uri, doc, logPath, h);
+
+            } finally {
+                doc.getUpdateLock().release(Lock.READ_LOCK);
+            }
         }
         
         return folder;
@@ -344,7 +386,7 @@ public class RCSManager implements Constants {
     
     private void linkLog(Path folder, Path logPath) throws IOException {
         if (folder != null) {
-            Files.createSymbolicLink(folder.resolve("log"), logPath.relativize(folder));
+            Files.createSymbolicLink(folder.resolve("log"), folder.relativize(logPath));
         }
     }
     
@@ -371,7 +413,7 @@ public class RCSManager implements Constants {
             if ((uuid = uuid(uri, h)) == null) return null;
         }
 
-        Path folder = revFolder(uuid, rcFolder);
+        Path folder = revFolder(uuid, uuidFolder);
         
         if (folder == null) {
             h.error(uri, "can't create revision folder");
@@ -389,73 +431,67 @@ public class RCSManager implements Constants {
         return folder;
     }
 
-    private Path makeRevision(DBBroker broker, Serializer serializer, String uuid, XmldbURI uri, DocumentImpl doc, Path logPath, Handler h) 
+    private Path makeRevision(DBBroker broker, String uuid, XmldbURI uri, DocumentImpl doc, Path logPath, Handler h) 
             throws IOException, PermissionDeniedException, SAXException, XMLStreamException {
         
         if (uuid == null) {
             if ((uuid = uuid(uri, h)) == null) return null;
         }
 
-        Path folder = null;
-        try {
-            folder = revFolder(uuid, rcFolder);
-            
-            if (folder == null) {
-                h.error(uri, "can't create revision folder");
-                return null;
-            }
-            Files.createDirectories(folder);
-
-            MessageDigest digest = messageDigest();
-
-            Path dataFile;
-            
-            switch (doc.getResourceType()) {
-            case XML_FILE:
-                
-                dataFile = folder.resolve(XML_DATA);
-
-                try (OutputStream fileStream = Files.newOutputStream(dataFile)) {
-                    
-                    Writer writerStream = new OutputStreamWriter(
-                        new DigestOutputStream(fileStream, digest), 
-                        ENCODING.newEncoder()
-                    );
-                    
-                    try (Writer writer = new BufferedWriter(writerStream)) {
-                        serializer.serialize(doc, writer);
-                    }
-                }
-                
-                break;
-
-            case BINARY_FILE:
-                
-                dataFile = folder.resolve(BIN_DATA);
-
-                try (InputStream is = broker.getBinaryResource((BinaryDocument)doc)) {
-                    try (OutputStream fileStream = Files.newOutputStream(dataFile)) {
-                    
-                        DigestOutputStream stream = new DigestOutputStream(fileStream, digest);
-                        
-                        IOUtils.copy(is, stream);
-                    }                            
-                }
-
-                break;
-            
-            default:
-                h.error(uri, "unknown type");
-                return null;
-            }
-            
-            writeDigest(dataFile, digest);
-
-            processMetas(uuid, doc, folder, h);
-
-        } finally {
-            doc.getUpdateLock().release(Lock.READ_LOCK);
+        Path folder = revFolder(uuid, uuidFolder);
+        
+        if (folder == null) {
+            h.error(uri, "can't create revision folder");
+            return null;
         }
+        Files.createDirectories(folder);
+
+        MessageDigest digest = messageDigest();
+
+        Path dataFile;
+        
+        switch (doc.getResourceType()) {
+        case XML_FILE:
+            
+            dataFile = folder.resolve(XML_DATA);
+
+            try (OutputStream fileStream = Files.newOutputStream(dataFile)) {
+                
+                Writer writerStream = new OutputStreamWriter(
+                    new DigestOutputStream(fileStream, digest), 
+                    ENCODING.newEncoder()
+                );
+                
+                try (Writer writer = new BufferedWriter(writerStream)) {
+                    serializer(broker).serialize(doc, writer);
+                }
+            }
+            
+            break;
+
+        case BINARY_FILE:
+            
+            dataFile = folder.resolve(BIN_DATA);
+
+            try (InputStream is = broker.getBinaryResource((BinaryDocument)doc)) {
+                try (OutputStream fileStream = Files.newOutputStream(dataFile)) {
+                
+                    DigestOutputStream stream = new DigestOutputStream(fileStream, digest);
+                    
+                    IOUtils.copy(is, stream);
+                }                            
+            }
+
+            break;
+        
+        default:
+            h.error(uri, "unknown type");
+            return null;
+        }
+        
+        writeDigest(dataFile, digest);
+
+        processMetas(uuid, doc, folder, h);
         
         linkLog(folder, logPath);
         
@@ -665,11 +701,11 @@ public class RCSManager implements Constants {
         writer.writeEndElement();
     }
 
-    private void write(XMLStreamWriter writer, String name, String value) throws XMLStreamException {
-        writer.writeStartElement(name);
-        writer.writeAttribute(name, value);
-        writer.writeCharacters(value);
-        writer.writeEndElement();
+    private void write(XMLStreamWriter w, String name, String value) throws XMLStreamException {
+        w.writeStartElement(name);
+        //writer.writeAttribute(name, value);
+        w.writeCharacters(value);
+        w.writeEndElement();
     }
 
     public void restore(Path location, Handler h) throws IOException {
