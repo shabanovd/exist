@@ -47,7 +47,7 @@ public class FnRevisions extends BasicFunction {
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
             new QName("revisions", Module.NAMESPACE_URI, Module.PREFIX),
-            "Create commit.",
+            "Get revisions id for resource.",
             new SequenceType[]{
                 new FunctionParameterSequenceType("uuid", Type.STRING, Cardinality.EXACTLY_ONE,
                 "Resource UUID.")

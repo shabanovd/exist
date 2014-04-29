@@ -81,7 +81,7 @@ import org.exist.xquery.value.SequenceIterator;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import com.sun.xml.internal.txw2.output.IndentingXMLStreamWriter;
+//import com.sun.xml.internal.txw2.output.IndentingXMLStreamWriter;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -148,9 +148,9 @@ public class RCSManager implements Constants {
         try (BufferedWriter commitLogStream = Files.newBufferedWriter(logPath, ENCODING)) {
             XMLOutputFactory xof = XMLOutputFactory.newInstance();
             
-            //XMLStreamWriter log = xof.createXMLStreamWriter(commitLogStream);
+            XMLStreamWriter log = xof.createXMLStreamWriter(commitLogStream);
             
-            XMLStreamWriter log = new IndentingXMLStreamWriter(xof.createXMLStreamWriter(commitLogStream));
+            //XMLStreamWriter log = new IndentingXMLStreamWriter(xof.createXMLStreamWriter(commitLogStream));
             
             log.writeStartDocument();
             

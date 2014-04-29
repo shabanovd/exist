@@ -46,7 +46,7 @@ import org.xml.sax.SAXException;
 public class FnRevision extends BasicFunction {
     
     final static QName REV_AS_XML = new QName("revision-as-xml", Module.NAMESPACE_URI, Module.PREFIX);
-    final static QName REV_AS_BIN = new QName("revision-as-xml", Module.NAMESPACE_URI, Module.PREFIX);
+    final static QName REV_AS_BIN = new QName("revision-as-binary", Module.NAMESPACE_URI, Module.PREFIX);
     
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
@@ -61,7 +61,7 @@ public class FnRevision extends BasicFunction {
             new FunctionReturnSequenceType(Type.DOCUMENT, Cardinality.ZERO_OR_ONE, "")
         ),
         new FunctionSignature(
-            new QName("revision-as-binary", Module.NAMESPACE_URI, Module.PREFIX),
+            REV_AS_BIN,
             "Get revision.",
             new SequenceType[]{
                 new FunctionParameterSequenceType("uuid", Type.STRING, Cardinality.EXACTLY_ONE,
