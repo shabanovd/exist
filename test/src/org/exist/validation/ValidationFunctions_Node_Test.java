@@ -119,7 +119,7 @@ public class ValidationFunctions_Node_Test {
 //    private void clearGrammarCache() {
 //        logger.info("Clearing grammar cache");
 //        @SuppressWarnings("unused")
-//              ResourceSet result = null;
+//		ResourceSet result = null;
 //        try {
 //            result = service.query("validation:clear-grammar-cache()");
 //

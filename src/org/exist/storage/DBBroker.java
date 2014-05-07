@@ -66,7 +66,7 @@ import org.exist.collections.Collection.SubCollectionEntry;
  * 
  * @author Wolfgang Meier <wolfgang@exist-db.org>
  */
-public abstract class DBBroker extends Observable {
+public abstract class DBBroker extends Observable implements AutoCloseable {
 
 	// Matching types
 	public final static int MATCH_EXACT 		= 0;
@@ -836,10 +836,6 @@ public abstract class DBBroker extends Observable {
 
     public abstract void readCollectionEntry(SubCollectionEntry entry);
 
-    public void release() {
-        pool.release(this);
-    }
-
     private boolean triggersEnabled = true;
     public boolean isTriggersEnabled() {
         return triggersEnabled;
@@ -853,6 +849,16 @@ public abstract class DBBroker extends Observable {
         triggersEnabled = false;
     }
 
+    @Override
+    public void close() throws Exception {
+        pool.release(this);
+    }
+    
+    @Deprecated //use close() method instead
+    public void release() {
+        pool.release(this);
+    }
+    
     public Txn beginTx() {
         return getDatabase().getTransactionManager().beginTransaction();
     }

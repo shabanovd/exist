@@ -120,11 +120,8 @@ public class ExistDocument extends ExistResource {
             // Get (estimated) file size
             contentLength = document.getContentLength();
 
-        } catch (EXistException e) {
-            LOG.error(e.getMessage(), e);
-
-        } catch (PermissionDeniedException e) {
-            LOG.error(e.getMessage(), e);
+        } catch (EXistException | PermissionDeniedException e) {
+            LOG.error(e);
 
         } finally {
 
@@ -186,10 +183,10 @@ public class ExistDocument extends ExistResource {
                     serializer.setProperties(configuration);
 
                     // Serialize document
-                    Writer w = new OutputStreamWriter(os, "UTF-8");
-                    serializer.serialize(document, w);
-                    w.flush();
-                    w.close();
+                    try (Writer w = new OutputStreamWriter(os, "UTF-8")) {
+                        serializer.serialize(document, w);
+                        w.flush();
+                    }
 
                     // don;t flush
                     if (!(os instanceof VirtualTempFile)) {
@@ -287,16 +284,8 @@ public class ExistDocument extends ExistResource {
             LOG.error("Resource is locked.", e);
             txnManager.abort(txn);
 
-        } catch (EXistException e) {
-            LOG.error(e.getMessage(), e);
-            txnManager.abort(txn);
-
-        } catch (TriggerException e) {
-            LOG.error(e.getMessage(), e);
-            txnManager.abort(txn);
-
-        } catch (PermissionDeniedException e) {
-            LOG.error(e.getMessage(), e);
+        } catch (EXistException | TriggerException | PermissionDeniedException e) {
+            LOG.error(e);
             txnManager.abort(txn);
 
         } finally {
@@ -365,12 +354,8 @@ public class ExistDocument extends ExistResource {
             return token;
 
 
-        } catch (EXistException e) {
-            LOG.error(e.getMessage(), e);
-            return null;
-
-        } catch (PermissionDeniedException e) {
-            LOG.error(e.getMessage(), e);
+        } catch (EXistException | PermissionDeniedException e) {
+            LOG.error(e);
             return null;
 
         } finally {
@@ -467,20 +452,11 @@ public class ExistDocument extends ExistResource {
             return inputToken;
 
 
-        } catch (EXistException e) {
-            LOG.error(e.getMessage(), e);
+        } catch (EXistException | PermissionDeniedException e) {
+            LOG.error(e);
             if (txnManager != null) {
                 txnManager.abort(txn);
             }
-            throw e;
-
-        } catch (PermissionDeniedException e) {
-            LOG.error(e.getMessage(), e);
-            //dead code, remove?
-            if (txnManager != null) {
-                txnManager.abort(txn);
-            }
-            //-----------------------
             throw e;
 
         } catch (TriggerException e) {
@@ -562,12 +538,7 @@ public class ExistDocument extends ExistResource {
             broker.storeMetadata(txn, document);
             txnManager.commit(txn);
 
-        } catch (EXistException e) {
-            txnManager.abort(txn);
-            LOG.error(e.getMessage(), e);
-            throw e;
-
-        } catch (PermissionDeniedException e) {
+        } catch (EXistException | PermissionDeniedException e) {
             txnManager.abort(txn);
             LOG.error(e.getMessage(), e);
             throw e;
@@ -675,18 +646,8 @@ public class ExistDocument extends ExistResource {
             txnManager.abort(txn);
             throw e;
 
-        } catch (IOException e) {
-            LOG.error(e.getMessage(), e);
-            txnManager.abort(txn);
-            throw new EXistException(e.getMessage());
-
-        } catch (PermissionDeniedException e) {
-            LOG.error(e.getMessage(), e);
-            txnManager.abort(txn);
-            throw new EXistException(e.getMessage());
-
-        } catch (TriggerException e) {
-            LOG.error(e.getMessage(), e);
+        } catch (IOException | PermissionDeniedException | TriggerException e) {
+            LOG.error(e);
             txnManager.abort(txn);
             throw new EXistException(e.getMessage());
 
@@ -788,20 +749,11 @@ public class ExistDocument extends ExistResource {
             return lockToken;
 
 
-        } catch (EXistException e) {
-            LOG.error(e.getMessage(), e);
+        } catch (EXistException | PermissionDeniedException e) {
+            LOG.error(e);
             if (txnManager != null) {
                 txnManager.abort(txn);
             }
-            throw e;
-
-        } catch (PermissionDeniedException e) {
-            LOG.error(e.getMessage(), e);
-            //dead code, remove?
-            if (txnManager != null) {
-                txnManager.abort(txn);
-            }
-            //------------------------
             throw e;
 
         } finally {

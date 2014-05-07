@@ -22,6 +22,8 @@ public interface TextCollector {
 
     public List<Field> getFields();
 
+    public boolean hasFields();
+
     public static class Field {
         protected final boolean attribute;
         protected final String name;

@@ -60,6 +60,11 @@ public class ComplexTextCollector implements TextCollector {
     }
 
     @Override
+    public boolean hasFields() {
+        return true;
+    }
+
+    @Override
     public int length() {
         return length;
     }

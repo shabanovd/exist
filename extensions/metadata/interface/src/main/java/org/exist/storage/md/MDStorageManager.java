@@ -1,6 +1,10 @@
 /*
  *  eXist Open Source Native XML Database
+<<<<<<< HEAD
  *  Copyright (C) 2012-2013 The eXist Project
+=======
+ *  Copyright (C) 2012 The eXist Project
+>>>>>>> eXist/develop
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -151,7 +155,6 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	}
 
 	private void backup(Metas ms, SAXSerializer serializer) throws SAXException {
-		
 		List<Meta> sub = ms.metas();
 		for (Meta m : sub) {
 

@@ -410,6 +410,7 @@ public class ConfigurationImpl extends ProxyElement<ElementAtExist> implements C
     @Override
     public void checkForUpdates(ElementAtExist element) {
         if (!saving && configuredObjectReference != null && configuredObjectReference.get() != null) {
+            clearCache();
             setProxyObject(element);
             Configurator.configure(configuredObjectReference.get(), this);
         }

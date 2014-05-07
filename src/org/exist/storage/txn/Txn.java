@@ -24,6 +24,7 @@ package org.exist.storage.txn;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.exist.Transaction;
 import org.exist.storage.lock.Lock;
 import org.exist.util.LockException;
 
@@ -31,7 +32,7 @@ import org.exist.util.LockException;
  * @author wolf
  *
  */
-public class Txn implements AutoCloseable {
+public class Txn implements Transaction {
 
     public enum State { STARTED, ABORTED, COMMITTED };
 
@@ -57,7 +58,7 @@ public class Txn implements AutoCloseable {
         return state;
     }
 
-    public void setState(State state) {
+    protected void setState(State state) {
         this.state = state;
     }
 
@@ -86,14 +87,14 @@ public class Txn implements AutoCloseable {
         listeners.add(listener);
     }
 
-    public void signalAbort() {
+    protected void signalAbort() {
         state = State.ABORTED;
         for (int i = 0; i < listeners.size(); i++) {
             listeners.get(i).abort();
         }
     }
 
-    public void signalCommit() {
+    protected void signalCommit() {
         state = State.COMMITTED;
         for (int i = 0; i < listeners.size(); i++) {
             listeners.get(i).commit();
@@ -131,7 +132,7 @@ public class Txn implements AutoCloseable {
     public void success() throws TransactionException {
         tm.commit(this);
     }
-
+    
     public void failure() {
         tm.abort(this);
     }
