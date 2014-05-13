@@ -109,17 +109,16 @@ public class Service implements Configurable {
         
         signCertificate = certData;
 
-        System.out.println(signCertificate);
-        
         byte[] certbytes = Base64.decodeBase64(certData);
         
         try {
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        X509Certificate x509Cert = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(certbytes));
-
-        certSigning = new Certificate(x509Cert);
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            X509Certificate x509Cert = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(certbytes));
+    
+            certSigning = new Certificate(x509Cert);
         } catch (Exception e) {
             e.printStackTrace();
+            throw e;
         }
     }
 

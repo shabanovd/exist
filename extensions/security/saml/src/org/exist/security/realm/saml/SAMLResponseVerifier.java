@@ -45,7 +45,7 @@ public class SAMLResponseVerifier {
         Response samlResponse = samlMessageContext.getInboundSAMLMessage();
 
         //LOG.debug("SAML Response message : " + SAMLServlet.SAMLObjectToString(samlResponse));
-        System.out.println(SAMLServlet.XMLToString(samlResponse.getDOM()));
+        //System.out.println(SAMLServlet.XMLToString(samlResponse.getDOM()));
 
         validator.validate(samlResponse.getSignature());
 
@@ -69,13 +69,6 @@ public class SAMLResponseVerifier {
         }
         LOG.debug("SAML authenticated user " + nameId.getValue());
         verifyConditions(assertion.getConditions(), samlMessageContext);
-        
-        for (AttributeStatement attrStatement : assertion.getAttributeStatements()) {
-            for (Attribute attr : attrStatement.getAttributes()) {
-                System.out.println(attr.getName()+" = "+attr.getAttributeValues().get(0).getDOM().getTextContent());
-                
-            }
-        }
     }
 
     private static void verifyConditions(Conditions conditions, SAMLMessageContext<Response, SAMLObject, NameID> samlMessageContext) throws SAMLException {
