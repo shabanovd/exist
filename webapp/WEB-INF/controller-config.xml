@@ -34,6 +34,9 @@
   <!-- 
   <forward pattern="/oauth" servlet="OAuthServlet"/>
   -->
+
+  <!-- SAML servlet -->
+  <forward pattern="/saml" servlet="SAMLServlet"/>
   
   <!-- Apache SOAP interface -->
   <forward pattern="/axis-servlet/AxisServlet" servlet="AxisServlet"/>

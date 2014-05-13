@@ -35,6 +35,7 @@
 	<classpathentry kind="src" path="extensions/metadata/sleepycat/src/main/java"/>
 	<classpathentry kind="src" path="extensions/indexes/range/src"/>
 	<classpathentry kind="src" path="extensions/metadata/interface/src/test/java"/>
+	<classpathentry kind="src" path="extensions/security/saml/src"/>
 	<classpathentry kind="lib" path="lib/core/pkg-repo.jar"/>
 	<classpathentry kind="lib" path="lib/core/jEdit-syntax.jar"/>
 	<classpathentry kind="lib" path="lib/core/cglib-nodep-2.2.jar"/>
@@ -62,6 +63,7 @@
 	<classpathentry kind="lib" path="lib/core/clj-ds-0.0.1.jar"/>
 	<classpathentry kind="lib" path="lib/user/je-5.0.58.jar"/>
 	<classpathentry kind="lib" path="lib/user/uuid-3.3.jar"/>
+	<classpathentry kind="lib" path="extensions/security/saml/lib/joda-time-2.2.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/core/antlr-2.7.7.jar"/>
 	<classpathentry kind="lib" path="lib/core/excalibur-cli-1.0.jar"/>
@@ -104,7 +106,6 @@
 	<classpathentry kind="lib" path="lib/user/exificient-0.8.jar"/>
 	<classpathentry kind="lib" path="lib/optional/isorelax-20041111.jar"/>
 	<classpathentry kind="lib" path="lib/optional/xqjapi-1.0-fr.jar"/>
-	<classpathentry kind="lib" path="extensions/security/oauth/lib/org.json.jar"/>
 	<classpathentry kind="lib" path="lib/core/commons-codec-1.7.jar"/>
 	<classpathentry kind="lib" path="lib/core/gnu-crypto-2.0.1-min.jar"/>
 	<classpathentry kind="lib" path="lib/optional/commons-net-2.2.jar"/>
@@ -144,7 +145,12 @@
 	<classpathentry kind="lib" path="extensions/indexes/lucene/lib/lucene-queryparser-4.4.0.jar"/>
 	<classpathentry kind="lib" path="extensions/fluent/lib/hamcrest-core-1.3.jar"/>
 	<classpathentry kind="lib" path="extensions/fluent/lib/hamcrest-library-1.3.jar"/>
-	<classpathentry kind="lib" path="extensions/security/oauth/lib/scribe-1.3.5.jar"/>
 	<classpathentry kind="lib" path="tools/aspectj/lib/aspectjrt-1.8.0.jar"/>
+	<classpathentry kind="lib" path="extensions/security/oauth/lib/org.json.jar"/>
+	<classpathentry kind="lib" path="extensions/security/oauth/lib/scribe-1.3.0.jar"/>
+	<classpathentry kind="lib" path="extensions/security/saml/lib/opensaml-2.6.1.jar"/>
+	<classpathentry kind="lib" path="extensions/security/saml/lib/openws-1.5.1.jar"/>
+	<classpathentry kind="lib" path="extensions/security/saml/lib/xmlsec-1.5.6.jar"/>
+	<classpathentry kind="lib" path="extensions/security/saml/lib/xmltooling-1.4.1.jar"/>
 	<classpathentry kind="output" path="test/classes"/>
 </classpath>
