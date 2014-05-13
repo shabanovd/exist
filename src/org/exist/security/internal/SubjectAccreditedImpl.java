@@ -21,6 +21,8 @@
  */
 package org.exist.security.internal;
 
+import java.util.Date;
+
 import org.exist.security.AbstractSubject;
 import org.exist.security.AbstractAccount;
 
@@ -32,16 +34,28 @@ public class SubjectAccreditedImpl extends AbstractSubject {
 
 	private final Object letterOfCredit;
 	
+	private final Date validTo;
+	
 	/**
 	 * 
 	 * @param account
 	 * @param letterOfCredit the object the prove authentication
 	 */
 	public SubjectAccreditedImpl(AbstractAccount account, Object letterOfCredit) {
-		super(account);
-		
-		this.letterOfCredit = letterOfCredit;
+		this(account, letterOfCredit, null);
 	}
+
+	/**
+         * 
+         * @param account
+         * @param letterOfCredit the object the prove authentication
+         */
+        public SubjectAccreditedImpl(AbstractAccount account, Object letterOfCredit, Date validTo) {
+                super(account);
+                
+                this.letterOfCredit = letterOfCredit;
+                this.validTo = validTo;
+        }
 
 	/* (non-Javadoc)
 	 * @see org.exist.security.Subject#authenticate(java.lang.Object)
@@ -59,6 +73,7 @@ public class SubjectAccreditedImpl extends AbstractSubject {
 		return (
 			letterOfCredit != null 
 			&& account.getId() != account.getRealm().getSecurityManager().getGuestSubject().getId()
+			&& (validTo == null || new Date().before(validTo))
 		);
 	}
 
