@@ -84,7 +84,10 @@ public class Service implements Configurable {
     @ConfigurationFieldAsAttribute("name")
     String name;
     
-    @ConfigurationFieldAsAttribute("return-url")
+    @ConfigurationFieldAsElement("auth-url")
+    String auth_url;
+
+    @ConfigurationFieldAsElement("return-url")
     String return_url;
     
     @ConfigurationFieldAsElement("signCertificate")
@@ -99,6 +102,10 @@ public class Service implements Configurable {
 
     public String getName() {
         return name;
+    }
+    
+    public String getAuthURL() {
+        return auth_url;
     }
 
     public String getReturnURL() {

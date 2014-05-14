@@ -32,6 +32,7 @@ import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerException;
 
 import org.exist.util.serializer.DOMSerializer;
+import org.opensaml.common.SAMLException;
 import org.opensaml.common.SAMLObject;
 import org.opensaml.common.binding.BasicSAMLMessageContext;
 import org.opensaml.common.binding.SAMLMessageContext;
@@ -88,7 +89,12 @@ public class SAMLServlet extends HttpServlet {
             LOG.trace("the " + request.getMethod() + " method, path info " + path);
         }
 
-        Service service = SAMLRealm.get().getServiceByPath(path);
+        Service service;
+        try {
+            service = SAMLRealm.get().getServiceByPath(path);
+        } catch (SAMLException e) {
+            throw new ServletException(e);
+        }
 
         // String relay = request.getParameter(RELAY_STATE);
 
@@ -103,8 +109,8 @@ public class SAMLServlet extends HttpServlet {
 
                 //samlMessageContext.setLocalEntityId(service.getSpProviderId());
 
-                String relayState = "/";// XXX:
-                                        // getInitialRequestedResource(samlMessageContext);
+                String relayState = "/";
+                //XXX: getInitialRequestedResource(samlMessageContext);
 
                 service.verify(samlMessageContext);
 
@@ -118,7 +124,8 @@ public class SAMLServlet extends HttpServlet {
                 throw new ServletException(e);
             }
         } else {
-            response.sendRedirect("https://jorsek.okta.com/home/template_saml_2_0/0oauwz812qUJMIMRYOYV/3079");
+            //"https://jorsek.okta.com/home/template_saml_2_0/0oauwz812qUJMIMRYOYV/3079"
+            response.sendRedirect(service.getAuthURL());
             return;
         }
 

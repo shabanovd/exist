@@ -40,7 +40,7 @@ import org.exist.security.internal.SecurityManagerImpl;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.DBBroker;
-import org.scribe.exceptions.OAuthException;
+import org.opensaml.common.SAMLException;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -102,7 +102,7 @@ public class SAMLRealm extends AbstractRealm {
                     });
 
                     if (primaryGroup == null)
-                        throw new ConfigurationException("SAML realm can not create primary group 'OAuth'.");
+                        throw new ConfigurationException("SAML realm can not create primary group 'SAML'.");
 
                 } catch (PermissionDeniedException e) {
                     throw e;
@@ -153,13 +153,13 @@ public class SAMLRealm extends AbstractRealm {
         }
     }
 
-    public Service getServiceByPath(String name) {
+    public Service getServiceByPath(String name) throws SAMLException {
         for (Service service : services) {
             if (service.getName().equals(name)) {
                 return service;
             }
         }
-
-        throw new OAuthException("Service not found by name '" + name + "'.");
+        //XXX: replace by NotFoundException
+        throw new SAMLException("Service not found by name '" + name + "'.");
     }
 }
