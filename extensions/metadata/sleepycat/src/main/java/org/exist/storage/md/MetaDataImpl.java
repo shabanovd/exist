@@ -22,11 +22,14 @@
 package org.exist.storage.md;
 
 import java.io.File;
+import java.lang.Deprecated;
+import java.lang.Override;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.exist.Database;
 import org.exist.EXistException;
+import org.exist.Resource;
 import org.exist.collections.Collection;
 import org.exist.dom.DocumentAtExist;
 import org.exist.dom.DocumentImpl;
@@ -35,6 +38,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.MetaStreamListener;
+import org.exist.util.function.Consumer;
 import org.exist.xmldb.XmldbURI;
 
 import com.sleepycat.je.Environment;
@@ -403,65 +407,110 @@ public class MetaDataImpl extends MetaData {
         indexMetas(getMetas(docUUID));
     }
 
+    @Deprecated //use void resources(String key, String value, Consumer<Resource> consumer)
     public List<DocumentImpl> matchDocuments(String key, String value) throws EXistException {
-		
-		EntityJoin<String, MetaImpl> join = new EntityJoin<String, MetaImpl>(metadataByUUID);
-		join.addCondition(keyToMeta, key);
-		join.addCondition(valueToMeta, value);
-		
-		ForwardCursor<MetaImpl> entities = join.entities();
-		try { 
-			List<DocumentImpl> list = new ArrayList<DocumentImpl>();
-			for (MetaImpl entity : entities) {
-				try {
-					list.add(getDocument(entity.getObject()));
-				} catch (PermissionDeniedException ex) {
-					//ignore
-				}
-			}
-			return list;
-		} finally {
-			entities.close();
-		}
+
+        final List<DocumentImpl> list = new ArrayList<DocumentImpl>();
+
+        resources(key, value, new Consumer<Resource>() {
+            @Override
+            public void accept(Resource resource) {
+                if (resource instanceof DocumentImpl) {
+                    list.add((DocumentImpl)resource);
+                }
+            }
+        });
+
+        return list;
 	}
-	
-    public List<DocumentImpl> matchDocumentsByKey(String key) throws EXistException {
-        
+
+    public void resources(String key, String value, Consumer<Resource> consumer) throws EXistException {
+
         EntityJoin<String, MetaImpl> join = new EntityJoin<String, MetaImpl>(metadataByUUID);
         join.addCondition(keyToMeta, key);
-        
+        join.addCondition(valueToMeta, value);
+
         ForwardCursor<MetaImpl> entities = join.entities();
-        try { 
-            List<DocumentImpl> list = new ArrayList<DocumentImpl>();
+        try {
             for (MetaImpl entity : entities) {
                 try {
-                    list.add(getDocument(entity.getObject()));
+                    consumer.accept(getDocument(entity.getObject()));
                 } catch (PermissionDeniedException ex) {
                     //ignore
                 }
             }
-            return list;
+        } finally {
+            entities.close();
+        }
+    }
+	
+    @Deprecated //use void resourcesByKey(String key, Consumer<Resource> consumer)
+    public List<DocumentImpl> matchDocumentsByKey(String key) throws EXistException {
+
+        final List<DocumentImpl> list = new ArrayList<DocumentImpl>();
+
+        resourcesByKey(key, new Consumer<Resource>() {
+            @Override
+            public void accept(Resource resource) {
+                if (resource instanceof DocumentImpl) {
+                    list.add((DocumentImpl)resource);
+                }
+            }
+        });
+
+        return list;
+    }
+
+    public void resourcesByKey(String key, Consumer<Resource> consumer) throws EXistException {
+
+        EntityJoin<String, MetaImpl> join = new EntityJoin<String, MetaImpl>(metadataByUUID);
+        join.addCondition(keyToMeta, key);
+
+        ForwardCursor<MetaImpl> entities = join.entities();
+        try {
+            for (MetaImpl entity : entities) {
+                try {
+                    consumer.accept(getDocument(entity.getObject()));
+                } catch (PermissionDeniedException ex) {
+                    //ignore
+                }
+            }
         } finally {
             entities.close();
         }
     }
 
+    @Deprecated //use void resourcesByValue(String value, Consumer<Resource> consumer)
     public List<DocumentImpl> matchDocumentsByValue(String value) throws EXistException {
-        
+
+        final List<DocumentImpl> list = new ArrayList<DocumentImpl>();
+
+        resourcesByValue(value, new Consumer<Resource>() {
+            @Override
+            public void accept(Resource resource) {
+                if (resource instanceof DocumentImpl) {
+                    list.add((DocumentImpl)resource);
+                }
+            }
+        });
+
+        return list;
+    }
+
+    public void resourcesByValue(String value, Consumer<Resource> consumer) throws EXistException {
+
         EntityJoin<String, MetaImpl> join = new EntityJoin<String, MetaImpl>(metadataByUUID);
         join.addCondition(valueToMeta, value);
-        
+
         ForwardCursor<MetaImpl> entities = join.entities();
-        try { 
-            List<DocumentImpl> list = new ArrayList<DocumentImpl>();
+        try {
             for (MetaImpl entity : entities) {
                 try {
-                    list.add(getDocument(entity.getObject()));
+                    consumer.accept(getDocument(entity.getObject()));
                 } catch (PermissionDeniedException ex) {
                     //ignore
                 }
             }
-            return list;
         } finally {
             entities.close();
         }

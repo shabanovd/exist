@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2012 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.storage.md;
 
@@ -25,11 +23,13 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.exist.EXistException;
+import org.exist.Resource;
 import org.exist.collections.Collection;
 import org.exist.dom.DocumentAtExist;
 import org.exist.dom.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.MetaStorage;
+import org.exist.util.function.Consumer;
 import org.exist.xmldb.XmldbURI;
 
 /**
@@ -53,10 +53,19 @@ public abstract class MetaData implements MetaStorage {
 
     public abstract Collection getCollection(String uuid) throws EXistException, PermissionDeniedException;
 
+    public abstract void resources(String key, String value, Consumer<Resource> consumer) throws EXistException;
+
+    public abstract void resourcesByKey(String key, Consumer<Resource> consumer) throws EXistException;
+
+    public abstract void resourcesByValue(String value, Consumer<Resource> consumer) throws EXistException;
+
+    @Deprecated //use public void resources(String key, String value, Consumer<Resource> consumer)
     public abstract List<DocumentImpl> matchDocuments(String key, String value) throws EXistException, PermissionDeniedException;
 
+    @Deprecated //use public void resourcesByKey(String key, Consumer<Resource> consumer)
     public abstract List<DocumentImpl> matchDocumentsByKey(String key) throws EXistException, PermissionDeniedException;
 
+    @Deprecated //use public void resourcesByValue(String value, Consumer<Resource> consumer)
     public abstract List<DocumentImpl> matchDocumentsByValue(String value) throws EXistException, PermissionDeniedException;
 
     public abstract Metas addMetas(DocumentAtExist doc);
