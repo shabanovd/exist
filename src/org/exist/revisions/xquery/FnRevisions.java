@@ -17,14 +17,14 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.rcs.xquery;
+package org.exist.revisions.xquery;
 
 import java.io.IOException;
 
-import javax.xml.stream.XMLStreamException;
-
 import org.exist.dom.QName;
 import org.exist.rcs.RCSManager;
+import org.exist.rcs.RCSResource;
+import org.exist.rcs.Revision;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -32,58 +32,55 @@ import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.FunctionParameterSequenceType;
 import org.exist.xquery.value.FunctionReturnSequenceType;
+import org.exist.xquery.value.IntegerValue;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
+import org.exist.xquery.value.ValueSequence;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
-public class FnCommit extends BasicFunction {
+public class FnRevisions extends BasicFunction {
     
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
-            new QName("commit", Module.NAMESPACE_URI, Module.PREFIX),
-            "Create commit.",
+            new QName("revisions", Module.NAMESPACE_URI, Module.PREFIX),
+            "Get revisions id for resource.",
             new SequenceType[]{
-                new FunctionParameterSequenceType("msg", Type.STRING, Cardinality.EXACTLY_ONE,
-                "Commit's log message"),
-                new FunctionParameterSequenceType("paths", Type.STRING, Cardinality.ONE_OR_MORE,
-                "URI paths of documents or collections in database. Collection URIs should end on a '/'.")
+                new FunctionParameterSequenceType("uuid", Type.STRING, Cardinality.EXACTLY_ONE,
+                "Resource UUID.")
             },
-            new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "")
+            new FunctionReturnSequenceType(Type.LONG, Cardinality.ZERO_OR_MORE, "")
         )
-//        ,
-//        new FunctionSignature(
-//            new QName("revision-create", Module.NAMESPACE_URI, Module.PREFIX),
-//            "Create current document state revision.",
-//            new SequenceType[]{
-//                new FunctionParameterSequenceType("paths", Type.STRING, Cardinality.ONE_OR_MORE,
-//                "URI paths of documents or collections in database. Collection URIs should end on a '/'.")
-//            },
-//            new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "")
-//        ),
-        
     };
 
-    public FnCommit(XQueryContext context, FunctionSignature signature) {
+    public FnRevisions(XQueryContext context, FunctionSignature signature) {
         super(context, signature);
     }
 
     @Override
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
         
+        ValueSequence result = new ValueSequence();
+        
         RCSManager manager = RCSManager.get();
         
-        ResponseBuilder rb = new ResponseBuilder();
+        String uuid = args[0].getStringValue();
         
         try {
-            manager.commit(args[0].getStringValue(), args[1], rb);
-        } catch (IOException | XMLStreamException e) {
+            RCSResource resource = manager.resource(uuid);
+            
+            for (Revision rev : resource.revisions()) {
+                
+                result.add( new IntegerValue(rev.id()));
+            }
+            
+        } catch (IOException e) {
             throw new XPathException(this, e);
         }
         
-        return rb.report();
+        return result;
     }
 }

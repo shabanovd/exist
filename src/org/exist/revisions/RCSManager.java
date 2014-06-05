@@ -17,7 +17,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.rcs;
+package org.exist.revisions;
 
 import static org.exist.dom.DocumentImpl.BINARY_FILE;
 import static org.exist.dom.DocumentImpl.XML_FILE;
