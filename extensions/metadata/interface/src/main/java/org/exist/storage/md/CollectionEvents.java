@@ -66,7 +66,7 @@ public class CollectionEvents implements CollectionTrigger {
     public void afterCreateCollection(DBBroker broker, Txn txn, Collection collection) {
         // System.out.println("afterCreateCollection "+collection.getURI());
         try {
-            MDStorageManager._.md.addMetas(collection);
+            MDStorageManager.get().md.addMetas(collection);
         } catch (Throwable e) {
             MDStorageManager.LOG.fatal(e,e);
         }
@@ -82,7 +82,7 @@ public class CollectionEvents implements CollectionTrigger {
     public void afterCopyCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) {
         // System.out.println("afterCopyCollection "+collection.getURI());
         try {
-            MDStorageManager._.md.copyMetas(oldUri, collection);
+            MDStorageManager.get().md.copyMetas(oldUri, collection);
         } catch (Throwable e) {
             MDStorageManager.LOG.fatal(e,e);
         }
@@ -97,7 +97,7 @@ public class CollectionEvents implements CollectionTrigger {
             for (Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext();) {
                 DocumentImpl doc = i.next();
                 try {
-                    MDStorageManager._.md.moveMetas(collection.getURI().append(doc.getFileURI()), newUri.append(doc.getFileURI()));
+                    MDStorageManager.get().md.moveMetas(collection.getURI().append(doc.getFileURI()), newUri.append(doc.getFileURI()));
                 } catch (Throwable e) {
                     MDStorageManager.LOG.fatal(e,e);
                 }
@@ -111,7 +111,7 @@ public class CollectionEvents implements CollectionTrigger {
     public void afterMoveCollection(DBBroker broker, Txn txn, Collection collection, XmldbURI oldUri) {
         // System.out.println("afterMoveCollection "+oldUri+" to "+collection.getURI());
         try {
-            MDStorageManager._.md.moveMetas(oldUri, collection.getURI());
+            MDStorageManager.get().md.moveMetas(oldUri, collection.getURI());
         } catch (Throwable e) {
             MDStorageManager.LOG.fatal(e,e);
         }
@@ -124,7 +124,7 @@ public class CollectionEvents implements CollectionTrigger {
         for (Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext();) {
             DocumentImpl doc = i.next();
             try {
-                MDStorageManager._.md.delMetas(doc.getURI());
+                MDStorageManager.get().md.delMetas(doc.getURI());
             } catch (Throwable e) {
                 MDStorageManager.LOG.fatal(e,e);
             }
@@ -163,7 +163,7 @@ public class CollectionEvents implements CollectionTrigger {
     public void afterDeleteCollection(DBBroker broker, Txn txn, XmldbURI uri) {
         // System.out.println("afterDeleteCollection "+uri);
         try {
-            MDStorageManager._.md.delMetas(uri);
+            MDStorageManager.get().md.delMetas(uri);
         } catch (Throwable e) {
             MDStorageManager.LOG.fatal(e,e);
         }

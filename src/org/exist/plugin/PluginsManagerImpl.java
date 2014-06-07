@@ -87,7 +87,7 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 		addPlugin("org.exist.scheduler.SchedulerManager");
 		addPlugin("org.exist.storage.md.MDStorageManager");
 		addPlugin("org.exist.monitoring.MonitoringManager");
-        addPlugin("org.exist.rcs.RCSManager");
+        addPlugin("org.exist.revisions.RCSManager");
 	}
 
 	@Override
