@@ -46,6 +46,11 @@ public class ModuleCall extends URLRewrite {
     
     private FunctionCall call;
 
+    private ModuleCall(ModuleCall obj) {
+        super(obj);
+        call = new FunctionCall(obj.call.getContext().copyContext(), obj.call.getFunction());;
+    }
+
     public ModuleCall(Element config, XQueryContext context, String uri) throws ServletException {
         super(config, uri);
         String funcName = config.getAttribute("function");
@@ -75,6 +80,11 @@ public class ModuleCall extends URLRewrite {
         } catch (final XPathException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected ModuleCall copy() {
+        return new ModuleCall(this);
     }
 
     @Override

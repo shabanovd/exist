@@ -32,6 +32,10 @@ import java.io.IOException;
 
 public class Redirect extends URLRewrite {
 
+    private Redirect(Redirect obj) {
+        super(obj);
+    }
+
     public Redirect(Element config, String uri) throws ServletException {
         super(config, uri);
         final String redirectTo = config.getAttribute("url");
@@ -41,6 +45,11 @@ public class Redirect extends URLRewrite {
             {setTarget(redirectTo);} // do not touch URIs pointing to other server
         else
             {setTarget(URLRewrite.normalizePath(redirectTo));}
+    }
+
+    @Override
+    protected Redirect copy() {
+        return new Redirect(this);
     }
 
     @Override

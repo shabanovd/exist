@@ -82,8 +82,17 @@ public class URLRewriteTest {
 
     private class TestableURLRewrite extends URLRewrite {
 
+        private TestableURLRewrite(TestableURLRewrite obj) {
+            super(obj);
+        }
+
         public TestableURLRewrite(Element config, String uri) {
             super(config, uri);
+        }
+
+        @Override
+        protected TestableURLRewrite copy() {
+            return new TestableURLRewrite(this);
         }
 
         public Map<String, List<String>> getParameters() {

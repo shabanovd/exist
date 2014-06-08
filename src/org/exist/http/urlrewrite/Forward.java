@@ -33,6 +33,10 @@ import org.w3c.dom.Element;
 
 public abstract class Forward extends URLRewrite {
 
+    protected Forward(Forward obj) {
+        super(obj);
+    }
+
 	protected Forward(Element config, String uri) {
         super(config, uri);
     }

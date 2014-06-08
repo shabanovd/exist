@@ -56,6 +56,25 @@ public abstract class URLRewrite {
     protected Map<String, List<String>> parameters = null;
     protected Map<String, String> headers = null;
     protected boolean absolute = false;
+
+    protected URLRewrite(URLRewrite original) {
+        uri = original.uri;
+        target = original.target;
+        prefix = original.prefix;
+        method = original.method;
+
+        if (original.attributes != null) {
+            attributes = new HashMap<>(original.attributes);
+        }
+        if (original.parameters != null) {
+            parameters = new HashMap<>(original.parameters);
+        }
+        if (original.headers != null) {
+            headers = new HashMap<>(original.headers);
+        }
+
+        absolute = original.absolute;
+    }
     
     protected URLRewrite(Element config, String uri) {
         this.uri = uri;
@@ -83,6 +102,8 @@ public abstract class URLRewrite {
             }
         }
     }
+
+    protected abstract URLRewrite copy();
 
     protected void updateRequest(XQueryURLRewrite.RequestWrapper request) {
         if (prefix != null)

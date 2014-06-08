@@ -49,9 +49,19 @@ public class ControllerForward extends URLRewrite {
      */
 	private String serverName = null;
 
+    private ControllerForward(ControllerForward obj) {
+        super(obj);
+        serverName = obj.serverName;
+    }
+
     public ControllerForward(Element config, String uri) {
         super(config, uri);
         this.target = config.getAttribute("path");
+    }
+
+    @Override
+    protected ControllerForward copy() {
+        return new ControllerForward(this);
     }
 
     @Override

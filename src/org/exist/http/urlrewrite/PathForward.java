@@ -35,6 +35,12 @@ public class PathForward extends Forward {
     private ServletConfig filterConfig;
     private String servletName = null;
 
+    private PathForward(PathForward obj) {
+        super(obj);
+        filterConfig = obj.filterConfig;
+        servletName = obj.servletName;
+    }
+
     public PathForward(ServletConfig filterConfig, Element config, String uri) throws ServletException {
         super(config, uri);
         this.filterConfig = filterConfig;
@@ -49,7 +55,11 @@ public class PathForward extends Forward {
         }
     }
 
-    
+    @Override
+    protected PathForward copy() {
+        return new PathForward(this);
+    }
+
     @Override
 	protected void setAbsolutePath(RequestWrapper request) {
 		request.setPaths(target, servletName);

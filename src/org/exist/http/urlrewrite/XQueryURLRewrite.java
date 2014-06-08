@@ -388,7 +388,7 @@ public class XQueryURLRewrite extends HttpServlet {
 
 //        } catch (SAXException e) {
 //            throw new ServletException("Error while serializing results: " + e.getMessage(), e);
-            
+
         } catch (final Throwable e) {
             LOG.error("Error while processing " + servletRequest.getRequestURI() + ": " + e.getMessage(), e);
             throw new ServletException("An error occurred while processing request to " + servletRequest.getRequestURI() + ": "
@@ -562,6 +562,7 @@ public class XQueryURLRewrite extends HttpServlet {
             URLRewrite staticRewrite = rewriteConfig.lookup(uri, request.getServerName(), true);
 
             if (staticRewrite != null) {
+                staticRewrite = staticRewrite.copy();
                 staticRewrite.copyFrom(action);
                 action = staticRewrite;
                 RequestWrapper modifiedRequest = new RequestWrapper(request);

@@ -30,6 +30,11 @@ import org.w3c.dom.Element;
 public class PassThrough extends Forward {
 
 	private ServletConfig servletConfig;
+
+    private PassThrough(PassThrough obj) {
+        super(obj);
+        servletConfig = obj.servletConfig;
+    }
 	
     public PassThrough(ServletConfig servletConfig, HttpServletRequest request) {
         super(null, request.getRequestURI());
@@ -41,6 +46,11 @@ public class PassThrough extends Forward {
         super(config, request.getRequestURI());
         this.servletConfig = servletConfig;
         this.target = request.getRequestURI().substring(request.getContextPath().length());
+    }
+
+    @Override
+    protected PassThrough copy(){
+        return new PassThrough(this);
     }
 
 	@Override

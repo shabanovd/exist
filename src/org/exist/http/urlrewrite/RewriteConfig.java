@@ -146,7 +146,7 @@ public class RewriteConfig {
             final String matchedString = m.match(path);
             if (matchedString != null) {
                 final URLRewrite action = m.action;
-                
+
                 /*
                  * If the URLRewrite is a ControllerForward, then test to see if there is a condition
                  * on the server name.  If there is a condition on the server name and the names do not
