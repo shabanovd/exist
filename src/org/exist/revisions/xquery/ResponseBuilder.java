@@ -23,7 +23,7 @@ import java.nio.file.Path;
 
 import org.exist.memtree.MemTreeBuilder;
 import org.exist.memtree.NodeImpl;
-import org.exist.rcs.Handler;
+import org.exist.revisions.Handler;
 import org.exist.xmldb.XmldbURI;
 import org.xml.sax.helpers.AttributesImpl;
 

@@ -24,7 +24,7 @@ import java.io.IOException;
 import javax.xml.stream.XMLStreamException;
 
 import org.exist.dom.QName;
-import org.exist.rcs.RCSManager;
+import org.exist.revisions.RCSManager;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;

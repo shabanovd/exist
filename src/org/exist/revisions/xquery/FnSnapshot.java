@@ -25,7 +25,7 @@ import javax.xml.stream.XMLStreamException;
 
 import org.exist.collections.Collection;
 import org.exist.dom.QName;
-import org.exist.rcs.RCSManager;
+import org.exist.revisions.RCSManager;
 import org.exist.security.PermissionDeniedException;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;

@@ -22,9 +22,9 @@ package org.exist.revisions.xquery;
 import java.io.IOException;
 
 import org.exist.dom.QName;
-import org.exist.rcs.RCSManager;
-import org.exist.rcs.RCSResource;
-import org.exist.rcs.Revision;
+import org.exist.revisions.RCSManager;
+import org.exist.revisions.RCSResource;
+import org.exist.revisions.Revision;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
