@@ -127,7 +127,7 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
     public void initIndexModules() {
         indexController = new IndexController(this);
     }
-    
+
     public abstract File getDataFolder();
 
     /**

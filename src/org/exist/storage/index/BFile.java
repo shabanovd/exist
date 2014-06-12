@@ -59,10 +59,12 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 
 /**
  * Data store for variable size values.
@@ -2396,18 +2398,13 @@ public class BFile extends BTree {
          * 
          * @see org.exist.storage.io.VariableByteInput#readUTF()
          */
-        public final String readUTF() throws IOException, EOFException {
+        public final String readUTF() throws IOException {
             final int len = readInt();
             final byte data[] = new byte[len];
+
             read(data);
-            String s;
-            try {
-                s = new String(data, "UTF-8");
-            } catch (final UnsupportedEncodingException e) {
-            	LOG.warn(e);
-                s = new String(data);
-            }
-            return s;
+
+            return new String(data, UTF_8);
         }
 
         /*

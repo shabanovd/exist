@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2011 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.indexing.lucene;
 
@@ -68,6 +66,10 @@ import java.io.IOException;
 import java.util.*;
 
 import javax.xml.bind.DatatypeConverter;
+
+import  static org.exist.indexing.lucene.LuceneUtil.FIELD_DOC_ID;
+import  static org.exist.indexing.lucene.LuceneUtil.FIELD_DOC_URI;
+import  static org.exist.indexing.lucene.LuceneUtil.FIELD_NODE_ID;
 
 /**
  * Class for handling all Lucene operations.
@@ -334,7 +336,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 writer.deleteDocuments(dt);
             }
             
-            Term dt = new Term(LuceneUtil.FIELD_DOC_URI, collection.getURI().toString());
+            Term dt = new Term(FIELD_DOC_URI, collection.getURI().toString());
             writer.deleteDocuments(dt);
 
         } catch (IOException e) {
@@ -379,7 +381,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 ByteConversion.shortToByte((short) nodeId.units(), data, 0);
                 nodeId.serialize(data, 2);
 
-                Term it = new Term(LuceneUtil.FIELD_NODE_ID, new BytesRef(data));
+                Term it = new Term(FIELD_NODE_ID, new BytesRef(data));
                 TermQuery iq = new TermQuery(it);
                 BooleanQuery q = new BooleanQuery();
                 q.add(tq, BooleanClause.Occur.MUST);
@@ -920,8 +922,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         @Override
         public void setNextReader(AtomicReaderContext atomicReaderContext) throws IOException {
             this.reader = atomicReaderContext.reader();
-            this.docIdValues = this.reader.getNumericDocValues(LuceneUtil.FIELD_DOC_ID);
-            this.nodeIdValues = this.reader.getBinaryDocValues(LuceneUtil.FIELD_NODE_ID);
+            this.docIdValues = this.reader.getNumericDocValues(FIELD_DOC_ID);
+            this.nodeIdValues = this.reader.getBinaryDocValues(FIELD_NODE_ID);
         }
 
         @Override
@@ -1007,7 +1009,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             reader = index.getReader();
             for (FieldInfo info: MultiFields.getMergedFieldInfos(reader)) {
-                if (!LuceneUtil.FIELD_DOC_ID.equals(info.name)) {
+                if (!FIELD_DOC_ID.equals(info.name)) {
                     QName name = LuceneUtil.decodeQName(info.name, index.getDatabase().getSymbols());
                     if (name != null && !name.getLocalName().isEmpty() && (qname == null || matchQName(qname, name)))
                         indexes.add(name);
@@ -1104,8 +1106,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 String field = LuceneUtil.encodeQName(qname, index.getDatabase().getSymbols());
                 List<AtomicReaderContext> leaves = reader.leaves();
                 for (AtomicReaderContext context : leaves) {
-                    NumericDocValues docIdValues = context.reader().getNumericDocValues(LuceneUtil.FIELD_DOC_ID);
-                    BinaryDocValues nodeIdValues = context.reader().getBinaryDocValues(LuceneUtil.FIELD_NODE_ID);
+                    NumericDocValues docIdValues = context.reader().getNumericDocValues(FIELD_DOC_ID);
+                    BinaryDocValues nodeIdValues = context.reader().getBinaryDocValues(FIELD_NODE_ID);
                     Bits liveDocs = context.reader().getLiveDocs();
                     Terms terms = context.reader().terms(field);
                     if (terms == null)
@@ -1381,8 +1383,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             writer = index.getWriter();
             // docId and nodeId are stored as doc value
-            NumericDocValuesField fDocId = new NumericDocValuesField(LuceneUtil.FIELD_DOC_ID, 0);
-            BinaryDocValuesField fNodeId = new BinaryDocValuesField(LuceneUtil.FIELD_NODE_ID, new BytesRef(8));
+            NumericDocValuesField fDocId = new NumericDocValuesField(FIELD_DOC_ID, 0);
+            BinaryDocValuesField fNodeId = new BinaryDocValuesField(FIELD_NODE_ID, new BytesRef(8));
             // docId also needs to be indexed
             IntField fDocIdIdx = new IntField(LuceneUtil.FIELD_DOC_ID, 0, IntField.TYPE_NOT_STORED);
 
@@ -1416,7 +1418,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 	
 	                // add separate index for node id
 	                BinaryTokenStream bts = new BinaryTokenStream(new BytesRef(data));
-	                Field fNodeIdIdx = new Field(LuceneUtil.FIELD_NODE_ID, bts, TYPE_NODE_ID);
+	                Field fNodeIdIdx = new Field(FIELD_NODE_ID, bts, TYPE_NODE_ID);
 	                doc.add(fNodeIdIdx);
                 }
 
@@ -1708,7 +1710,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         try {
             writer = index.getWriter();
             String uri = url.toString();
-            Term dt = new Term(LuceneUtil.FIELD_DOC_URI, uri);
+            Term dt = new Term(FIELD_DOC_URI, uri);
             writer.deleteDocuments(dt);
         } catch (IOException e) {
             LOG.warn("Error while removing lucene index: " + e.getMessage(), e);

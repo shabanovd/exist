@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2013-2014 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.exist.indexing.lucene;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Properties;
 
@@ -42,6 +43,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.PriorityQueue;
 import org.exist.Database;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
@@ -231,51 +233,51 @@ public class QueryDocuments {
         FieldComparator<?>[] comparators;
         final int[] reverseMul;
         final FieldValueHitQueue<MyEntry> queue;
-        
+
         int maxDoc = 0;
-    	
+
     	public ComparatorCollector(
 			final FieldValueHitQueue<MyEntry> queue,
 			final int numHits,
-    			
-            final DocumentSet docs, 
+
+            final DocumentSet docs,
             final SearchCallback<DocumentImpl> callback,
-            
-            final FacetSearchParams searchParams, 
+
+            final FacetSearchParams searchParams,
 
             final TaxonomyReader taxonomyReader) {
-    		
+
     		super(-1, docs, callback, searchParams, taxonomyReader);
-    		
+
 			this.queue = queue;
 			comparators = queue.getComparators();
 			reverseMul = queue.getReverseMul();
-			
+
 			this.numHits = numHits;
 		}
-    	
+
     	private void check() {
-    	    
+
     	    System.out.println("==============================");
-    	    
-            Object[] array = LuceneUtil.getHeapArray(queue);
-            
+
+            Object[] array = getHeapArray(queue);
+
             float last = Float.MAX_VALUE;
-            
+
             for (int i = array.length - 1; i >= 0; i--) {
                 MyEntry entry = (MyEntry) array[i];
-                
+
                 if (entry != null) {
                     if (comparators[0].value(entry.slot).equals(entry.score)) {
                         System.out.print("+");
                     } else {
                         System.out.print("-");
                     }
-                    
+
                     if (last >= entry.score) {
                         System.out.print("+");
-                        
-                        
+
+
                         last  = entry.score;
                     } else {
                         System.out.print("-");
@@ -285,7 +287,21 @@ public class QueryDocuments {
                 }
             }
     	}
-    	
+
+        private Object[] getHeapArray(PriorityQueue queue) {
+            try {
+                Method method = PriorityQueue.class.getDeclaredMethod("getHeapArray");
+                method.setAccessible(true);
+
+                Object res = method.invoke(queue);
+
+                return (Object[]) res;
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     	@Override
     	protected void finish() {
             if (bits != null) {
@@ -297,14 +313,14 @@ public class QueryDocuments {
             bits = new FixedBitSet(maxDoc + 1);//0x7FFFFFFF);//queue.size());
             totalHits = 0;
             scores = new float[64]; // some initial size
-            
+
             //System.out.println(maxDoc);
             callback.totalHits(queue.size());
-            
+
             int size = queue.size();
-            
+
             MyEntry[] array = new MyEntry[size];
-            
+
             for (int i = size - 1; i >= 0; i--) {
                 array[i] = queue.pop();
             }
@@ -314,7 +330,7 @@ public class QueryDocuments {
                 entry = array[i];
                 collect(entry.doc, entry.document, entry.score);
             }
-            
+
 //        	MyEntry entry;
 //    		while ((entry = queue.pop()) != null) {
 //    			collect(entry.doc, entry.document, entry.score);
@@ -341,15 +357,15 @@ public class QueryDocuments {
 
             DocumentImpl storedDocument = docs.getDoc(docId);
             if (storedDocument == null)
-                return;	
-            
+                return;
+
             docbits.add(storedDocument);
 
             final float score = scorer.score();
 //            System.out.println(score + " " + storedDocument.getDocumentURI());
-            
+
             //check();
-          
+
 	        ++totalHits;
 	        if (queueFull) {
 	            if (comparators.length == 0) {
@@ -383,17 +399,17 @@ public class QueryDocuments {
 	            comparators[i].setBottom(bottom.slot);
 	          }
 	        } else {
-	        	
+
 	          // Startup transient: queue hasn't gathered numHits yet
 	          final int slot = totalHits - 1;
-	          
+
 	          // Copy hit into queue
 	          for (int i = 0; i < comparators.length; i++) {
 	            comparators[i].copy(slot, doc);
 	          }
-	          
+
 	          add(slot, doc, score, storedDocument);
-	          
+
 	          if (queueFull) {
 	            for (int i = 0; i < comparators.length; i++) {
 	              comparators[i].setBottom(bottom.slot);
@@ -404,9 +420,9 @@ public class QueryDocuments {
 	    
 	    @Override
 	    public void setNextReader(AtomicReaderContext context) throws IOException {
-	    	
+
 	    	super.setNextReader(context);
-	    	
+
 	    	this.docBase = context.docBase;
 	    	for (int i = 0; i < comparators.length; i++) {
 	    		queue.setComparator(i, comparators[i].setNextReader(context));
@@ -416,7 +432,7 @@ public class QueryDocuments {
 	    @Override
 	    public void setScorer(Scorer scorer) throws IOException {
 	    	super.setScorer(scorer);
-	    	
+
 	        // set the scorer on all comparators
 	        for (int i = 0; i < comparators.length; i++) {
 	          comparators[i].setScorer(scorer);

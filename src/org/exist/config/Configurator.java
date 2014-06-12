@@ -1,27 +1,21 @@
 /*
  *  eXist Open Source Native XML Database
-<<<<<<< HEAD
- *  Copyright (C) 2008-2012 The eXist Project
-=======
- *  Copyright (C) 2008-2013 The eXist Project
->>>>>>> develop
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
- *  
+ *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
  *  as published by the Free Software Foundation; either version 2
  *  of the License, or (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.config;
 
@@ -32,7 +26,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
@@ -83,6 +76,8 @@ import org.exist.xmldb.XmldbURI;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * This class handle all configuration needs: extracting and saving,
@@ -1126,14 +1121,10 @@ public class Configurator {
                     if (data == null || data.length() == 0) {
                         return null;
                     }
-                    return parse(new ByteArrayInputStream(data.getBytes("UTF-8")));
+                    return parse(new ByteArrayInputStream(data.getBytes(UTF_8)));
                     
                 } catch (final SAXException saxe) {
                     throw new ConfigurationException(saxe.getMessage(), saxe);
-                    
-                } catch (final UnsupportedEncodingException uee) {
-                    LOG.warn(uee.getMessage());
-                    return null;
                 }
             }
             

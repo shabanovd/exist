@@ -2086,15 +2086,15 @@ public class NativeBroker extends DBBroker {
         }
     }
 
-    public void storeMetadata(final Txn transaction, final DocumentImpl doc) throws TriggerException {
+    public void storeMetadata(final Txn txn, final DocumentImpl doc) throws TriggerException {
     	final Collection col = doc.getCollection();
     	final DocumentTrigger trigger = new DocumentTriggers(this, col);
     	
-    	trigger.beforeUpdateDocumentMetadata(this, transaction, doc);
+    	trigger.beforeUpdateDocumentMetadata(this, txn, doc);
 
-    	storeXMLResource(transaction, doc);
+    	storeXMLResource(txn, doc);
     	
-    	trigger.afterUpdateDocumentMetadata(this, transaction, doc);
+    	trigger.afterUpdateDocumentMetadata(this, txn, doc);
     }
 
     private File getCollectionFile(File dir,XmldbURI uri,boolean create) throws IOException {
@@ -2744,7 +2744,7 @@ public class NativeBroker extends DBBroker {
     }
 
     @Override
-    public void removeXMLResource(final Txn transaction, final DocumentImpl document, boolean freeDocId) throws PermissionDeniedException {
+    public void removeXMLResource(final Txn txn, final DocumentImpl document, boolean freeDocId) throws PermissionDeniedException {
         if (pool.isReadOnly())
             {throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);}
         try {
@@ -2756,10 +2756,10 @@ public class NativeBroker extends DBBroker {
             final DocumentTrigger trigger = new DocumentTriggers(this);
             
             if (freeDocId) {
-                trigger.beforeDeleteDocument(this, transaction, document);
+                trigger.beforeDeleteDocument(this, txn, document);
             }
             
-            dropIndex(transaction, document);
+            dropIndex(txn, document);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("removeDocument() - removing dom");
             }
@@ -2769,7 +2769,7 @@ public class NativeBroker extends DBBroker {
                     public Object start() {
                         final StoredNode node = (StoredNode)document.getFirstChild();
                         if (node != null) {
-                        	domDb.removeAll(transaction, node.getInternalAddress());
+                            domDb.removeAll(txn, node.getInternalAddress());
                         } else {
                             LOG.error("removeDocument() - no root element!");
                         }
@@ -2783,7 +2783,7 @@ public class NativeBroker extends DBBroker {
                 @Override
                 public Object start() {
                     try {
-                        domDb.remove(transaction, idx, null);
+                        domDb.remove(txn, idx, null);
                     } catch (final BTreeException e) {
                         LOG.warn("start() - " + "error while removing doc", e);
                     } catch (final IOException e) {
@@ -2794,11 +2794,11 @@ public class NativeBroker extends DBBroker {
                     return null;
                 }
             }.run();
-            removeResourceMetadata(transaction, document);
+            removeResourceMetadata(txn, document);
             if (freeDocId) {
-                freeResourceId(transaction, document.getDocId());
+                freeResourceId(txn, document.getDocId());
 
-                trigger.afterDeleteDocument(this, transaction, document.getURI());
+                trigger.afterDeleteDocument(this, txn, document.getURI());
             }
 
         } catch (final ReadOnlyException e) {
@@ -2857,8 +2857,7 @@ public class NativeBroker extends DBBroker {
             }
         }
         removeResourceMetadata(transaction, blob);
-        
-        //indexController.setDocument(blob, StreamListener.REMOVE_BINARY);
+
         indexController.removeIndex(blob);
         indexController.flush();
     }
@@ -3003,8 +3002,8 @@ public class NativeBroker extends DBBroker {
         return nextDocId;
     }
 
-    public void reindexXMLResource(Txn transaction, DocumentImpl doc) {
-    	reindexXMLResource(transaction, doc, NodeProcessor.MODE_REPAIR);
+    public void reindexXMLResource(Txn txn, DocumentImpl doc) {
+        reindexXMLResource(txn, doc, NodeProcessor.MODE_REPAIR);
     }
     
     /**

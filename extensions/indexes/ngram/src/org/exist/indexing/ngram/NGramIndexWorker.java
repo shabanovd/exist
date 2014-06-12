@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-07 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -13,16 +13,13 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
- *  $Id$
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.indexing.ngram;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -83,6 +80,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  *
@@ -959,13 +958,8 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         @Override
         public boolean indexInfo(Value key, long pointer) throws TerminatedException {
-            String ngram;
-            try {
-                ngram = new String(key.getData(), NGramQNameKey.NGRAM_OFFSET, key.getLength() - NGramQNameKey.NGRAM_OFFSET, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                LOG.error(e.getMessage(), e);
-                return true;
-            }
+            String ngram = new String(key.getData(), NGramQNameKey.NGRAM_OFFSET, key.getLength() - NGramQNameKey.NGRAM_OFFSET, UTF_8);
+
             VariableByteInput is;
             try {
                 is = index.bf.getAsStream(pointer);
@@ -1056,13 +1050,8 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
          */
         @Override
         public boolean indexInfo(Value key, long pointer) throws TerminatedException {
-            String term;
-            try {
-                term = new String(key.getData(), NGramQNameKey.NGRAM_OFFSET, key.getLength() - NGramQNameKey.NGRAM_OFFSET, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                LOG.error(e.getMessage(), e);
-                return true;
-            }
+            String term = new String(key.getData(), NGramQNameKey.NGRAM_OFFSET, key.getLength() - NGramQNameKey.NGRAM_OFFSET, UTF_8);
+
             VariableByteInput is;
             try {
                 is = index.bf.getAsStream(pointer);
