@@ -31,10 +31,14 @@ public interface Constants {
 
     final static Charset ENCODING = StandardCharsets.UTF_8;
     final static TimeZone GMT = TimeZone.getTimeZone("GMT+0:00");
-    
-    final static String FILE_META = "metas.xml";
+
+    final static String COLLECTION = "COLLECTION";
+    final static String DELETED = "DELETED";
     
     final static String NONE = "NONE";
+
+    final static String EL_LOG_PATH = "log-path";
+    final static String EL_DATA_HASH = "data-hash";
     
     final static String PARENT_UUID = "parent-uuid";
     

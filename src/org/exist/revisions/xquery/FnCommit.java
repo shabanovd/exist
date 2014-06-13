@@ -73,17 +73,19 @@ public class FnCommit extends BasicFunction {
 
     @Override
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
-        
-        RCSManager manager = RCSManager.get();
-        
-        ResponseBuilder rb = new ResponseBuilder();
-        
-        try {
-            manager.commit(args[0].getStringValue(), args[1], rb);
-        } catch (IOException | XMLStreamException e) {
-            throw new XPathException(this, e);
-        }
-        
-        return rb.report();
+
+        throw new XPathException(this, "unimplemented");
+
+//        RCSManager manager = RCSManager.get();
+//
+//        ResponseBuilder rb = new ResponseBuilder();
+//
+//        try {
+//            manager.commit(args[0].getStringValue(), args[1], rb);
+//        } catch (IOException | XMLStreamException e) {
+//            throw new XPathException(this, e);
+//        }
+//
+//        return rb.report();
     }
 }
