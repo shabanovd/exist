@@ -19,6 +19,7 @@
  */
 package org.exist.revisions;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.tools.ant.filters.StringInputStream;
 import org.exist.Indexer;
 import org.exist.TestUtils;
@@ -28,6 +29,7 @@ import org.exist.collections.IndexInfo;
 import org.exist.dom.*;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
+import org.exist.storage.MetaStorage;
 import org.exist.storage.md.MetaData;
 import org.exist.storage.md.Metas;
 import org.exist.storage.txn.Txn;
@@ -38,6 +40,7 @@ import org.junit.*;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -47,10 +50,12 @@ import static org.junit.Assert.*;
 public class RCSTest {
 
     private static String XML1 =
-            "<section>" +
-            "   <head>The title in big letters</head>" +
-            "   <p rend=\"center\">A simple paragraph with <hi>just</hi> text in it.</p>" +
-            "   <p rend=\"right\">paragraphs with <span>mix</span><span>ed</span> content are <span>danger</span>ous.</p>" +
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<section>\n" +
+            "    <head>The title in big letters</head>\n" +
+            "    <p rend=\"center\">A simple paragraph with <hi>just</hi> text in it.</p>\n" +
+            "    <p rend=\"right\">paragraphs with <span>mix</span>\n" +
+            "        <span>ed</span> content are <span>danger</span>ous.</p>\n" +
             "</section>";
 
     private static String XML2 =
@@ -131,6 +136,83 @@ public class RCSTest {
             manager.snapshot(root, h);
 
             manager.restore(broker.getDataFolder().toPath().resolve("RCS"), h);
+
+            System.out.println("Test PASSED.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testCommits() {
+        System.out.println("Test commits ...");
+
+        configureAndStore(null,
+                new Resource[] {
+                        new Resource("test1.xml", XML1, null),
+                        new Resource("test2.xml", XML2, null),
+                        new Resource("test3.xml", XML3, null),
+                        new Resource("test4.xml", XML4, null),
+                        new Resource("test5.xml", XML5, null),
+                        new Resource("test6.xml", XML6, null),
+                        new Resource("test7.xml", XML7, null),
+                        new Resource("test8.xml", XML8, null),
+                });
+
+        try (DBBroker broker = pool.authenticate("admin", "")) {
+            assertNotNull(broker);
+
+            Handler h = new TestHandler();
+
+            RCSManager rcs = RCSManager.get();
+
+            XmldbURI colURL = root.getURI();
+
+            try (CommitLog commit = rcs.commit(h)) {
+
+                commit
+                    .author("somebody")
+                    .message("here go message <possible>xml</possible>")
+                    .create(colURL.append("test1.xml"))
+                    .create(colURL.append("test2.xml"))
+                    .create(colURL.append("test3.xml"))
+                    .create(colURL.append("test4.xml"))
+                    .create(colURL.append("test5.xml"))
+                    .create(colURL.append("test6.xml"))
+                    .create(colURL.append("test7.xml"))
+                    .create(colURL.append("test8.xml"))
+
+                    .done();
+            }
+
+            MetaData md = MetaData.get();
+
+            Metas metas = md.getMetas(colURL.append("test1.xml"));
+            assertNotNull(metas);
+
+            String doc1uuid = metas.getUUID();
+            assertNotNull(doc1uuid);
+
+            RCSResource resource = rcs.resource(doc1uuid);
+            assertNotNull(resource);
+
+            Revision rev = resource.lastRevision();
+            assertNotNull(rev);
+
+            assertTrue(rev.isXML());
+            assertFalse(rev.isBinary());
+            assertFalse(rev.isCollection());
+            assertFalse(rev.isDeleted());
+
+            StringWriter writer = new StringWriter();
+
+            try (InputStream is = rev.getData()) {
+                IOUtils.copy(is, writer);
+            }
+            String data = writer.toString();
+
+            assertEquals(XML1, data);
 
             System.out.println("Test PASSED.");
         } catch (Exception e) {

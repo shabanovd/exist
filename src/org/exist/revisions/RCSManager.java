@@ -21,6 +21,7 @@ package org.exist.revisions;
 
 import static org.exist.dom.DocumentImpl.BINARY_FILE;
 import static org.exist.dom.DocumentImpl.XML_FILE;
+import static org.exist.revisions.Utils.*;
 
 import static java.nio.file.Files.createDirectories;
 
@@ -30,8 +31,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
@@ -48,6 +47,7 @@ import javax.xml.stream.XMLStreamWriter;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.exist.*;
 import org.exist.EventListener;
@@ -290,7 +290,7 @@ public class RCSManager implements Constants {
         
     }
 
-    protected void commit(CommitLog commitLog) throws IOException, XMLStreamException, XPathException {
+    protected void commit(CommitLog commitLog) throws IOException, XMLStreamException {
         
         DBBroker broker = db.getActiveBroker();
         
@@ -312,6 +312,10 @@ public class RCSManager implements Constants {
             //writer.writeNamespace(MetaData.PREFIX, MetaData.NAMESPACE_URI);
             
             log.writeAttribute("id", commitId);
+
+            log.writeStartElement("author");
+            log.writeCData(commitLog.author());
+            log.writeEndElement();
 
             log.writeStartElement("message");
             log.writeCData(commitLog.message());
@@ -477,7 +481,7 @@ public class RCSManager implements Constants {
             return null;
         }
 
-        processMetas(logPath.toString(), uuid, COLLECTION, col, revMeta, h);
+        processMetas(logPath.toString(), uuid, COL, null, col, revMeta, h);
         
         h.processed(uri);
         
@@ -497,6 +501,8 @@ public class RCSManager implements Constants {
             h.error(uri, "can't create revision folder");
             return null;
         }
+
+        String type = XML;
 
         MessageDigest digest = messageDigest();
 
@@ -534,6 +540,8 @@ public class RCSManager implements Constants {
                 }                            
             }
 
+            type = BIN;
+
             break;
         
         default:
@@ -543,13 +551,14 @@ public class RCSManager implements Constants {
 
         String hash = digestHex(digest);
 
+        //check hash storage
         Path hashPath = resourceFolder(hash, hashesFolder);
         if (Files.notExists(hashPath)) {
             createDirectories(hashPath.getParent());
             Files.move(dataFile, hashPath);
         }
 
-        processMetas(logPath.toString(), uuid, hash, doc, revPath, h);
+        processMetas(logPath.toString(), uuid, type, hash, doc, revPath, h);
         
         h.processed(uri);
         
@@ -587,11 +596,11 @@ public class RCSManager implements Constants {
         throw new IOException("can't get new id for revision");
     }
 
-    private void processMetas(String logPath, String uuid, String hash, Resource resource, Path location, Handler h) throws XMLStreamException, IOException {
+    private void processMetas(String logPath, String uuid, String type, String hash, Resource resource, Path location, Handler h) throws XMLStreamException, IOException {
 
         try (OutputStream metasStream = Files.newOutputStream(location)) {
 
-            processMetas(logPath, uuid, hash, resource, metasStream, h);
+            processMetas(logPath, uuid, type, hash, resource, metasStream, h);
 
         }
     }
@@ -629,7 +638,7 @@ public class RCSManager implements Constants {
 
         XMLOutputFactory outputFactory = XMLOutputFactory.newInstance();
 
-        final XMLStreamWriter writer = outputFactory.createXMLStreamWriter(stream, "UTF-8");
+        XMLStreamWriter writer = outputFactory.createXMLStreamWriter(stream, "UTF-8");
 
         writer.writeStartDocument("UTF-8", "1.0");
         writer.writeStartElement("RCS", "metas", "http://exist-db.org/RCS");
@@ -637,7 +646,8 @@ public class RCSManager implements Constants {
         writer.writeNamespace(MetaData.PREFIX, MetaData.NAMESPACE_URI);
 
         write(writer, EL_UUID, uuid);
-        write(writer, EL_DATA_HASH, DELETED);
+        write(writer, EL_RESOURCE_TYPE, DEL);
+        //write(writer, EL_DATA_HASH, DELETED);
         write(writer, EL_LOG_PATH, logPath);
 
         write(writer, EL_FILE_NAME, name);
@@ -654,7 +664,7 @@ public class RCSManager implements Constants {
         writer.close();
     }
     
-    private void processMetas(String logPath, String uuid, String hash, Resource resource, OutputStream stream, Handler h) throws XMLStreamException, IOException {
+    private void processMetas(String logPath, String uuid, String type, String hash, Resource resource, OutputStream stream, Handler h) throws XMLStreamException, IOException {
 
         XmldbURI uri = resource.getURI();
         String url = uri.toString();
@@ -695,7 +705,10 @@ public class RCSManager implements Constants {
         writer.writeNamespace(MetaData.PREFIX, MetaData.NAMESPACE_URI);
 
         write(writer, EL_UUID, uuid);
-        write(writer, EL_DATA_HASH, hash);
+        write(writer, EL_RESOURCE_TYPE, type);
+
+        if (hash != null) write(writer, EL_DATA_HASH, hash);
+
         write(writer, EL_LOG_PATH, logPath);
 
         write(writer, EL_FILE_NAME, name);
@@ -791,6 +804,14 @@ public class RCSManager implements Constants {
         w.writeEndElement();
     }
 
+    public InputStream data(String hash) throws IOException {
+        if (StringUtils.isEmpty(hash)) throw new IOException("no hash code");
+
+        Path hashPath = resourceFolder(hash, hashesFolder);
+
+        return Files.newInputStream(hashPath);
+    }
+
     public void restore(Path location, Handler h) throws IOException {
         
         DBBroker broker = db.getActiveBroker();
@@ -813,28 +834,6 @@ public class RCSManager implements Constants {
                     }
                 }
             }            
-        }
-    }
-
-    private String getHash(Path location) throws IOException {
-        try (SeekableByteChannel ch = Files.newByteChannel(location,StandardOpenOption.READ)) {
-
-            ch.position(185);
-
-            ByteBuffer bb = ByteBuffer.allocate(75);
-
-            if (ch.read(bb) != 75) return null;
-
-            bb.rewind();
-
-            for (int i = 0; i < EL_DATA_HASH.length(); i++) {
-                if (bb.get() != EL_DATA_HASH.charAt(i)) {
-                    return null;
-                }
-            }
-            if (bb.get() != '>') return null;
-
-            return new String(bb.array(), bb.position(), 64);
         }
     }
     
@@ -876,7 +875,7 @@ public class RCSManager implements Constants {
         
         //XXX: make safer
         
-        String revHash = getHash(location);
+        String revHash = readHash(location);
         
         String calcHash = digestHex(digest);
         
@@ -917,7 +916,7 @@ public class RCSManager implements Constants {
                 }
             }
 
-            if ("collection".equals( dh.mimeType ) ) {
+            if (COL.equals(dh.type) ) {
                 
                 remove(broker, parent, doc);
                 
@@ -1015,6 +1014,8 @@ public class RCSManager implements Constants {
     class MetasHandler extends DefaultHandler {
         
         String parentUuid;
+
+        String type;
         
         XmldbURI uri;
         String name;
@@ -1040,6 +1041,11 @@ public class RCSManager implements Constants {
             case EL_FILE_PATH:
                 this.uri = XmldbURI.create(content);
                 break;
+
+            case EL_RESOURCE_TYPE:
+                this.type = content;
+                break;
+
             case PARENT_UUID:
                 parentUuid = content;
                 break;

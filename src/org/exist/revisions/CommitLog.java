@@ -21,6 +21,8 @@ package org.exist.revisions;
 
 import org.exist.xmldb.XmldbURI;
 
+import javax.xml.stream.XMLStreamException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,6 +60,7 @@ public class CommitLog implements AutoCloseable {
     RCSManager manager;
     Handler handler;
 
+    boolean isDone = false;
     boolean isClosed = false;
 
     String author;
@@ -123,10 +126,15 @@ public class CommitLog implements AutoCloseable {
         return this;
     }
 
+    public void done() throws Exception {
+        isDone = true;
+    }
+
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException, XMLStreamException {
         isClosed = true;
-        manager.commit(this);
+
+        if (isDone) manager.commit(this);
     }
 
     private void checkIsOpen() {

@@ -32,6 +32,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
+import static org.exist.revisions.Utils.*;
+
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
@@ -42,6 +44,9 @@ public class Revision implements Comparable<Revision> {
     long id;
     
     Path location;
+
+    //variables for caching
+    String type;
 
     protected Revision(RCSResource resource, Path location) {
         
@@ -59,28 +64,32 @@ public class Revision implements Comparable<Revision> {
     public int compareTo(Revision o) {
         return Long.compare(id, o.id);
     }
+
+    private String type() throws IOException {
+        if (type == null) {
+            type = readResourceType(location);
+        }
+        return type;
+    }
     
-    public boolean isCollection() {
-        return !(
-                Files.exists(location.resolve("data.xml")) 
-                || Files.exists(location.resolve("data.bin"))
-            );
+    public boolean isCollection() throws IOException {
+        return Constants.COL.equals(type());
     }
 
-    public boolean isXML() {
-        return Files.exists(location.resolve("data.xml"));
+    public boolean isXML() throws IOException {
+        return Constants.XML.equals(type());
+    }
+
+    public boolean isBinary() throws IOException {
+        return Constants.BIN.equals(type());
+    }
+
+    public boolean isDeleted() throws IOException {
+        return Constants.DEL.equals(type());
     }
     
     public InputStream getData() throws IOException {
-        if (Files.exists(location.resolve("data.xml"))) {
-            return Files.newInputStream(location.resolve("data.xml"));
-        }
-        
-        if (Files.exists(location.resolve("data.xml"))) {
-            return Files.newInputStream(location.resolve("data.bin"));
-        }
-        
-        throw new IOException("no data");
+        return  RCSManager.get().data(readHash(location));
     }
 
     public DocumentImpl getXML(Database db) throws IOException, SAXException {
