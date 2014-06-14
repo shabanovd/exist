@@ -48,10 +48,9 @@ import javax.xml.stream.XMLStreamWriter;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
-import org.exist.Database;
-import org.exist.Namespaces;
-import org.exist.Resource;
-import org.exist.ResourceMetadata;
+import org.apache.log4j.Logger;
+import org.exist.*;
+import org.exist.EventListener;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.BinaryDocument;
@@ -82,6 +81,8 @@ import org.xml.sax.helpers.DefaultHandler;
  *
  */
 public class RCSManager implements Constants {
+
+    protected final static Logger LOG = Logger.getLogger( RCSManager.class );
     
     final static int UNKNOWN = -1;
     final static int EQ = 0;
@@ -106,7 +107,9 @@ public class RCSManager implements Constants {
     Path snapshotLogsFolder;
 
     Path tmpFolder;
-    
+
+    List<EventListener<CommitLog>> commitsListener = new ArrayList<>();
+
     public RCSManager(PluginsManager manager) throws PermissionDeniedException, IOException {
         db = manager.getDatabase();
 
@@ -123,6 +126,14 @@ public class RCSManager implements Constants {
         tmpFolder           = folder("tmp");
         
         instance = this;
+    }
+
+    public boolean registerCommitsListener(EventListener<CommitLog> listener) {
+        return commitsListener.add(listener);
+    }
+
+    public boolean unregisterCommitsListener(EventListener<CommitLog> listener) {
+        return commitsListener.remove(listener);
     }
 
     private Path folder(String name) throws IOException {
@@ -330,6 +341,14 @@ public class RCSManager implements Constants {
             }
         
             log.writeEndDocument();
+        }
+
+        for (EventListener<CommitLog> listener : commitsListener) {
+            try {
+                listener.onEvent(commitLog);
+            } catch (Exception e) {
+                LOG.error(e.getMessage(), e);
+            }
         }
     }
 

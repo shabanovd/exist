@@ -55,7 +55,7 @@ public class RCSResource {
     
     
     public List<Revision> revisions() throws IOException {
-        List<Revision> revs = new ArrayList<Revision>();
+        List<Revision> revs = new ArrayList<>();
         
         try (DirectoryStream<Path> dirs = Files.newDirectoryStream(location)) {
             for (Path dir : dirs) {
