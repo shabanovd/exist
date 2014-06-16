@@ -46,6 +46,7 @@ import javax.xml.stream.XMLStreamWriter;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
@@ -124,6 +125,9 @@ public class RCSManager implements Constants {
         commitLogsFolder    = folder("commits");
         snapshotLogsFolder  = folder("snapshots");
         tmpFolder           = folder("tmp");
+
+        //clean up tmp folder
+        FileUtils.cleanDirectory(tmpFolder.toFile());
         
         instance = this;
     }
@@ -556,6 +560,9 @@ public class RCSManager implements Constants {
         if (Files.notExists(hashPath)) {
             createDirectories(hashPath.getParent());
             Files.move(dataFile, hashPath);
+        } else {
+            FileUtils.deleteQuietly(dataFile.toFile());
+            //if fail it will be clean up next restart or it possible detect old files by last access time
         }
 
         processMetas(logPath.toString(), uuid, type, hash, doc, revPath, h);
