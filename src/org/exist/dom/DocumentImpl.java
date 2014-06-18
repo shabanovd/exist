@@ -1310,8 +1310,18 @@ public class DocumentImpl extends NodeImpl implements Document, DocumentAtExist,
      */
     @Override
     public boolean isSameNode(Node other) {
-        //TODO : compare node identities ? -pb
-        throw new DOMException(DOMException.NOT_SUPPORTED_ERR, "isSameNode not implemented on class " + getClass().getName());
+        // This function is used by Saxon in some circumstances,
+        // and this partial implementation is required for proper Saxon operation.
+
+        if (other == this) {
+            return true;
+        }
+
+        if (other instanceof DocumentImpl) {
+            return (this.getDocId() == ((DocumentImpl)other).getDocId());
+        }
+
+        return false;
     }
 
     /** ? @see org.w3c.dom.Node#lookupPrefix(java.lang.String)

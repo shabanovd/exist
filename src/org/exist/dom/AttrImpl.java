@@ -355,14 +355,6 @@ public class AttrImpl extends NamedNode implements Attr {
         // maybe _TODO_ - new DOM interfaces - Java 5.0
     }
 
-    /** ? @see org.w3c.dom.Node#isSameNode(org.w3c.dom.Node)
-     */
-    @Override
-    public boolean isSameNode(Node other) {
-        // maybe _TODO_ - new DOM interfaces - Java 5.0
-        return false;
-    }
-
     /** ? @see org.w3c.dom.Node#lookupPrefix(java.lang.String)
      */
     @Override

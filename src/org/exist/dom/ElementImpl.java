@@ -1760,19 +1760,6 @@ public class ElementImpl extends NamedNode implements Element, ElementAtExist {
             "setTextContent(String textContent) not implemented on class " + getClass().getName());	
     }
 
-    /** ? @see org.w3c.dom.Node#isSameNode(org.w3c.dom.Node)
-     */
-    @Override
-    public boolean isSameNode(Node other) {
-        // This function is used by Saxon in some circumstances, and this partial implementation is required for proper Saxon operation.
-        if (other instanceof StoredNode) {
-            return (this.nodeId == ((StoredNode)other).nodeId &&
-                this.ownerDocument.getDocId() == ((StoredNode)other).ownerDocument.getDocId());
-        } 
-        throw new DOMException(DOMException.NOT_SUPPORTED_ERR,
-            "isSameNode(Node other) not implemented on other class " + other.getClass().getName());
-    }
-
     /** ? @see org.w3c.dom.Node#lookupPrefix(java.lang.String)
      */
     @Override

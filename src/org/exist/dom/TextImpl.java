@@ -223,13 +223,6 @@ public class TextImpl extends CharacterDataImpl implements Text {
         // maybe _TODO_ - new DOM interfaces - Java 5.0
     }
 
-    /** ? @see org.w3c.dom.Node#isSameNode(org.w3c.dom.Node)
-     */
-    public boolean isSameNode(Node other) {
-        // maybe _TODO_ - new DOM interfaces - Java 5.0
-        return false;
-    }
-
     /** ? @see org.w3c.dom.Node#lookupPrefix(java.lang.String)
      */
     public String lookupPrefix(String namespaceURI) {

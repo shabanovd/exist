@@ -512,4 +512,25 @@ public class StoredNode extends NodeImpl implements Visitable, NodeHandle {
             return(Constants.SUPERIOR);
         }
     }
+
+    /** @see org.w3c.dom.Node#isSameNode(org.w3c.dom.Node)
+     */
+    @Override
+    public boolean isSameNode(Node other) {
+        // This function is used by Saxon in some circumstances,
+        // and this partial implementation is required for proper Saxon operation.
+
+        if (other == this) {
+            return true;
+        }
+
+        if (other instanceof StoredNode) {
+            return (this.nodeId == ((StoredNode)other).nodeId &&
+                    this.ownerDocument.getDocId() == ((StoredNode)other).ownerDocument.getDocId());
+        }
+        return false;
+
+//        throw new DOMException(DOMException.NOT_SUPPORTED_ERR,
+//            getClass().getName()+".isSameNode(Node other) not implemented on other class " + other.getClass().getName());
+    }
 }

@@ -263,7 +263,7 @@ public abstract class NodeImpl implements Node, QNameable, NodeAtExist {
      */
     public boolean isSameNode(Node other) {
         throw new DOMException(DOMException.NOT_SUPPORTED_ERR,
-            "isSameNode(Node other) not implemented on class " + getClass().getName());
+            getClass().getName()+".isSameNode(Node other) not implemented on class " + getClass().getName());
     }
 
     /** ? @see org.w3c.dom.Node#lookupPrefix(java.lang.String)
