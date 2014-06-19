@@ -19,6 +19,8 @@
  */
 package org.exist.xquery.modules.lucene;
 
+import java.util.List;
+
 import org.exist.Database;
 import org.exist.dom.QName;
 import org.exist.indexing.IndexController;
@@ -32,8 +34,6 @@ import org.exist.xquery.FunctionSignature;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.*;
-
-import java.util.List;
 
 public class GetIndexFields extends BasicFunction {
 
@@ -53,7 +53,7 @@ public class GetIndexFields extends BasicFunction {
             GET_INDEX_FIELD,
             "The list of encoded QNames, which defined for lucene index",
             new SequenceType[] {
-                new FunctionParameterSequenceType("qname", Type.QNAME, Cardinality.ZERO_OR_MORE, "qnames")
+                new FunctionParameterSequenceType("qname", Type.ITEM, Cardinality.ZERO_OR_MORE, "qnames")
             },
             new FunctionReturnSequenceType(Type.STRING, Cardinality.ZERO_OR_MORE, "Lucene fields' name")
         )
@@ -84,15 +84,25 @@ public class GetIndexFields extends BasicFunction {
 
             for (SequenceIterator i = args[0].iterate(); i.hasNext();) {
                 Item next = i.nextItem();
+
+                QName qname;
+
                 if (Type.subTypeOf(next.getType(), Type.QNAME)) {
 
-                    QName qname = ((QNameValue)next).getQName();
+                    qname = ((QNameValue)next).getQName();
 
-                    if (qnames.contains(qname)) {
+                } else {
 
-                        String field = LuceneUtil.encodeQName(qname, db.getSymbols());
-                        resultSeq.add(new StringValue(field));
-                    }
+                    qname = QName.parse(getContext(), next.getStringValue());
+
+                    //workaround
+                    if (qname.getPrefix() == null) qname.setPrefix("");
+                }
+
+                if (qnames.contains(qname)) {
+
+                    String field = LuceneUtil.encodeQName(qname, db.getSymbols());
+                    resultSeq.add(new StringValue(field));
                 }
             }
 
