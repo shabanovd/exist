@@ -33,19 +33,30 @@ import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
-import org.exist.xquery.value.FunctionReturnSequenceType;
-import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.StringValue;
-import org.exist.xquery.value.Type;
-import org.exist.xquery.value.ValueSequence;
+import org.exist.xquery.value.*;
 
 public class GetIndexFields extends BasicFunction {
 
+    final static QName GET_INDEX_FIELDS = new QName("get-index-fields", LuceneModule.NAMESPACE_URI, LuceneModule.PREFIX);
+
+    final static QName GET_INDEX_FIELD = new QName("get-index-field", LuceneModule.NAMESPACE_URI, LuceneModule.PREFIX);
+
     public final static FunctionSignature signatures[] = { 
-        new FunctionSignature(new QName("get-index-fields", LuceneModule.NAMESPACE_URI, LuceneModule.PREFIX), 
-        "The list of encoded QNames, which defined for lucene index", 
-        null, 
-        new FunctionReturnSequenceType(Type.STRING, Cardinality.ZERO_OR_MORE, "Lucene fields' name")) 
+        new FunctionSignature(
+            GET_INDEX_FIELDS,
+            "The list of encoded QNames, which defined for lucene index",
+            null,
+            new FunctionReturnSequenceType(Type.STRING, Cardinality.ZERO_OR_MORE, "Lucene fields' name")
+        ),
+
+        new FunctionSignature(
+            GET_INDEX_FIELD,
+            "The list of encoded QNames, which defined for lucene index",
+            new SequenceType[] {
+                new FunctionParameterSequenceType("qname", Type.ITEM, Cardinality.ZERO_OR_MORE, "qnames")
+            },
+            new FunctionReturnSequenceType(Type.STRING, Cardinality.ZERO_OR_MORE, "Lucene fields' name")
+        )
     };
 
     public GetIndexFields(XQueryContext context, FunctionSignature signature) {
@@ -57,21 +68,51 @@ public class GetIndexFields extends BasicFunction {
         
         DBBroker broker = context.getBroker();
         Database db = broker.getDatabase();
-        
+
+        ValueSequence resultSeq = new ValueSequence();
+
+
         IndexController indexController = broker.getIndexController();
-        
+
         // Get the lucene worker
-        LuceneIndexWorker indexWorker = 
-            (LuceneIndexWorker) indexController.getWorkerByIndexId(LuceneIndex.ID);
-        
+        LuceneIndexWorker indexWorker =
+                (LuceneIndexWorker) indexController.getWorkerByIndexId(LuceneIndex.ID);
+
         List<QName> qnames = indexWorker.getDefinedIndexes(null);
-        
-        final ValueSequence resultSeq = new ValueSequence();
-        
-        for (QName qname : qnames) {
-            final String field = LuceneUtil.encodeQName(qname, db.getSymbols());
-            
-            resultSeq.add(new StringValue(field));
+
+        if (getSignature().getName().equals(GET_INDEX_FIELD)) {
+
+            for (SequenceIterator i = args[0].iterate(); i.hasNext();) {
+                Item next = i.nextItem();
+
+                QName qname;
+
+                if (Type.subTypeOf(next.getType(), Type.QNAME)) {
+
+                    qname = ((QNameValue)next).getQName();
+
+                } else {
+
+                    qname = QName.parse(getContext(), next.getStringValue());
+
+                    //workaround
+                    if (qname.getPrefix() == null) qname.setPrefix("");
+                }
+
+                if (qnames.contains(qname)) {
+
+                    String field = LuceneUtil.encodeQName(qname, db.getSymbols());
+                    resultSeq.add(new StringValue(field));
+                }
+            }
+
+        } else {
+
+            for (QName qname : qnames) {
+                String field = LuceneUtil.encodeQName(qname, db.getSymbols());
+
+                resultSeq.add(new StringValue(field));
+            }
         }
         
         return resultSeq;
