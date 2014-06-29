@@ -58,6 +58,58 @@ public class XMLToQuery {
         this.index = index;
     }
 
+    public Query parse(Element root, Analyzer analyzer, Properties options) throws XPathException {
+        Query query;
+
+        String localName = root.getLocalName();
+        if ("query".equals(localName))
+            query = parseChildren(root, analyzer, options);
+        else
+            throw new XPathException("Unknown element in lucene query expression: " + localName);
+
+        if (query != null)
+            setBoost(root, query);
+
+        return query;
+    }
+
+    private Query parseChildren(Element root, Analyzer analyzer, Properties options) throws XPathException {
+
+        List<String> fields = new ArrayList<String>();
+
+        Query query = null;
+
+        Node child = root.getFirstChild();
+        while (child != null) {
+            if (child.getNodeType() == Node.ELEMENT_NODE) {
+
+                String localName = child.getLocalName();
+                if ("field".equals(localName)) {
+                    fields.add(getText((Element)child));
+
+                } else {
+                    for (String field : fields) {
+                        Query childQuery = parse(field, (Element) child, analyzer, options);
+                        if (query != null) {
+                            if (query instanceof BooleanQuery)
+                                ((BooleanQuery) query).add(childQuery, BooleanClause.Occur.SHOULD);
+                            else {
+                                BooleanQuery boolQuery = new BooleanQuery();
+                                boolQuery.add(query, BooleanClause.Occur.SHOULD);
+                                boolQuery.add(childQuery, BooleanClause.Occur.SHOULD);
+                                query = boolQuery;
+                            }
+                        } else {
+                            query = childQuery;
+                        }
+                    }
+                }
+            }
+            child = child.getNextSibling();
+        }
+        return query;
+    }
+
     public Query parse(String field, Element root, Analyzer analyzer, Properties options) throws XPathException {
         Query query;
         String localName = root.getLocalName();
