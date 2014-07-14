@@ -49,6 +49,8 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.*;
 import org.exist.storage.btree.DBException;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.md.MetaData;
+import org.exist.storage.md.Metas;
 import org.exist.storage.txn.Txn;
 import org.exist.util.ByteConversion;
 import org.exist.util.DatabaseConfigurationException;
@@ -67,9 +69,11 @@ import java.util.*;
 
 import javax.xml.bind.DatatypeConverter;
 
-import  static org.exist.indexing.lucene.LuceneUtil.FIELD_DOC_ID;
-import  static org.exist.indexing.lucene.LuceneUtil.FIELD_DOC_URI;
-import  static org.exist.indexing.lucene.LuceneUtil.FIELD_NODE_ID;
+import static org.exist.indexing.lucene.LuceneUtil.FIELD_DOC_ID;
+import static org.exist.indexing.lucene.LuceneUtil.FIELD_DOC_URI;
+import static org.exist.indexing.lucene.LuceneUtil.FIELD_NODE_ID;
+
+import static org.exist.Resource.*;
 
 /**
  * Class for handling all Lucene operations.
@@ -1300,7 +1304,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 }
             }
         });
-        
+
+        XmldbURI parent_url;
         String url;
         String name;
         String owner;
@@ -1309,6 +1314,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         long lastModified;
         
         if (currentCol != null) {
+            parent_url = currentCol.getURI().removeLastSegment();
+
             url = currentCol.getURI().toString();
             name = currentCol.getURI().lastSegment().toString();
             
@@ -1321,6 +1328,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             owner = perm.getOwner().getName();
             
         } else {
+            parent_url = currentDoc.getURI().removeLastSegment();
+
             url = currentDoc.getURI().toString();
             name = currentDoc.getFileURI().toString();
             
@@ -1334,37 +1343,51 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             owner = currentDoc.getPermissions().getOwner().getName();
         }
         
-        Field fld = new Field("eXist:file-name", name, metaFT);
+        Field fld = new Field(NAME, name, metaFT);
         metas.add(fld);
 
         //url = currentDoc.getURI().toString();
         
-        fld = new Field("eXist:file-path", url, metaFT);
+        fld = new Field(PATH, url, metaFT);
         metas.add(fld);
 
-        paths.add(new CategoryPath("eXist:file-path", url));
+        paths.add(new CategoryPath(PATH, url));
 
-        fld = new Field("eXist:owner", owner, metaFT);
+        fld = new Field(OWNER, owner, metaFT);
         metas.add(fld);
 
         //DocumentMetadata
 
-        fld = new Field("eXist:meta-type", mimeType, metaFT);
+        fld = new Field(TYPE, mimeType, metaFT);
         metas.add(fld);
         
-        paths.add(new CategoryPath(("eXist:meta-type/"+mimeType).split("/")));
+        paths.add(new CategoryPath((TYPE+"/"+mimeType).split("/")));
 
         GregorianCalendar date = new GregorianCalendar(GMT);
 
         date.setTimeInMillis(createdTime);
 
-        fld = new Field("eXist:created", DatatypeConverter.printDateTime(date), metaFT);
+        fld = new Field(CREATED, DatatypeConverter.printDateTime(date), metaFT);
         metas.add(fld);
         
         date.setTimeInMillis(lastModified);
 
-        fld = new Field("eXist:last-modified", DatatypeConverter.printDateTime(date), metaFT);
+        fld = new Field(LAST_MODIFIED, DatatypeConverter.printDateTime(date), metaFT);
         metas.add(fld);
+
+        MetaStorage ms = broker.getDatabase().getMetaStorage();
+        if (ms != null) {
+
+            if (ms instanceof MetaData) {
+                Metas m = ((MetaData) ms).getMetas(parent_url);
+
+                if (m != null) {
+
+                    fld = new Field(COLLECTION_ID, m.getUUID(), metaFT);
+                    metas.add(fld);
+                }
+            }
+        }
     }
     
     private static final org.apache.lucene.document.FieldType offsetsType = new org.apache.lucene.document.FieldType(TextField.TYPE_STORED);

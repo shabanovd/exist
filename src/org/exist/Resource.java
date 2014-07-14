@@ -27,6 +27,20 @@ import org.exist.xmldb.XmldbURI;
  *
  */
 public interface Resource {
+
+    public static final String COLLECTION_ID = "eXist-collection-id";
+
+    public static final String NAME = "eXist:file-name";
+
+    public static final String PATH = "eXist:file-path";
+
+    public static final String OWNER = "eXist:owner";
+
+    public static final String TYPE = "eXist:meta-type";
+
+    public static final String CREATED = "eXist:created";
+
+    public static final String LAST_MODIFIED = "eXist:last-modified";
     
     public XmldbURI getURI();
     
