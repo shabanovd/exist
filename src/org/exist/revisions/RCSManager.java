@@ -302,6 +302,8 @@ public class RCSManager implements Constants {
         
         String commitId = logPath.getFileName().toString();
 
+        commitLog.id = commitId;
+
         Path logRelativePath = rcFolder.relativize(logPath);
         
         try (BufferedWriter commitLogStream = Files.newBufferedWriter(logPath, ENCODING)) {

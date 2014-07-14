@@ -63,6 +63,8 @@ public class CommitLog implements AutoCloseable {
     boolean isDone = false;
     boolean isClosed = false;
 
+    String id;
+
     String author;
     String message;
 
@@ -71,6 +73,10 @@ public class CommitLog implements AutoCloseable {
     CommitLog(RCSManager manager, Handler handler) {
         this.handler = handler;
         this.manager = manager;
+    }
+
+    public String id() {
+        return id;
     }
 
     public CommitLog author(String author) {
