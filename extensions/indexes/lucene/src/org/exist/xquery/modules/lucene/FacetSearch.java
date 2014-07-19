@@ -257,6 +257,29 @@ public class FacetSearch extends BasicFunction {
                             final List<String> toBeMatchedURIs, final Query query, int maxHits, boolean highlight,
                             FacetSearchParams facetRequests, Sort sortCriteria, final boolean explain) throws XPathException {
 
+        MutableDocumentSet docs = new DefaultDocumentSet(1031);
+        try {
+            for (String uri : toBeMatchedURIs) {
+                XmldbURI url = XmldbURI.xmldbUriFor(uri);
+                Collection col = broker.getCollection(url);
+                if (col != null) {
+                    col.allDocs(broker, docs, true);
+                } else {
+                    col = broker.getCollection(url.removeLastSegment());
+
+                    if (col != null) {
+                        DocumentImpl doc = col.getDocument(broker, url.lastSegment());
+                        if (doc != null)
+                            docs.add(doc);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            //ex.printStackTrace();
+            LuceneIndexWorker.LOG.error(ex.getMessage(), ex);
+            throw new XPathException(this, ex);
+        }
+
         NodeImpl report = null;
         
         IndexSearcher searcher = null;
@@ -269,35 +292,6 @@ public class FacetSearch extends BasicFunction {
 
             final Set<String> fieldsToLoad = new HashSet<String>();
             
-//            final QueryParser parser;
-//            if (queryText.startsWith("ALL:")) {
-//
-//            	Database db = index.getDatabase();
-//
-//            	List<QName> qnames = indexWorker.getDefinedIndexes(null);
-//
-//            	String[] names = new String[qnames.size()];
-//
-//            	int i = 0;
-//            	for (QName qname : qnames) {
-//            		final String field = LuceneUtil.encodeQName(qname, db.getSymbols());
-//
-//            		names[i++] = field;
-//            		fieldsToLoad.add(field);
-//            	}
-//
-//            	parser = new MultiFieldQueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, names, searchAnalyzer);
-//
-//            	queryText = queryText.substring(4);
-//            } else {
-//                // Setup query Version, default field, analyzer
-//                parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, "", searchAnalyzer);
-//            }
-//
-//            final org.apache.lucene.search.Query query = parser.parse(queryText);
-
-
-                       
             final MemTreeBuilder builder = new MemTreeBuilder();
             builder.startDocument();
             
@@ -305,23 +299,6 @@ public class FacetSearch extends BasicFunction {
             final int nodeNr = builder.startElement("", "results", "results", null);
             
             builder.namespaceNode("exist", "http://exist.sourceforge.net/NS/exist");
-            
-            MutableDocumentSet docs = new DefaultDocumentSet(1031);
-            for (String uri : toBeMatchedURIs) {
-                XmldbURI url = XmldbURI.xmldbUriFor(uri);
-            	Collection col = broker.getCollection(url);
-            	if (col != null) {
-            		col.allDocs(broker, docs, true);
-            	} else {
-                    col = broker.getCollection(url.removeLastSegment());
-
-                    if (col != null) {
-                        DocumentImpl doc = col.getDocument(broker, url.lastSegment());
-                        if (doc != null)
-                            docs.add(doc);
-                    }
-            	}
-            }
             
             QName bq = null;
             
@@ -380,11 +357,11 @@ public class FacetSearch extends BasicFunction {
 				};
 				
 	            // Perform actual search
-		if (sortCriteria == null) {
-                    results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits);
-		} else {
-	            results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits, sortCriteria);
-		}
+                if (sortCriteria == null) {
+                            results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits);
+                } else {
+                        results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits, sortCriteria);
+                }
             } else {
 	            SearchCallback<DocumentImpl> cb = new SearchCallback<DocumentImpl>() {
 	            	
@@ -417,11 +394,11 @@ public class FacetSearch extends BasicFunction {
 				};
 				
 	            // Perform actual search
-		if (sortCriteria == null) {
-                    results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits);
-		} else {
-	            results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits, sortCriteria);
-		}
+                if (sortCriteria == null) {
+                            results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits);
+                } else {
+                        results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits, sortCriteria);
+                }
             }
             
             if (results != null) {
