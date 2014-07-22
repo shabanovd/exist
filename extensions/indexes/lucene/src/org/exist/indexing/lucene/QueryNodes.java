@@ -267,13 +267,17 @@ public class QueryNodes {
 				// XXX: understand: check permissions here? No, it may slowdown,
 				// better to check final set
 
-				BytesRef ref = new BytesRef(buf);
-				this.nodeIdValues.get(doc, ref);
-				int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-				NodeId nodeId = db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
-				// LOG.info("doc: " + docId + "; node: " + nodeId.toString() + "; units: " + units);
+                if (this.nodeIdValues != null) {
+                    BytesRef ref = new BytesRef(buf);
+                    this.nodeIdValues.get(doc, ref);
+                    int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
+                    NodeId nodeId = db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+                    // LOG.info("doc: " + docId + "; node: " + nodeId.toString() + "; units: " + units);
 
-				collect(doc, storedDocument, nodeId, score);
+                    collect(doc, storedDocument, nodeId, score);
+                } else {
+                    collect(doc, storedDocument, NodeId.DOCUMENT_NODE, score);
+                }
 
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -294,59 +298,19 @@ public class QueryNodes {
 				scores[totalHits] = score;
 				totalHits++;
 			}
-            
+
 			NodeProxy storedNode = new NodeProxy(storedDocument, nodeId);
 			if (qname != null)
 				storedNode
 					.setNodeType(
-						qname.getNameType() == ElementValue.ATTRIBUTE ? 
+						qname.getNameType() == ElementValue.ATTRIBUTE ?
 							Node.ATTRIBUTE_NODE : Node.ELEMENT_NODE);
-			
-			
-//			if (field != null) {
-//				try {
-//					Terms termVector = reader.getTermVector(doc, field);
-//					//Terms termVector = reader.terms(field);
-//					if (termVector != null) {
-//						if (termVector.hasOffsets()) {
-//							TermsEnum term = termVector.iterator(null);
-//							
-//							BytesRef byteref;
-//						    while ((byteref = term.next()) != null) {
-//						    	
-//						    	System.out.println(byteref.utf8ToString());
-//						    	
-//						        DocsAndPositionsEnum docPosEnum = term.docsAndPositions(null, null);//, DocsAndPositionsEnum.FLAG_OFFSETS);
-//
-//						        if (docPosEnum.advance(doc) != DocIdSetIterator.NO_MORE_DOCS) {
-//							        int freq=docPosEnum.freq();
-//							        for(int i=0; i<freq; i++){
-//							            int position=docPosEnum.nextPosition();
-//							            int start=docPosEnum.startOffset();
-//							            int end=docPosEnum.endOffset();
-//							            //Store start, end and position in an a list
-//							            
-//							            System.out.println(position+" = "+start+" : "+end);
-//							        }
-//						        }
-//					        }
-//						}
-//					}
-//					
-//					System.out.println("=====================");
 
-//					Terms terms = reader.terms(field);
-//					TermsEnum termsEnum = terms.iterator(TermsEnum.EMPTY);
-//					BytesRef term;
-//				    while((term=termsEnum.next())!=null){
-//				} catch (IOException e) {
-//				}
-//			}
 
 			LuceneMatch match = worker.new LuceneMatch(contextId, nodeId, query);
 			match.setScore(score);
 			//XXX: match.addOffset(offset, length);
-			
+
 			storedNode.addMatch(match);
 			callback.found(reader, doc, storedNode, score);
 			// resultSet.add(storedNode, sizeHint);
@@ -453,7 +417,7 @@ public class QueryNodes {
 
 		@Override
 		public void collect(int doc) {
-		    if (this.nodeIdValues == null) {
+		    if (this.docIdValues == null) {
 		        return;
 		    }
 			try {
@@ -562,11 +526,15 @@ public class QueryNodes {
 		}
 		
 		private NodeId getNodeId(int doc) {
-			BytesRef ref = new BytesRef(buf);
+            if (this.nodeIdValues == null) {
+                return NodeId.DOCUMENT_NODE;
+            } else {
+                BytesRef ref = new BytesRef(buf);
 
-			this.nodeIdValues.get(doc, ref);
-			int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-			return db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+                this.nodeIdValues.get(doc, ref);
+                int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
+                return db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+            }
 		}
 		
 		private int docNumber(int docBase, int doc) {
