@@ -1,6 +1,6 @@
 /*
  * eXist Open Source Native XML Database
- * Copyright (C) 2001-2007 The eXist team
+ * Copyright (C) 2001-2014 The eXist-db Project
  * http://exist-db.org
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *  
- * $Id$
  */
 package org.exist.storage;
 
@@ -1463,6 +1462,8 @@ public class NativeBroker extends DBBroker {
                     final Collection childCollection = openCollection(uri.append(childName), Lock.WRITE_LOCK);
                     try {
                         removeCollection(txn, childCollection);
+		            } catch (NullPointerException npe) {
+			            LOG.error("childCollection '" + childName + "' is corrupted. Caught NPE to be able to actually remove the parent.");
                     } finally {
                         if (childCollection != null) {
                             childCollection.getLock().release(Lock.WRITE_LOCK);
@@ -3581,6 +3582,9 @@ public class NativeBroker extends DBBroker {
         nodesCount = 0;
     }
 
+    long interval10Mins = 10 * 60 * 1000;
+    long nextReportTS = System.currentTimeMillis();
+
     @Override
     public void sync(int syncEvent) {
         if (isReadOnly())
@@ -3609,13 +3613,18 @@ public class NativeBroker extends DBBroker {
                 }
                 notifySync();
                 pool.getIndexManager().sync();
-                final NumberFormat nf = NumberFormat.getNumberInstance();
-                LOGSTATS.info("Memory: " + nf.format(run.totalMemory() / 1024) + "K total; " +
-                        nf.format(run.maxMemory() / 1024) + "K max; " +
-                        nf.format(run.freeMemory() / 1024) + "K free");
-                domDb.printStatistics();
-                collectionsDb.printStatistics();
-                notifyPrintStatistics();
+
+                if (System.currentTimeMillis() > nextReportTS) {
+                    final NumberFormat nf = NumberFormat.getNumberInstance();
+                    LOGSTATS.info("Memory: " + nf.format(run.totalMemory() / 1024) + "K total; " +
+                            nf.format(run.maxMemory() / 1024) + "K max; " +
+                            nf.format(run.freeMemory() / 1024) + "K free");
+                    domDb.printStatistics();
+                    collectionsDb.printStatistics();
+                    notifyPrintStatistics();
+
+                    nextReportTS = System.currentTimeMillis() + interval10Mins;
+                }
             }
         } catch (final DBException dbe) {
             dbe.printStackTrace();

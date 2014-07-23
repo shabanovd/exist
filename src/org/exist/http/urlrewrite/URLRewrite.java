@@ -149,9 +149,18 @@ public abstract class URLRewrite {
     }
 
     protected void copyFrom(URLRewrite other) {
-        this.headers = other.headers;
-        this.parameters = other.parameters;
-        this.attributes = other.attributes;
+        if (other.headers != null) {
+            this.headers = new HashMap<String, String>(other.headers);
+        }
+        if (other.attributes != null) {
+            this.attributes = new HashMap<String, String>(other.attributes);
+        }
+        if (other.parameters != null) {
+            this.parameters = new HashMap<String, List<String>>();
+            for (Map.Entry<String, List<String>> entry: other.parameters.entrySet()) {
+                this.parameters.put(entry.getKey(), new ArrayList<String>(entry.getValue()));
+            }
+        }
     }
 
     private void setHeader(String key, String value) {

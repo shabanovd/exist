@@ -516,7 +516,9 @@ public class BrokerPool implements Database {
     @ConfigurationFieldAsAttribute("sync-period")
 	private long majorSyncPeriod = DEFAULT_SYNCH_PERIOD;		//the period after which a major sync should occur		
 	private long lastMajorSync = System.currentTimeMillis();	//time the last major sync occurred
-    
+
+    private long diskSpaceMin = 64 * 1024L * 1024L;
+
 	/**
 	 * The listener that is notified when the database instance shuts down.
 	 */
@@ -668,6 +670,11 @@ public class BrokerPool implements Database {
 			this.transactionsEnabled = aBoolean.booleanValue();
         }
 		LOG.info("database instance '" + instanceName + "' is enabled for transactions : " + this.transactionsEnabled);
+
+        final Integer min = (Integer) conf.getProperty(BrokerPool.DISK_SPACE_MIN_PROPERTY);
+        if (min != null) {
+            diskSpaceMin = min * 1024L * 1024L;
+        }
 
 		pageSize = conf.getInteger(PROPERTY_PAGE_SIZE);
 		if (pageSize < 0)
@@ -1334,15 +1341,15 @@ public class BrokerPool implements Database {
     	//TODO : confusion between dataDir and a so-called "journalDir" !
         return !isReadOnly && transactionsEnabled;
     }
-	
-    private static long minFreeSpace = 50 * 1024 * 1024;
     
     public boolean isReadOnly() {
-    	if (dataLock.getFreeSpace() < minFreeSpace) {
-            LOG.info("Partition have "+(dataLock.getFreeSpace() / (1024 * 1024))+" Mb.");
+        final long freeSpace = dataLock.getFile().getUsableSpace();
+        if (freeSpace < diskSpaceMin) {
+            LOG.fatal("Partition containing DATA_DIR: " + dataLock.getFile().getAbsolutePath() + " is running out of disk space. " +
+                    "Switching eXist-db to read only to prevent data loss!");
             setReadOnly();
-    	}
-    	
+        }
+
         return isReadOnly;
     }
 
@@ -2021,13 +2028,6 @@ public class BrokerPool implements Database {
 					} catch (final EXistException e) {
 	                    LOG.warn("Error during plugin manager shutdown: " + e.getMessage(), e);
 					}
-                
-                // closing down external indexes
-                try {
-                    indexManager.shutdown();
-                } catch (final DBException e) {
-                    LOG.warn("Error during index shutdown: " + e.getMessage(), e);
-                }
 
                 //TOUNDERSTAND (pb) : shutdown() is called on only *one* broker ?
                 // WM: yes, the database files are shared, so only one broker is needed to close them for all
@@ -2035,6 +2035,16 @@ public class BrokerPool implements Database {
                     broker.setSubject(securityManager.getSystemSubject());
                     broker.shutdown();
                 }
+
+                // closing down external indexes
+                try {
+                    //XXX: bad position, down there broker.shutdown should handle index shutdown too
+                    indexManager.sync();
+                    indexManager.shutdown();
+                } catch (final DBException e) {
+                    LOG.warn("Error during index shutdown: " + e.getMessage(), e);
+                }
+
                 collectionCacheMgr.deregisterCache(collectionCache);
 
                 // do not write a checkpoint if some threads did not return before shutdown

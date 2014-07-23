@@ -613,13 +613,15 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         @Override
         public void collect(int doc) throws IOException {
+            if (this.docIdValues == null || this.nodeIdValues == null || this.addressValues == null) return;
+
             int docId = (int) this.docIdValues.get(doc);
             DocumentImpl storedDocument = docs.getDoc(docId);
             if (storedDocument == null) {
                 return;
             }
-            BytesRef ref = new BytesRef(buf);
-            this.nodeIdValues.get(doc, ref);
+            //BytesRef ref = new BytesRef(buf);
+            BytesRef ref = this.nodeIdValues.get(doc); //, ref);
 
             int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
             NodeId nodeId = index.getDatabase().getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
@@ -656,10 +658,12 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         private void getAddress(int doc, NodeProxy storedNode) {
             if (addressValues != null) {
-                BytesRef ref = new BytesRef(buf);
-                addressValues.get(doc, ref);
-                final long address = ByteConversion.byteToLong(ref.bytes, ref.offset);
-                storedNode.setInternalAddress(address);
+                //BytesRef ref = new BytesRef(buf);
+                BytesRef ref = addressValues.get(doc); //, ref);
+                if (ref.offset < ref.bytes.length) {
+                    final long address = ByteConversion.byteToLong(ref.bytes, ref.offset);
+                    storedNode.setInternalAddress(address);
+                }
             }
         }
 
@@ -943,7 +947,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         IndexReader reader = null;
         try {
             reader = index.getReader();
-            scan(docs, null, null, start, max, map, reader, field);
+            scan(docs, null, start, null, max, map, reader, field);
         } catch (IOException e) {
             LOG.warn("Error while scanning lucene index entries: " + e.getMessage(), e);
         } finally {
@@ -1008,8 +1012,8 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                             continue;
                         NodeId nodeId = null;
                         if (nodes != null) {
-                            BytesRef nodeIdRef = new BytesRef(buf);
-                            nodeIdValues.get(docsEnum.docID(), nodeIdRef);
+                            //BytesRef nodeIdRef = new BytesRef(buf);
+                            BytesRef nodeIdRef = nodeIdValues.get(docsEnum.docID()); //, nodeIdRef);
                             int units = ByteConversion.byteToShort(nodeIdRef.bytes, nodeIdRef.offset);
                             nodeId = index.getDatabase().getNodeFactory().createFromData(units, nodeIdRef.bytes, nodeIdRef.offset + 2);
                         }

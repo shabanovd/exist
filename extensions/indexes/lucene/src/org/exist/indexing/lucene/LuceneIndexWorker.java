@@ -23,10 +23,8 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -72,6 +70,7 @@ import javax.xml.bind.DatatypeConverter;
 import static org.exist.indexing.lucene.LuceneUtil.FIELD_DOC_ID;
 import static org.exist.indexing.lucene.LuceneUtil.FIELD_DOC_URI;
 import static org.exist.indexing.lucene.LuceneUtil.FIELD_NODE_ID;
+import static org.apache.lucene.document.FieldType.NumericType.*;
 
 import static org.exist.Resource.*;
 
@@ -88,6 +87,26 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public static final String OPTION_LEADING_WILDCARD = "leading-wildcard";
     public static final String OPTION_FILTER_REWRITE = "filter-rewrite";
     public static final String DEFAULT_OPERATOR_OR = "or";
+
+    static final FacetsConfig facetsConfig = new FacetsConfig();
+    static {
+        //facetsConfig.setIndexFieldName("eXist:file-path", "eXist:file-path");
+        facetsConfig.setHierarchical("eXist:file-path", true);
+        facetsConfig.setHierarchical("eXist:meta-type", true);
+
+//        facetsConfig.setIndexFieldName("STATUS", "status");
+//        facetsConfig.setRequireDimCount("STATUS", true);
+    }
+
+    private static final org.apache.lucene.document.FieldType metaFT = new org.apache.lucene.document.FieldType();
+
+    static {
+        metaFT.setIndexed(true);
+        metaFT.setStored(false);
+        metaFT.setOmitNorms(true);
+        metaFT.setStoreTermVectors(false);
+        metaFT.setTokenized(false);
+    }
 
     public static final org.apache.lucene.document.FieldType TYPE_NODE_ID = new org.apache.lucene.document.FieldType();
     static {
@@ -108,16 +127,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     	defaultFT.setTokenized(true);
     }
 
-    private static final org.apache.lucene.document.FieldType metaFT = new org.apache.lucene.document.FieldType();
-	
-    static {
-    	metaFT.setIndexed(true);
-    	metaFT.setStored(false);
-    	metaFT.setOmitNorms(true);
-    	metaFT.setStoreTermVectors(false);
-    	metaFT.setTokenized(false);
-    }
-
     public static final Logger LOG = Logger.getLogger(LuceneIndexWorker.class);
     
     public final LuceneIndex index;
@@ -135,7 +144,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     private LuceneConfig config;
     private Stack<TextExtractor> contentStack = null;
     private Set<NodeId> nodesToRemove = null;
-    private List<PendingDoc> nodesToWrite = new ArrayList<PendingDoc>();
+    private List<PendingDoc> nodesToWrite = new ArrayList<>();
     private Document pendingDoc = null;
     
     private int cachedNodesSize = 0;
@@ -144,8 +153,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     
     private Analyzer analyzer;
     
-    private List<Field> metas = new ArrayList<Field>();
-    private List<CategoryPath> paths = new ArrayList<CategoryPath>();
+    private List<Field> metas = new ArrayList<>();
     
     boolean indexed = false;
     
@@ -215,10 +223,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
         setMode(newMode);
 
-        metas = new ArrayList<Field>();
-        paths = new ArrayList<CategoryPath>();
-        
-        collectMetas(metas, paths);
+        metas = new ArrayList<>();
+
+        collectMetas(metas);
     }
 
     public void setMode(int mode) {
@@ -226,13 +233,13 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         switch (mode) {
             case StreamListener.STORE:
                 if (nodesToWrite == null)
-                    nodesToWrite = new ArrayList<PendingDoc>();
+                    nodesToWrite = new ArrayList<>();
                 else
                     nodesToWrite.clear();
                 cachedNodesSize = 0;
                 break;
             case StreamListener.REMOVE_SOME_NODES:
-                nodesToRemove = new TreeSet<NodeId>();
+                nodesToRemove = new TreeSet<>();
                 break;
         }
     }
@@ -312,7 +319,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             writer = index.getWriter();
             BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
             NumericUtils.intToPrefixCoded(docId, 0, bytes);
-            Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
+            Term dt = new Term(FIELD_DOC_ID, bytes);
             writer.deleteDocuments(dt);
         } catch (IOException e) {
             LOG.warn("Error while removing lucene index: " + e.getMessage(), e);
@@ -336,16 +343,14 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 DocumentImpl doc = i.next();
                 BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
                 NumericUtils.intToPrefixCoded(doc.getDocId(), 0, bytes);
-                Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
+                Term dt = new Term(FIELD_DOC_ID, bytes);
                 writer.deleteDocuments(dt);
             }
             
             Term dt = new Term(FIELD_DOC_URI, collection.getURI().toString());
             writer.deleteDocuments(dt);
 
-        } catch (IOException e) {
-            LOG.error("Error while removing lucene index: " + e.getMessage(), e);
-        } catch (PermissionDeniedException e) {
+        } catch (IOException | PermissionDeniedException e) {
             LOG.error("Error while removing lucene index: " + e.getMessage(), e);
         } finally {
             index.releaseWriter(writer);
@@ -376,7 +381,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
             BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
             NumericUtils.intToPrefixCoded(currentDoc.getDocId(), 0, bytes);
-            Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
+            Term dt = new Term(FIELD_DOC_ID, bytes);
             TermQuery tq = new TermQuery(dt);
             for (NodeId nodeId : nodesToRemove) {
                 // store the node id
@@ -606,32 +611,26 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         	pendingDoc = new Document();
         	
         	// Set DocId
-        	NumericDocValuesField fDocId = new NumericDocValuesField(LuceneUtil.FIELD_DOC_ID, currentDoc.getDocId());
+        	NumericDocValuesField fDocId = new NumericDocValuesField(FIELD_DOC_ID, currentDoc.getDocId());
 
             pendingDoc.add(fDocId);
 
-            IntField fDocIdIdx = new IntField(LuceneUtil.FIELD_DOC_ID, currentDoc.getDocId(), Field.Store.NO);
+            IntField fDocIdIdx = new IntField(FIELD_DOC_ID, currentDoc.getDocId(), Field.Store.NO);
             pendingDoc.add(fDocIdIdx);
 
             // For binary documents the doc path needs to be stored
             String uri = currentDoc.getURI().toString();
 
-            Field fDocUri = new Field(LuceneUtil.FIELD_DOC_URI, uri, Field.Store.YES, Field.Index.NOT_ANALYZED);
+            Field fDocUri = new Field(FIELD_DOC_URI, uri, Field.Store.YES, Field.Index.NOT_ANALYZED);
             pendingDoc.add(fDocUri);
             
-            final List<Field> metas = new ArrayList<Field>();
-            final List<CategoryPath> paths = new ArrayList<CategoryPath>();
+
+            List<Field> metas = new ArrayList<>();
             
-            collectMetas(metas, paths);
-            
-            TaxonomyWriter taxoWriter = index.getTaxonomyWriter();
-            FacetFields facetFields = new FacetFields(taxoWriter);
+            collectMetas(metas);
             
             for (Field meta : metas) {
             	pendingDoc.add(meta);
-            }
-            if (!paths.isEmpty()) {
-                facetFields.addFields(pendingDoc, paths);
             }
 
         }
@@ -669,8 +668,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     	IndexWriter writer = null;
         try {
             writer = index.getWriter();
-            
-            writer.addDocument(pendingDoc);
+
+            writeToIndex(writer, pendingDoc);
+
         } catch (IOException e) {
             LOG.warn("An exception was caught while indexing document: " + e.getMessage(), e);
 
@@ -730,7 +730,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     Document doc = reader.document(docNum);
 
                     // Get URI field of document
-                    String fDocUri = doc.get(LuceneUtil.FIELD_DOC_URI);
+                    String fDocUri = doc.get(FIELD_DOC_URI);
 
                     // Get score
                     float score = scorer.score();
@@ -798,7 +798,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             //System.out.println(builder.getDocument().toString());
             
             // TODO check
-            report = ((org.exist.memtree.DocumentImpl) builder.getDocument()).getNode(nodeNr);
+            report = builder.getDocument().getNode(nodeNr);
 
 
         } catch (Exception e){
@@ -817,7 +817,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public String getFieldContent(int docId, String field) throws IOException {
         BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
         NumericUtils.intToPrefixCoded(docId, 0, bytes);
-        Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
+        Term dt = new Term(FIELD_DOC_ID, bytes);
 
     	IndexReader reader = null;
         try {
@@ -840,7 +840,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     public boolean hasIndex(int docId) throws IOException {
         BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
         NumericUtils.intToPrefixCoded(docId, 0, bytes);
-        Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
+        Term dt = new Term(FIELD_DOC_ID, bytes);
 
         IndexReader reader = null;
         try {
@@ -946,8 +946,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 DocumentImpl storedDocument = docs.getDoc(docId);
                 if (storedDocument == null)
                     return;
-                BytesRef ref = new BytesRef(buf);
-                this.nodeIdValues.get(doc, ref);
+                //BytesRef ref = new BytesRef(buf);
+                BytesRef ref = this.nodeIdValues.get(doc); //, ref);
                 int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
                 NodeId nodeId = index.getDatabase().getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
                 //LOG.info("doc: " + docId + "; node: " + nodeId.toString() + "; units: " + units);
@@ -998,7 +998,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      * @return List of QName objects on which indexes are defined
      */
     public List<QName> getDefinedIndexes(List<QName> qnames) {
-        List<QName> indexes = new ArrayList<QName>(20);
+        List<QName> indexes = new ArrayList<>(20);
         if (qnames != null && !qnames.isEmpty()) {
             for (QName qname : qnames) {
                 if (qname.getLocalName() == null || qname.getNamespaceURI() == null)
@@ -1105,7 +1105,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     private Occurrences[] scanIndexByQName(List<QName> qnames, DocumentSet docs, NodeSet nodes, String start, String end, long max) {
-        TreeMap<String, Occurrences> map = new TreeMap<String, Occurrences>();
+
+        TreeMap<String, Occurrences> map = new TreeMap<>();
         IndexReader reader = null;
         try {
             reader = index.getReader();
@@ -1147,8 +1148,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                                     continue;
                                 NodeId nodeId = null;
                                 if (nodes != null) {
-                                    BytesRef nodeIdRef = new BytesRef(buf);
-                                    nodeIdValues.get(docsEnum.docID(), nodeIdRef);
+                                    //BytesRef nodeIdRef = new BytesRef(buf);
+                                    BytesRef nodeIdRef = nodeIdValues.get(docsEnum.docID()); //, nodeIdRef);
                                     int units = ByteConversion.byteToShort(nodeIdRef.bytes, nodeIdRef.offset);
                                     nodeId = index.getDatabase().getNodeFactory().createFromData(units, nodeIdRef.bytes, nodeIdRef.offset + 2);
                                 }
@@ -1207,7 +1208,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     	DocumentImpl document;
     	
         List<Field> _metas;
-        List<CategoryPath> _paths;
     	
         NodeId nodeId;
         CharSequence text;
@@ -1217,7 +1217,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         private PendingDoc() {
             this.document = currentDoc;
             this._metas = metas;
-            this._paths = paths;
             this.nodeId = null;
             this.qname = null;
             this.text = null;
@@ -1227,7 +1226,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         private PendingDoc(NodeId nodeId, QName qname, NodePath path, CharSequence text, LuceneConfigText idxConf) {
             this.document = currentDoc;
             this._metas = metas;
-            this._paths = paths;
             this.nodeId = nodeId;
             this.qname = qname;
             this.text = text;
@@ -1235,7 +1233,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
     
-    private void collectMetas(final List<Field> metas, final List<CategoryPath> paths) {
+    private void collectMetas(final List<Field> metas) {
+
+        if (MetaData.get() == null) return;
 
         broker.getIndexController().streamMetas(new MetaStreamListener() {
             @Override
@@ -1267,25 +1267,27 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                             }
                         };
                     }
-                    
+
+                    metas.add(new FacetField(name, toIndex));
+
                     Field fld;
-                    
+
                     try {
                         if (fieldConfig == null || fieldConfig.numericType == null) {
                             fld = new Field(name, toIndex, ft);
-                            
-                        } else if (fieldConfig.numericType == NumericType.DOUBLE) {
+
+                        } else if (fieldConfig.numericType == DOUBLE) {
                             fld = new DoubleField(name, Double.valueOf(toIndex), ft);
-                            
-                        } else if (fieldConfig.numericType == NumericType.FLOAT) {
+
+                        } else if (fieldConfig.numericType == FLOAT) {
                             fld = new FloatField(name, Float.valueOf(toIndex), ft);
-                            
-                        } else if (fieldConfig.numericType == NumericType.INT) {
+
+                        } else if (fieldConfig.numericType == INT) {
                             fld = new IntField(name, Integer.valueOf(toIndex), ft);
-                            
-                        } else if (fieldConfig.numericType == NumericType.LONG) {
+
+                        } else if (fieldConfig.numericType == LONG) {
                             fld = new LongField(name, Long.valueOf(toIndex), ft);
-                            
+
                         } else {
                             fld = new Field(name, toIndex, ft);
                         }
@@ -1293,20 +1295,17 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         LOG.error(e.getMessage(), e);
                         fld = new Field(name, toIndex, ft);
                     }
-                    
+
                     if (fieldConfig != null && fieldConfig.getBoost() > 0)
                         fld.setBoost(fieldConfig.getBoost());
                     
                     metas.add(fld);
-                    //System.out.println(" "+name+" = "+value.toString());
-                    
-                    paths.add(new CategoryPath(name, toIndex));
                 }
             }
         });
 
         XmldbURI parent_url;
-        String url;
+        XmldbURI url;
         String name;
         String owner;
         String mimeType;
@@ -1314,9 +1313,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         long lastModified;
         
         if (currentCol != null) {
-            parent_url = currentCol.getURI().removeLastSegment();
+            url = currentCol.getURI();
+            parent_url = url.removeLastSegment();
 
-            url = currentCol.getURI().toString();
             name = currentCol.getURI().lastSegment().toString();
             
             mimeType = "collection";
@@ -1328,9 +1327,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             owner = perm.getOwner().getName();
             
         } else {
-            parent_url = currentDoc.getURI().removeLastSegment();
+            url = currentDoc.getURI();
+            parent_url = url.removeLastSegment();
 
-            url = currentDoc.getURI().toString();
             name = currentDoc.getFileURI().toString();
             
             DocumentMetadata metadata = currentDoc.getMetadata();
@@ -1343,36 +1342,30 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             owner = currentDoc.getPermissions().getOwner().getName();
         }
         
-        Field fld = new Field(NAME, name, metaFT);
+        FacetField fld = new FacetField(NAME, name);
         metas.add(fld);
-
-        //url = currentDoc.getURI().toString();
         
-        fld = new Field(PATH, url, metaFT);
+        fld = new FacetField(PATH, url.stringPathSegments());
         metas.add(fld);
 
-        paths.add(new CategoryPath(PATH, url));
-
-        fld = new Field(OWNER, owner, metaFT);
+        fld = new FacetField(OWNER, owner);
         metas.add(fld);
 
         //DocumentMetadata
 
-        fld = new Field(TYPE, mimeType, metaFT);
+        fld = new FacetField(TYPE, mimeType.split("/"));
         metas.add(fld);
-        
-        paths.add(new CategoryPath((TYPE+"/"+mimeType).split("/")));
 
         GregorianCalendar date = new GregorianCalendar(GMT);
 
         date.setTimeInMillis(createdTime);
 
-        fld = new Field(CREATED, DatatypeConverter.printDateTime(date), metaFT);
+        fld = new FacetField(CREATED, DatatypeConverter.printDateTime(date));
         metas.add(fld);
         
         date.setTimeInMillis(lastModified);
 
-        fld = new Field(LAST_MODIFIED, DatatypeConverter.printDateTime(date), metaFT);
+        fld = new FacetField(LAST_MODIFIED, DatatypeConverter.printDateTime(date));
         metas.add(fld);
 
         MetaStorage ms = broker.getDatabase().getMetaStorage();
@@ -1383,8 +1376,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
                 if (m != null) {
 
-                    fld = new Field(COLLECTION_ID, m.getUUID(), metaFT);
-                    metas.add(fld);
+                    Field field = new Field(COLLECTION_ID, m.getUUID(), metaFT);
+                    metas.add(field);
                 }
             }
         }
@@ -1401,10 +1394,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         offsetsType.setStoreTermVectorPayloads(true);
     }
     
-    private void write() {
+    private synchronized void write() {
         if (nodesToWrite == null || nodesToWrite.size() == 0)
             return;
-        
+
         IndexWriter writer = null;
         try {
             writer = index.getWriter();
@@ -1412,15 +1405,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             NumericDocValuesField fDocId = new NumericDocValuesField(FIELD_DOC_ID, 0);
             BinaryDocValuesField fNodeId = new BinaryDocValuesField(FIELD_NODE_ID, new BytesRef(8));
             // docId also needs to be indexed
-            IntField fDocIdIdx = new IntField(LuceneUtil.FIELD_DOC_ID, 0, IntField.TYPE_NOT_STORED);
-
-//            final List<Field> metas = new ArrayList<Field>();
-//            final List<CategoryPath> paths = new ArrayList<CategoryPath>();
-//            
-//            collectMetas(metas, paths);
-//            
-            TaxonomyWriter taxoWriter = index.getTaxonomyWriter();
-            FacetFields facetFields = new FacetFields(taxoWriter);
+            IntField fDocIdIdx = new IntField(FIELD_DOC_ID, 0, IntField.TYPE_NOT_STORED);
 
             for (PendingDoc pending : nodesToWrite) {
                 final Document doc = new Document();
@@ -1471,24 +1456,44 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 for (Field meta : pending._metas) {
                     doc.add(meta);
                 }
-                if (!pending._paths.isEmpty()) {
-                    facetFields.addFields(doc, pending._paths);
-                }
                 
                 if (pending.idxConf == null || pending.idxConf.getAnalyzer() == null)
-                    writer.addDocument(doc);
+                    writeToIndex(writer, doc);
                 else {
-                    writer.addDocument(doc, pending.idxConf.getAnalyzer());
+                    writeToIndex(writer, doc, pending.idxConf.getAnalyzer());
                 }
             }
         } catch (IOException e) {
             LOG.warn("An exception was caught while indexing document: " + e.getMessage(), e);
         } finally {
             index.releaseWriter(writer);
-            nodesToWrite = new ArrayList<PendingDoc>();
+            nodesToWrite = new ArrayList<>();
             cachedNodesSize = 0;
         }
     }
+
+    private void writeToIndex(IndexWriter writer, Document doc) throws IOException {
+        if (MetaData.get() == null)
+        {
+            writer.addDocument(doc);
+        }
+        else
+        {
+            writer.addDocument(facetsConfig.build(index.getTaxonomyWriter(), doc));
+        }
+    }
+
+    private void writeToIndex(IndexWriter writer, Document doc, Analyzer analyzer) throws IOException {
+        if (MetaData.get() == null)
+        {
+            writer.addDocument(doc, analyzer);
+        }
+        else
+        {
+            writer.addDocument(facetsConfig.build(index.getTaxonomyWriter(), doc), analyzer);
+        }
+    }
+
     /**
      * Optimize the Lucene index by merging all segments into a single one. This
      * may take a while and write operations will be blocked during the optimize.
@@ -1701,10 +1706,9 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         currentCol = col;
         broker.getIndexController().setURL(col.getURI());
 
-        metas = new ArrayList<Field>();
-        paths = new ArrayList<CategoryPath>();
+        metas = new ArrayList<>();
         
-        collectMetas(metas, paths);
+        collectMetas(metas);
         
     	indexText(null, null, null, null, null);
         
@@ -1718,14 +1722,13 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         currentDoc = doc;
         broker.getIndexController().setURL(doc.getURI());
         
-        metas = new ArrayList<Field>();
-        paths = new ArrayList<CategoryPath>();
+        metas = new ArrayList<>();
         
-        collectMetas(metas, paths);
+        collectMetas(metas);
         
         indexText(null, null, null, null, null);
         
-        write();
+//        write();
         
         currentDoc = null;
     }
