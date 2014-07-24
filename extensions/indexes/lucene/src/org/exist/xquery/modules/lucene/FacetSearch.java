@@ -23,11 +23,7 @@ package org.exist.xquery.modules.lucene;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 import javax.xml.transform.OutputKeys;
 
@@ -77,6 +73,7 @@ import org.exist.xquery.value.SequenceIterator;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
@@ -90,10 +87,16 @@ public class FacetSearch extends BasicFunction {
     private static final Logger LOG = Logger.getLogger(FacetSearch.class);
     
     private static final QName SEARCH = new QName("facet-search", LuceneModule.NAMESPACE_URI, LuceneModule.PREFIX);
+    private static final QName SEARCH_WITH_GROUPING = new QName("facet-search-with-grouping", LuceneModule.NAMESPACE_URI, LuceneModule.PREFIX);
     private static final QName SEARCH_WITH_EXPLANATION = new QName("facet-search-with-explanation", LuceneModule.NAMESPACE_URI, LuceneModule.PREFIX);
 
     private static final String DESCRIPTION = "Faceted search for data at lucene index";
     private static final String DESCRIPTION_ = "Faceted search for data at lucene index (result include explanation)";
+
+    private static final FunctionParameterSequenceType PATH =
+            new FunctionParameterSequenceType("path", Type.STRING, Cardinality.ZERO_OR_MORE,
+                "URI paths of documents or collections in database. Collection URIs should end on a '/'.");
+
 
     private static final FunctionParameterSequenceType QUERY = 
     		new FunctionParameterSequenceType("query", Type.ITEM, Cardinality.EXACTLY_ONE, "query string or query xml");
@@ -121,8 +124,7 @@ public class FacetSearch extends BasicFunction {
     		SEARCH,
             DESCRIPTION,
             new SequenceType[]{
-                new FunctionParameterSequenceType("path", Type.STRING, Cardinality.ZERO_OR_MORE,
-                "URI paths of documents or collections in database. Collection URIs should end on a '/'."),
+                PATH,
                 QUERY,
                 MAXHITS,
                 HIGHLIGHT,
@@ -143,12 +145,38 @@ public class FacetSearch extends BasicFunction {
 			},
 			RETURN
 		),
+
+        new FunctionSignature(
+            SEARCH_WITH_GROUPING,
+            DESCRIPTION,
+            new SequenceType[]{
+                PATH,
+                QUERY,
+                MAXHITS,
+                HIGHLIGHT,
+                FACET,
+                SORT
+            },
+            RETURN
+        ),
+        new FunctionSignature(
+            SEARCH_WITH_GROUPING,
+            DESCRIPTION,
+            new SequenceType[]{
+                QUERY,
+                MAXHITS,
+                HIGHLIGHT,
+                FACET,
+                SORT
+            },
+            RETURN
+        ),
+
         new FunctionSignature(
             SEARCH_WITH_EXPLANATION,
             DESCRIPTION_,
             new SequenceType[]{
-                new FunctionParameterSequenceType("path", Type.STRING, Cardinality.ZERO_OR_MORE,
-                        "URI paths of documents or collections in database. Collection URIs should end on a '/'."),
+                PATH,
                 QUERY,
                 MAXHITS,
                 HIGHLIGHT,
@@ -228,12 +256,14 @@ public class FacetSearch extends BasicFunction {
             boolean highlight = args[getSignature() == signatures[1] ? 2 : 3].effectiveBooleanValue();
 
             FacetSearchParams facetRequests = parseFacetRequests(args[getSignature() == signatures[1] ? 3 : 4]);
-            Sort sortCriteria = parseSortCriteria(args[getSignature() == signatures[1] ? 4 : 5]);
+            SortParams sortParams = parseSortCriteria(args[getSignature() == signatures[1] ? 4 : 5]);
 
             boolean explain = getName().equals(SEARCH_WITH_EXPLANATION);
 
+            boolean grouping = getName().equals(SEARCH_WITH_GROUPING);
+
             // Perform search
-            report = search(broker, index, indexWorker, toBeMatchedURIs, query, maxHits, highlight, facetRequests, sortCriteria, explain);
+            report = search(broker, index, indexWorker, toBeMatchedURIs, query, maxHits, highlight, facetRequests, sortParams, grouping, explain);
 
 
         } catch (XPathException ex) {
@@ -255,7 +285,7 @@ public class FacetSearch extends BasicFunction {
     
     private NodeImpl search(final DBBroker broker, final LuceneIndex index, final LuceneIndexWorker indexWorker,
                             final List<String> toBeMatchedURIs, final Query query, int maxHits, boolean highlight,
-                            FacetSearchParams facetRequests, Sort sortCriteria, final boolean explain) throws XPathException {
+                            FacetSearchParams facetRequests, SortParams sortParams, boolean grouping, final boolean explain) throws XPathException {
 
         MutableDocumentSet docs = new DefaultDocumentSet(1031);
         try {
@@ -290,8 +320,6 @@ public class FacetSearch extends BasicFunction {
             // Get analyzer : to be retrieved from configuration
 //            final Analyzer searchAnalyzer = new StandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE);
 
-            final Set<String> fieldsToLoad = new HashSet<String>();
-            
             final MemTreeBuilder builder = new MemTreeBuilder();
             builder.startDocument();
             
@@ -303,89 +331,87 @@ public class FacetSearch extends BasicFunction {
             QName bq = null;
             
             List<FacetResult> results = null;
-            if (highlight) {
-            	
-            	final String[] fields;
-            	if (fieldsToLoad.isEmpty()) {
-            		// extract all used fields from query
-            		fields = LuceneUtil.extractFields(query, searcher.getIndexReader());
-            	} else {
-            		
-            		for (String field : LuceneUtil.extractFields(query, searcher.getIndexReader())) {
-            			fieldsToLoad.add(field);
-            		}
-            		
-            		fields = fieldsToLoad.toArray(new String[fieldsToLoad.size()]);
-            	}
-                
-	            SearchCallback<NodeProxy> cb = new SearchCallback<NodeProxy>() {
-	            	
-	            	int total = -1;
-	
-					@Override
-					public void totalHits(Integer number) {
-						total = number;
-					}
-	
-					@Override
-					public void found(AtomicReader reader, int docNum, NodeProxy element, float score) {
-						if (LuceneIndex.DEBUG)
-							try {
-								System.out.println("\n"+element.getDocument().getURI());
-								System.out.println( queryResult2String(broker, element, 5, LuceneMatchChunkListener.DO_NOT_CHUNK_NODE) );
-							} catch (Throwable e) {
-								e.printStackTrace();
-							}
-						
-						String fDocUri = element.getDocument().getURI().toString();
-						
-	                    // setup attributes
-	                    AttributesImpl attribs = new AttributesImpl();
-	                    attribs.addAttribute("", "uri", "uri", "CDATA", fDocUri);
-	                    attribs.addAttribute("", "score", "score", "CDATA", ""+score);
-	
-	                    // write element and attributes
-	                    builder.startElement("", "search", "search", attribs);
-	                    	builder.addReferenceNode(element);
-	                    builder.endElement();
-	
-	                    // clean attributes
-	                    //attribs.clear();
+            if (highlight || grouping) {
 
-                        if (explain)  explain(index, query, docNum, fDocUri);
-                    }
-				};
-				
-	            // Perform actual search
-                if (sortCriteria == null) {
-                            results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits);
+                SearchCallback<NodeProxy> cb;
+                if (grouping) {
+                    cb = new NodeSearchCallback(sortParams.sortByScore);
                 } else {
-                        results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits, sortCriteria);
+
+                    cb = new SearchCallback<NodeProxy>() {
+
+                        int total = -1;
+
+                        @Override
+                        public void totalHits(Integer number) {
+                            total = number;
+                        }
+
+                        @Override
+                        public void found(AtomicReader reader, int docNum, NodeProxy element, float score) {
+                            if (LuceneIndex.DEBUG)
+                                try {
+                                    System.out.println("\n" + element.getDocument().getURI());
+                                    System.out.println(queryResult2String(broker, element, 5, LuceneMatchChunkListener.DO_NOT_CHUNK_NODE));
+                                } catch (Throwable e) {
+                                    e.printStackTrace();
+                                }
+
+                            String fDocUri = element.getDocument().getURI().toString();
+
+                            // setup attributes
+                            AttributesImpl attribs = new AttributesImpl();
+                            attribs.addAttribute("", "uri", "uri", "CDATA", fDocUri);
+                            attribs.addAttribute("", "score", "score", "CDATA", "" + score);
+
+                            // write element and attributes
+                            builder.startElement("", "search", "search", attribs);
+                            builder.addReferenceNode(element);
+                            builder.endElement();
+
+                            // clean attributes
+                            //attribs.clear();
+
+                            if (explain) explain(index, query, docNum, fDocUri);
+                        }
+                    };
                 }
+
+                // Perform actual search
+                if (sortParams.luceneSort == null) {
+                    results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits);
+                } else {
+                    results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetRequests, cb, maxHits, sortParams.luceneSort);
+                }
+
+                if (cb instanceof NodeSearchCallback) {
+                    ((NodeSearchCallback)cb).serialize(builder, highlight);
+                }
+
             } else {
 	            SearchCallback<DocumentImpl> cb = new SearchCallback<DocumentImpl>() {
-	            	
+
 	            	int total = -1;
-	
+
 					@Override
 					public void totalHits(Integer number) {
 						total = number;
 					}
-	
+
 					@Override
 					public void found(AtomicReader reader, int docNum, DocumentImpl document, float score) {
 
 						String fDocUri = document.getURI().toString();
-						
+
 	                    // setup attributes
 	                    AttributesImpl attribs = new AttributesImpl();
 	                    attribs.addAttribute("", "uri", "uri", "CDATA", fDocUri);
 	                    attribs.addAttribute("", "score", "score", "CDATA", ""+score);
-	
+
 	                    // write element and attributes
 	                    builder.startElement("", "search", "search", attribs);
 	                    builder.endElement();
-	
+
 	                    // clean attributes
 	                    attribs.clear();
 
@@ -394,13 +420,13 @@ public class FacetSearch extends BasicFunction {
 				};
 				
 	            // Perform actual search
-                if (sortCriteria == null) {
-                            results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits);
+                if (sortParams.luceneSort == null) {
+                    results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits);
                 } else {
-                        results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits, sortCriteria);
+                    results = QueryDocuments.query(indexWorker, docs, query, facetRequests, cb, maxHits, sortParams.luceneSort);
                 }
             }
-            
+
             if (results != null) {
 	            AttributesImpl attribs = new AttributesImpl();
 	            builder.startElement("", "facet-result", "facet-result", attribs);
@@ -441,7 +467,7 @@ public class FacetSearch extends BasicFunction {
             
             //System.out.println(builder.getDocument().toString());
             
-            report = ((org.exist.memtree.DocumentImpl) builder.getDocument()).getNode(nodeNr);
+            report = builder.getDocument().getNode(nodeNr);
 
 
         } catch (Exception ex){
@@ -509,11 +535,13 @@ public class FacetSearch extends BasicFunction {
         return new FacetSearchParams(facetRequests);
     }
 
-    protected Sort parseSortCriteria(Sequence optSeq) throws XPathException {
+    protected SortParams parseSortCriteria(Sequence optSeq) throws XPathException {
 
-        if (optSeq.isEmpty()) 
-        	return null;
-        
+        SortParams params = new SortParams();
+
+        if (optSeq.isEmpty())
+        	return params;
+
         List<SortField> sortFields = new ArrayList<SortField>();
         
         SequenceIterator iter = optSeq.iterate();
@@ -528,7 +556,7 @@ public class FacetSearch extends BasicFunction {
     		} else if ("STRING".equalsIgnoreCase(str)) {
         		type = SortField.Type.STRING;
     		} else {
-    			throw new XPathException(this, "Uknown sort field type '"+str+"'.");
+    			throw new XPathException(this, "Unknown sort field type '"+str+"'.");
     		}
     		
     		str = element.getAttribute("reverse");
@@ -542,6 +570,8 @@ public class FacetSearch extends BasicFunction {
     			throw new XPathException(this, "Field name can't be empty or undefined.");
     		
     		if ("__score__".equalsIgnoreCase(field)) {
+
+                params.sortByScore = true;
     		
     		    SortField scoreField = SortField.FIELD_SCORE;
                     //sortFields.add(SortField.FIELD_SCORE);
@@ -558,13 +588,24 @@ public class FacetSearch extends BasicFunction {
     		}
         }
 
-        return new Sort(sortFields.toArray(new SortField[sortFields.size()]));
+        if (sortFields.size() == 1 && params.sortByScore) {
+
+        } else {
+            params.sortByScore = false;
+
+            params.luceneSort = new Sort(sortFields.toArray(new SortField[sortFields.size()]));
+        }
+
+        return params;
+    }
+
+    static Properties props = new Properties();
+    static {
+        props.setProperty(OutputKeys.INDENT, "yes");
     }
  
     private String queryResult2String(DBBroker broker, NodeProxy proxy, int chunkOffset, byte mode) throws SAXException, XPathException {
-        Properties props = new Properties();
-        props.setProperty(OutputKeys.INDENT, "yes");
-        
+
         Serializer serializer = broker.getSerializer();
         serializer.reset();
         
@@ -595,5 +636,144 @@ public class FacetSearch extends BasicFunction {
     
     private LuceneIndex getLuceneIndex(DBBroker broker) {
         return (LuceneIndex) broker.getDatabase().getIndexManager().getIndexById(LuceneIndex.ID);
+    }
+
+    private class SortParams {
+        Sort luceneSort = null;
+        boolean sortByScore = false;
+    }
+
+    private class NodeSearchCallback implements SearchCallback<NodeProxy> {
+
+        class EntryHits implements Comparable<EntryHits> {
+
+            DocumentImpl doc;
+
+            float score;
+
+            List<NodeProxy> hits;
+
+            EntryHits(DocumentImpl doc) {
+
+                this.doc = doc;
+
+                hits = new ArrayList(2);
+            }
+
+            public void addHit(NodeProxy hit, float score) {
+
+                hits.add(hit);
+
+                this.score += score;
+            }
+
+            @Override
+            public int compareTo(EntryHits o) {
+                return Float.compare( score, o.score );
+            }
+
+            public float getRank() {
+                return score;
+            }
+        }
+
+        boolean sortByScore = false;
+
+        int count = 0;
+        int total = 0;
+
+        Map<DocumentImpl, EntryHits> entries = new LinkedHashMap(500);
+
+        public NodeSearchCallback(boolean sortByScore) {
+            this.sortByScore = sortByScore;
+        }
+
+        @Override
+        public void totalHits(Integer integer) {
+        }
+
+        @Override
+        public void found(AtomicReader r, int i, NodeProxy node, float score) {
+            DocumentImpl key = node.getDocument();
+
+            //System.out.println(key.getURI());
+
+            EntryHits entry = entries.get(key);
+            if (entry == null) {
+                entry = new EntryHits(key);
+
+                entries.put(key, entry);
+
+                count++;
+            }
+
+            entry.addHit(node, score);
+
+            total++;
+        }
+
+        public void serialize(MemTreeBuilder builder, boolean showHitNode) {
+            List<EntryHits> finalEntries = new ArrayList(entries.size());
+
+            for (Map.Entry<DocumentImpl, EntryHits> entry : entries.entrySet()) {
+                finalEntries.add(entry.getValue());
+            }
+
+            if (sortByScore) {
+                Collections.sort(finalEntries, new Comparator<EntryHits>() {
+                    @Override
+                    public int compare(EntryHits o1, EntryHits o2) {
+                        return Float.compare(o2.getRank(), o1.getRank());
+                    }
+                });
+            }
+
+            for (EntryHits entry : finalEntries) {
+
+                String fDocUri = entry.doc.getURI().toString();
+
+                // setup attributes
+                AttributesImpl attrs = new AttributesImpl();
+                attrs.addAttribute("", "uri", "uri", "CDATA", fDocUri);
+                attrs.addAttribute("", "score", "score", "CDATA", String.valueOf(entry.score));
+
+                // write element and attributes
+                builder.startElement("", "search", "search", attrs);
+
+                if (showHitNode) {
+                    for (NodeProxy hit : entry.hits) {
+                        builder.startElement("", "hit", "hit", null);
+                        builder.addReferenceNode(hit);
+                        builder.endElement();
+                    }
+                }
+
+                builder.endElement();
+            }
+        }
+
+
+        public List<EntryHits> getHits(int start, int end) {
+
+            List<EntryHits> hits = new ArrayList(entries.size());
+
+            for (Map.Entry<DocumentImpl, EntryHits> entry : entries.entrySet()) {
+                hits.add(entry.getValue());
+            }
+
+            if (sortByScore) {
+                Collections.sort(hits, new Comparator<EntryHits>() {
+                    @Override
+                    public int compare(EntryHits o1, EntryHits o2) {
+                        return Float.compare(o1.getRank(), o2.getRank());
+                    }
+                });
+            }
+
+            if (entries.size() < end)
+                end = entries.size();
+
+            return hits.subList(start, end);
+        }
     }
 }

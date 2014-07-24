@@ -70,6 +70,8 @@ public class LuceneModule extends AbstractInternalModule {
         new FunctionDef(FacetSearch.signatures[0], FacetSearch.class),
         new FunctionDef(FacetSearch.signatures[1], FacetSearch.class),
         new FunctionDef(FacetSearch.signatures[2], FacetSearch.class),
+        new FunctionDef(FacetSearch.signatures[3], FacetSearch.class),
+        new FunctionDef(FacetSearch.signatures[4], FacetSearch.class),
 
         new FunctionDef(GetField.signatures[0], GetField.class),
 
