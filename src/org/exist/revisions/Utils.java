@@ -31,7 +31,6 @@ import java.nio.file.StandardOpenOption;
  */
 public class Utils {
 
-
     final static int TAG_RESOURCE_TYPE_POS = 184;
     final static int TAG_RESOURCE_TYPE_LENGTH = 10;
     final static String TAG_RESOURCE_TYPE = "<"+Constants.EL_RESOURCE_TYPE+">";

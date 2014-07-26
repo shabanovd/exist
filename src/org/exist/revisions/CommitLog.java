@@ -19,6 +19,7 @@
  */
 package org.exist.revisions;
 
+import org.exist.Operation;
 import org.exist.xmldb.XmldbURI;
 
 import javax.xml.stream.XMLStreamException;
@@ -26,34 +27,36 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.exist.Operation.*;
+
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  */
-public class CommitLog implements AutoCloseable {
+public class CommitLog implements AutoCloseable, CommitWriter, CommitReader {
 
-    enum Op {
-        CREATE,
-        UPDATE,
-        MOVE,
-        RENAME,
-        DELETE
-    }
-
-    class Action {
-        Op op;
+    class Action implements Change {
+        Operation op;
         XmldbURI uri;
         String id;
 
-        Action(Op op, XmldbURI uri, String id) {
+        Action(Operation op, XmldbURI uri, String id) {
             this.op = op;
             this.uri = uri;
             this.id = id;
         }
 
-        Action(Op op, XmldbURI uri) {
+        Action(Operation op, XmldbURI uri) {
             this.op = op;
             this.uri = uri;
             this.id = manager.uuid(uri, handler);
+        }
+
+        public Operation operation() {
+            return op;
+        }
+
+        public XmldbURI uri() {
+            return uri;
         }
     }
 
@@ -100,35 +103,35 @@ public class CommitLog implements AutoCloseable {
     public CommitLog create(XmldbURI uri) {
         checkIsOpen();
 
-        acts.add(new Action(Op.CREATE, uri));
+        acts.add(new Action(CREATE, uri));
         return this;
     }
 
     public CommitLog update(XmldbURI uri) {
         checkIsOpen();
 
-        acts.add(new Action(Op.UPDATE, uri));
+        acts.add(new Action(UPDATE, uri));
         return this;
     }
 
     public CommitLog move(XmldbURI uri) {
         checkIsOpen();
 
-        acts.add(new Action(Op.MOVE, uri));
+        acts.add(new Action(MOVE, uri));
         return this;
     }
 
     public CommitLog rename(XmldbURI uri) {
         checkIsOpen();
 
-        acts.add(new Action(Op.RENAME, uri));
+        acts.add(new Action(RENAME, uri));
         return this;
     }
 
     public CommitLog delete(String id, XmldbURI uri) {
         checkIsOpen();
 
-        acts.add(new Action(Op.RENAME, uri, id));
+        acts.add(new Action(DELETE, uri, id));
         return this;
     }
 
@@ -145,5 +148,9 @@ public class CommitLog implements AutoCloseable {
 
     private void checkIsOpen() {
         if (isClosed) throw new RuntimeException("illegal commit use. it's closed.");
+    }
+
+    public List<Action> changes() {
+        return acts;
     }
 }

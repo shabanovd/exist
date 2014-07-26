@@ -140,6 +140,10 @@ public class RCSManager implements Constants {
         return commitsListener.remove(listener);
     }
 
+    public Iterable<CommitReader> commits() {
+        throw new RuntimeException("unimplemented");
+    }
+
     private Path folder(String name) throws IOException {
         return createDirectories(rcFolder.resolve(name));
     }
@@ -406,7 +410,7 @@ public class RCSManager implements Constants {
 
         Path folder = null;
 
-        if (action.op == CommitLog.Op.DELETE) {
+        if (action.op == Operation.DELETE) {
 
             lastRevision(action.id, action.uri, logPath, h);
 
