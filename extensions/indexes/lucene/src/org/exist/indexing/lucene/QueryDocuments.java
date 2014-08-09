@@ -76,10 +76,10 @@ public class QueryDocuments {
             
             //collector.context = searcher.getTopReaderContext();
             
-            AtomicReader atomicReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
-            collector.context = atomicReader.getContext();
+//            AtomicReader atomicReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
+//            collector.context = atomicReader.getContext();
             
-            //collector.finish();
+            collector.finish();
 
             return collector.facets(index.getTaxonomyReader(), facetsConfig);
 
@@ -269,7 +269,7 @@ public class QueryDocuments {
                 collect(entry.doc, entry.document, entry.score);
             }
 
-    		//super.finish();
+//    		super.finish();
     	}
 
 		final void updateBottom(int doc, float score, DocumentImpl document) {

@@ -53,6 +53,7 @@ import org.exist.dom.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.indexing.lucene.LuceneIndexWorker.LuceneMatch;
 import org.exist.numbering.NodeId;
+import org.exist.numbering.NodeIdFactory;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ElementValue;
 import org.exist.util.ByteConversion;
@@ -71,12 +72,7 @@ public class QueryNodes {
 			SearchCallback<NodeProxy> callback, int maxHits, Sort sort)
 			throws IOException, ParseException, TerminatedException {
 
-		final LuceneIndex index = worker.index;
-		
-		final Database db = index.getDatabase();
-
-		Set<String> fieldsToLoad = new HashSet<>();
-		fieldsToLoad.add(LuceneUtil.FIELD_DOC_ID);
+		LuceneIndex index = worker.index;
 
 		IndexSearcher searcher = null;
 		try {
@@ -92,18 +88,18 @@ public class QueryNodes {
 			
 
 			ComparatorCollector collector = new ComparatorCollector(
-					db, worker, query, qname, contextId, queue,
+                    worker, query, qname, contextId, queue,
 					maxHits, docs, callback);
 			
 			searcher.search(query, collector);
 
 			// collector.context = searcher.getTopReaderContext();
 
-			AtomicReader atomicReader = 
-					SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
-			collector.context = atomicReader.getContext();
+//			AtomicReader atomicReader =
+//					SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
+//			collector.context = atomicReader.getContext();
 
-			// collector.finish();
+			collector.finish();
 
 			return collector.facets(index.getTaxonomyReader(), facetsConfig);
 		} finally {
@@ -124,15 +120,13 @@ public class QueryNodes {
 			FacetsConfig facetsConfig, SearchCallback<NodeProxy> callback, int maxHits)
 			throws IOException, ParseException, TerminatedException {
 
-		final LuceneIndex index = worker.index;
-
-		final Database db = index.getDatabase();
+		LuceneIndex index = worker.index;
 
 		IndexSearcher searcher = null;
 		try {
 			searcher = index.getSearcher();
 
-			NodeHitCollector collector = new NodeHitCollector(db, worker, maxHits, query, qname, contextId, docs, callback);
+			NodeHitCollector collector = new NodeHitCollector(worker, maxHits, query, qname, contextId, docs, callback);
 
 			searcher.search(query, collector);
 
@@ -151,9 +145,9 @@ public class QueryNodes {
 
 		qnames = worker.getDefinedIndexes(qnames);
 
-		final LuceneIndex index = worker.index;
+		LuceneIndex index = worker.index;
 
-		final Database db = index.getDatabase();
+		Database db = index.getDatabase();
 
 		DBBroker broker = db.getActiveBroker();
 
@@ -162,7 +156,7 @@ public class QueryNodes {
 			searcher = index.getSearcher();
 
 			NodeHitCollector collector = 
-					new NodeHitCollector(db, worker, -1, null, null, contextId, docs, callback);
+					new NodeHitCollector(worker, -1, null, null, contextId, docs, callback);
 
 			for (QName qname : qnames) {
 
@@ -195,7 +189,7 @@ public class QueryNodes {
 
 		BinaryDocValues nodeIdValues;
 
-		Database db;
+        NodeIdFactory nodeIdFactory;
 		LuceneIndexWorker worker;
 		
 		int maxHits;
@@ -209,7 +203,6 @@ public class QueryNodes {
 
 		private NodeHitCollector(
 
-                Database db,
                 LuceneIndexWorker worker,
 		        
 		        int maxHits,
@@ -223,10 +216,11 @@ public class QueryNodes {
                 SearchCallback<NodeProxy> callback
         ) {
 	
-				super(docs);
+            super(docs);
 
-			this.db = db;
-			this.worker = worker;
+			nodeIdFactory = worker.index.getDatabase().getNodeFactory();
+
+            this.worker = worker;
 			
 			this.maxHits = maxHits;
 			this.query = query;
@@ -270,7 +264,7 @@ public class QueryNodes {
                 } else {
                     BytesRef ref = this.nodeIdValues.get(doc); //, ref);
                     int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-                    nodeId = db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+                    nodeId = nodeIdFactory.createFromData(units, ref.bytes, ref.offset + 2);
                     // LOG.info("doc: " + docId + "; node: " + nodeId.toString() + "; units: " + units);
                 }
 
@@ -318,7 +312,7 @@ public class QueryNodes {
 
         BinaryDocValues nodeIdValues;
 
-        Database db;
+        NodeIdFactory nodeIdFactory;
         LuceneIndexWorker worker;
         Query query;
 
@@ -333,7 +327,7 @@ public class QueryNodes {
         SearchCallback<NodeProxy> callback;
 
 		public ComparatorCollector(
-				Database db,
+
 				LuceneIndexWorker worker,
 				Query query,
 
@@ -348,7 +342,7 @@ public class QueryNodes {
 
 			super(docs);
 
-            this.db = db;
+            nodeIdFactory = worker.index.getDatabase().getNodeFactory();
 
             this.qname = qname;
             this.worker = worker;
@@ -540,7 +534,7 @@ public class QueryNodes {
 
             BytesRef ref = this.nodeIdValues.get(doc);
 			int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-			return db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+			return nodeIdFactory.createFromData(units, ref.bytes, ref.offset + 2);
 		}
 
         @Override

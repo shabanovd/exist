@@ -97,7 +97,7 @@ public class FacetAbstract {
                         docMD.put(entry.getKey(), entry.getValue());
                     }
 
-                    if (resource.type == "XML") {
+                    if (resource.type.equals( "XML" )) {
 
                         IndexInfo info = root.validateXMLResource(txn, broker, XmldbURI.create(resource.docName), resource.data);
                         assertNotNull(info);

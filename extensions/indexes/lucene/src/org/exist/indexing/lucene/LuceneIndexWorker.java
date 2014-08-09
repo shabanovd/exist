@@ -158,8 +158,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     boolean indexed = false;
     
     private final TimeZone GMT = TimeZone.getTimeZone("GMT+0:00");
-    
-    private final byte[] buf = new byte[1024];
 
     public LuceneIndexWorker(LuceneIndex parent, DBBroker broker) {
         this.index = parent;
@@ -295,7 +293,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         boolean needToFilter = false;
         Match nextMatch = proxy.getMatches();
         while (nextMatch != null) {
-            if (nextMatch.getIndexId() == LuceneIndex.ID) {
+            if (LuceneIndex.ID.equals( nextMatch.getIndexId() )) {
                 needToFilter = true;
                 break;
             }
@@ -1254,7 +1252,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     if (config != null)
                     	fieldConfig = config.getFieldType(name);
                     
-                    org.apache.lucene.document.FieldType ft = defaultFT;
+                    org.apache.lucene.document.FieldType ft = metaFT;
                     if (fieldConfig != null) {
                         ft  = fieldConfig.getFieldType();
                         
