@@ -98,6 +98,9 @@ public abstract class QueryFacetCollector extends Collector {
     }
 
     public Facets facets(TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
+
+        if (config == null) return null;
+
         return new FastTaxonomyFacetCounts(taxoReader, config, fc);
     }
 }
