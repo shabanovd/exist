@@ -27,9 +27,9 @@ import org.exist.xmldb.XmldbURI;
  */
 public interface Change {
 
+    public String id();
+
     public Operation operation();
 
     public XmldbURI uri();
-
-
 }

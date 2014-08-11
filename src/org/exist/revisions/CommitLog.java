@@ -32,7 +32,9 @@ import static org.exist.Operation.*;
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  */
-public class CommitLog implements AutoCloseable, CommitWriter, CommitReader {
+public class CommitLog implements CommitWriter, CommitReader {
+
+    static final XmldbURI UNKNOWN = XmldbURI.create("");
 
     class Action implements Change {
         Operation op;
@@ -49,6 +51,16 @@ public class CommitLog implements AutoCloseable, CommitWriter, CommitReader {
             this.op = op;
             this.uri = uri;
             this.id = manager.uuid(uri, handler);
+        }
+
+        Action(Operation op, String id) {
+            this.op = op;
+            this.uri = UNKNOWN;
+            this.id = id;
+        }
+
+        public String id() {
+            return id;
         }
 
         public Operation operation() {
@@ -71,7 +83,7 @@ public class CommitLog implements AutoCloseable, CommitWriter, CommitReader {
     String author;
     String message;
 
-    List<Action> acts = new ArrayList<>(256);
+    List<Change> acts = new ArrayList<>(256);
 
     CommitLog(RCSManager manager, Handler handler) {
         this.handler = handler;
@@ -107,10 +119,24 @@ public class CommitLog implements AutoCloseable, CommitWriter, CommitReader {
         return this;
     }
 
+    public CommitLog create(String id) {
+        checkIsOpen();
+
+        acts.add(new Action(CREATE, id));
+        return this;
+    }
+
     public CommitLog update(XmldbURI uri) {
         checkIsOpen();
 
         acts.add(new Action(UPDATE, uri));
+        return this;
+    }
+
+    public CommitLog update(String id) {
+        checkIsOpen();
+
+        acts.add(new Action(UPDATE, id));
         return this;
     }
 
@@ -121,10 +147,24 @@ public class CommitLog implements AutoCloseable, CommitWriter, CommitReader {
         return this;
     }
 
+    public CommitLog move(String id) {
+        checkIsOpen();
+
+        acts.add(new Action(MOVE, id));
+        return this;
+    }
+
     public CommitLog rename(XmldbURI uri) {
         checkIsOpen();
 
         acts.add(new Action(RENAME, uri));
+        return this;
+    }
+
+    public CommitLog rename(String id) {
+        checkIsOpen();
+
+        acts.add(new Action(RENAME, id));
         return this;
     }
 
@@ -135,7 +175,14 @@ public class CommitLog implements AutoCloseable, CommitWriter, CommitReader {
         return this;
     }
 
-    public void done() throws Exception {
+    public CommitLog delete(String id) {
+        checkIsOpen();
+
+        acts.add(new Action(DELETE, id));
+        return this;
+    }
+
+    public void done() {
         isDone = true;
     }
 
@@ -150,7 +197,7 @@ public class CommitLog implements AutoCloseable, CommitWriter, CommitReader {
         if (isClosed) throw new RuntimeException("illegal commit use. it's closed.");
     }
 
-    public List<Action> changes() {
+    public Iterable<Change> changes() {
         return acts;
     }
 }

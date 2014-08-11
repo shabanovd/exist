@@ -71,7 +71,6 @@ import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.XPathException;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -141,7 +140,7 @@ public class RCSManager implements Constants {
     }
 
     public Iterable<CommitReader> commits() {
-        throw new RuntimeException("unimplemented");
+        return new Commits(this);
     }
 
     private Path folder(String name) throws IOException {
@@ -188,7 +187,7 @@ public class RCSManager implements Constants {
         }
     }
 
-    public CommitLog commit(Handler handler) {
+    public CommitWriter commit(Handler handler) {
         return new CommitLog(this, handler);
     }
 
@@ -331,12 +330,12 @@ public class RCSManager implements Constants {
             log.writeCData(commitLog.message());
             log.writeEndElement();
     
-            for (CommitLog.Action action : commitLog.acts) {
+            for (Change action : commitLog.acts) {
                 
                 //processEntry(doc, broker, serializer, log, logPath, h);
                 
                 log.writeStartElement("entry");
-                log.writeAttribute("uri", action.uri.toString());
+                log.writeAttribute("uri", action.uri().toString());
     
                 try {
                     Path folder = makeRevision(broker, action, logRelativePath, commitLog.handler);
@@ -346,7 +345,7 @@ public class RCSManager implements Constants {
                     }
                     
                 } catch (Exception e) {
-                    commitLog.handler.error(action.uri, e);
+                    commitLog.handler.error(action.uri(), e);
 
                     log.writeAttribute("error", e.getMessage());
                 }
@@ -403,34 +402,35 @@ public class RCSManager implements Constants {
         return serializer;
     }
     
-    private Path makeRevision(DBBroker broker, CommitLog.Action action, Path logPath, Handler h)
+    private Path makeRevision(DBBroker broker, Change action, Path logPath, Handler h)
             throws IOException, PermissionDeniedException, SAXException, XMLStreamException {
 
-        if (action.id == null) return null;
+        String id = action.id();
+        if (action.id() == null) return null;
 
         Path folder = null;
 
-        if (action.op == Operation.DELETE) {
+        if (action.operation() == Operation.DELETE) {
 
-            lastRevision(action.id, action.uri, logPath, h);
+            lastRevision(action.id(), action.uri(), logPath, h);
 
         } else {
 
-            DocumentImpl doc = broker.getXMLResource(action.uri, Lock.READ_LOCK);
+            DocumentImpl doc = broker.getXMLResource(action.uri(), Lock.READ_LOCK);
             if (doc == null) {
-                Collection col = broker.getCollection(action.uri);
+                Collection col = broker.getCollection(action.uri());
 
                 if (col == null) {
-                    h.error(action.uri, "not found");
+                    h.error(action.uri(), "not found");
                     return null;
                 }
 
-                folder = makeRevision(broker, action.id, action.uri, col, logPath, h);
+                folder = makeRevision(broker, action.id(), action.uri(), col, logPath, h);
 
             } else {
 
                 try {
-                    folder = makeRevision(broker, action.id, action.uri, doc, logPath, h);
+                    folder = makeRevision(broker, action.id(), action.uri(), doc, logPath, h);
 
                 } finally {
                     doc.getUpdateLock().release(Lock.READ_LOCK);

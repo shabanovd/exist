@@ -30,6 +30,6 @@ public interface CommitReader {
 
     public String message();
 
-    public java.util.List<CommitLog.Action> changes();
+    public Iterable<Change> changes();
 
 }

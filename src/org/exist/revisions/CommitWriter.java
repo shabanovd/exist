@@ -24,7 +24,7 @@ import org.exist.xmldb.XmldbURI;
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  */
-public interface CommitWriter {
+public interface CommitWriter extends AutoCloseable {
 
     public CommitWriter author(String author);
 
@@ -39,4 +39,6 @@ public interface CommitWriter {
     public CommitWriter rename(XmldbURI uri);
 
     public CommitWriter delete(String id, XmldbURI uri);
+
+    public void done();
 }

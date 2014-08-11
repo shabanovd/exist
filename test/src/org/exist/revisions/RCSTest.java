@@ -169,7 +169,7 @@ public class RCSTest {
 
             XmldbURI colURL = root.getURI();
 
-            try (CommitLog commit = rcs.commit(h)) {
+            try (CommitWriter commit = rcs.commit(h)) {
 
                 commit
                     .author("somebody")
