@@ -1237,7 +1237,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     if (config != null)
                     	fieldConfig = config.getFieldType(name);
                     
-                    org.apache.lucene.document.FieldType ft = defaultFT;
+                    org.apache.lucene.document.FieldType ft = metaFT;
                     if (fieldConfig != null) {
                         ft  = fieldConfig.getFieldType();
                         
