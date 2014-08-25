@@ -235,8 +235,7 @@ public class SearchTestOrder extends FacetAbstract {
             }
             fields[i] = TITLE;//"eXist:file-name"; // File name field.
 
-            sortField = TITLE;
-            fields = new String[] {sortField};
+            fields = new String[] {TITLE};
 
             // Parse the query with no default field:
             Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION_IN_USE);
@@ -248,8 +247,7 @@ public class SearchTestOrder extends FacetAbstract {
 
             SortField[] sortFields = new SortField[1];
 
-            //sortFields.add(new SortField(TITLE, SortField.Type.STRING));
-            sortFields[0] = new SortField(sortField, SortField.Type.STRING);
+            sortFields[0] = new SortField(TITLE+"_sort", SortField.Type.STRING);
 
             Sort sort = new Sort(sortFields);
 
@@ -259,29 +257,31 @@ public class SearchTestOrder extends FacetAbstract {
 
             QueryNodes.query(worker, null, -1, docs, query, facetsConfig, cb, 10000, sort);
 
-            System.out.println("2 3 1");
+            System.out.println("3 1 2");
+//            System.out.println("2 3 1");
 
-            assertEquals(cb.hits.size(), 12);
+            assertEquals(12, cb.hits.size());
 
-            String[] expected = {"/db/test/test2.xml",
-                    "/db/test/test2.xml",
-                    "/db/test/test2.xml",
-                    "/db/test/test2.xml",
+            String[] expected = {
+                "/db/test/test3.xml",
+                "/db/test/test3.xml",
+                "/db/test/test3.xml",
+                "/db/test/test3.xml",
 
-                    "/db/test/test3.xml",
-                    "/db/test/test3.xml",
-                    "/db/test/test3.xml",
-                    "/db/test/test3.xml",
+                "/db/test/test1.xml",
+                "/db/test/test1.xml",
+                "/db/test/test1.xml",
+                "/db/test/test1.xml",
 
-                    "/db/test/test1.xml",
-                    "/db/test/test1.xml",
-                    "/db/test/test1.xml",
-                    "/db/test/test1.xml"
+                "/db/test/test2.xml",
+                "/db/test/test2.xml",
+                "/db/test/test2.xml",
+                "/db/test/test2.xml"
             };
 
             i = 0;
             for (NodeProxy node : cb.hits) {
-                assertEquals(node.getDocument().getDocumentURI().toString(), expected[i++]);
+                assertEquals(expected[i++], node.getDocument().getDocumentURI().toString());
             }
 
             System.out.println("HERE DONE");
