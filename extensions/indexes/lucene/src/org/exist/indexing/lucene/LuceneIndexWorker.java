@@ -849,6 +849,37 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             index.releaseReader(reader);
         }
     }
+
+    public boolean hasIndex(int docId, NodeId nodeId) throws IOException {
+        BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
+        NumericUtils.intToPrefixCoded(docId, 0, bytes);
+        Term dt = new Term(LuceneUtil.FIELD_DOC_ID, bytes);
+        TermQuery tq = new TermQuery(dt);
+
+        // store the node id
+        int nodeIdLen = nodeId.size();
+        byte[] data = new byte[nodeIdLen + 2];
+        ByteConversion.shortToByte((short) nodeId.units(), data, 0);
+        nodeId.serialize(data, 2);
+
+        Term it = new Term(LuceneUtil.FIELD_NODE_ID, new BytesRef(data));
+        TermQuery iq = new TermQuery(it);
+        BooleanQuery q = new BooleanQuery();
+        q.add(tq, BooleanClause.Occur.MUST);
+        q.add(iq, BooleanClause.Occur.MUST);
+
+        IndexSearcher searcher = null;
+        try {
+            searcher = index.getSearcher();
+
+            TopDocs hits = searcher.search(q, 10);
+
+            return (hits != null && hits.totalHits != 0);
+
+        } finally {
+            index.releaseSearcher(searcher);
+        }
+    }
     
     /**
      *  Check if Lucene found document matches specified documents or collections.
