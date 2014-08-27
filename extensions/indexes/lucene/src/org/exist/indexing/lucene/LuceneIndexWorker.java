@@ -1266,7 +1266,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         };
                     }
 
-                    metas.add(new FacetField(name, toIndex));
+                    metas.add(new FacetField(name+"_facet", toIndex));
 
                     Field fld;
 
