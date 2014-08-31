@@ -382,7 +382,7 @@ public class MetaDataImpl extends MetaData {
                 String key = m.getKey();
 
                 if (check.contains(key)) {
-                    LOG.error("DOUBLE metadata pair "+key+" = "+m.getValue()+" ["+m.getUUID()+"] @ "+uri);
+                    LOG.error("ignore duplicated metadata pair "+key+" = "+m.getValue()+" ["+m.getUUID()+"] @ "+uri);
                     continue;
                 }
                 check.add(key);
