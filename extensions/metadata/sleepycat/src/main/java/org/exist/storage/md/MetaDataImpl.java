@@ -23,6 +23,7 @@ import java.io.File;
 import java.lang.Deprecated;
 import java.lang.Override;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import org.exist.Database;
@@ -373,12 +374,23 @@ public class MetaDataImpl extends MetaData {
         Metas metas = getMetas(uri);
         if (metas == null)
             return;
+
+        HashSet<String> check = new HashSet<>();
         
         EntityCursor<MetaImpl> sub = metadata.subIndex(metas.getUUID()).entities();
         try {
-            for (MetaImpl m : sub)
-                listener.metadata(new QName(m.getKey(), MDStorageManager.NAMESPACE_URI, MDStorageManager.PREFIX) , m.getValue());
+            for (MetaImpl m : sub) {
 
+                String key = m.getKey();
+
+                if (check.contains(key)) {
+                    LOG.error("ignore duplicated metadata pair "+key+" = "+m.getValue()+" ["+m.getUUID()+"] @ "+uri);
+                    continue;
+                }
+                check.add(key);
+
+                listener.metadata(new QName(key, MDStorageManager.NAMESPACE_URI, MDStorageManager.PREFIX), m.getValue());
+            }
         } finally {
             sub.close();
         }
