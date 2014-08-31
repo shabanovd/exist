@@ -19,9 +19,12 @@
  */
 package org.exist.indexing.lucene;
 
+import com.ibm.icu.text.Collator;
+import com.ibm.icu.text.RuleBasedCollator;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.collation.ICUCollationDocValuesField;
 import org.apache.lucene.document.*;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetsConfig;
@@ -1230,6 +1233,22 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             this.idxConf = idxConf;
         }
     }
+
+    private Field sortField(String name, String value) {
+
+        Collator collator = RuleBasedCollator.getInstance();
+        collator.setStrength(Collator.PRIMARY);
+
+        Field field = new ICUCollationDocValuesField(name + "_sort", collator);
+
+        if (value.length() > 1000) {
+            field.setStringValue(value.substring(0, 1000));
+
+        } else
+            field.setStringValue(value);
+
+        return field;
+    }
     
     private void collectMetas(final List<Field> metas) {
 
@@ -1251,6 +1270,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     org.exist.indexing.lucene.FieldType fieldConfig = null;
                     if (config != null)
                     	fieldConfig = config.getFieldType(name);
+
+                    Field fld = null;
                     
                     org.apache.lucene.document.FieldType ft = metaFT;
                     if (fieldConfig != null) {
@@ -1259,6 +1280,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         if (fieldConfig.isSymbolized()) {
                             try {
                                 toIndex = index.symbols.getIdtoHexString(toIndex);
+                                fld = new Field(name, toIndex, ft);
                             } catch (Throwable e) {
                                 LOG.error(e, e);
                                 //skip to avoid storage corruption
@@ -1266,32 +1288,34 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         };
                     }
 
-                    metas.add(new FacetField(name+"_facet", toIndex));
+                    metas.add(new FacetField(name, toIndex));
 
-                    Field fld;
+                    if (fld == null) {
+                        try {
+                            if (fieldConfig == null || fieldConfig.numericType == null) {
+                                fld = new Field(name, toIndex, ft);
+                                metas.add(sortField(name, toIndex));
 
-                    try {
-                        if (fieldConfig == null || fieldConfig.numericType == null) {
-                            fld = new Field(name, toIndex, ft);
+                            } else if (fieldConfig.numericType == DOUBLE) {
+                                fld = new DoubleField(name, Double.valueOf(toIndex), ft);
 
-                        } else if (fieldConfig.numericType == DOUBLE) {
-                            fld = new DoubleField(name, Double.valueOf(toIndex), ft);
+                            } else if (fieldConfig.numericType == FLOAT) {
+                                fld = new FloatField(name, Float.valueOf(toIndex), ft);
 
-                        } else if (fieldConfig.numericType == FLOAT) {
-                            fld = new FloatField(name, Float.valueOf(toIndex), ft);
+                            } else if (fieldConfig.numericType == INT) {
+                                fld = new IntField(name, Integer.valueOf(toIndex), ft);
 
-                        } else if (fieldConfig.numericType == INT) {
-                            fld = new IntField(name, Integer.valueOf(toIndex), ft);
+                            } else if (fieldConfig.numericType == LONG) {
+                                fld = new LongField(name, Long.valueOf(toIndex), ft);
 
-                        } else if (fieldConfig.numericType == LONG) {
-                            fld = new LongField(name, Long.valueOf(toIndex), ft);
-
-                        } else {
+                            } else {
+                                fld = new Field(name, toIndex, ft);
+                                metas.add(sortField(name, toIndex));
+                            }
+                        } catch (NumberFormatException e) {
+                            LOG.error(e.getMessage(), e);
                             fld = new Field(name, toIndex, ft);
                         }
-                    } catch (NumberFormatException e) {
-                        LOG.error(e.getMessage(), e);
-                        fld = new Field(name, toIndex, ft);
                     }
 
                     if (fieldConfig != null && fieldConfig.getBoost() > 0)

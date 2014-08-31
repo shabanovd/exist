@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -73,27 +74,27 @@ public class SearchTestOrder extends FacetAbstract {
 
     private static String XML1 =
             "<root>" +
-            "   <title>some paragraph with <hi>mixed</hi> content.</title>" +
-            "   <para>another paragraph with <note><hi>nested</hi> inner</note> elements.</para>" +
-            "   <para>a third paragraph with <term>term</term>.</para>" +
-            "   <para>double match double match</para>" +
-            "</root>";
+                    "   <title>some paragraph with <hi>mixed</hi> content.</title>" +
+                    "   <para>another paragraph with <note><hi>nested</hi> inner</note> elements.</para>" +
+                    "   <para>a third paragraph with <term>term</term>.</para>" +
+                    "   <para>double match double match</para>" +
+                    "</root>";
 
     private static String XML2 =
             "<root>" +
-            "   <title>some another paragraph with <hi>mixed</hi> content.</title>" +
-            "   <para>another paragraph with <note><hi>nested</hi> inner</note> elements.</para>" +
-            "   <para>a third paragraph with <term>term</term>.</para>" +
-            "   <para>double match double match</para>" +
-            "</root>";
+                    "   <title>some another paragraph with <hi>mixed</hi> content.</title>" +
+                    "   <para>another paragraph with <note><hi>nested</hi> inner</note> elements.</para>" +
+                    "   <para>a third paragraph with <term>term</term>.</para>" +
+                    "   <para>double match double match</para>" +
+                    "</root>";
 
     private static String XML3 =
             "<root>" +
-            "   <title>some paragraph too with <hi>mixed</hi> content.</title>" +
-            "   <para>another paragraph with <note><hi>nested</hi> inner</note> elements.</para>" +
-            "   <para>a third paragraph with <term>term</term>.</para>" +
-            "   <para>double match double match</para>" +
-            "</root>";
+                    "   <title>some paragraph too with <hi>mixed</hi> content.</title>" +
+                    "   <para>another paragraph with <note><hi>nested</hi> inner</note> elements.</para>" +
+                    "   <para>a third paragraph with <term>term</term>.</para>" +
+                    "   <para>double match double match</para>" +
+                    "</root>";
 
     private class MyCallback implements SearchCallback<DocumentImpl> {
 
@@ -126,69 +127,6 @@ public class SearchTestOrder extends FacetAbstract {
     }
 
     @Test
-    public void runTestOrder() throws Exception {
-
-        DBBroker broker = null;
-        
-        try {
-            broker = db.get(db.getSecurityManager().getSystemSubject());
-
-            MutableDocumentSet docs = new DefaultDocumentSet(1031);
-
-            String URI = "/db";
-            Collection collection = broker.getCollection(XmldbURI.xmldbUriFor(URI));
-            collection.allDocs(broker, docs, true);
-
-            LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
-
-            List<QName> qNames = worker.getDefinedIndexes(null);
-
-            String[] fields = new String[qNames.size()+1];
-            int i = 0;
-            for (QName qName : qNames) {
-                fields[i] = LuceneUtil.encodeQName(qName, db.getSymbols());
-                i++;
-            }
-            fields[i] = "eXist:file-name"; // File name field.
-
-            // Parse the query with no default field:
-            Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION_IN_USE);
-
-            MultiFieldQueryParser parser = new MultiFieldQueryParser(LUCENE_VERSION_IN_USE, fields, analyzer);
-
-            Query query = parser.parse("learning and training");
-            FacetsConfig facetsConfig = null; //new FacetSearchParams(new CountFacetRequest(new CategoryPath("a"), 1));
-
-            List<SortField> sortFields = new ArrayList<>();
-            
-            sortFields.add(SortField.FIELD_SCORE);
-//            SortField scoreField = SortField.FIELD_SCORE;
-//            sortFields.add(
-//                new SortField(
-//                    scoreField.getField(), 
-//                    scoreField.getType(), 
-//                    true
-//                )
-//            );
-            
-            Sort sort = new Sort(sortFields.toArray(new SortField[sortFields.size()]));
-
-            System.out.println("HERE STARTS");
-
-            QueryDocuments.query(worker, docs, query, facetsConfig, new MyCallback(), 4, sort);
-
-            System.out.println("HERE DONE");
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-
-        } finally {
-            db.release(broker);
-        }
-
-    }
-
-    @Test
     public void testOrder() throws Exception {
 
 
@@ -206,7 +144,8 @@ public class SearchTestOrder extends FacetAbstract {
                 new FacetAbstract.Resource("test1.xml", XML1, metas1),
                 new FacetAbstract.Resource("test2.xml", XML2, metas2),
                 new FacetAbstract.Resource("test3.xml", XML3, metas3),
-            });
+            }
+        );
 
         try (DBBroker broker = db.get(db.getSecurityManager().getSystemSubject())) {
 
@@ -218,42 +157,29 @@ public class SearchTestOrder extends FacetAbstract {
 
             LuceneIndexWorker worker = (LuceneIndexWorker) broker.getIndexController().getWorkerByIndexId(LuceneIndex.ID);
 
-            String sortField = null;
-
             List<QName> qNames = worker.getDefinedIndexes(null);
 
-            String[] fields = new String[qNames.size()+1];
+            System.out.println(Arrays.toString(qNames.toArray()));
+
+            String[] fields = new String[qNames.size()];//+1];
             int i = 0;
             for (QName qName : qNames) {
                 fields[i] = LuceneUtil.encodeQName(qName, db.getSymbols());
-
-                if (qName.getLocalName().equals(TITLE)) {
-                    sortField = fields[i];
-
-                    System.out.println(sortField);
-                }
-
                 i++;
             }
-            fields[i] = TITLE;//"eXist:file-name"; // File name field.
 
-            sortField = TITLE;
-            fields = new String[] {sortField};
+            Query query;
 
             // Parse the query with no default field:
             Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION_IN_USE);
 
             MultiFieldQueryParser parser = new MultiFieldQueryParser(LUCENE_VERSION_IN_USE, fields, analyzer);
+            query = parser.parse("some*");
+//            query = new MatchAllDocsQuery();
 
-            Query query = parser.parse("some*");
             FacetsConfig facetsConfig = null; //new FacetSearchParams(new CountFacetRequest(new CategoryPath("a"), 1));
 
-            SortField[] sortFields = new SortField[1];
-
-            //sortFields.add(new SortField(TITLE, SortField.Type.STRING));
-            sortFields[0] = new SortField(sortField, SortField.Type.STRING);
-
-            Sort sort = new Sort(sortFields);
+            Sort sort = new Sort(new SortField(TITLE+"_sort", SortField.Type.STRING));
 
             System.out.println("HERE STARTS");
 
@@ -261,32 +187,45 @@ public class SearchTestOrder extends FacetAbstract {
 
             QueryNodes.query(worker, null, -1, docs, query, facetsConfig, cb, 10000, sort);
 
-            System.out.println("2 3 1");
+            System.out.println("3 1 2");
+//            System.out.println("2 3 1");
 
-            assertEquals(cb.hits.size(), 12);
+            assertEquals(3, cb.hits.size());
 
-            String[] expected = {"/db/test/test2.xml",
-                "/db/test/test2.xml",
-                "/db/test/test2.xml",
-                "/db/test/test2.xml",
-
+            String[] expected = {
                 "/db/test/test3.xml",
-                "/db/test/test3.xml",
-                "/db/test/test3.xml",
-                "/db/test/test3.xml",
-
                 "/db/test/test1.xml",
-                "/db/test/test1.xml",
-                "/db/test/test1.xml",
-                "/db/test/test1.xml"
+                "/db/test/test2.xml"
             };
 
             i = 0;
             for (NodeProxy node : cb.hits) {
-                assertEquals(node.getDocument().getDocumentURI().toString(), expected[i++]);
+                assertEquals(expected[i++], node.getDocument().getDocumentURI());
             }
 
             System.out.println("HERE DONE");
+
+            //test reverse
+            sort = new Sort(new SortField(TITLE+"_sort", SortField.Type.STRING, true));
+
+            cb = new NodesCallback();
+
+            QueryNodes.query(worker, null, -1, docs, query, facetsConfig, cb, 10000, sort);
+
+            System.out.println("2 1 3");
+
+            assertEquals(3, cb.hits.size());
+
+            expected = new String[] {
+                "/db/test/test2.xml",
+                "/db/test/test1.xml",
+                "/db/test/test3.xml"
+            };
+
+            i = 0;
+            for (NodeProxy node : cb.hits) {
+                assertEquals(expected[i++], node.getDocument().getDocumentURI());
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
