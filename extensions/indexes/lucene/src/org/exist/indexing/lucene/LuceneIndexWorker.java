@@ -1249,7 +1249,14 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         return field;
     }
-    
+
+    private void addInternalField(List<Field> metas, String name, String value, String... values) {
+
+        metas.add(new FacetField(name, values));
+
+        metas.add(sortField(name, value));
+    }
+
     private void collectMetas(final List<Field> metas) {
 
         if (MetaData.get() == null) return;
@@ -1363,32 +1370,27 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             
             owner = currentDoc.getPermissions().getOwner().getName();
         }
-        
-        FacetField fld = new FacetField(NAME, name);
-        metas.add(fld);
-        
-        fld = new FacetField(PATH, url.stringPathSegments());
-        metas.add(fld);
 
-        fld = new FacetField(OWNER, owner);
-        metas.add(fld);
+        addInternalField(metas, NAME, name, name);
+        addInternalField(metas, PATH, url.toString(), url.stringPathSegments());
+
+        addInternalField(metas, OWNER, owner, owner);
 
         //DocumentMetadata
 
-        fld = new FacetField(TYPE, mimeType.split("/"));
-        metas.add(fld);
+        addInternalField(metas, TYPE, mimeType, mimeType.split("/"));
 
         GregorianCalendar date = new GregorianCalendar(GMT);
 
         date.setTimeInMillis(createdTime);
+        String str = DatatypeConverter.printDateTime(date);
 
-        fld = new FacetField(CREATED, DatatypeConverter.printDateTime(date));
-        metas.add(fld);
-        
+        addInternalField(metas, CREATED, str, str);
+
         date.setTimeInMillis(lastModified);
+        str = DatatypeConverter.printDateTime(date);
 
-        fld = new FacetField(LAST_MODIFIED, DatatypeConverter.printDateTime(date));
-        metas.add(fld);
+        addInternalField(metas, LAST_MODIFIED, str, str);
 
         MetaStorage ms = broker.getDatabase().getMetaStorage();
         if (ms != null) {
