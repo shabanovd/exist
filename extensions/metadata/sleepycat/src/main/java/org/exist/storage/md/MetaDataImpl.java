@@ -387,7 +387,7 @@ public class MetaDataImpl extends MetaData {
                 }
                 check.add(key);
 
-                listener.metadata(new QName(m.getKey(), MDStorageManager.NAMESPACE_URI, MDStorageManager.PREFIX), m.getValue());
+                listener.metadata(new QName(key, MDStorageManager.NAMESPACE_URI, MDStorageManager.PREFIX), m.getValue());
             }
         } finally {
             sub.close();

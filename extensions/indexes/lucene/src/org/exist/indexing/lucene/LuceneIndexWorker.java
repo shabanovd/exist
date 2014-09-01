@@ -1267,7 +1267,14 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         return field;
     }
-    
+
+    private Field addInternalField(List<Field> metas, String name, String value) {
+
+        metas.add(new Field(name, value, metaFT));
+
+        metas.add(sortField(name, value));
+    }
+
     private void collectMetas(final List<Field> metas, final List<CategoryPath> paths) {
 
         broker.getIndexController().streamMetas(new MetaStreamListener() {
@@ -1377,38 +1384,29 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             
             owner = currentDoc.getPermissions().getOwner().getName();
         }
-        
-        Field fld = new Field("eXist:file-name", name, metaFT);
-        metas.add(fld);
 
-        //url = currentDoc.getURI().toString();
-        
-        fld = new Field("eXist:file-path", url, metaFT);
-        metas.add(fld);
+        addInternalField(metas, "eXist:file-name", name);
+        addInternalField(metas, "eXist:file-path", url);
 
         paths.add(new CategoryPath("eXist:file-path", url));
 
-        fld = new Field("eXist:owner", owner, metaFT);
-        metas.add(fld);
+        addInternalField(metas, "eXist:owner", owner);
 
         //DocumentMetadata
 
-        fld = new Field("eXist:meta-type", mimeType, metaFT);
-        metas.add(fld);
-        
+        addInternalField(metas, "eXist:meta-type", mimeType);
+
         paths.add(new CategoryPath(("eXist:meta-type/"+mimeType).split("/")));
 
         GregorianCalendar date = new GregorianCalendar(GMT);
 
         date.setTimeInMillis(createdTime);
 
-        fld = new Field("eXist:created", DatatypeConverter.printDateTime(date), metaFT);
-        metas.add(fld);
-        
+        addInternalField(metas, "eXist:created", DatatypeConverter.printDateTime(date));
+
         date.setTimeInMillis(lastModified);
 
-        fld = new Field("eXist:last-modified", DatatypeConverter.printDateTime(date), metaFT);
-        metas.add(fld);
+        addInternalField(metas, "eXist:last-modified", DatatypeConverter.printDateTime(date));
     }
     
     private static final org.apache.lucene.document.FieldType offsetsType = new org.apache.lucene.document.FieldType(TextField.TYPE_STORED);
