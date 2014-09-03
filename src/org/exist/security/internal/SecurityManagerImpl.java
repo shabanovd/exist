@@ -99,8 +99,7 @@ public class SecurityManagerImpl implements SecurityManager {
     private final PrincipalLocks<Account> accountLocks = new PrincipalLocks<Account>();
     private final PrincipalLocks<Group> groupLocks = new PrincipalLocks<Group>();
 
-    //TODO: validate & remove if session timeout
-    private SessionDb sessions = new SessionDb();
+    private final SessionDb sessions = new SessionDb();
 
     @ConfigurationFieldAsAttribute("last-account-id")
     protected int lastUserId = 0;
@@ -141,9 +140,7 @@ public class SecurityManagerImpl implements SecurityManager {
 
     	PermissionFactory.sm = this;
     	
-        final Properties params = new Properties();
-        params.put(getClass().getName(), this);
-    	pool.getScheduler().createPeriodicJob(TIMEOUT_CHECK_PERIOD, new SessionsCheck(), TIMEOUT_CHECK_PERIOD, params, SimpleTrigger.REPEAT_INDEFINITELY, false);
+    	pool.getScheduler().createPeriodicJob(TIMEOUT_CHECK_PERIOD, new SessionsCheck(sessions), TIMEOUT_CHECK_PERIOD, null, SimpleTrigger.REPEAT_INDEFINITELY, false);
     }
 
     /**
@@ -716,10 +713,11 @@ public class SecurityManagerImpl implements SecurityManager {
     public final static long TIMEOUT_CHECK_PERIOD = 20000; //20 sec
 
     public static class SessionsCheck implements JobDescription, org.quartz.Job {
+
+        SessionDb sessions;
     	
-    	boolean firstRun = true;
-    	
-    	public SessionsCheck() {
+    	public SessionsCheck(SessionDb sessions) {
+            this.sessions = sessions;
 		}
 
         public String getGroup() {
@@ -737,23 +735,28 @@ public class SecurityManagerImpl implements SecurityManager {
 
         @Override
         public final void execute( JobExecutionContext jec ) throws JobExecutionException {
-            final JobDataMap jobDataMap = jec.getJobDetail().getJobDataMap();
+            if (sessions == null) {
+                LOG.info("no sessions");
+                return;
+            }
 
-            final SecurityManagerImpl sm = ( SecurityManagerImpl )jobDataMap.get( SecurityManagerImpl.class.getName() );
-
-            if (sm == null)
-            	{return;}
-            
-            sm.sessions.modify(new SessionDbModify(){
+            sessions.modify(new SessionDbModify(){
 	            @Override
 	            public void execute(final Map<String, Session> db) {
+                    int count = 0;
+                    int timeout = 0;
+
 	            	final Iterator<Map.Entry<String, Session>> iter = db.entrySet().iterator();
 	            	while (iter.hasNext()) {
 	            		final Map.Entry<String, Session> entry = iter.next();
 	            		if (entry == null || !entry.getValue().isValid()) {
 	            			iter.remove();
+                            timeout++;
 	            		}
+                        count++;
 	            	}
+
+                    LOG.info("There was "+count+" sessions, timeout "+timeout+".");
 	            }
 	        });
     	}
