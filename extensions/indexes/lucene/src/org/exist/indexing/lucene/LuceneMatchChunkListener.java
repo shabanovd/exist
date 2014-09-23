@@ -451,9 +451,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 				    break;
                 }
             }
-        } catch (IOException e) {
-            LOG.warn("Problem found while serializing XML: " + e.getMessage(), e);
-        } catch (XMLStreamException e) {
+        } catch (Exception e) {
             LOG.warn("Problem found while serializing XML: " + e.getMessage(), e);
         }
         
@@ -475,9 +473,8 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         String str = extractor.getText().toString();
         
         //Token token;
-        try {
+        try (TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(str))) {
 
-            TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(str));
             tokenStream.reset();
             MarkableTokenFilter stream = new MarkableTokenFilter(tokenStream);
             while (stream.incrementToken()) {
