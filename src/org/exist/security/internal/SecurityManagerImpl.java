@@ -605,15 +605,15 @@ public class SecurityManagerImpl implements SecurityManager {
     @Override
     public final Account addAccount(Account account) throws  PermissionDeniedException, EXistException{
         if(account.getRealmId() == null) {
-        	LOG.debug("Account must have realm id.");
+            LOG.debug("Account must have realm id.");
             throw new ConfigurationException("Account must have realm id.");
         }
-		
+
         if(account.getName() == null || account.getName().isEmpty()) {
-        	LOG.debug("Account must have name.");
+            LOG.debug("Account must have name.");
             throw new ConfigurationException("Account must have name.");
         }
-		
+
         final int id;
         if(account.getId() != Account.UNDEFINED_ID) {
             id = account.getId();
@@ -621,9 +621,9 @@ public class SecurityManagerImpl implements SecurityManager {
             id = getNextAccountId();
         }
 
-		final AbstractRealm registeredRealm = (AbstractRealm) findRealmForRealmId(account.getRealmId());
-		final AccountImpl newAccount = new AccountImpl(registeredRealm, id, account);
-	
+        final AbstractRealm registeredRealm = (AbstractRealm) findRealmForRealmId(account.getRealmId());
+        final AccountImpl newAccount = new AccountImpl(registeredRealm, id, account);
+
         accountLocks.getWriteLock(newAccount).lock();
         try {
             usersById.modify(new PrincipalDbModify<Account>(){
@@ -638,6 +638,8 @@ public class SecurityManagerImpl implements SecurityManager {
             //XXX: one transaction?
             save();
             newAccount.save();
+
+            events.registered(newAccount);
 
             return newAccount;
         } finally {

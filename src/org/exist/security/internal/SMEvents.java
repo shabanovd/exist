@@ -32,9 +32,8 @@ import org.exist.dom.BinaryDocument;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.NodeSet;
 import org.exist.dom.QName;
-import org.exist.security.PermissionDeniedException;
+import org.exist.security.*;
 import org.exist.security.SecurityManager;
-import org.exist.security.Subject;
 import org.exist.security.xacml.AccessContext;
 import org.exist.source.DBSource;
 import org.exist.source.Source;
@@ -43,14 +42,8 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.ProcessMonitor;
 import org.exist.storage.lock.Lock;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xquery.AnalyzeContextInfo;
-import org.exist.xquery.CompiledXQuery;
-import org.exist.xquery.Expression;
-import org.exist.xquery.FunctionCall;
-import org.exist.xquery.UserDefinedFunction;
-import org.exist.xquery.XPathException;
-import org.exist.xquery.XQuery;
-import org.exist.xquery.XQueryContext;
+import org.exist.xquery.*;
+import org.exist.xquery.value.StringValue;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -85,11 +78,20 @@ public class SMEvents implements Configurable {
         return sm;
     }
 
+    public void registered(AbstractAccount account) {
+        Subject subject = new SubjectAccreditedImpl(account, this);
+        if (authentication == null) {
+            runScript(subject, scriptURI, null, EventRegistered.functionName, null);
+        } else {
+            authentication.onEvent(subject);
+        }
+    }
+
     protected void authenticated(Subject subject) {
         if (authentication == null) {
-//			List<Expression> args = new ArrayList<Expression>(2);
-//			args.add(new LiteralValue(context, new StringValue(subject.getRealmId()) ));
-//			args.add(new LiteralValue(context, new StringValue(subject.getName()) ));
+//            List<Expression> args = new ArrayList<Expression>(2);
+//            args.add(new LiteralValue(context, new StringValue(subject.getRealmId()) ));
+//            args.add(new LiteralValue(context, new StringValue(subject.getName()) ));
             runScript(subject, scriptURI, null, EventAuthentication.functionName, null);
         } else {
             authentication.onEvent(subject);
