@@ -24,6 +24,8 @@ package org.exist.security.internal;
 import org.exist.security.AbstractSubject;
 import org.exist.security.AbstractAccount;
 
+import java.util.Date;
+
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
@@ -31,17 +33,24 @@ import org.exist.security.AbstractAccount;
 public class SubjectAccreditedImpl extends AbstractSubject {
 
 	private final Object letterOfCredit;
-	
+
+    private final Date validTo;
+
 	/**
 	 * 
 	 * @param account
 	 * @param letterOfCredit the object the prove authentication
 	 */
 	public SubjectAccreditedImpl(AbstractAccount account, Object letterOfCredit) {
-		super(account);
-		
-		this.letterOfCredit = letterOfCredit;
+        this(account, letterOfCredit, null);
 	}
+
+    public SubjectAccreditedImpl(AbstractAccount account, Object letterOfCredit, Date validTo) {
+        super(account);
+
+        this.letterOfCredit = letterOfCredit;
+        this.validTo = validTo;
+    }
 
 	/* (non-Javadoc)
 	 * @see org.exist.security.Subject#authenticate(java.lang.Object)
@@ -55,12 +64,13 @@ public class SubjectAccreditedImpl extends AbstractSubject {
 	 * @see org.exist.security.Subject#isAuthenticated()
 	 */
 	@Override
-	public boolean isAuthenticated() {
-		return (
-			letterOfCredit != null 
-			&& account.getId() != account.getRealm().getSecurityManager().getGuestSubject().getId()
-		);
-	}
+    public boolean isAuthenticated() {
+        return (
+            letterOfCredit != null
+            && account.getId() != account.getRealm().getSecurityManager().getGuestSubject().getId()
+            && (validTo == null || new Date().before(validTo))
+        );
+    }
 
 	@Override
 	public boolean isExternallyAuthenticated() {
