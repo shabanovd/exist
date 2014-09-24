@@ -639,7 +639,7 @@ public class SecurityManagerImpl implements SecurityManager {
             save();
             newAccount.save();
 
-            events.registered(newAccount);
+            if (events != null) events.registered(newAccount);
 
             return newAccount;
         } finally {

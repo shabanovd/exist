@@ -19,6 +19,8 @@
  */
 package org.exist.security.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.exist.Database;
@@ -43,6 +45,8 @@ import org.exist.storage.ProcessMonitor;
 import org.exist.storage.lock.Lock;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
+import org.exist.xquery.value.AnyURIValue;
+import org.exist.xquery.value.AtomicValue;
 import org.exist.xquery.value.StringValue;
 
 /**
@@ -79,11 +83,15 @@ public class SMEvents implements Configurable {
     }
 
     public void registered(AbstractAccount account) {
-        Subject subject = new SubjectAccreditedImpl(account, this);
         if (authentication == null) {
-            runScript(subject, scriptURI, null, EventRegistered.functionName, null);
+
+            List<AtomicValue> args = new ArrayList<AtomicValue>(2);
+            args.add( new StringValue( account.getRealmId()) );
+            args.add( new StringValue( account.getName()) );
+
+            runScript(sm.getSystemSubject(), scriptURI, null, EventRegistered.functionName, args);
         } else {
-            authentication.onEvent(subject);
+            authentication.onEvent(new SubjectAccreditedImpl(account, this));
         }
     }
 
@@ -98,7 +106,7 @@ public class SMEvents implements Configurable {
         }
     }
 
-    protected void runScript(Subject subject, String scriptURI, String script, QName functionName, List<Expression> args) {
+    protected void runScript(Subject subject, String scriptURI, String script, QName functionName, List<AtomicValue> args) {
 
         final Database db = getDatabase();
         DBBroker broker = null;
@@ -121,21 +129,24 @@ public class SMEvents implements Configurable {
 
             //execute the XQuery
             try {
-                final UserDefinedFunction function = context.resolveFunction(functionName, 0);
+                final UserDefinedFunction function = context.resolveFunction(functionName, (args == null ? 0 : args.size()));
                 if (function != null) {
                     context.getProfiler().traceQueryStart();
                     pm.queryStarted(context.getWatchDog());
 
                     final FunctionCall call = new FunctionCall(context, function);
                     if (args != null) {
-                        call.setArguments(args);
+
+                        List<Expression> new_args = new ArrayList<Expression>(args.size());
+                        for (AtomicValue value : args) {
+                            new_args.add(new LiteralValue(context, value ));
+                        }
+
+                        call.setArguments(new_args);
                     }
                     call.analyze(new AnalyzeContextInfo());
                     call.eval(NodeSet.EMPTY_SET);
                 }
-            } catch (final XPathException e) {
-                //XXX: log
-                e.printStackTrace();
             } finally {
                 if (pm != null) {
                     context.getProfiler().traceQueryEnd(context);
@@ -146,8 +157,7 @@ public class SMEvents implements Configurable {
             }
 
         } catch (final Exception e) {
-            //XXX: log
-            e.printStackTrace();
+            SecurityManagerImpl.LOG.error(e.getMessage(), e);
         } finally {
             db.release(broker);
         }
