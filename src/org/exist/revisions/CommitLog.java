@@ -34,7 +34,7 @@ import static org.exist.Operation.*;
  */
 public class CommitLog implements CommitWriter, CommitReader {
 
-    static final XmldbURI UNKNOWN = XmldbURI.create("");
+    static final XmldbURI UNKNOWN_URI = XmldbURI.create("");
 
     class Action implements Change {
         Operation op;
@@ -55,7 +55,7 @@ public class CommitLog implements CommitWriter, CommitReader {
 
         Action(Operation op, String id) {
             this.op = op;
-            this.uri = UNKNOWN;
+            this.uri = UNKNOWN_URI;
             this.id = id;
         }
 
@@ -69,6 +69,14 @@ public class CommitLog implements CommitWriter, CommitReader {
 
         public XmldbURI uri() {
             return uri;
+        }
+
+        public void uri(XmldbURI uri) {
+            if (!(this.uri == null || this.uri == UNKNOWN_URI)) {
+                throw new IllegalAccessError("uri already set");
+            }
+
+            this.uri = uri;
         }
     }
 

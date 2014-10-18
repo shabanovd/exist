@@ -31,6 +31,8 @@ public interface Handler {
 
     void processed(XmldbURI uri);
 
+    void error(String id, String msg);
+
     void error(XmldbURI uri, Exception e);
 
     void error(XmldbURI uri, String msg);

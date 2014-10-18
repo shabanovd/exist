@@ -84,4 +84,12 @@ public class Utils {
             return new String(bb.array(), bb.position(), 64);
         }
     }
+
+    public static Path makeFolder(Path folder, String name) {
+
+        return folder
+                .resolve(name.substring(0, 4))
+                .resolve(name.substring(4, 8))
+                .resolve(name);
+    }
 }

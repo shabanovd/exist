@@ -244,6 +244,11 @@ public class RCSTest {
             e.printStackTrace();
             System.out.println("error3 "+location);
         }
+
+        @Override
+        public void error(String id, String msg) {
+            System.out.println("error4 "+id+" "+msg);
+        }
     }
 
     protected DocumentSet configureAndStore(String configuration, Resource[] resources) {

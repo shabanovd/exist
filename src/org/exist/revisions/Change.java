@@ -32,4 +32,6 @@ public interface Change {
     public Operation operation();
 
     public XmldbURI uri();
+
+    public void uri(XmldbURI uri);
 }

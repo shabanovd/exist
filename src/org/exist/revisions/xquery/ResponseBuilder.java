@@ -73,6 +73,18 @@ public class ResponseBuilder implements Handler {
     }
 
     @Override
+    public void error(String id, String msg) {
+        attribs.clear();
+
+        attribs.addAttribute("", "resource-id", "resource-id", "CDATA", id);
+        attribs.addAttribute("", "status", "status", "CDATA", "error");
+        attribs.addAttribute("", "msg", "msg", "CDATA", msg);
+
+        builder.startElement("", "entry", "entry", attribs);
+        builder.endElement();
+    }
+
+    @Override
     public void error(XmldbURI uri, Exception e) {
         attribs.clear();
         

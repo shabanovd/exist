@@ -97,6 +97,8 @@ public class RCSManager implements Constants {
     Database db;
     
     MetaData md;
+
+    HashStorage hashStorage;
     
     Path rcFolder;
 
@@ -107,6 +109,8 @@ public class RCSManager implements Constants {
     Path snapshotLogsFolder;
 
     Path tmpFolder;
+
+    boolean noDots = false;
 
     List<EventListener<CommitLog>> commitsListener = new ArrayList<>();
 
@@ -125,10 +129,22 @@ public class RCSManager implements Constants {
         snapshotLogsFolder  = folder("snapshots");
         tmpFolder           = folder("tmp");
 
+        try  {
+            tmpFolder.resolve(":");
+        } catch (InvalidPathException e) {
+            noDots = true;
+        }
+
         //clean up tmp folder
         FileUtils.cleanDirectory(tmpFolder.toFile());
         
         instance = this;
+
+        hashStorage = new HashStorage(hashesFolder, tmpFolder);
+    }
+
+    public HashStorage hashStorage() {
+        return hashStorage;
     }
 
     public boolean registerCommitsListener(EventListener<CommitLog> listener) {
@@ -335,12 +351,12 @@ public class RCSManager implements Constants {
                 //processEntry(doc, broker, serializer, log, logPath, h);
                 
                 log.writeStartElement("entry");
-                log.writeAttribute("uri", action.uri().toString());
-    
+
                 try {
                     Path folder = makeRevision(broker, action, logRelativePath, commitLog.handler);
-                    
+
                     if (folder != null) {
+                        log.writeAttribute("uri", action.uri().toString());
                         log.writeAttribute("path", rcFolder.relativize(folder).toString());
                     }
                     
@@ -375,6 +391,8 @@ public class RCSManager implements Constants {
             date.setTimeInMillis(ts);
             String str = DatatypeConverter.printDateTime(date);
 
+            if (noDots) str = str.replace(':','_');
+
             Path path = location.resolve( str.substring(0, 7) ).resolve( str );
 
             if (!Files.exists(path)) {
@@ -406,7 +424,7 @@ public class RCSManager implements Constants {
             throws IOException, PermissionDeniedException, SAXException, XMLStreamException {
 
         String id = action.id();
-        if (action.id() == null) return null;
+        if (id == null) return null;
 
         Path folder = null;
 
@@ -415,6 +433,14 @@ public class RCSManager implements Constants {
             lastRevision(action.id(), action.uri(), logPath, h);
 
         } else {
+
+            XmldbURI url = action.uri();
+
+            if (url == null || url == CommitLog.UNKNOWN_URI) {
+                action.uri(uri(id, h));
+
+                if (action.uri() == null || action.uri() == CommitLog.UNKNOWN_URI) return null;
+            }
 
             DocumentImpl doc = broker.getXMLResource(action.uri(), Lock.READ_LOCK);
             if (doc == null) {
@@ -440,7 +466,30 @@ public class RCSManager implements Constants {
         
         return folder;
     }
-    
+
+    protected XmldbURI uri(String id, Handler h) {
+        Metas metas = md.getMetas(id);
+        if (metas == null) {
+            h.error(id, "missing metas");
+            return null;
+        }
+
+        String uri = metas.getURI();
+        if (uri == null) {
+            h.error(id, "missing uri");
+            return null;
+        }
+
+        try {
+            return XmldbURI.create(uri);
+        } catch (Exception e) {
+            h.error(id, "uri '"+uri+"' is not XmldbURI one");
+        }
+
+        return CommitLog.UNKNOWN_URI;
+    }
+
+
     protected String uuid(XmldbURI uri, Handler h) {
         Metas metas = md.getMetas(uri);
         if (metas == null) {
