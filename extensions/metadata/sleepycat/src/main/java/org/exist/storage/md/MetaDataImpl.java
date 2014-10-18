@@ -135,7 +135,7 @@ public class MetaDataImpl extends MetaData {
 		}
 	}
 
-    private Metas getMetas(String uuid) {
+    public Metas getMetas(String uuid) {
         return docByUUID.get(uuid);
     }
 

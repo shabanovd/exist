@@ -83,6 +83,8 @@ public abstract class MetaData implements MetaStorage {
 
     protected abstract Metas replaceMetas(XmldbURI uri, String uuid);
 
+    public abstract Metas getMetas(String uuid);
+
     public abstract Metas getMetas(DocumentAtExist doc);
 
     public abstract Metas getMetas(XmldbURI uri);
