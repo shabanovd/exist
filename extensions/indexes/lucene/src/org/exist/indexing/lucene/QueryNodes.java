@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetResult;
@@ -67,6 +68,8 @@ import org.w3c.dom.Node;
  * 
  */
 public class QueryNodes {
+
+    protected final static Logger LOG = Logger.getLogger(QueryNodes.class);
 
 	public static List<FacetResult> query(LuceneIndexWorker worker,
 			QName qname, int contextId, 
@@ -404,12 +407,12 @@ public class QueryNodes {
 			super.finish();
 		}
 
-		final void updateBottom(int doc, float score, DocumentImpl document) {
+		final void updateBottom(int doc, float score, DocumentImpl document, NodeId nodeId) {
 			// bottom.score is already set to Float.NaN in add().
 			bottom.doc = docNumber(docBase, doc);
 			bottom.score = score;
 			bottom.document = document;
-			bottom.node = getNodeId(doc);
+			bottom.node = nodeId;
 			bottom.context = context;
 			
 			bottom = queue.updateTop();
@@ -455,17 +458,33 @@ public class QueryNodes {
 				          }
 				        }
 
+                    NodeId nodeId;
+                    try {
+                        nodeId = getNodeId(doc);
+                    } catch (Exception e) {
+                        LOG.error(e.getMessage(), e);
+                        return;
+                    }
+
 					// This hit is competitive - replace bottom element in queue & adjustTop
 					for (int i = 0; i < comparators.length; i++) {
 						comparators[i].copy(bottom.slot, doc);
 					}
 
-					updateBottom(doc, score, storedDocument);
+					updateBottom(doc, score, storedDocument, nodeId);
 
 					for (int i = 0; i < comparators.length; i++) {
 						comparators[i].setBottom(bottom.slot);
 					}
 				} else {
+
+                    NodeId nodeId;
+                    try {
+                        nodeId = getNodeId(doc);
+                    } catch (Exception e) {
+                        LOG.error(e.getMessage(), e);
+                        return;
+                    }
 
 					// Startup transient: queue hasn't gathered numHits yet
 					final int slot = totalHits - 1;
@@ -473,7 +492,7 @@ public class QueryNodes {
 					for (int i = 0; i < comparators.length; i++) {
 						comparators[i].copy(slot, doc);
 					}
-					add(slot, doc, score, storedDocument);
+					add(slot, doc, score, storedDocument, nodeId);
 					if (queueFull) {
 						for (int i = 0; i < comparators.length; i++) {
 							comparators[i].setBottom(bottom.slot);
@@ -481,7 +500,7 @@ public class QueryNodes {
 					}
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				LOG.error(e.getMessage(), e);
 			}
 		}
 
@@ -512,14 +531,14 @@ public class QueryNodes {
 		boolean queueFull;
 		int docBase;
 
-		final void add(int slot, int doc, float score, DocumentImpl document) {
+		final void add(int slot, int doc, float score, DocumentImpl document, NodeId nodeId) {
 			bottom = queue.add(
 				new MyEntry(
 					slot, 
 					docNumber(docBase, doc), 
 					score, 
 					document, 
-					getNodeId(doc), 
+					nodeId,
 					context)
 				);
 			queueFull = totalHits == numHits;

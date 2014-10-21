@@ -1268,7 +1268,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         return field;
     }
 
-    private Field addInternalField(List<Field> metas, String name, String value) {
+    private void addInternalField(List<Field> metas, String name, String value) {
 
         metas.add(new Field(name, value, metaFT));
 
