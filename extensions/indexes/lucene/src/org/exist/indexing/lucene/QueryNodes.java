@@ -22,10 +22,7 @@
 package org.exist.indexing.lucene;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -544,15 +541,19 @@ public class QueryNodes {
 			queueFull = totalHits == numHits;
 		}
 		
-		private NodeId getNodeId(int doc) {
+		private NodeId getNodeId(int doc) throws IOException {
             if (this.nodeIdValues == null) {
                 return NodeId.DOCUMENT_NODE;
             } else {
                 BytesRef ref = new BytesRef(buf);
 
                 this.nodeIdValues.get(doc, ref);
-                int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-                return db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+                try {
+                    int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
+                    return db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+                } catch (Exception e) {
+                    throw new IOException("can't decode NodeId from '"+ Arrays.toString(ref.bytes)+"' offset="+ref.offset);
+                }
             }
 		}
 		
