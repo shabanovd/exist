@@ -318,13 +318,8 @@ public class DocumentImpl extends NodeImpl implements Resource, Document, Docume
      * This is called by {@link Collection} when replacing a document.
      *
      * @param other a <code>DocumentImpl</code> value
-     * @param preserve Cause copyOf to preserve the following attributes of
-     *                 each source file in the copy: modification time,
-     *                 access time, file mode, user ID, and group ID,
-     *                 as allowed by permissions and  Access Control
-     *                 Lists (ACLs)
      */
-    public void copyOf(final DocumentImpl other, final boolean preserve) {
+    public void copyOf(DocumentImpl other) {
         childAddress = null;
         children = 0;
 
@@ -333,25 +328,20 @@ public class DocumentImpl extends NodeImpl implements Resource, Document, Docume
         if (metadata == null) {
             metadata = new DocumentMetadata();
         }
-        
+
         //copy metadata
         metadata.copyOf(other.getMetadata());
 
-        if(preserve) {
-            //copy permission
-            permissions = ((UnixStylePermission)other.permissions).copy();
-            //created and last modified are done by metadata.copyOf
-            //metadata.setCreated(other.getMetadata().getCreated());
-            //metadata.setLastModified(other.getMetadata().getLastModified());
-        } else {
-            //update timestamp
-            final long timestamp = System.currentTimeMillis();
-            metadata.setCreated(timestamp);
-            metadata.setLastModified(timestamp);
-        }
+        //update timestamp
+        final long timestamp = System.currentTimeMillis();
+        metadata.setCreated(timestamp);
+        metadata.setLastModified(timestamp);
 
         // reset pageCount: will be updated during storage
         metadata.setPageCount(0);
+
+        //copy permission
+        permissions = ((UnixStylePermission)other.permissions).copy();
     }
 
     /**
