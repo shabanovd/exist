@@ -281,7 +281,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 		} else {
 			try {
 				broker = pool.get(user);
-				final Serializer serializer = broker.getSerializer();
+				final Serializer serializer = broker.newSerializer();
 				serializer.setUser(user);
 				serializer.setProperties(getProperties());
 				serializer.setSAXHandlers(handler, lexicalHandler);
