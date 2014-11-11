@@ -1280,14 +1280,14 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
                     Field fld = null;
                     
-                    org.apache.lucene.document.FieldType ft = metaFT;
+                    org.apache.lucene.document.FieldType ft = defaultFT;
                     if (fieldConfig != null) {
                         ft  = fieldConfig.getFieldType();
                         
                         if (fieldConfig.isSymbolized()) {
                             try {
                                 toIndex = index.symbols.getIdtoHexString(toIndex);
-                                fld = new Field(name, toIndex, ft);
+                                fld = new Field(name, toIndex, metaFT);
                             } catch (Throwable e) {
                                 LOG.error(e, e);
                                 //skip to avoid storage corruption
