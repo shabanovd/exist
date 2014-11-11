@@ -642,6 +642,8 @@ public class SecurityManagerImpl implements SecurityManager {
             save();
             newAccount.save();
 
+            if (events != null) events.registered(newAccount);
+
             return newAccount;
         } finally {
             accountLocks.getWriteLock(newAccount).unlock();

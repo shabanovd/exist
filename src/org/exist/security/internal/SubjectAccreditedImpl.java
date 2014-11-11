@@ -46,16 +46,16 @@ public class SubjectAccreditedImpl extends AbstractSubject {
 	}
 
 	/**
-         * 
-         * @param account
-         * @param letterOfCredit the object the prove authentication
-         */
-        public SubjectAccreditedImpl(AbstractAccount account, Object letterOfCredit, Date validTo) {
-                super(account);
-                
-                this.letterOfCredit = letterOfCredit;
-                this.validTo = validTo;
-        }
+     *
+     * @param account
+     * @param letterOfCredit the object the prove authentication
+     */
+    public SubjectAccreditedImpl(AbstractAccount account, Object letterOfCredit, Date validTo) {
+        super(account);
+
+        this.letterOfCredit = letterOfCredit;
+        this.validTo = validTo;
+    }
 
 	/* (non-Javadoc)
 	 * @see org.exist.security.Subject#authenticate(java.lang.Object)
