@@ -20,19 +20,14 @@
 package org.exist.indexing.lucene;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.Facets;
-import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.FieldComparator;
@@ -43,9 +38,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 import org.exist.Database;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
@@ -65,6 +58,8 @@ import org.w3c.dom.Node;
  * 
  */
 public class QueryNodes {
+
+    protected final static Logger LOG = Logger.getLogger(QueryNodes.class);
 
 	public static Facets query(LuceneIndexWorker worker,
 			QName qname, int contextId, 
@@ -259,13 +254,11 @@ public class QueryNodes {
 				// better to check final set
 
                 NodeId nodeId;
-                if (this.nodeIdValues == null) {
-                    nodeId = NodeId.DOCUMENT_NODE;
-                } else {
-                    BytesRef ref = this.nodeIdValues.get(doc); //, ref);
-                    int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-                    nodeId = nodeIdFactory.createFromData(units, ref.bytes, ref.offset + 2);
-                    // LOG.info("doc: " + docId + "; node: " + nodeId.toString() + "; units: " + units);
+                try {
+                    nodeId = getNodeId(doc);
+                } catch (Exception e) {
+                    LOG.error(e.getMessage(), e);
+                    return;
                 }
 
 				collect(doc, storedDocument, nodeId, score);
@@ -301,6 +294,20 @@ public class QueryNodes {
 			callback.found(reader, doc, storedNode, score);
 			// resultSet.add(storedNode, sizeHint);
 		}
+
+        private NodeId getNodeId(int doc) throws IOException {
+            if (this.nodeIdValues == null) {
+                return NodeId.DOCUMENT_NODE;
+            }
+
+            BytesRef ref = this.nodeIdValues.get(doc);
+            try {
+                int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
+                return nodeIdFactory.createFromData(units, ref.bytes, ref.offset + 2);
+            } catch (Exception e) {
+                throw new IOException("can't decode NodeId from '"+ Arrays.toString(ref.bytes)+"' offset="+ref.offset);
+            }
+        }
 
 		@Override
 		protected SearchCallback<NodeProxy> getCallback() {
@@ -380,12 +387,12 @@ public class QueryNodes {
 			//super.finish();
 		}
 
-		final void updateBottom(int doc, float score, DocumentImpl document) {
+		final void updateBottom(int doc, float score, DocumentImpl document, NodeId nodeId) {
 			// bottom.score is already set to Float.NaN in add().
 			bottom.doc = docBase + doc;
 			bottom.score = score;
 			bottom.document = document;
-			bottom.node = getNodeId(doc);
+			bottom.node = nodeId;
 			bottom.context = context;
 			
 			bottom = queue.updateTop();
@@ -429,17 +436,33 @@ public class QueryNodes {
 				          }
 				        }
 
+                    NodeId nodeId;
+                    try {
+                        nodeId = getNodeId(doc);
+                    } catch (Exception e) {
+                        LOG.error(e.getMessage(), e);
+                        return;
+                    }
+
 					// This hit is competitive - replace bottom element in queue & adjustTop
 					for (int i = 0; i < comparators.length; i++) {
 						comparators[i].copy(bottom.slot, doc);
 					}
 
-					updateBottom(doc, score, storedDocument);
+					updateBottom(doc, score, storedDocument, nodeId);
 
 					for (int i = 0; i < comparators.length; i++) {
 						comparators[i].setBottom(bottom.slot);
 					}
 				} else {
+
+                    NodeId nodeId;
+                    try {
+                        nodeId = getNodeId(doc);
+                    } catch (Exception e) {
+                        LOG.error(e.getMessage(), e);
+                        return;
+                    }
 
 					// Startup transient: queue hasn't gathered numHits yet
 					final int slot = totalHits - 1;
@@ -447,7 +470,7 @@ public class QueryNodes {
 					for (int i = 0; i < comparators.length; i++) {
 						comparators[i].copy(slot, doc);
 					}
-					add(slot, doc, score, storedDocument);
+					add(slot, doc, score, storedDocument, nodeId);
 					if (queueFull) {
 						for (int i = 0; i < comparators.length; i++) {
 							comparators[i].setBottom(bottom.slot);
@@ -514,27 +537,31 @@ public class QueryNodes {
 		boolean queueFull;
 		int docBase;
 
-		final void add(int slot, int doc, float score, DocumentImpl document) {
+		final void add(int slot, int doc, float score, DocumentImpl document, NodeId nodeId) {
 			bottom = queue.add(
 				new MyEntry(
 					slot, 
 					docBase + doc,
 					score, 
-					document, 
-					getNodeId(doc), 
+					document,
+                    nodeId,
 					context)
 				);
 			queueFull = totalHits == numHits;
 		}
 		
-		private NodeId getNodeId(int doc) {
+		private NodeId getNodeId(int doc) throws IOException {
             if (this.nodeIdValues == null) {
                 return NodeId.DOCUMENT_NODE;
             }
 
             BytesRef ref = this.nodeIdValues.get(doc);
-			int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-			return nodeIdFactory.createFromData(units, ref.bytes, ref.offset + 2);
+            try {
+                int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
+                return nodeIdFactory.createFromData(units, ref.bytes, ref.offset + 2);
+            } catch (Exception e) {
+                throw new IOException("can't decode NodeId from '"+ Arrays.toString(ref.bytes)+"' offset="+ref.offset);
+            }
 		}
 
         @Override
