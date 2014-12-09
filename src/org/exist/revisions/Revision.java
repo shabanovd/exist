@@ -28,6 +28,7 @@ import org.exist.memtree.DocumentBuilderReceiver;
 import org.exist.memtree.DocumentImpl;
 import org.exist.memtree.MemTreeBuilder;
 import org.exist.storage.DBBroker;
+import org.exist.xmldb.XmldbURI;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -123,6 +124,10 @@ public class Revision implements Comparable<Revision> {
     }
 
     public void restore(DBBroker broker, Handler h) throws Exception {
-        RCSManager.get().restoreRevision(broker, location, h);
+        RCSManager.get().restoreRevision(broker, null, location, h);
+    }
+
+    public void restore(DBBroker broker, XmldbURI newUrl, Handler h) throws Exception {
+        RCSManager.get().restoreRevision(broker, newUrl, location, h);
     }
 }

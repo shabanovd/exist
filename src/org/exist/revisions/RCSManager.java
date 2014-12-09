@@ -972,7 +972,7 @@ public class RCSManager implements Constants {
         Path rev = lastRev(location);
         if (rev != null) {
             try {
-                restoreRevision(broker, rev, h);
+                restoreRevision(broker, null, rev, h);
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {
@@ -982,7 +982,7 @@ public class RCSManager implements Constants {
         //h.error(location, "no revisions");
     }
 
-    protected void restoreRevision(DBBroker broker, Path rev, Handler h) throws Exception {
+    protected void restoreRevision(DBBroker broker, XmldbURI newUrl, Path rev, Handler h) throws Exception {
 
         SAXParserFactory parserFactor = SAXParserFactory.newInstance();
         SAXParser parser = parserFactor.newSAXParser();
@@ -993,15 +993,17 @@ public class RCSManager implements Constants {
             parser.parse(metaStream, dh);
         }
 
+        XmldbURI url = newUrl != null ? newUrl : dh.uri;
+
         Collection parent = null;
         DocumentImpl doc = null;
 
-        Collection col = broker.getCollection(dh.uri);
+        Collection col = broker.getCollection(url);
         if (col == null) {
-            parent = broker.getCollection(dh.uri.removeLastSegment());
+            parent = broker.getCollection(url.removeLastSegment());
 
             if (parent != null) {
-                doc = parent.getDocument(broker, dh.uri.lastSegment());
+                doc = parent.getDocument(broker, url.lastSegment());
             }
         }
 
@@ -1020,7 +1022,7 @@ public class RCSManager implements Constants {
 
                 if (doc != null) remove(broker, tx, parent, doc);
 
-                if (col == null) createCollection(broker, tx, dh);
+                if (col == null) createCollection(broker, tx, url, dh);
 
                 restoreMetas(broker, col, rev, dh);
 
@@ -1052,20 +1054,20 @@ public class RCSManager implements Constants {
                     remove(broker, tx, parent, doc); //TODO: KEEP OLD UUID!!!
                 }
 
-                createDocument(broker, tx, parent, rev, dh);
+                createDocument(broker, tx, url, parent, rev, dh);
             }
 
             tx.success();
         }
 
-        h.processed(dh.uri);
+        h.processed(url);
     }
 
-    private void createCollection(DBBroker broker, Txn tx, MetasHandler dh) throws PermissionDeniedException, IOException, TriggerException {
+    private void createCollection(DBBroker broker, Txn tx, XmldbURI url, MetasHandler dh) throws PermissionDeniedException, IOException, TriggerException {
 
         RestoreHandler rh = manager.getRestoreHandler();
 
-        Collection collection = broker.getOrCreateCollection(tx, dh.uri);
+        Collection collection = broker.getOrCreateCollection(tx, url);
 
         rh.startRestore(collection, dh.uuid);
 
@@ -1078,7 +1080,7 @@ public class RCSManager implements Constants {
         rh.endRestore(collection);
     }
     
-    private void createDocument(DBBroker broker, Txn tx, Collection parent, Path rev, MetasHandler dh) throws Exception {
+    private void createDocument(DBBroker broker, Txn tx, XmldbURI url, Collection parent, Path rev, MetasHandler dh) throws Exception {
 
 //        listener.setCurrentResource(name);
 //        if(currentCollection instanceof Observable) {
@@ -1094,7 +1096,7 @@ public class RCSManager implements Constants {
 
             EXistInputSource is = new FileInputSource( data_path(readHash(rev)).toFile() );
 
-            IndexInfo info = parent.validateXMLResource(tx, broker, dh.uri, is );
+            IndexInfo info = parent.validateXMLResource(tx, broker, url.lastSegment(), is );
 
             resource = info.getDocument();
             DocumentMetadata meta = resource.getMetadata();
@@ -1102,10 +1104,10 @@ public class RCSManager implements Constants {
             meta.setCreated(dh.createdTime);
             meta.setLastModified(dh.lastModified);
 
-//                    if((publicid != null) || (systemid != null)) {
-//                        final DocumentType docType = new DocumentTypeImpl(namedoctype, publicid, systemid);
-//                        meta.setDocType(docType);
-//                    }
+//            if((publicid != null) || (systemid != null)) {
+//                final DocumentType docType = new DocumentTypeImpl(namedoctype, publicid, systemid);
+//                meta.setDocType(docType);
+//            }
 
             rh.startRestore(resource, dh.uuid);
 
@@ -1118,7 +1120,7 @@ public class RCSManager implements Constants {
 
             EXistInputSource is = new FileInputSource( data_path(readHash(rev)).toFile() );
 
-            resource = parent.validateBinaryResource(tx, broker, dh.uri, is.getByteStream(), dh.mimeType, is.getByteStreamLength(), new Date(dh.createdTime), new Date(dh.lastModified));
+            resource = parent.validateBinaryResource(tx, broker, url.lastSegment(), is.getByteStream(), dh.mimeType, is.getByteStreamLength(), new Date(dh.createdTime), new Date(dh.lastModified));
 
             rh.startRestore(resource, dh.uuid);
 
@@ -1144,9 +1146,6 @@ public class RCSManager implements Constants {
         try (InputStream metaStream = Files.newInputStream(rev)) {
             parser.parse(metaStream, new MetasRestore(broker, resource, dh.uuid));
         }
-
-        // TODO Auto-generated method stub
-        
     }
 
     protected Path lastRev(Path location) throws IOException {
