@@ -356,6 +356,7 @@ public class QueryDialog extends JFrame {
         
 		final List<String> data= new ArrayList<String>();
 		try {
+            //TODO: lazy loading!!!
 			final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION);
 			data.add(collection.getName());
 			getCollections(root, collection, data);
