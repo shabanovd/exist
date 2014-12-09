@@ -33,6 +33,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import static org.exist.revisions.Utils.*;
 
 /**
@@ -121,6 +123,10 @@ public class Revision implements Comparable<Revision> {
                 db.getParserPool().returnXMLReader(reader);
             }
         }
+    }
+
+    public MetasHandler metadata() throws IOException {
+        return RCSManager.get().metadata(location);
     }
 
     public void restore(DBBroker broker, Handler h) throws Exception {

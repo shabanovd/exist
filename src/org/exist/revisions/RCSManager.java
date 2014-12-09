@@ -39,6 +39,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import javax.xml.bind.DatatypeConverter;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLOutputFactory;
@@ -894,6 +895,26 @@ public class RCSManager implements Constants {
         return resourceFolder(hash, hashesFolder);
     }
 
+    protected MetasHandler metadata(Path rev) throws IOException {
+
+        try {
+            SAXParserFactory parserFactor = SAXParserFactory.newInstance();
+            SAXParser parser = parserFactor.newSAXParser();
+
+            MetasHandler dh = new MetasHandler();
+
+            try (InputStream metaStream = Files.newInputStream(rev)) {
+                parser.parse(metaStream, dh);
+            }
+
+            return dh;
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+
     public void restore(Path location, Handler h) throws IOException {
         
         DBBroker broker = db.getActiveBroker();
@@ -984,14 +1005,7 @@ public class RCSManager implements Constants {
 
     protected void restoreRevision(DBBroker broker, XmldbURI newUrl, Path rev, Handler h) throws Exception {
 
-        SAXParserFactory parserFactor = SAXParserFactory.newInstance();
-        SAXParser parser = parserFactor.newSAXParser();
-
-        MetasHandler dh = new MetasHandler();
-
-        try (InputStream metaStream = Files.newInputStream(rev)) {
-            parser.parse(metaStream, dh);
-        }
+        MetasHandler dh = metadata(rev);
 
         XmldbURI url = newUrl != null ? newUrl : dh.uri;
 
@@ -1165,70 +1179,6 @@ public class RCSManager implements Constants {
         }
         
         return revFolder;
-    }
-    
-    class MetasHandler extends DefaultHandler {
-        
-        String uuid;
-        String parentUuid;
-
-        String type;
-        
-        XmldbURI uri;
-        String name;
-        String mimeType;
-
-        long createdTime;
-        long lastModified;
-        
-        //Permission perm;
-
-        String content = null;
-        
-        @Override
-        public void endElement(String uri, String localName, String qName) throws SAXException {
-            super.endElement(uri, localName, qName);
-            
-            if (content == null) return;
-            
-            switch(qName){
-            case EL_FILE_NAME:
-                this.name = content;
-                break;
-            case EL_FILE_PATH:
-                this.uri = XmldbURI.create(content);
-                break;
-
-            case EL_RESOURCE_TYPE:
-                this.type = content;
-                break;
-
-            case EL_UUID:
-                uuid = content;
-                break;
-            case PARENT_UUID:
-                parentUuid = content;
-                break;
-            case EL_META_TYPE:
-                mimeType = content;
-                break;
-            case EL_CREATED:
-                createdTime = DatatypeConverter.parseDateTime(content).getTimeInMillis();
-                break;
-            case EL_LAST_MODIFIED:
-                lastModified = DatatypeConverter.parseDateTime(content).getTimeInMillis();
-                break;
-            }
-            
-            content = null;
-        }
-        
-        @Override
-        public void characters(char[] ch, int start, int length) throws SAXException {
-            content = String.copyValueOf(ch, start, length).trim();
-            
-            super.characters(ch, start, length);
-        }
     }
 
     class MetasRestore extends DefaultHandler {
