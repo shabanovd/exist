@@ -63,7 +63,6 @@ import org.exist.plugin.PluginsManager;
 import org.exist.security.*;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
-import org.exist.storage.md.MDStorageManager;
 import org.exist.storage.md.MetaData;
 import org.exist.storage.md.Metas;
 import org.exist.storage.serializers.Serializer;
