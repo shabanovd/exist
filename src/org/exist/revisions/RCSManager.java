@@ -1235,9 +1235,9 @@ public class RCSManager implements Constants {
 
     class MetasRestore extends DefaultHandler {
 
-        MDStorageManager md;
-
         DBBroker broker;
+        RestoreHandler rh;
+
         Resource resource;
         String uuid;
 
@@ -1249,14 +1249,16 @@ public class RCSManager implements Constants {
             this.uuid = uuid;
 
             //MetaData.PREFIX, EL_METASTORAGE, MetaData.NAMESPACE_URI
+
+            rh = manager.getRestoreHandler();
         }
 
         public void startDocument () throws SAXException {
-            md.startRestore(resource, uuid);
+            rh.startRestore(resource, uuid);
         }
 
         public void endDocument() throws SAXException {
-            md.endRestore(resource);
+            rh.endRestore(resource);
         }
 
         @Override
@@ -1267,7 +1269,7 @@ public class RCSManager implements Constants {
         }
 
         public void startElement (String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            md.startElement(uri, localName, qName, attributes);
+            rh.startElement(uri, localName, qName, attributes);
         }
 
         @Override
@@ -1278,7 +1280,7 @@ public class RCSManager implements Constants {
 
             if (MetaData.NAMESPACE_URI.equals(uri)) {
 
-                md.endElement(uri, localName, qName);
+                rh.endElement(uri, localName, qName);
 
             } else {
 
