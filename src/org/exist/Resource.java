@@ -48,4 +48,6 @@ public interface Resource {
     
     public ResourceMetadata getMetadata();
 
+    public boolean isFolder();
+
 }

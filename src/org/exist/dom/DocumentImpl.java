@@ -1430,4 +1430,8 @@ public class DocumentImpl extends NodeImpl implements Resource, Document, Docume
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+    public boolean isFolder() {
+        return false;
+    }
 }

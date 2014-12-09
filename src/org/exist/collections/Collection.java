@@ -2320,6 +2320,10 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
     }
 
+    public boolean isFolder() {
+        return true;
+    }
+
     /*
     public DocumentTrigger getDocumentTrigger(DBBroker broker) {
         if (triggersEnabled) {
