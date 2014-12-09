@@ -21,13 +21,13 @@ package org.exist.revisions;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.exist.Database;
 import org.exist.memtree.DocumentBuilderReceiver;
 import org.exist.memtree.DocumentImpl;
 import org.exist.memtree.MemTreeBuilder;
+import org.exist.storage.DBBroker;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -120,5 +120,9 @@ public class Revision implements Comparable<Revision> {
                 db.getParserPool().returnXMLReader(reader);
             }
         }
+    }
+
+    public void restore(DBBroker broker, Handler h) throws Exception {
+        RCSManager.get().restoreRevision(broker, location, h);
     }
 }

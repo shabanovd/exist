@@ -29,6 +29,7 @@ import org.apache.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.LifeCycle;
+import org.exist.Resource;
 import org.exist.backup.BackupHandler;
 import org.exist.backup.RestoreHandler;
 import org.exist.collections.Collection;
@@ -45,6 +46,8 @@ import org.xml.sax.Attributes;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
+
+import javax.xml.stream.XMLStreamWriter;
 
 /**
  * Plugins manager. 
@@ -149,11 +152,9 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 //			//LOG?
 //		}
 		
-		for (final Plug jack : jacks.values()) {
-			if (jack instanceof LifeCycle) {
-				((LifeCycle) jack).start(broker);
-			}
-		}
+        for (Plug jack : jacks.values()) {
+            jack.start(broker);
+        }
 	}
 	
 	@Override
@@ -263,7 +264,20 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 			LOG = logger;
 		}
 
-		@Override
+        @Override
+        public void backup(Resource resource, XMLStreamWriter writer) throws IOException {
+            for (final Plug plugin : jacks.values()) {
+                if (plugin instanceof BackupHandler) {
+                    try {
+                        ((BackupHandler) plugin).backup(resource, writer);
+                    } catch (final Exception e) {
+                        LOG.error(e.getMessage(), e);
+                    }
+                }
+            }
+        }
+
+        @Override
 		public void backup(Collection colection, AttributesImpl attrs) {
 			for (final Plug plugin : jacks.values()) {
 				if (plugin instanceof BackupHandler) {
@@ -424,38 +438,27 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 			}
 		}
 
-		@Override
-		public void startCollectionRestore(Collection colection, Attributes atts) {
+        public void startRestore(Resource resource, Attributes atts) {
+            for (final Plug plugin : jacks.values()) {
+                if (plugin instanceof RestoreHandler) {
+                    ((RestoreHandler) plugin).startRestore(resource, atts);
+                }
+            }
+        }
+
+		public void startRestore(Resource resource, String uuid) {
 			for (final Plug plugin : jacks.values()) {
 				if (plugin instanceof RestoreHandler) {
-					((RestoreHandler) plugin).startCollectionRestore(colection, atts);
+					((RestoreHandler) plugin).startRestore(resource, uuid);
 				}
 			}
 		}
 
 		@Override
-		public void endCollectionRestore(Collection colection) {
+		public void endRestore(Resource resource) {
 			for (final Plug plugin : jacks.values()) {
 				if (plugin instanceof RestoreHandler) {
-					((RestoreHandler) plugin).endCollectionRestore(colection);
-				}
-			}
-		}
-
-		@Override
-		public void startDocumentRestore(DocumentAtExist document, Attributes atts) {
-			for (final Plug plugin : jacks.values()) {
-				if (plugin instanceof RestoreHandler) {
-					((RestoreHandler) plugin).startDocumentRestore(document, atts);
-				}
-			}
-		}
-
-		@Override
-		public void endDocumentRestore(DocumentAtExist document) {
-			for (final Plug plugin : jacks.values()) {
-				if (plugin instanceof RestoreHandler) {
-					((RestoreHandler) plugin).endDocumentRestore(document);
+					((RestoreHandler) plugin).endRestore(resource);
 				}
 			}
 		}

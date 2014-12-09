@@ -28,8 +28,8 @@ import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 
-import static org.exist.storage.md.MDStorageManager.NAMESPACE_URI;
-import static org.exist.storage.md.MDStorageManager.PREFIX;
+import static org.exist.storage.md.MetaData.NAMESPACE_URI;
+import static org.exist.storage.md.MetaData.PREFIX;
 import static org.exist.storage.lock.Lock.READ_LOCK;
 
 /**

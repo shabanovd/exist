@@ -32,7 +32,6 @@ import org.exist.Resource;
 import org.exist.collections.Collection;
 import org.exist.dom.DocumentAtExist;
 import org.exist.dom.DocumentImpl;
-import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -109,7 +108,7 @@ public class MetaDataImpl extends MetaData {
     }
     
     public String getId() {
-        return MDStorageManager.PREFIX;
+        return MetaData.PREFIX;
     }
 	
 	public DocumentImpl getDocument(String uuid) throws EXistException, PermissionDeniedException {
@@ -389,7 +388,7 @@ public class MetaDataImpl extends MetaData {
                 }
                 check.add(key);
 
-                listener.metadata(new QName(key, MDStorageManager.NAMESPACE_URI, MDStorageManager.PREFIX), m.getValue());
+                listener.metadata(m.getUUID(), key, m.getValue());
             }
         } finally {
             sub.close();

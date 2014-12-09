@@ -30,8 +30,9 @@ public interface MetaStreamListener {
     /**
      * Processed none xml data associated with document.
      *
+     * @param uuid
      * @param key
      * @param value
      */
-    void metadata(QName key, Object value);
+    void metadata(String uuid, String key, Object value);
 }

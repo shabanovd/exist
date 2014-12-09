@@ -33,7 +33,6 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.lock.LockedDocumentMap;
 import org.exist.storage.md.MetaData;
-import org.exist.storage.md.MDStorageManager;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
@@ -53,7 +52,7 @@ public class Check extends BasicFunction {
 	
 	public final static FunctionSignature signature =
 		new FunctionSignature(
-			new QName("check", MDStorageManager.NAMESPACE_URI, MDStorageManager.PREFIX),
+			new QName("check", MetaData.NAMESPACE_URI, MetaData.PREFIX),
 			"Scans the database and creates IDs and empty metadata sets \n" +
             "for each resource found. It can run for a long time and will block the \n" +
             "rest of the database while it runs. Stopping the database while it \n" +

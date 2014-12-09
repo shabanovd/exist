@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2012 The eXist Project
+ *  Copyright (C) 2001-2014 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,13 +16,10 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.backup;
 
-import org.exist.collections.Collection;
-import org.exist.dom.DocumentAtExist;
+import org.exist.Resource;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 
@@ -32,9 +29,9 @@ import org.xml.sax.ContentHandler;
  */
 public interface RestoreHandler extends ContentHandler {
 
-	public void startCollectionRestore(Collection colection, Attributes atts);
-	public void endCollectionRestore(Collection colection);
-	
-	public void startDocumentRestore(DocumentAtExist document, Attributes atts);
-	public void endDocumentRestore(DocumentAtExist document);
+    public void startRestore(Resource resource, Attributes atts);
+
+    public void startRestore(Resource resource, String uuid);
+    public void endRestore(Resource resource);
+
 }

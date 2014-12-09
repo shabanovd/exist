@@ -1263,7 +1263,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
         broker.getIndexController().streamMetas(new MetaStreamListener() {
             @Override
-            public void metadata(QName key, Object value) {
+            public void metadata(String uuid, String key, Object value) {
                 if (value == null)
                     return;
                 
@@ -1272,7 +1272,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     if (toIndex.isEmpty())
                         return;
                     
-                    String name = key.getLocalName();//LuceneUtil.encodeQName(key, index.getBrokerPool().getSymbols());
+                    String name = key;//LuceneUtil.encodeQName(key, index.getBrokerPool().getSymbols());
 
                     org.exist.indexing.lucene.FieldType fieldConfig = null;
                     if (config != null)
@@ -1292,7 +1292,7 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                                 LOG.error(e, e);
                                 //skip to avoid storage corruption
                             }
-                        };
+                        }
                     }
 
                     metas.add(new FacetField(name, toIndex));

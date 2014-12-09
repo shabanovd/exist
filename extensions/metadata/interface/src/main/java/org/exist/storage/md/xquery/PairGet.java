@@ -34,7 +34,7 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.*;
 import org.exist.xquery.value.StringValue;
 
-import static org.exist.storage.md.MDStorageManager.*;
+import static org.exist.storage.md.MetaData.*;
 
 /**
  * 

@@ -19,6 +19,7 @@
  */
 package org.exist.storage.md;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
+import org.exist.Resource;
 import org.exist.backup.BackupHandler;
 import org.exist.backup.RestoreHandler;
 import org.exist.collections.Collection;
@@ -46,6 +48,11 @@ import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
+
+import static org.exist.storage.md.MetaData.*;
+
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
@@ -54,9 +61,6 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	
     protected final static Logger LOG = Logger.getLogger(MDStorageManager.class);
 
-    public final static String PREFIX = "md";
-	public final static String NAMESPACE_URI = "http://exist-db.org/metadata";
-	
     public final static String LUCENE_ID = "org.exist.indexing.lucene.LuceneIndex";
 
 	public final static String UUID = "uuid";
@@ -120,13 +124,7 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
             Field field = db.getClass().getDeclaredField("metaStorage");
             field.setAccessible(true);
             field.set(db, md);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 	    
@@ -177,12 +175,40 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 		}
 	}
 
+    private void backup(Metas ms, XMLStreamWriter writer) throws IOException {
+        try {
+            List<Meta> sub = ms.metas();
+            for (Meta m : sub) {
+
+                writer.writeStartElement(PREFIX, m.getKey(), MetaData.NAMESPACE_URI);
+
+                writer.writeAttribute(PREFIX, NAMESPACE_URI, UUID, m.getUUID());
+                writer.writeAttribute(PREFIX, NAMESPACE_URI, KEY, m.getKey());
+
+                Object value = m.getValue();
+                if (value instanceof DocumentImpl) {
+                    DocumentImpl doc = (DocumentImpl) value;
+
+                    writer.writeAttribute(PREFIX, NAMESPACE_URI, VALUE, doc.getURI().toString());
+                    writer.writeAttribute(PREFIX, NAMESPACE_URI, VALUE_IS_DOCUMENT, "true");
+
+                } else {
+
+                    writer.writeAttribute(PREFIX, NAMESPACE_URI, VALUE, value.toString());
+                }
+
+                writer.writeEndElement();
+            }
+        } catch (XMLStreamException e) {
+            throw new IOException(e);
+        }
+    }
+
 	@Override
 	public void backup(Collection collection, AttributesImpl attrs) {
 	    if (collection == null)
 	        return;
 	    
-//		System.out.println("backup collection "+colection.getURI());
 	    Metas ms = md.getMetas(collection.getURI());
 	    if (ms != null)
 	    	backup(ms, attrs);
@@ -195,7 +221,6 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	    if (collection == null)
 	        return;
 	    
-//		System.out.println("backup collection "+colection.getURI());
 	    Metas ms = md.getMetas(collection.getURI());
 	    if (ms != null)
 	    	backup(ms, serializer);
@@ -208,7 +233,6 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	    if (document == null)
 	        return;
 	    
-//		System.out.println("backup document "+document.getURI());
 	    Metas ms = md.getMetas(document);
 	    if (ms != null)
 	    	backup(ms, attrs);
@@ -222,13 +246,24 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	    if (document == null)
 	        return;
 	    
-//		System.out.println("backup document "+document.getURI());
 	    Metas ms = md.getMetas(document);
 	    if (ms != null)
 	    	backup(ms, serializer);
 //	    else
 //	    	LOG.error("Document '"+document.getURI()+"' have no metas");
 	}
+
+    @Override
+    public void backup(Resource resource, XMLStreamWriter writer) throws IOException {
+        if (resource == null)
+            return;
+
+        Metas ms = md.getMetas(resource.getURI());
+        if (ms != null)
+            backup(ms, writer);
+//	    else
+//	    	LOG.error("Document '"+document.getURI()+"' have no metas");
+    }
 
 	//restore methods
 	private Metas collectionMetas = null;
@@ -285,41 +320,39 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	@Override
 	public void skippedEntity(String name) throws SAXException {}
 
-	@Override
-	public void startCollectionRestore(Collection collection, Attributes atts) {
-	    if (collection == null)
-	        return;
-	    
-//		System.out.println("startCollectionRestore "+colection.getURI());
-		String uuid = atts.getValue(NAMESPACE_URI, UUID);
-		if (uuid != null)
-			collectionMetas = md.replaceMetas(collection.getURI(), uuid);
-		else
-			collectionMetas = md.addMetas(collection); 
-	}
+    @Override
+    public void startRestore(Resource resource, Attributes atts) {
 
-	@Override
-	public void endCollectionRestore(Collection collection) {
-//		System.out.println("endCollectionRestore "+colection.getURI());
-	}
+        String uuid = atts.getValue(NAMESPACE_URI, UUID);
 
-	@Override
-	public void startDocumentRestore(DocumentAtExist document, Attributes atts) {
-	    if (document == null)
-	        return;
-	    
-//		System.out.println("startDocument "+document.getURI());
-		String uuid = atts.getValue(NAMESPACE_URI, UUID);
-		if (uuid != null)
-			currentMetas = md.replaceMetas(document.getURI(), uuid);
-		else
-			currentMetas = md.addMetas(document); 
-	}
+        startRestore(resource, uuid);
+    }
 
-	@Override
-	public void endDocumentRestore(DocumentAtExist document) {
-//		System.out.println("endDocumentRestore "+document.getURI());
-	}
+    @Override
+    public void startRestore(Resource resource, String uuid) {
+
+        if (resource == null) return;
+
+        if (uuid != null) {
+            if (resource.isFolder()) {
+                collectionMetas = md.replaceMetas(resource.getURI(), uuid);
+            } else {
+                currentMetas = md.replaceMetas(resource.getURI(), uuid);
+            }
+        } else {
+            if (resource.isFolder()) {
+                collectionMetas = md.addMetas(resource.getURI());
+            } else {
+                currentMetas = md.addMetas(resource.getURI());
+            }
+        }
+
+    }
+
+    @Override
+    public void endRestore(Resource resource) {
+        if (!resource.isFolder()) currentMetas = null;
+    }
 
 	@Override
 	public boolean isConfigured() {
