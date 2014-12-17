@@ -156,7 +156,7 @@ public class MetaDataImpl extends MetaData {
 		}
 	}
 	
-    public Metas addMetas(XmldbURI url) {
+    public Metas _addMetas(XmldbURI url) {
 		MetasImpl d = new MetasImpl(url);
 		docByUUID.put(d);
 		
@@ -208,6 +208,15 @@ public class MetaDataImpl extends MetaData {
 			LOG.debug("addMetas "+uuid+" "+uri);
 
 		return d;
+	}
+
+	public Metas addMetas(XmldbURI uri) {
+		Metas _d = getMetas(uri, false);
+
+		if (_d != null)
+			return _d;
+
+		return _addMetas(uri);
 	}
 
     public Metas addMetas(DocumentAtExist doc) {

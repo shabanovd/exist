@@ -42,16 +42,21 @@ public class DocumentEvents extends SAXTrigger {
 
     @Override
     public void beforeCreateDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
+        try {
+            MDStorageManager.get().md.addMetas(uri);
+        } catch (Throwable e) {
+            MDStorageManager.LOG.fatal(e,e);
+        }
     }
 
     @Override
     public void afterCreateDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
         // System.out.println("afterCreateDocument "+document.getURI());
-        try {
-            MDStorageManager.get().md.addMetas(document);
-        } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e,e);
-        }
+//        try {
+//            MDStorageManager.get().md.addMetas(document);
+//        } catch (Throwable e) {
+//            MDStorageManager.LOG.fatal(e,e);
+//        }
     }
 
     @Override
