@@ -267,17 +267,15 @@ public class QueryNodes {
 				// XXX: understand: check permissions here? No, it may slowdown,
 				// better to check final set
 
-                if (this.nodeIdValues != null) {
-                    BytesRef ref = new BytesRef(buf);
-                    this.nodeIdValues.get(doc, ref);
-                    int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
-                    NodeId nodeId = db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
-                    // LOG.info("doc: " + docId + "; node: " + nodeId.toString() + "; units: " + units);
+				NodeId nodeId;
+				try {
+					nodeId = getNodeId(doc);
+				} catch (Exception e) {
+					LOG.error(e.getMessage());
+					return;
+				}
 
-                    collect(doc, storedDocument, nodeId, score);
-                } else {
-                    collect(doc, storedDocument, NodeId.DOCUMENT_NODE, score);
-                }
+				collect(doc, storedDocument, nodeId, score);
 
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -319,6 +317,22 @@ public class QueryNodes {
 		@Override
 		protected SearchCallback<NodeProxy> getCallback() {
 			return callback;
+		}
+
+		private NodeId getNodeId(int doc) throws IOException {
+			if (this.nodeIdValues == null) {
+				return NodeId.DOCUMENT_NODE;
+			} else {
+				BytesRef ref = new BytesRef(buf);
+
+				this.nodeIdValues.get(doc, ref);
+				try {
+					int units = ByteConversion.byteToShort(ref.bytes, ref.offset);
+					return db.getNodeFactory().createFromData(units, ref.bytes, ref.offset + 2);
+				} catch (Exception e) {
+					throw new IOException("can't decode NodeId from '"+ Arrays.toString(ref.bytes)+"' offset="+ref.offset);
+				}
+			}
 		}
 	}
 
@@ -459,7 +473,7 @@ public class QueryNodes {
                     try {
                         nodeId = getNodeId(doc);
                     } catch (Exception e) {
-                        LOG.error(e.getMessage(), e);
+                        LOG.error(e.getMessage());
                         return;
                     }
 
@@ -479,7 +493,7 @@ public class QueryNodes {
                     try {
                         nodeId = getNodeId(doc);
                     } catch (Exception e) {
-                        LOG.error(e.getMessage(), e);
+                        LOG.error(e.getMessage());
                         return;
                     }
 
