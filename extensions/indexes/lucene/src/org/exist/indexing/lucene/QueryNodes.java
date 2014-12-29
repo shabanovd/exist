@@ -257,7 +257,7 @@ public class QueryNodes {
                 try {
                     nodeId = getNodeId(doc);
                 } catch (Exception e) {
-                    LOG.error(e.getMessage(), e);
+                    LOG.error(e.getMessage());
                     return;
                 }
 
@@ -440,7 +440,7 @@ public class QueryNodes {
                     try {
                         nodeId = getNodeId(doc);
                     } catch (Exception e) {
-                        LOG.error(e.getMessage(), e);
+                        LOG.error(e.getMessage());
                         return;
                     }
 
@@ -460,7 +460,7 @@ public class QueryNodes {
                     try {
                         nodeId = getNodeId(doc);
                     } catch (Exception e) {
-                        LOG.error(e.getMessage(), e);
+                        LOG.error(e.getMessage());
                         return;
                     }
 
@@ -478,7 +478,7 @@ public class QueryNodes {
 					}
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				LOG.error(e.getMessage(), e);
 			}
 		}
 
