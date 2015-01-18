@@ -37,7 +37,6 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.TestConstants;
 import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
 import org.exist.util.LockException;
@@ -58,9 +57,9 @@ public class SearchTest {
         	"</collection>";
 
     /** /db/test **/
-    private static XmldbURI col1uri = TestConstants.TEST_COLLECTION_URI;
+    private static XmldbURI col1uri = XmldbURI.ROOT_COLLECTION_URI.append("test");
     /** /db/test/test2 **/
-    private static XmldbURI col2uri = TestConstants.TEST_COLLECTION_URI2;
+    private static XmldbURI col2uri = col1uri.append("test2");
     /** /db/moved **/
     private static XmldbURI col3uri = XmldbURI.ROOT_COLLECTION_URI.append("moved");
 

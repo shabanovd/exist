@@ -36,12 +36,10 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.TestConstants;
 import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
 import org.exist.xmldb.XmldbURI;
 import org.junit.Test;
-import org.xml.sax.SAXException;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -56,7 +54,7 @@ public class MatchDocumentsTest {
         	"</collection>";
 
     /** /db/test **/
-    private static XmldbURI col1uri = TestConstants.TEST_COLLECTION_URI;
+    private static XmldbURI col1uri = XmldbURI.ROOT_COLLECTION_URI.append("test");
     /** /db/moved **/
     private static XmldbURI col2uri = XmldbURI.ROOT_COLLECTION_URI.append("moved");
 
