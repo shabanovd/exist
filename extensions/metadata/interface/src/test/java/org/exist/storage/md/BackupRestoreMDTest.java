@@ -35,7 +35,6 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.test.TestConstants;
 import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
 import org.exist.xmldb.XmldbURI;
@@ -54,7 +53,7 @@ public class BackupRestoreMDTest extends TestCase {
             "	</index>" +
         	"</collection>";
 
-    private static XmldbURI col1uri = TestConstants.TEST_COLLECTION_URI;
+    private static XmldbURI col1uri = XmldbURI.ROOT_COLLECTION_URI.append("test");
 
     private static XmldbURI doc1uri = col1uri.append("test_string.xml");
     private static XmldbURI doc2uri = col1uri.append("test.binary");
@@ -98,10 +97,10 @@ public class BackupRestoreMDTest extends TestCase {
             assertNotNull(broker);
 
             //collection
-            Collection root = broker.getCollection(TestConstants.TEST_COLLECTION_URI);
+            Collection root = broker.getCollection(col1uri);
         	assertNotNull(root);
 
-	    	Metas colMD = md.getMetas(TestConstants.TEST_COLLECTION_URI);
+	    	Metas colMD = md.getMetas(col1uri);
 	    	assertNotNull(colMD);
 	    	
 	    	colUUID = colMD.getUUID();
@@ -154,10 +153,10 @@ public class BackupRestoreMDTest extends TestCase {
             assertNotNull(broker);
 
             //collection
-            Collection root = broker.getCollection(TestConstants.TEST_COLLECTION_URI);
+            Collection root = broker.getCollection(col1uri);
         	assertNotNull(root);
 
-        	Metas colMD = md.getMetas(TestConstants.TEST_COLLECTION_URI);
+        	Metas colMD = md.getMetas(col1uri);
 	    	
 	    	assertNotNull(colMD);
 	    	
@@ -295,7 +294,7 @@ public class BackupRestoreMDTest extends TestCase {
             assertNotNull(transaction);
             System.out.println("Transaction started ...");
 
-            Collection root = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
+            Collection root = broker.getOrCreateCollection(transaction, col1uri);
             assertNotNull(root);
             broker.removeCollection(transaction, root);
 

@@ -108,137 +108,32 @@
     <list id="f5bc3222-24ad-43d3-b9b5-627b42110798" name="local" comment="[feature] optimize compression from the File System" />
     <list id="dee4f116-21e7-4919-8859-4bc3127d8801" name="xproc" comment="xproc" />
     <list default="true" id="54ed1300-8fbd-44d6-8b6e-222a6cf763c0" name="Revert: [ignore]  update idea project" comment="[ignore]  update idea project">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/betterform/main/lib/infinispan-commons-6.0.0.Final.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/betterform/main/lib/infinispan-core-6.0.0.Final.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/betterform/main/lib/jboss-logging-3.1.2.GA.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/betterform/main/lib/jboss-marshalling-1.3.18.GA.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/betterform/main/lib/jboss-marshalling-river-1.3.18.GA.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/betterform/main/lib/jboss-transaction-api_1.1_spec-1.0.1.Final.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/betterform/main/lib/jgroups-3.4.1.Final.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-analyzers-common-4.9.0.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-core-4.9.0.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-facet-4.9.0.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-queries-4.9.0.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-queryparser-4.9.0.jar" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/metadata/interface/src/main/java/org/exist/storage/md/xquery/Reindex.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/classes/infinispan.xml" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/betterform/main/lib/ehcache-LICENSE.txt" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/betterform/main/lib/ehcache-core-2.5.2.jar" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/classes/ehcache.xml" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-analyzers-common-4.4.0.jar" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-core-4.4.0.jar" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-facet-4.4.0.jar" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-queries-4.4.0.jar" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/lib/lucene-queryparser-4.4.0.jar" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/SearchTestsFacets.java" afterPath="" />
       <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/security/oauth/lib/org.json.jar" afterPath="" />
       <change type="DELETED" beforePath="$PROJECT_DIR$/extensions/security/oauth/lib/scribe-1.3.5.jar" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/betterform/main/lib/betterform.jar" afterPath="$PROJECT_DIR$/extensions/betterform/main/lib/betterform.jar" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/http/servlets/AbstractExistHttpServlet.java" afterPath="$PROJECT_DIR$/src/org/exist/http/servlets/AbstractExistHttpServlet.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/indexing/AbstractIndex.java" afterPath="$PROJECT_DIR$/src/org/exist/indexing/AbstractIndex.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/AnalyzerConfig.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/AnalyzerConfig.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/Atomize.java" afterPath="$PROJECT_DIR$/src/org/exist/xquery/Atomize.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/BinaryTokenStream.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/BinaryTokenStream.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/storage/BrokerPool.java" afterPath="$PROJECT_DIR$/src/org/exist/storage/BrokerPool.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/ClassicQueryParserWrapper.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/ClassicQueryParserWrapper.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/client/ClientFrame.java" afterPath="$PROJECT_DIR$/src/org/exist/client/ClientFrame.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/metadata/interface/src/main/java/org/exist/storage/md/CollectionEvents.java" afterPath="$PROJECT_DIR$/extensions/metadata/interface/src/main/java/org/exist/storage/md/CollectionEvents.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/storage/index/CollectionStore.java" afterPath="$PROJECT_DIR$/src/org/exist/storage/index/CollectionStore.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/ComplexRangeIndexConfigElement.java" afterPath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/ComplexRangeIndexConfigElement.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/contentextraction/src/org/exist/contentextraction/xquery/ContentFunctions.java" afterPath="$PROJECT_DIR$/extensions/contentextraction/src/org/exist/contentextraction/xquery/ContentFunctions.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/contentextraction/src/org/exist/contentextraction/ContentReceiver.java" afterPath="$PROJECT_DIR$/extensions/contentextraction/src/org/exist/contentextraction/ContentReceiver.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/ControllerForward.java" afterPath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/ControllerForward.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/backup/CreateBackupDialog.java" afterPath="$PROJECT_DIR$/src/org/exist/backup/CreateBackupDialog.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/dom/DocumentImpl.java" afterPath="$PROJECT_DIR$/src/org/exist/dom/DocumentImpl.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/DynamicCardinalityCheck.java" afterPath="$PROJECT_DIR$/src/org/exist/xquery/DynamicCardinalityCheck.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/DynamicNameCheck.java" afterPath="$PROJECT_DIR$/src/org/exist/xquery/DynamicNameCheck.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/DynamicTypeCheck.java" afterPath="$PROJECT_DIR$/src/org/exist/xquery/DynamicTypeCheck.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/sql/ExecuteFunction.java" afterPath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/sql/ExecuteFunction.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/FacetAbstract.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/FacetAbstract.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/FacetIndexTest.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/FacetIndexTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/FacetMatchListenerTest.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/FacetMatchListenerTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/xquery/modules/lucene/FacetSearch.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/xquery/modules/lucene/FacetSearch.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/Forward.java" afterPath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/Forward.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/Function.java" afterPath="$PROJECT_DIR$/src/org/exist/xquery/Function.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/functions/system/GetRevision.java" afterPath="$PROJECT_DIR$/src/org/exist/xquery/functions/system/GetRevision.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/indexing/Index.java" afterPath="$PROJECT_DIR$/src/org/exist/indexing/Index.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/client/InteractiveClient.java" afterPath="$PROJECT_DIR$/src/org/exist/client/InteractiveClient.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/management/client/JMXServlet.java" afterPath="$PROJECT_DIR$/src/org/exist/management/client/JMXServlet.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/management/client/JMXtoXML.java" afterPath="$PROJECT_DIR$/src/org/exist/management/client/JMXtoXML.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/jetty/JettyStart.java" afterPath="$PROJECT_DIR$/src/org/exist/jetty/JettyStart.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/LocationStep.java" afterPath="$PROJECT_DIR$/src/org/exist/xquery/LocationStep.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/xquery/modules/range/Lookup.java" afterPath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/xquery/modules/range/Lookup.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneConfigText.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneConfigText.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndex.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndex.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneMatchListener.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneMatchListener.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneUtil.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneUtil.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/MarkableTokenFilter.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/MarkableTokenFilter.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/mail/MessageListFunctions.java" afterPath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/mail/MessageListFunctions.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/metadata/interface/src/main/java/org/exist/storage/md/xquery/MetadataModule.java" afterPath="$PROJECT_DIR$/extensions/metadata/interface/src/main/java/org/exist/storage/md/xquery/MetadataModule.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/ModuleCall.java" afterPath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/ModuleCall.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/ngram/src/org/exist/indexing/ngram/NGramIndex.java" afterPath="$PROJECT_DIR$/extensions/indexes/ngram/src/org/exist/indexing/ngram/NGramIndex.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/ngram/src/org/exist/indexing/ngram/NGramIndexWorker.java" afterPath="$PROJECT_DIR$/extensions/indexes/ngram/src/org/exist/indexing/ngram/NGramIndexWorker.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/ngram/src/org/exist/xquery/modules/ngram/NGramSearch.java" afterPath="$PROJECT_DIR$/extensions/indexes/ngram/src/org/exist/xquery/modules/ngram/NGramSearch.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/NameTest.java" afterPath="$PROJECT_DIR$/src/org/exist/xquery/NameTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/storage/NativeBroker.java" afterPath="$PROJECT_DIR$/src/org/exist/storage/NativeBroker.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/storage/structural/NativeStructuralIndexWorker.java" afterPath="$PROJECT_DIR$/src/org/exist/storage/structural/NativeStructuralIndexWorker.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/NodesFilter.java" afterPath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/NodesFilter.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/metadata/interface/src/main/java/org/exist/storage/md/xquery/PairDelete.java" afterPath="$PROJECT_DIR$/extensions/metadata/interface/src/main/java/org/exist/storage/md/xquery/PairDelete.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/PathForward.java" afterPath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/PathForward.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/persistentlogin/PersistentLogin.java" afterPath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/persistentlogin/PersistentLogin.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/PlainTextHighlighter.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/PlainTextHighlighter.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/PlainTextIndexConfig.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/PlainTextIndexConfig.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/management/impl/ProcessReport.java" afterPath="$PROJECT_DIR$/src/org/exist/management/impl/ProcessReport.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/management/impl/ProcessReportMBean.java" afterPath="$PROJECT_DIR$/src/org/exist/management/impl/ProcessReportMBean.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/xquery/modules/lucene/Query.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/xquery/modules/lucene/Query.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/client/QueryDialog.java" afterPath="$PROJECT_DIR$/src/org/exist/client/QueryDialog.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/QueryDocuments.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/QueryDocuments.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/QueryFacetCollector.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/QueryFacetCollector.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/xquery/modules/lucene/QueryField.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/xquery/modules/lucene/QueryField.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/QueryNodes.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/QueryNodes.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/QueryParserWrapper.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/QueryParserWrapper.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/RangeIndexConfigElement.java" afterPath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/RangeIndexConfigElement.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/RangeIndexWorker.java" afterPath="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/RangeIndexWorker.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/Redirect.java" afterPath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/Redirect.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/storage/btree/Repair.java" afterPath="$PROJECT_DIR$/src/org/exist/storage/btree/Repair.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/RewriteConfig.java" afterPath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/RewriteConfig.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/sql/SQLModule.java" afterPath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/sql/SQLModule.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/sql/SQLUtils.java" afterPath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/sql/SQLUtils.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/xquery/modules/lucene/Search.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/xquery/modules/lucene/Search.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/SearchTestOrder.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/SearchTestOrder.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/mail/SendEmailFunction.java" afterPath="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/mail/SendEmailFunction.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/indexing/StructuralIndex.java" afterPath="$PROJECT_DIR$/src/org/exist/indexing/StructuralIndex.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/management/impl/SystemInfo.java" afterPath="$PROJECT_DIR$/src/org/exist/management/impl/SystemInfo.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/management/impl/SystemInfoMBean.java" afterPath="$PROJECT_DIR$/src/org/exist/management/impl/SystemInfoMBean.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/TermInPhrase.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/TermInPhrase.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/storage/txn/TransactionManager.java" afterPath="$PROJECT_DIR$/src/org/exist/storage/txn/TransactionManager.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/URLRewrite.java" afterPath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/URLRewrite.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/UntypedValueCheck.java" afterPath="$PROJECT_DIR$/src/org/exist/xquery/UntypedValueCheck.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/Version.java" afterPath="$PROJECT_DIR$/src/org/exist/Version.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/XMLToQuery.java" afterPath="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/XMLToQuery.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/XQueryURLRewrite.java" afterPath="$PROJECT_DIR$/src/org/exist/http/urlrewrite/XQueryURLRewrite.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xmldb/XmldbURI.java" afterPath="$PROJECT_DIR$/src/org/exist/xmldb/XmldbURI.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/betterform-config.xml" afterPath="$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/betterform-config.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/betterform-version.info" afterPath="$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/betterform-version.info" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build/scripts/build-impl.xml" afterPath="$PROJECT_DIR$/build/scripts/build-impl.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/betterform/build.xml" afterPath="$PROJECT_DIR$/extensions/betterform/build.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/modules/build.xml" afterPath="$PROJECT_DIR$/extensions/modules/build.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/conf.xml.tmpl" afterPath="$PROJECT_DIR$/conf.xml.tmpl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/betterform/main/webapp/dashboard.html" afterPath="$PROJECT_DIR$/extensions/betterform/main/webapp/dashboard.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build/scripts/dist.xml" afterPath="$PROJECT_DIR$/build/scripts/dist.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/BackupRestoreMDTest.java" afterPath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/BackupRestoreMDTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/DocumentAsValueTest.java" afterPath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/DocumentAsValueTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/MatchDocumentsTest.java" afterPath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/MatchDocumentsTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SearchTest.java" afterPath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SearchTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SimpleMDTest.java" afterPath="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SimpleMDTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/versioning/src/org/exist/versioning/VersioningTrigger.java" afterPath="$PROJECT_DIR$/extensions/versioning/src/org/exist/versioning/VersioningTrigger.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/eXist.iws" afterPath="$PROJECT_DIR$/eXist.iws" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build/scripts/extensions-common.xml" afterPath="$PROJECT_DIR$/build/scripts/extensions-common.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/contentextraction/ivy.xml" afterPath="$PROJECT_DIR$/extensions/contentextraction/ivy.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/xquery/lib/json.xq" afterPath="$PROJECT_DIR$/src/org/exist/xquery/lib/json.xq" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/src/xquery/selfAxis.xml" afterPath="$PROJECT_DIR$/test/src/xquery/selfAxis.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/system.properties" afterPath="$PROJECT_DIR$/src/org/exist/system.properties" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/wrapper/conf/wrapper.conf.in" afterPath="$PROJECT_DIR$/tools/wrapper/conf/wrapper.conf.in" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/src/xquery/xinclude/xinclude.xml" afterPath="$PROJECT_DIR$/test/src/xquery/xinclude/xinclude.xml" />
     </list>
     <list id="2fe5d5c5-3eab-4c67-bc87-1c5a706e8808" name="New changelist" comment="" />
     <ignored path="$USER_HOME$/.grails/" />
     <ignored path="$USER_HOME$/.griffon/" />
+    <ignored path="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/cqlparser/" />
+    <ignored path="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/jfreechart/" />
+    <ignored path="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/memcached/" />
+    <ignored path="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/oracle/" />
+    <ignored path="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/xmlcalabash/" />
+    <ignored path="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/xmpp/" />
+    <ignored path="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/xslfo/" />
+    <ignored path="$PROJECT_DIR$/tools/jetty/logs/" />
+    <ignored path="$PROJECT_DIR$/tools/jetty/work/" />
+    <ignored path="$PROJECT_DIR$/webapp/WEB-INF/data/" />
+    <ignored path="$PROJECT_DIR$/webapp/WEB-INF/logs/" />
+    <ignored path="$PROJECT_DIR$/build/intellij/" />
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -334,68 +229,97 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="LuceneIndexWorker.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java">
+      <file leaf-file-name="MatchDocumentsTest.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/MatchDocumentsTest.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="2.1153846" vertical-offset="19270" max-vertical-offset="24660">
-              <caret line="1379" column="35" selection-start-line="1379" selection-start-column="35" selection-end-line="1379" selection-end-column="35" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ModuleCall.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/ModuleCall.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="662" max-vertical-offset="1365">
-              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="123" max-vertical-offset="10350">
+              <caret line="56" column="81" selection-start-line="56" selection-start-column="38" selection-end-line="56" selection-end-column="81" />
               <folding>
-                <element signature="e#0#3876#0" expanded="true" />
-                <element signature="e#3310#3311#0" expanded="true" />
-                <element signature="e#3353#3354#0" expanded="true" />
+                <element signature="imports" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Redirect.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/Redirect.java">
+      <file leaf-file-name="SearchTest.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SearchTest.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="555">
-              <caret line="42" column="14" selection-start-line="42" selection-start-column="14" selection-end-line="42" selection-end-column="14" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="123" max-vertical-offset="4680">
+              <caret line="38" column="33" selection-start-line="38" selection-start-column="33" selection-end-line="38" selection-end-column="33" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="DocumentAsValueTest.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/DocumentAsValueTest.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="123" max-vertical-offset="3240">
+              <caret line="38" column="0" selection-start-line="38" selection-start-column="0" selection-end-line="38" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="BackupRestoreMDTest.java" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/BackupRestoreMDTest.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="1.1186943" vertical-offset="3793" max-vertical-offset="4485">
+              <caret line="296" column="79" selection-start-line="296" selection-start-column="79" selection-end-line="296" selection-end-column="79" />
               <folding>
-                <element signature="e#1843#1844#0" expanded="true" />
-                <element signature="e#1884#1885#0" expanded="true" />
+                <element signature="imports" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ControllerForward.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/ControllerForward.java">
+      <file leaf-file-name="SimpleMDTest.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SimpleMDTest.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="512" max-vertical-offset="1185">
-              <caret line="100" column="7" selection-start-line="100" selection-start-column="7" selection-end-line="100" selection-end-column="7" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="138" max-vertical-offset="15930">
+              <caret line="61" column="80" selection-start-line="61" selection-start-column="80" selection-end-line="61" selection-end-column="80" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="VersioningTrigger.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/extensions/versioning/src/org/exist/versioning/VersioningTrigger.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="3333" max-vertical-offset="8895">
+              <caret line="294" column="36" selection-start-line="294" selection-start-column="36" selection-end-line="294" selection-end-column="36" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MetaDataImpl.java" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/extensions/metadata/sleepycat/src/main/java/org/exist/storage/md/MetaDataImpl.java">
+      <file leaf-file-name="Account.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/org/exist/security/Account.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.18181819" vertical-offset="223" max-vertical-offset="9330">
-              <caret line="41" column="23" selection-start-line="41" selection-start-column="23" selection-end-line="41" selection-end-column="23" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="70" max-vertical-offset="2535">
+              <caret line="41" column="18" selection-start-line="41" selection-start-column="18" selection-end-line="41" selection-end-column="18" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Resource.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/org/exist/Resource.java">
+      <file leaf-file-name="AbstractRealm.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/org/exist/security/AbstractRealm.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="570">
-              <caret line="42" column="44" selection-start-line="42" selection-start-column="31" selection-end-line="42" selection-end-column="44" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="4980" max-vertical-offset="7770">
+              <caret line="453" column="52" selection-start-line="453" selection-start-column="8" selection-end-line="453" selection-end-column="52" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="User.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/org/exist/security/User.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1905">
+              <caret line="35" column="17" selection-start-line="35" selection-start-column="17" selection-end-line="35" selection-end-column="17" />
               <folding />
             </state>
           </provider>
@@ -412,7 +336,7 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="RC14" />
+        <entry key="$PROJECT_DIR$" value="RC-2.2.0" />
       </map>
     </option>
   </component>
@@ -422,31 +346,15 @@
     </option>
   </component>
   <component name="IdeDocumentHistory">
-    <option name="changedFiles">
+    <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/src/org/exist/util/serializer/SAXSerializer.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/util/serializer/MicroXmlWriter.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xmldb/LocalUserManagementService.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/collections/Collection.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBSetCollectionPermissions.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBSetResourcePermissions.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/util/serializer/DOMStreamer.java" />
-        <option value="$PROJECT_DIR$/test/src/org/exist/xmldb/ResourceTest.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/httpclient/BaseHTTPClientFunction.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/memtree/SAXAdapter.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/compression/AbstractCompressFunction.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/compression/AbstractExtractFunction.java" />
-        <option value="/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/classes.jar!/org/xml/sax/ContentHandler.class" />
-        <option value="$PROJECT_DIR$/eXist.iws" />
-        <option value="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/xquery/modules/lucene/Optimize.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/util/io/Resource.java" />
-        <option value="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndex.java" />
-        <option value="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneConfigText.java" />
-        <option value="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/http/urlrewrite/ModuleCall.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/http/urlrewrite/Redirect.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/http/urlrewrite/ControllerForward.java" />
-        <option value="$PROJECT_DIR$/extensions/indexes/lucene/test/src/org/exist/indexing/lucene/SearchTestsFacets.java" />
+        <option value="$PROJECT_DIR$/src/org/exist/client/QueryDialog.java" />
+        <option value="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/MatchDocumentsTest.java" />
+        <option value="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SearchTest.java" />
+        <option value="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/DocumentAsValueTest.java" />
+        <option value="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SimpleMDTest.java" />
+        <option value="$PROJECT_DIR$/extensions/versioning/src/org/exist/versioning/VersioningTrigger.java" />
+        <option value="$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/BackupRestoreMDTest.java" />
       </list>
     </option>
   </component>
@@ -476,9 +384,10 @@
     <option name="CLIENT" value="" />
   </component>
   <component name="ProjectFrameBounds">
-    <option name="y" value="22" />
-    <option name="width" value="1440" />
-    <option name="height" value="804" />
+    <option name="x" value="41" />
+    <option name="y" value="23" />
+    <option name="width" value="1399" />
+    <option name="height" value="812" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
@@ -662,7 +571,6 @@
       <sortByType PackagesPane="true" Favorites="true" />
     </navigator>
     <panes>
-      <pane id="PackagesPane" />
       <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
@@ -679,7 +587,7 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -689,11 +597,11 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -703,19 +611,19 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="org" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -725,23 +633,23 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="org" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="http" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemId" value="client" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -751,111 +659,101 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="extensions" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="eXist" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="exist-dmitriy" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="extensions" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="metadata" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="eXist" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="exist-dmitriy" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="extensions" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="metadata" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="interface" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="eXist" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="exist-dmitriy" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="extensions" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="metadata" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="interface" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="org" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="http" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="urlrewrite" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="extensions" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="extensions" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="indexes" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="extensions" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="indexes" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lucene" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="extensions" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="indexes" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lucene" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="test" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemId" value="java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="org" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="exist" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="storage" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="md" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -865,123 +763,28 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="extensions" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="indexes" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemId" value="metadata" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="lucene" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="test" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemId" value="interface" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="org" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="indexing" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lucene" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="extensions" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="indexes" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lucene" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="org" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="extensions" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="indexes" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lucene" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="org" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="indexing" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lucene" />
-              <option name="myItemType" value="com.android.tools.idea.gradle.projectView.AndroidPsiDirectoryNode" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
         </subPane>
       </pane>
+      <pane id="PackagesPane" />
       <pane id="Favorites">
         <subPane subId="eXist">
           <PATH>
@@ -1268,7 +1071,7 @@
       <recent name="$PROJECT_DIR$/webapp/repo/packages/functx-example" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.Server">
+  <component name="RunManager" selected="Application.eXist Client">
     <configuration default="false" name="CoreTests" type="JUnit" factoryName="JUnit" temporary="true">
       <extension name="coverage" enabled="false" merge="false" runner="emma">
         <pattern>
@@ -1441,7 +1244,29 @@
       <option name="PORT" value="5005" />
       <method />
     </configuration>
+    <configuration default="true" type="JarApplication" factoryName="JAR Application">
+      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="true" type="GradleRunConfiguration" factoryName="Gradle">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list />
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <method />
+    </configuration>
     <configuration default="true" type="TestNG" factoryName="TestNG">
+      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
       <module name="" />
       <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
       <option name="ALTERNATIVE_JRE_PATH" />
@@ -2019,18 +1844,29 @@
       <changelist id="dee4f116-21e7-4919-8859-4bc3127d8801" name="xproc" comment="" />
       <changelist id="54ed1300-8fbd-44d6-8b6e-222a6cf763c0" name="Revert: [ignore]  update idea project" comment="" />
       <created>1258752091419</created>
+      <option name="number" value="Default" />
       <updated>1347368406247</updated>
     </task>
     <task id="LOCAL-00001" summary="[feature] added ant task to extract XQuery module documentation and store into the db. (Pre-Tested Commit)">
       <changelist id="c2cbb0af-73e4-419e-a2b6-663e0bbfd989" name="[feature] added ant task to extract XQuery module documentation and store into the db. (Pre-Tested Commit)" comment="[feature] added ant task to extract XQuery module documentation and store into the db." />
       <created>1278753104546</created>
+      <option name="number" value="00001" />
+      <option name="project" value="LOCAL" />
       <updated>1278753104546</updated>
     </task>
     <task id="LOCAL-00006" summary="Revert: [ignore]  update idea project">
       <created>1347369950102</created>
+      <option name="number" value="00006" />
+      <option name="project" value="LOCAL" />
       <updated>1347369950102</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="do not load all collections at xquery editor">
+      <created>1421616297199</created>
+      <option name="number" value="00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1421616297199</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TodoView" selected-index="0">
@@ -2054,28 +1890,27 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="22" width="1440" height="804" extended-state="6" />
+    <frame x="41" y="23" width="1399" height="812" extended-state="6" />
     <editor active="false" />
     <layout>
       <window_info id="Palette&#9;" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.494302" sideWeight="0.5" order="16" side_tool="false" content_ui="tabs" />
+      <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Changes" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.49305555" sideWeight="0.5" order="16" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33333334" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="true" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.19141914" sideWeight="0.6141141" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.37037036" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" x="2" y="25" width="822" height="573" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.37464386" sideWeight="0.5" order="13" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="true" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4255618" sideWeight="0.5" order="14" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="true" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22222222" sideWeight="0.5" order="14" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.35135135" sideWeight="0.0" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.23162939" sideWeight="0.5740741" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39780018" sideWeight="0.80755395" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.29756796" sideWeight="0.505698" order="0" side_tool="false" content_ui="combo" x="72" y="49" width="451" height="485" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3803419" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.33824614" sideWeight="0.505698" order="0" side_tool="false" content_ui="combo" x="72" y="49" width="451" height="485" />
       <window_info id="Problems" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="17" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Color Browser" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -2087,12 +1922,13 @@
       <window_info id="Log4jMonitor" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.5105634" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="File View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24959481" sideWeight="0.6514132" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.23595506" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Data Sources" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.102658115" sideWeight="0.28521127" order="9" side_tool="true" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="SVN Properties" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.33333334" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="JetGradle" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33333334" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.37037036" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" x="2" y="25" width="822" height="573" />
       <window_info id="TeamCity" active="false" anchor="bottom" auto_hide="true" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.53518516" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Web" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="EJB" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -2130,7 +1966,6 @@
     </option>
     <option name="PERFORM_UPDATE_IN_BACKGROUND" value="false" />
     <option name="PERFORM_COMMIT_IN_BACKGROUND" value="false" />
-    <MESSAGE value="[repo]  added to repo docs that compression module is now required and needs to be enabled via conf.xml" />
     <MESSAGE value="[repo]  tweaking public repository ui" />
     <MESSAGE value="[repo]  added docs for public repository and graphic" />
     <MESSAGE value="[conf]  added compression module to core loaded modules now, as its a dep for repo" />
@@ -2155,7 +1990,8 @@
     <MESSAGE value="test" />
     <MESSAGE value="[feature] Enable compression from the File System via an URI like &quot;file:///...&quot;" />
     <MESSAGE value="[ignore]  update idea project" />
-    <option name="LAST_COMMIT_MESSAGE" value="[ignore]  update idea project" />
+    <MESSAGE value="do not load all collections at xquery editor" />
+    <option name="LAST_COMMIT_MESSAGE" value="do not load all collections at xquery editor" />
   </component>
   <component name="VssConfiguration">
     <option name="CLIENT_PATH" value="" />
@@ -2193,6 +2029,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
+    <watches-manager />
   </component>
   <component name="XPathView.XPathProjectComponent">
     <history />
@@ -2349,6 +2186,85 @@
     <option name="myLastEditedConfigurable" />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneUtil.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="135" max-vertical-offset="2850">
+          <caret line="44" column="0" selection-start-line="44" selection-start-column="0" selection-end-line="45" selection-end-column="56" />
+          <folding>
+            <element signature="e#0#8726#0" expanded="false" />
+            <element signature="imports" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndex.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="2550" max-vertical-offset="5775">
+          <caret line="194" column="17" selection-start-line="194" selection-start-column="8" selection-end-line="194" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#13103#0" expanded="false" />
+            <element signature="e#3463#3464#0" expanded="false" />
+            <element signature="e#3485#3486#0" expanded="false" />
+            <element signature="e#3519#3520#0" expanded="false" />
+            <element signature="e#3550#3551#0" expanded="false" />
+            <element signature="e#5874#5875#0" expanded="false" />
+            <element signature="e#5904#5905#0" expanded="false" />
+            <element signature="e#7055#7056#0" expanded="false" />
+            <element signature="e#7113#7114#0" expanded="false" />
+            <element signature="e#7331#7332#0" expanded="false" />
+            <element signature="e#7369#7370#0" expanded="false" />
+            <element signature="e#11976#11977#0" expanded="false" />
+            <element signature="e#12019#12020#0" expanded="false" />
+            <element signature="e#12081#12082#0" expanded="false" />
+            <element signature="e#12124#12125#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="19275" max-vertical-offset="25080">
+          <caret line="1379" column="0" selection-start-line="1379" selection-start-column="0" selection-end-line="1379" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/ModuleCall.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="662" max-vertical-offset="1365">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/Redirect.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="195" max-vertical-offset="555">
+          <caret line="42" column="14" selection-start-line="42" selection-start-column="14" selection-end-line="42" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/ControllerForward.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="512" max-vertical-offset="1185">
+          <caret line="100" column="7" selection-start-line="100" selection-start-column="7" selection-end-line="100" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/metadata/sleepycat/src/main/java/org/exist/storage/md/MetaDataImpl.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="345" max-vertical-offset="9765">
+          <caret line="41" column="23" selection-start-line="41" selection-start-column="23" selection-end-line="41" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/Resource.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="345" max-vertical-offset="600">
+          <caret line="42" column="44" selection-start-line="42" selection-start-column="31" selection-end-line="42" selection-end-column="44" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="25890">
@@ -2361,7 +2277,23 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="825" max-vertical-offset="6255">
           <caret line="55" column="0" selection-start-line="55" selection-start-column="0" selection-end-line="55" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#0#13103#0" expanded="false" />
+            <element signature="e#3463#3464#0" expanded="false" />
+            <element signature="e#3485#3486#0" expanded="false" />
+            <element signature="e#3519#3520#0" expanded="false" />
+            <element signature="e#3550#3551#0" expanded="false" />
+            <element signature="e#5874#5875#0" expanded="false" />
+            <element signature="e#5904#5905#0" expanded="false" />
+            <element signature="e#7055#7056#0" expanded="false" />
+            <element signature="e#7113#7114#0" expanded="false" />
+            <element signature="e#7331#7332#0" expanded="false" />
+            <element signature="e#7369#7370#0" expanded="false" />
+            <element signature="e#11976#11977#0" expanded="false" />
+            <element signature="e#12019#12020#0" expanded="false" />
+            <element signature="e#12081#12082#0" expanded="false" />
+            <element signature="e#12124#12125#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -2477,14 +2409,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndex.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="1110" max-vertical-offset="6015">
-          <caret line="55" column="0" selection-start-line="55" selection-start-column="0" selection-end-line="55" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/AnalyzerConfig.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="75" max-vertical-offset="7065">
@@ -2522,50 +2446,203 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java">
+    <entry file="file://$PROJECT_DIR$/extensions/metadata/sleepycat/src/main/java/org/exist/storage/md/MetaDataImpl.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="2.1153846" vertical-offset="19270" max-vertical-offset="24660">
-          <caret line="1379" column="35" selection-start-line="1379" selection-start-column="35" selection-end-line="1379" selection-end-column="35" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/ModuleCall.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="662" max-vertical-offset="1365">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#3876#0" expanded="true" />
-            <element signature="e#3310#3311#0" expanded="true" />
-            <element signature="e#3353#3354#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/Redirect.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="555">
-          <caret line="42" column="14" selection-start-line="42" selection-start-column="14" selection-end-line="42" selection-end-column="14" />
-          <folding>
-            <element signature="e#1843#1844#0" expanded="true" />
-            <element signature="e#1884#1885#0" expanded="true" />
-          </folding>
+        <state vertical-scroll-proportion="0.0" vertical-offset="345" max-vertical-offset="9630">
+          <caret line="41" column="23" selection-start-line="41" selection-start-column="23" selection-end-line="41" selection-end-column="23" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/ControllerForward.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="512" max-vertical-offset="1185">
+        <state vertical-scroll-proportion="0.78134114" vertical-offset="499" max-vertical-offset="1215">
           <caret line="100" column="7" selection-start-line="100" selection-start-column="7" selection-end-line="100" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/Redirect.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.28425655" vertical-offset="0" max-vertical-offset="686">
+          <caret line="42" column="14" selection-start-line="42" selection-start-column="14" selection-end-line="42" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/http/urlrewrite/ModuleCall.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-0.9460641" vertical-offset="649" max-vertical-offset="1335">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndex.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="2550" max-vertical-offset="5775">
+          <caret line="194" column="17" selection-start-line="194" selection-start-column="8" selection-end-line="194" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#13103#0" expanded="false" />
+            <element signature="e#3463#3464#0" expanded="false" />
+            <element signature="e#3485#3486#0" expanded="false" />
+            <element signature="e#3519#3520#0" expanded="false" />
+            <element signature="e#3550#3551#0" expanded="false" />
+            <element signature="e#5874#5875#0" expanded="false" />
+            <element signature="e#5904#5905#0" expanded="false" />
+            <element signature="e#7055#7056#0" expanded="false" />
+            <element signature="e#7113#7114#0" expanded="false" />
+            <element signature="e#7331#7332#0" expanded="false" />
+            <element signature="e#7369#7370#0" expanded="false" />
+            <element signature="e#11976#11977#0" expanded="false" />
+            <element signature="e#12019#12020#0" expanded="false" />
+            <element signature="e#12081#12082#0" expanded="false" />
+            <element signature="e#12124#12125#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneUtil.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="2850">
+          <caret line="44" column="0" selection-start-line="44" selection-start-column="0" selection-end-line="45" selection-end-column="56" />
+          <folding>
+            <element signature="e#0#8726#0" expanded="false" />
+            <element signature="imports" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/client/QueryDialog.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="4200" max-vertical-offset="9030">
+          <caret line="370" column="12" selection-start-line="370" selection-start-column="12" selection-end-line="370" selection-end-column="12" />
+          <folding>
+            <element signature="e#0#25903#0" expanded="false" />
+            <element signature="imports" expanded="false" />
+            <element signature="e#6078#6079#0" expanded="false" />
+            <element signature="e#6095#6096#0" expanded="false" />
+            <element signature="e#6528#6529#0" expanded="false" />
+            <element signature="e#6609#6610#0" expanded="false" />
+            <element signature="e#6977#6978#0" expanded="false" />
+            <element signature="e#7018#7019#0" expanded="false" />
+            <element signature="e#7321#7322#0" expanded="false" />
+            <element signature="e#7371#7372#0" expanded="false" />
+            <element signature="e#7695#7696#0" expanded="false" />
+            <element signature="e#7718#7719#0" expanded="false" />
+            <element signature="e#8011#8012#0" expanded="false" />
+            <element signature="e#8033#8034#0" expanded="false" />
+            <element signature="e#8330#8331#0" expanded="false" />
+            <element signature="e#8356#8357#0" expanded="false" />
+            <element signature="e#8703#8704#0" expanded="false" />
+            <element signature="e#8730#8731#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="9750" max-vertical-offset="25875">
+          <caret line="29" column="44" selection-start-line="29" selection-start-column="44" selection-end-line="29" selection-end-column="44" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/metadata/sleepycat/src/main/java/org/exist/storage/md/MetaDataImpl.java">
+    <entry file="file://$PROJECT_DIR$/src/org/exist/security/User.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.18181819" vertical-offset="223" max-vertical-offset="9330">
-          <caret line="41" column="23" selection-start-line="41" selection-start-column="23" selection-end-line="41" selection-end-column="23" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1905">
+          <caret line="35" column="17" selection-start-line="35" selection-start-column="17" selection-end-line="35" selection-end-column="17" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/security/internal/AccountImpl.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-0.29867256" vertical-offset="1920" max-vertical-offset="4095">
+          <caret line="161" column="21" selection-start-line="161" selection-start-column="21" selection-end-line="161" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/security/AbstractAccount.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="1.039823" vertical-offset="670" max-vertical-offset="4830">
+          <caret line="107" column="20" selection-start-line="107" selection-start-column="20" selection-end-line="107" selection-end-column="20" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/security/Account.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="70" max-vertical-offset="2535">
+          <caret line="41" column="18" selection-start-line="41" selection-start-column="18" selection-end-line="41" selection-end-column="18" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/security/AbstractRealm.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="4980" max-vertical-offset="7770">
+          <caret line="453" column="52" selection-start-line="453" selection-start-column="8" selection-end-line="453" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/MatchDocumentsTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="123" max-vertical-offset="10350">
+          <caret line="56" column="81" selection-start-line="56" selection-start-column="38" selection-end-line="56" selection-end-column="81" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SearchTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="123" max-vertical-offset="4680">
+          <caret line="38" column="33" selection-start-line="38" selection-start-column="33" selection-end-line="38" selection-end-column="33" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/DocumentAsValueTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="123" max-vertical-offset="3240">
+          <caret line="38" column="0" selection-start-line="38" selection-start-column="0" selection-end-line="38" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/SimpleMDTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="138" max-vertical-offset="15930">
+          <caret line="61" column="80" selection-start-line="61" selection-start-column="80" selection-end-line="61" selection-end-column="80" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/dom/DocumentImpl.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.05075188" vertical-offset="3468" max-vertical-offset="19935">
+          <caret line="321" column="16" selection-start-line="321" selection-start-column="16" selection-end-line="321" selection-end-column="16" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/versioning/src/org/exist/versioning/VersioningTrigger.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="3333" max-vertical-offset="8895">
+          <caret line="294" column="36" selection-start-line="294" selection-start-column="36" selection-end-line="294" selection-end-column="36" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/metadata/interface/src/test/java/org/exist/storage/md/BackupRestoreMDTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="1.1186943" vertical-offset="3793" max-vertical-offset="4485">
+          <caret line="296" column="79" selection-start-line="296" selection-start-column="79" selection-end-line="296" selection-end-column="79" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -2648,4 +2725,3 @@
     </states>
   </component>
 </project>
-
