@@ -39,21 +39,17 @@ import org.apache.commons.codec.binary.Base64;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.exist.EXistException;
 import org.exist.config.Configurable;
 import org.exist.config.Configuration;
 import org.exist.config.Configurator;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsAttribute;
 import org.exist.config.annotation.ConfigurationFieldAsElement;
-import org.exist.security.AXSchemaType;
-import org.exist.security.AbstractAccount;
-import org.exist.security.Account;
-import org.exist.security.AuthenticationException;
-import org.exist.security.PermissionDeniedException;
-import org.exist.security.SchemaType;
+import org.exist.security.*;
 import org.exist.security.internal.HttpSessionAuthentication;
 import org.exist.security.internal.SubjectAccreditedImpl;
-import org.exist.security.realm.saml.SAMLRealm;
+import org.exist.storage.DBBroker;
 import org.opensaml.common.SAMLException;
 import org.opensaml.common.SAMLObject;
 import org.opensaml.common.binding.SAMLMessageContext;
@@ -79,7 +75,11 @@ public class Service implements Configurable {
     
     public static String SAML_SESSION_INFO = "SAML_SESSION_INFO";
 
+    private SAMLRealm realm = null;
     private Configuration configuration = null;
+
+    @ConfigurationFieldAsAttribute("set-group")
+    String set_group;
 
     @ConfigurationFieldAsAttribute("name")
     String name;
@@ -96,6 +96,8 @@ public class Service implements Configurable {
     Certificate certSigning;
     
     public Service(SAMLRealm realm, Configuration config) {
+
+        this.realm = realm;
 
         configuration = Configurator.configure(this, config);
     }
@@ -171,6 +173,31 @@ public class Service implements Configurable {
             
             found = SAMLRealm.get().createAccountInDatabase(accountName, metadata);
         }
+
+        if (set_group != null && !found.hasGroup(set_group)) {
+
+            final Account account = found;
+
+            try {
+                realm.executeAsSystemUser(new AbstractRealm.Unit<Account>() {
+                    @Override
+                    public Account execute(DBBroker broker) throws EXistException, PermissionDeniedException {
+                        account.addGroup(set_group);
+
+                        account.save();
+
+                        return account;
+                    }
+                });
+            } catch (EXistException | PermissionDeniedException e) {
+                throw new AuthenticationException(
+                        AuthenticationException.UNNOWN_EXCEPTION,
+                        "can't add account to group '"+set_group+"'",
+                        e
+                );
+            }
+        }
+
         //XXX: update metas if changed!
         
         Account principal = new SubjectAccreditedImpl((AbstractAccount) found, assertions, getSAMLSessionValidTo(assertions));

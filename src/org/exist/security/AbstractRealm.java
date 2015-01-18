@@ -501,11 +501,11 @@ public abstract class AbstractRealm implements Realm, Configurable {
         return getSecurityManager().getGroup(name);
     }
 
-    protected interface Unit<R> {
+    public interface Unit<R> {
         public R execute(DBBroker broker) throws EXistException, PermissionDeniedException;
     }
 
-    protected <R> R executeAsSystemUser(Unit<R> unit) throws EXistException, PermissionDeniedException {
+    public <R> R executeAsSystemUser(Unit<R> unit) throws EXistException, PermissionDeniedException {
         DBBroker broker = null;
         final Subject currentSubject = getDatabase().getSubject();
         try {
