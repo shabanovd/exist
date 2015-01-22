@@ -367,7 +367,7 @@ public class InteractiveClient {
     }
     
     private String getGroupName(final Permission perm) {
-        if (perm.getOwner() == null) {
+        if (perm.getGroup() == null) {
             return "?";
         } else {
             return perm.getGroup().getName();
@@ -433,9 +433,13 @@ public class InteractiveClient {
                 System.out.println("null"); //TODO this is not useful!
             }
             if ("true".equals(properties.getProperty("permissions"))) {
-                resources[i] = '-' + perm.toString() + '\t' + perm.getOwner().getName()
-                + '\t' + perm.getGroup().getName() + '\t'
-                        + URIUtils.urlDecodeUtf8(childResources[j]);
+                try {
+                    resources[i] = '-' + perm.toString() + '\t' + perm.getOwner().getName()
+                            + '\t' + perm.getGroup().getName() + '\t'
+                            + URIUtils.urlDecodeUtf8(childResources[j]);
+                } catch (Exception e) {
+                    resources[i] = URIUtils.urlDecodeUtf8(childResources[j]);
+                }
             } else {
                 resources[i] = URIUtils.urlDecodeUtf8(childResources[j]);
             }
