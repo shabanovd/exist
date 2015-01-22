@@ -2556,8 +2556,8 @@ public class NativeBroker extends DBBroker {
     }
 
     private void copyXMLResource(Txn transaction, DocumentImpl oldDoc, DocumentImpl newDoc) {
-        LOG.debug("Copying document " + oldDoc.getFileURI() + " to " + 
-            newDoc.getURI());
+        if (LOG.isDebugEnabled()) LOG.debug("Copying document " + oldDoc.getFileURI() + " to " +  newDoc.getURI());
+
         final long start = System.currentTimeMillis();
         indexController.setDocument(newDoc, StreamListener.STORE);
         final StreamListener listener = indexController.getStreamListener();
@@ -2666,6 +2666,8 @@ public class NativeBroker extends DBBroker {
             final XmldbURI newURI = destination.getURI().append(newName);
 
             trigger.beforeMoveDocument(this, transaction, doc, newURI);
+
+            dropIndex(transaction, doc);
             
             collection.unlinkDocument(this, doc);
             removeResourceMetadata(transaction, doc);
@@ -2673,15 +2675,15 @@ public class NativeBroker extends DBBroker {
             if(doc.getResourceType() == DocumentImpl.XML_FILE) {
                 if(!renameOnly) {
                     //XXX: BUG: doc have new uri here!
-                	dropIndex(transaction, doc);
+//                	dropIndex(transaction, doc);
                     saveCollection(transaction, collection);
                 }
                 doc.setCollection(destination);
                 destination.addDocument(transaction, this, doc);
-                if(!renameOnly) {
-                    // reindexing
-                    reindexXMLResource(transaction, doc, NodeProcessor.MODE_REPAIR);
-                }
+//                if(!renameOnly) {
+//                    // reindexing
+//                    reindexXMLResource(transaction, doc, NodeProcessor.MODE_REPAIR);
+//                }
             } else {
                 // binary resource
             	doc.setCollection(destination);
@@ -2705,6 +2707,8 @@ public class NativeBroker extends DBBroker {
             }
             storeXMLResource(transaction, doc);
             saveCollection(transaction, destination);
+
+            reindexXMLResource(transaction, doc, NodeProcessor.MODE_REPAIR);
             
             trigger.afterMoveDocument(this, transaction, doc, oldURI);
             
@@ -2779,14 +2783,18 @@ public class NativeBroker extends DBBroker {
     }
 
     private void dropIndex(Txn transaction, DocumentImpl document) throws ReadOnlyException {
-        indexController.setDocument(document, StreamListener.REMOVE_ALL_NODES);
-        final StreamListener listener = indexController.getStreamListener();
-        final NodeList nodes = document.getChildNodes();
-        for (int i = 0; i < nodes.getLength(); i++) {
-            final StoredNode node = (StoredNode) nodes.item(i);
-            final Iterator<StoredNode> iterator = getNodeIterator(node);
-            iterator.next();
-            scanNodes(transaction, iterator, node, new NodePath(), NodeProcessor.MODE_REMOVE, listener);
+        if (document instanceof BinaryDocument) {
+            indexController.removeIndex((BinaryDocument) document);
+        } else {
+            indexController.setDocument(document, StreamListener.REMOVE_ALL_NODES);
+            final StreamListener listener = indexController.getStreamListener();
+            final NodeList nodes = document.getChildNodes();
+            for (int i = 0; i < nodes.getLength(); i++) {
+                final StoredNode node = (StoredNode) nodes.item(i);
+                final Iterator<StoredNode> iterator = getNodeIterator(node);
+                iterator.next();
+                scanNodes(transaction, iterator, node, new NodePath(), NodeProcessor.MODE_REMOVE, listener);
+            }
         }
         notifyDropIndex(document);
         indexController.flush();
