@@ -28,6 +28,7 @@ import org.apache.lucene.collation.ICUCollationDocValuesField;
 import org.apache.lucene.document.*;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -1250,9 +1251,28 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         return field;
     }
 
+    private FacetField makeFacetField(String name, String... values) {
+
+        long len = name.length();
+        for (String comp : values) {
+            if (comp == null || comp.isEmpty()) {
+                //throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(components));
+                return null;
+            }
+            len += comp.length();
+        }
+        len += 1 + values.length - 1; // add separators
+        if (len > FacetLabel.MAX_CATEGORY_PATH_LENGTH) {
+            return null;
+        }
+
+        return new FacetField(name, values);
+    }
+
     private void addInternalField(List<Field> metas, String name, String value, String... values) {
 
-        metas.add(new FacetField(name, values));
+        FacetField ff = makeFacetField(name, values);
+        if (ff != null) metas.add(ff);
 
         metas.add(sortField(name, value));
     }
@@ -1295,7 +1315,8 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         }
                     }
 
-                    metas.add(new FacetField(name, toIndex));
+                    FacetField ff = makeFacetField(name, toIndex);
+                    if (ff != null) metas.add(ff);
 
                     if (fld == null) {
                         try {
