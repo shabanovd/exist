@@ -199,16 +199,16 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
 
     @Override
     public void beforeDeleteDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException {
-        //Nothing to do
-    }
-
-    @Override
-    public void afterDeleteDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
-        final Configuration conf = Configurator.getConfigurtion(broker.getBrokerPool(), uri);
+        final Configuration conf = Configurator.getConfigurtion(broker.getBrokerPool(), document.getURI());
         if (conf != null) {
             Configurator.unregister(conf);
             //XXX: inform object that configuration was deleted
         }
+    }
+
+    @Override
+    public void afterDeleteDocument(DBBroker broker, Txn txn, XmldbURI uri) throws TriggerException {
+        //Nothing to do
     }
 
     /**
