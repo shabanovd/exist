@@ -29,8 +29,28 @@ import org.exist.storage.txn.Txn;
  */
 public interface TrashManager {
 
+    /**
+     * Method return collection where resource should be moved to instead of remove.
+     *
+     * To allow remove operation return null.
+     *
+     * @param broker
+     * @param txn
+     * @param col
+     * @return
+     */
     Collection move(DBBroker broker, Txn txn, Collection col);
 
+    /**
+     * Method return collection where resource should be moved to instead of remove.
+     *
+     * To allow remove operation return null.
+     *
+     * @param broker
+     * @param txn
+     * @param doc
+     * @return
+     */
     Collection move(DBBroker broker, Txn txn, DocumentImpl doc);
 
 }
