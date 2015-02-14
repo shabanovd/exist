@@ -45,6 +45,7 @@ import javax.xml.stream.XMLStreamException;
 import org.apache.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.Indexer;
+import org.exist.TrashManager;
 import org.exist.backup.RawDataBackup;
 import org.exist.collections.Collection;
 import org.exist.collections.Collection.CollectionEntry;
@@ -148,14 +149,14 @@ public class NativeBroker extends DBBroker {
     public static final byte PREPEND_DB_ALWAYS = 0;
     public static final byte PREPEND_DB_NEVER = 1;
     public static final byte PREPEND_DB_AS_NEEDED = 2;
-    
+
     public static final byte COLLECTIONS_DBX_ID = 0;
     public static final byte VALUES_DBX_ID = 2;
     public static final byte DOM_DBX_ID = 3;
     //Note : no ID for symbols ? Too bad...
 
     public static final String PAGE_SIZE_ATTRIBUTE = "pageSize";
-    public static final String INDEX_DEPTH_ATTRIBUTE = "index-depth"; 
+    public static final String INDEX_DEPTH_ATTRIBUTE = "index-depth";
 
     public static final String PROPERTY_INDEX_DEPTH = "indexer.index-depth";
     private static final byte[] ALL_STORAGE_FILES = {
@@ -166,7 +167,7 @@ public class NativeBroker extends DBBroker {
     // private static final String TEMP_STORE_ERROR = "An error occurred while storing temporary data: ";
     private static final String EXCEPTION_DURING_REINDEX = "exception during reindex";
     private static final String DATABASE_IS_READ_ONLY = "database is read-only";
-    
+
     public static final String DEFAULT_DATA_DIR = "data";
     public static final int DEFAULT_INDEX_DEPTH = 1;
     public static final int DEFAULT_MIN_MEMORY = 5000000;
@@ -175,12 +176,12 @@ public class NativeBroker extends DBBroker {
     public static final int BUFFERS = 256;
     /** check available memory after storing DEFAULT_NODES_BEFORE_MEMORY_CHECK nodes */
     public static final int DEFAULT_NODES_BEFORE_MEMORY_CHECK = 500;
-    
+
     public static int OFFSET_COLLECTION_ID = 0;
     public static int OFFSET_VALUE = OFFSET_COLLECTION_ID + Collection.LENGTH_COLLECTION_ID; //2
 
     public final static String INIT_COLLECTION_CONFIG = "collection.xconf.init";
-    
+
     /** the database files */
     protected CollectionStore collectionsDb;
     protected DOMFile domDb;
@@ -216,7 +217,7 @@ public class NativeBroker extends DBBroker {
     protected Journal logManager;
 
     protected boolean incrementalDocIds = false;
-    
+
     /** initialize database; read configuration, etc. */
     public NativeBroker(BrokerPool pool, Configuration config) throws EXistException {
         super(pool, config);
@@ -235,7 +236,7 @@ public class NativeBroker extends DBBroker {
         dataDir = (String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
         if (dataDir == null)
             {dataDir = DEFAULT_DATA_DIR;}
-        
+
         fsDataDir = new File(dataDir);
         if (!fsDataDir.exists()) {
             if (!fsDataDir.mkdirs()) {
@@ -268,7 +269,7 @@ public class NativeBroker extends DBBroker {
 		if (docIdProp != null) {
 			incrementalDocIds = docIdProp.equalsIgnoreCase("incremental");
 		}
-		
+
         indexConfiguration = (IndexSpec) config.getProperty(Indexer.PROPERTY_INDEXER_CONFIG);
         xmlSerializer = new NativeSerializer(this, config);
         setSubject(pool.getSecurityManager().getSystemSubject());
@@ -303,7 +304,7 @@ public class NativeBroker extends DBBroker {
             throw new EXistException(e);
         }
     }
-    
+
     public File getDataFolder() {
         return fsDataDir;
     }
@@ -367,7 +368,7 @@ public class NativeBroker extends DBBroker {
             observer.dropIndex(doc);
         }
     }
-    
+
     private void notifyRemove() {
         for (int i = 0; i < contentLoadingObservers.size(); i++) {
             final ContentLoadingObserver observer = contentLoadingObservers.get(i);
@@ -421,7 +422,7 @@ public class NativeBroker extends DBBroker {
      * Update indexes for the given element node. This method is called when the indexer
      * encounters a closing element tag. It updates any range indexes defined on the
      * element value and adds the element id to the structural index.
-     * 
+     *
      * @param node the current element node
      * @param currentPath node path leading to the element
      * @param content contains the string value of the element. Needed if a range index
@@ -610,7 +611,7 @@ public class NativeBroker extends DBBroker {
     @Override
     public Serializer newSerializer() {
         return new NativeSerializer(this, getConfiguration());
-    } 
+    }
 
     public XmldbURI prepend(XmldbURI uri) {
         switch(prepend) {
@@ -627,15 +628,15 @@ public class NativeBroker extends DBBroker {
 
     /**
      * Creates a temporary collecion
-     * 
+     *
      * @param transaction : The transaction, which registers the acquired write locks. The locks should be released on commit/abort.
      * @return The temporary collection
      * @throws LockException
      * @throws PermissionDeniedException
      * @throws IOException
-     * @throws TriggerException 
+     * @throws TriggerException
      */
-    private Collection createTempCollection(Txn transaction) 
+    private Collection createTempCollection(Txn transaction)
             throws LockException, PermissionDeniedException, IOException, TriggerException {
         final Subject u = getSubject();
         try {
@@ -652,18 +653,18 @@ public class NativeBroker extends DBBroker {
     private final String readInitCollectionConfig() {
         final File fInitCollectionConfig = new File(pool.getConfiguration().getExistHome(), INIT_COLLECTION_CONFIG);
         if(fInitCollectionConfig.exists() && fInitCollectionConfig.isFile()) {
-            
+
             InputStream is = null;
             try {
                 final StringBuilder initCollectionConfig = new StringBuilder();
-                
+
                 is = new FileInputStream(fInitCollectionConfig);
                 int read = -1;
                 final byte buf[] = new byte[1024];
                 while((read = is.read(buf)) != -1) {
                     initCollectionConfig.append(new String(buf, 0, read));
                 }
-                
+
                 return initCollectionConfig.toString();
             } catch(final IOException ioe) {
                 LOG.error(ioe.getMessage(), ioe);
@@ -676,21 +677,21 @@ public class NativeBroker extends DBBroker {
                     }
                 }
             }
-                    
+
         };
         return null;
     }
-    
+
     /* (non-Javadoc)
      * @see org.exist.storage.DBBroker#getOrCreateCollection(org.exist.storage.txn.Txn, org.exist.xmldb.XmldbURI)
      */
     @Override
     public Collection getOrCreateCollection(Txn transaction, XmldbURI name) throws PermissionDeniedException, IOException, TriggerException {
-        
+
         name = prepend(name.normalizeCollectionPath());
-        
+
         final CollectionCache collectionsCache = pool.getCollectionsCache();
-        
+
         synchronized(collectionsCache) {
             try {
                 //TODO : resolve URIs !
@@ -699,29 +700,29 @@ public class NativeBroker extends DBBroker {
                 Collection sub;
                 Collection current = getCollection(XmldbURI.ROOT_COLLECTION_URI);
                 if (current == null) {
-                    
+
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Creating root collection '" + XmldbURI.ROOT_COLLECTION_URI + "'");
                     }
-                    
+
                     final CollectionTrigger trigger = new CollectionTriggers(this);
-                    
+
                     trigger.beforeCreateCollection(this, transaction, XmldbURI.ROOT_COLLECTION_URI);
-                    
+
                     current = new Collection(this, XmldbURI.ROOT_COLLECTION_URI);
-                    
+
                     current.setId(getNextCollectionId(transaction));
                     current.setCreationTime(System.currentTimeMillis());
-                    
+
                     if(transaction != null) {
                         transaction.acquireLock(current.getLock(), Lock.WRITE_LOCK);
                     }
-                    
+
                     //TODO : acquire lock manually if transaction is null ?
                     saveCollection(transaction, current);
-                    
+
                     trigger.afterCreateCollection(this, transaction, current);
-                    
+
                     //import an initial collection configuration
                     try {
                         final String initCollectionConfig = readInitCollectionConfig();
@@ -732,7 +733,7 @@ public class NativeBroker extends DBBroker {
                                 pool.initCollectionConfigurationManager(this);
                                 collectionConfigurationManager = pool.getConfigurationManager();
                             }
-                            
+
                             if(collectionConfigurationManager != null) {
                                 collectionConfigurationManager.addConfiguration(transaction, this, current, initCollectionConfig);
                             }
@@ -741,7 +742,7 @@ public class NativeBroker extends DBBroker {
                         LOG.error("Could not load initial collection configuration for /db: " + cce.getMessage(), cce);
                     }
                 }
-                
+
                 for(int i=1;i<segments.length;i++) {
                     final XmldbURI temp = segments[i];
                     path = path.append(temp);
@@ -751,34 +752,34 @@ public class NativeBroker extends DBBroker {
                             LOG.debug("Collection '" + path + "' not found!");
                         }
                     } else {
-                        
+
                         if (pool.isReadOnly()) {
                             throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
                         }
-                        
+
                         if(!current.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
                             LOG.error("Permission denied to create collection '" + path + "'");
                             throw new PermissionDeniedException("Account '"+ getSubject().getName() + "' not allowed to write to collection '" + current.getURI() + "'");
                         }
-                        
+
                         if (!current.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE)) {
                             LOG.error("Permission denied to create collection '" + path + "'");
                             throw new PermissionDeniedException("Account '"+ getSubject().getName() + "' not allowed to execute to collection '" + current.getURI() + "'");
                         }
-                        
+
                         if (current.hasDocument(this, path.lastSegment())) {
                             LOG.error("Collection '" + current.getURI() + "' have document '" + path.lastSegment() + "'");
                             throw new PermissionDeniedException("Collection '" + current.getURI() + "' have document '" + path.lastSegment() + "'.");
                         }
-                        
+
                         if (LOG.isDebugEnabled()) {
                             LOG.debug("Creating collection '" + path + "'...");
                         }
-                        
+
                         final CollectionTrigger trigger = new CollectionTriggers(this, current);
-                        
+
                         trigger.beforeCreateCollection(this, transaction, path);
-                        
+
                         sub = new Collection(this, path);
 
                         //inherit the group to the sub-collection if current collection is setGid
@@ -786,19 +787,19 @@ public class NativeBroker extends DBBroker {
                             sub.getPermissions().setGroupFrom(current.getPermissions()); //inherit group
                             sub.getPermissions().setSetGid(true); //inherit setGid bit
                         }
-			
+
                         sub.setId(getNextCollectionId(transaction));
-                        
+
                         if (transaction != null) {
                             transaction.acquireLock(sub.getLock(), Lock.WRITE_LOCK);
                         }
-                        
+
                         //TODO : acquire lock manually if transaction is null ?
                         current.addCollection(this, sub, true);
                         saveCollection(transaction, current);
-                        
+
                         trigger.afterCreateCollection(this, transaction, sub);
-                        
+
                         current = sub;
                     }
                 }
@@ -808,9 +809,9 @@ public class NativeBroker extends DBBroker {
                 return null;
             } catch (final ReadOnlyException e) {
                 throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
-			}                
+			}
         }
-    }    
+    }
 
     @Override
     public Collection getCollection(XmldbURI uri) throws PermissionDeniedException {
@@ -822,28 +823,28 @@ public class NativeBroker extends DBBroker {
         return openCollection(uri, BFile.UNKNOWN_ADDRESS, lockMode);
     }
 
-    
+
     @Override
     public List<String> findCollectionsMatching(String regexp) {
-        
+
         final List<String> collections = new ArrayList<String>();
-        
+
         final Pattern p = Pattern.compile(regexp);
         final Matcher m = p.matcher("");
-        
+
         final Lock lock = collectionsDb.getLock();
         try {
             lock.acquire(Lock.READ_LOCK);
-            
+
             //TODO write a regexp lookup for key data in BTree.query
             //IndexQuery idxQuery = new IndexQuery(IndexQuery.REGEXP, regexp);
             //List<Value> keys = collectionsDb.findKeysByCollectionName(idxQuery);
             final List<Value> keys = collectionsDb.getKeys();
-            
+
             for(final Value key : keys) {
-                
+
                 //TODO restrict keys to just collection uri's
-                
+
                 final String collectionName = new String(key.getData());
                 m.reset(collectionName);
 
@@ -857,46 +858,40 @@ public class NativeBroker extends DBBroker {
         } catch (final LockException e) {
             LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());
             //return null;
-        } catch (final TerminatedException e) {
-            LOG.error(e.getMessage(), e);
-            //return null;
-        } catch (final BTreeException e) {
-            LOG.error(e.getMessage(), e);
-            //return null;
-        } catch (final IOException e) {
+        } catch (final TerminatedException | BTreeException | IOException e) {
             LOG.error(e.getMessage(), e);
             //return null;
         } finally {
             lock.release(Lock.READ_LOCK);
         }
-        
+
         return collections;
     }
-    
+
     @Override
     public void readCollectionEntry(SubCollectionEntry entry) {
-        
+
         final XmldbURI uri = prepend(entry.getUri().toCollectionPathURI());
-        
+
         Collection collection;
-        final CollectionCache collectionsCache = pool.getCollectionsCache();  
+        final CollectionCache collectionsCache = pool.getCollectionsCache();
         synchronized(collectionsCache) {
             collection = collectionsCache.get(uri);
             if (collection == null) {
                 final Lock lock = collectionsDb.getLock();
                 try {
                     lock.acquire(Lock.READ_LOCK);
-                    
+
                     final Value key = new CollectionStore.CollectionKey(uri.toString());
                     final VariableByteInput is = collectionsDb.getAsStream(key);
                     if (is == null) {
                         LOG.warn("Could not read collection entry for: " + uri);
                         return;
                     }
-                    
+
                     //read the entry details
                     entry.read(is);
-                    
+
                 } catch (final UnsupportedEncodingException e) {
                     LOG.error("Unable to encode '" + uri + "' in UTF-8", e);
                 } catch (final LockException e) {
@@ -907,20 +902,20 @@ public class NativeBroker extends DBBroker {
                     lock.release(Lock.READ_LOCK);
                 }
             } else {
-                
+
                 if (!collection.getURI().equalsInternal(uri)) {
                     LOG.error("The collection received from the cache is not the requested: " + uri +
                         "; received: " + collection.getURI());
                     return;
                 }
-                
+
                 entry.read(collection);
-                
+
                 collectionsCache.add(collection);
             }
         }
     }
-    
+
     /**
      *  Get collection object. If the collection does not exist, null is
      *  returned.
@@ -932,7 +927,7 @@ public class NativeBroker extends DBBroker {
         uri = prepend(uri.toCollectionPathURI());
         //We *must* declare it here (see below)
         Collection collection;
-        final CollectionCache collectionsCache = pool.getCollectionsCache();  
+        final CollectionCache collectionsCache = pool.getCollectionsCache();
         synchronized(collectionsCache) {
             collection = collectionsCache.get(uri);
             if (collection == null) {
@@ -972,13 +967,12 @@ public class NativeBroker extends DBBroker {
                         "; received: " + collection.getURI());
                 }
                 collectionsCache.add(collection);
-                
+
                 if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE)) {
                     throw new PermissionDeniedException("Permission denied to open collection: " + collection.getURI().toString() + " by " + getSubject().getName());
                 }
             }
         }
-        
 
         //Important : 
         //This code must remain outside of the synchonized block
@@ -996,13 +990,12 @@ public class NativeBroker extends DBBroker {
         }
         return collection;
     }
-    
-    
+
     /**
      * Checks all permissions in the tree to ensure that a copy operation will succeed
      */
     protected void checkPermissionsForCopy(final Collection src, final XmldbURI destUri, final XmldbURI newName) throws PermissionDeniedException, LockException {
-        
+
         if(!src.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE | Permission.READ)) {
             throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " by " + getSubject().getName());
         }
@@ -1010,20 +1003,20 @@ public class NativeBroker extends DBBroker {
         final Collection dest = getCollection(destUri);
         final XmldbURI newDestUri = destUri.append(newName);
         final Collection newDest = getCollection(newDestUri);
-        
+
         if(dest != null) {
             //if(!dest.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE | Permission.WRITE | Permission.READ)) {
             //TODO do we really need WRITE permission on the dest?
             if(!dest.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE | Permission.WRITE)) {
                 throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " to " + dest.getURI() + " by " + getSubject().getName());
             }
-            
+
             if(newDest != null) {
                 //TODO why do we need READ access on the dest collection?
                 /*if(!dest.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE | Permission.READ)) {
                     throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " to " + dest.getURI() + " by " + getSubject().getName());
                 }*/
-                
+
                 //if(newDest.isEmpty(this)) {
                     if(!newDest.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE | Permission.WRITE)) {
                         throw new PermissionDeniedException("Permission denied to copy collection " + src.getURI() + " to " + newDest.getURI() + " by " + getSubject().getName());
@@ -1031,7 +1024,7 @@ public class NativeBroker extends DBBroker {
                 //}
             }
         }
-        
+
         for(final Iterator<DocumentImpl> itSrcSubDoc = src.iterator(this); itSrcSubDoc.hasNext();) {
             final DocumentImpl srcSubDoc = itSrcSubDoc.next();
             if(!srcSubDoc.getPermissions().validate(getSubject(), Permission.READ)) {
@@ -1048,15 +1041,15 @@ public class NativeBroker extends DBBroker {
                 }
             }
         }
-        
+
         for(final Iterator<XmldbURI> itSrcSubColUri = src.collectionIterator(this); itSrcSubColUri.hasNext();) {
             final XmldbURI srcSubColUri = itSrcSubColUri.next();
             final Collection srcSubCol = getCollection(src.getURI().append(srcSubColUri));
-            
+
             checkPermissionsForCopy(srcSubCol, newDestUri, srcSubColUri);
         }
     }
-    
+
 
     /* (non-Javadoc)
      * @see org.exist.storage.DBBroker#copyCollection(org.exist.storage.txn.Txn, org.exist.collections.Collection, org.exist.collections.Collection, org.exist.xmldb.XmldbURI)
@@ -1066,12 +1059,12 @@ public class NativeBroker extends DBBroker {
         if(pool.isReadOnly()) {
             throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
         }
-        
+
         //TODO : resolve URIs !!!
         if(newName != null && newName.numSegments() != 1) {
             throw new PermissionDeniedException("New collection name must have one segment!");
         }
-        
+
         final XmldbURI srcURI = collection.getURI();
         final XmldbURI dstURI = destination.getURI().append(newName);
 
@@ -1081,27 +1074,27 @@ public class NativeBroker extends DBBroker {
         if(collection.getId() == destination.getId()) {
             throw new PermissionDeniedException("Cannot move collection to itself '"+collection.getURI()+"'.");
         }
-        
-        
+
+
         final CollectionCache collectionsCache = pool.getCollectionsCache();
         synchronized(collectionsCache) {
             final Lock lock = collectionsDb.getLock();
             try {
                 pool.getProcessMonitor().startJob(ProcessMonitor.ACTION_COPY_COLLECTION, collection.getURI());
                 lock.acquire(Lock.WRITE_LOCK);
-                
+
                 final XmldbURI parentName = collection.getParentURI();
                 final Collection parent = parentName == null ? collection : getCollection(parentName);
 
                 final CollectionTrigger trigger = new CollectionTriggers(this, parent);
-                
+
                 trigger.beforeCopyCollection(this, transaction, collection, dstURI);
 
                 //atomically check all permissions in the tree to ensure a copy operation will succeed before starting copying
                 checkPermissionsForCopy(collection, destination.getURI(), newName);
-                
+
                 final DocumentTrigger docTrigger = new DocumentTriggers(this);
-                
+
                 final Collection newCollection = doCopyCollection(transaction, docTrigger, collection, destination, newName);
 
                 trigger.afterCopyCollection(this, transaction, newCollection, srcURI);
@@ -1113,17 +1106,17 @@ public class NativeBroker extends DBBroker {
     }
 
     private Collection doCopyCollection(final Txn transaction, final DocumentTrigger trigger, final Collection collection, final Collection destination, XmldbURI newName) throws PermissionDeniedException, IOException, EXistException, TriggerException, LockException {
-        
+
         if(newName == null) {
             newName = collection.getURI().lastSegment();
         }
         newName = destination.getURI().append(newName);
-        
+
 
         if(LOG.isDebugEnabled()) {
             LOG.debug("Copying collection to '" + newName + "'");
         }
-        
+
         final Collection destCollection = getOrCreateCollection(transaction, newName);
         for(final Iterator<DocumentImpl> i = collection.iterator(this); i.hasNext(); ) {
             final DocumentImpl child = i.next();
@@ -1131,12 +1124,12 @@ public class NativeBroker extends DBBroker {
             if(LOG.isDebugEnabled()) {
                 LOG.debug("Copying resource: '" + child.getURI() + "'");
             }
-            
+
             //TODO The code below seems quite different to that in NativeBroker#copyResource presumably should be the same?
-            
+
             final XmldbURI newUri = destCollection.getURI().append(child.getFileURI());
             trigger.beforeCopyDocument(this, transaction, child, newUri);
-            
+
             //are we overwriting an existing document?
             final CollectionEntry oldDoc;
             if(destCollection.hasDocument(this, child.getFileURI())) {
@@ -1144,7 +1137,7 @@ public class NativeBroker extends DBBroker {
             } else {
                 oldDoc = null;
             }
-            
+
             DocumentImpl createdDoc;
             if (child.getResourceType() == DocumentImpl.XML_FILE) {
                 //TODO : put a lock on newDoc ?
@@ -1154,12 +1147,12 @@ public class NativeBroker extends DBBroker {
                     //preserve permissions from existing doc we are replacing
                     newDoc.setPermissions(oldDoc.getPermissions()); //TODO use newDoc.copyOf(oldDoc) ideally, but we cannot currently access oldDoc without READ access to it, which we may not have (and should not need for this)!
                 }
-                
+
                 newDoc.setDocId(getNextResourceId(transaction, destination));
                 copyXMLResource(transaction, child, newDoc);
                 storeXMLResource(transaction, newDoc);
                 destCollection.addDocument(transaction, this, newDoc);
-                
+
                 createdDoc = newDoc;
             } else {
                 final BinaryDocument newDoc = new BinaryDocument(pool, destCollection, child.getFileURI());
@@ -1169,7 +1162,7 @@ public class NativeBroker extends DBBroker {
                     newDoc.setPermissions(oldDoc.getPermissions()); //TODO use newDoc.copyOf(oldDoc) ideally, but we cannot currently access oldDoc without READ access to it, which we may not have (and should not need for this)!
                 }
                 newDoc.setDocId(getNextResourceId(transaction, destination));
-                
+
                 InputStream is = null;
                 try {
                     is = getBinaryResource((BinaryDocument)child);
@@ -1182,11 +1175,11 @@ public class NativeBroker extends DBBroker {
 
                 createdDoc = newDoc;
             }
-            
+
             trigger.afterCopyDocument(this, transaction, createdDoc, child.getURI());
         }
         saveCollection(transaction, destCollection);
-        
+
         final XmldbURI name = collection.getURI();
         for(final Iterator<XmldbURI> i = collection.collectionIterator(this); i.hasNext(); ) {
             final XmldbURI childName = i.next();
@@ -1204,21 +1197,21 @@ public class NativeBroker extends DBBroker {
         }
         saveCollection(transaction, destCollection);
         saveCollection(transaction, destination);
-        
+
         return destCollection;
     }
-    
+
     @Override
     public void moveCollection(Txn transaction, Collection collection, Collection destination, XmldbURI newName)  throws PermissionDeniedException, LockException, IOException, TriggerException {
-    	
+
         if(pool.isReadOnly()) {
             throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
         }
-        
+
         if(newName != null && newName.numSegments() != 1) {
             throw new PermissionDeniedException("New collection name must have one segment!");
         }
-        
+
         if(collection.getId() == destination.getId()) {
             throw new PermissionDeniedException("Cannot move collection to itself '"+collection.getURI()+"'.");
         }
@@ -1228,17 +1221,17 @@ public class NativeBroker extends DBBroker {
         if(collection.getURI().equals(XmldbURI.ROOT_COLLECTION_URI)) {
             throw new PermissionDeniedException("Cannot move the db root collection");
         }
-        
+
         final XmldbURI parentName = collection.getParentURI();
         final Collection parent = parentName == null ? collection : getCollection(parentName);
         if(!parent.getPermissionsNoLock().validate(getSubject(), Permission.WRITE | Permission.EXECUTE)) {
             throw new PermissionDeniedException("Account "+getSubject().getName()+" have insufficient privileges on collection " + parent.getURI() + " to move collection " + collection.getURI());
         }
-        
+
         if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.WRITE)) {
             throw new PermissionDeniedException("Account "+getSubject().getName()+" have insufficient privileges on collection to move collection " + collection.getURI());
         }
-        
+
         if(!destination.getPermissionsNoLock().validate(getSubject(), Permission.WRITE | Permission.EXECUTE)) {
             throw new PermissionDeniedException("Account "+getSubject().getName()+" have insufficient privileges on collection " + parent.getURI() + " to move collection " + collection.getURI());
         }
@@ -1255,34 +1248,34 @@ public class NativeBroker extends DBBroker {
         if(existingMovedToCollection != null) {
             removeCollection(transaction, existingMovedToCollection);
         }
-        
+
         pool.getProcessMonitor().startJob(ProcessMonitor.ACTION_MOVE_COLLECTION, collection.getURI());
-        
+
         try {
-        	
+
             final XmldbURI srcURI = collection.getURI();
             final XmldbURI dstURI = destination.getURI().append(newName);
 
             final CollectionTrigger trigger = new CollectionTriggers(this, parent);
-            
+
             trigger.beforeMoveCollection(this, transaction, collection, dstURI);
-            
+
             // sourceDir must be known in advance, because once moveCollectionRecursive
             // is called, both collection and destination can point to the same resource
             final File fsSourceDir = getCollectionFile(fsDir, collection.getURI(),false);
-        
+
             // Need to move each collection in the source tree individually, so recurse.
             moveCollectionRecursive(transaction, trigger, collection, destination, newName, false);
-            
+
             // For binary resources, though, just move the top level directory and all descendants come with it.
             moveBinaryFork(transaction, fsSourceDir, destination, newName);
-            
+
             trigger.afterMoveCollection(this, transaction, collection, srcURI);
 
         } finally {
             pool.getProcessMonitor().endJob();
         }
-		
+
     }
 
     private void moveBinaryFork(Txn transaction, File sourceDir, Collection destination, XmldbURI newName) throws IOException {
@@ -1317,20 +1310,20 @@ public class NativeBroker extends DBBroker {
     }
 
     private void moveCollectionRecursive(Txn transaction, CollectionTrigger trigger, Collection collection, Collection destination, XmldbURI newName, boolean fireTrigger) throws PermissionDeniedException, IOException, LockException, TriggerException {
-        
+
         final XmldbURI uri = collection.getURI();
         final CollectionCache collectionsCache = pool.getCollectionsCache();
         synchronized(collectionsCache) {
-        	
+
             final XmldbURI srcURI = collection.getURI();
             final XmldbURI dstURI = destination.getURI().append(newName);
 
             if (fireTrigger)
                 trigger.beforeMoveCollection(this, transaction, collection, dstURI);
-	
+
             final XmldbURI parentName = collection.getParentURI();
             final Collection parent = openCollection(parentName, Lock.WRITE_LOCK);
-            
+
             if(parent != null) {
                 try {
                     //TODO : resolve URIs
@@ -1339,7 +1332,7 @@ public class NativeBroker extends DBBroker {
                     parent.release(Lock.WRITE_LOCK);
                 }
             }
-            
+
             final Lock lock = collectionsDb.getLock();
             try {
                 lock.acquire(Lock.WRITE_LOCK);
@@ -1362,10 +1355,10 @@ public class NativeBroker extends DBBroker {
             } finally {
                 lock.release(Lock.WRITE_LOCK);
             }
-            
+
             if (fireTrigger)
                 trigger.afterMoveCollection(this, transaction, collection, srcURI);
-            
+
             for(final Iterator<XmldbURI> i = collection.collectionIterator(this); i.hasNext(); ) {
                 final XmldbURI childName = i.next();
                 //TODO : resolve URIs !!! name.resolve(childName)
@@ -1383,20 +1376,45 @@ public class NativeBroker extends DBBroker {
         }
     }
 
+    @Override
+    public boolean removeCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
+        if(pool.isReadOnly()) throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
+
+        TrashManager trashManager = pool.getTrashManager();
+
+        if (trashManager != null) {
+
+            Collection destination = trashManager.move(this, txn, collection);
+
+            if (destination != null) {
+
+                try {
+                    moveCollection(txn, collection, destination, collection.getURI().lastSegment());
+                } catch (LockException e) {
+                    throw new IOException(e);
+                }
+
+                return true;
+            }
+        }
+
+
+        return _removeCollection(txn, collection);
+    }
+
     /**
      * Removes a collection and all child collections and resources
-     * 
+     *
      * We first traverse down the Collection tree to ensure that the Permissions
      * enable the Collection Tree to be removed. We then return back up the Collection
      * tree, removing each child as we progresses upwards.
-     * 
+     *
      * @param txn the transaction to use
      * @param collection the collection to remove
      * @return true if the collection was removed, false otherwise
-     * @throws TriggerException 
+     * @throws TriggerException
      */
-    @Override
-    public boolean removeCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
+    private boolean _removeCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
         
         if(pool.isReadOnly()) {
             throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
@@ -1461,7 +1479,7 @@ public class NativeBroker extends DBBroker {
                     //TODO : resulve URIs !!! (uri.resolve(childName))
                     final Collection childCollection = openCollection(uri.append(childName), Lock.WRITE_LOCK);
                     try {
-                        removeCollection(txn, childCollection);
+                        _removeCollection(txn, childCollection);
 		            } catch (NullPointerException npe) {
 			            LOG.error("childCollection '" + childName + "' is corrupted. Caught NPE to be able to actually remove the parent.");
                     } finally {
@@ -1536,13 +1554,9 @@ public class NativeBroker extends DBBroker {
                 //catch(ReadOnlyException e) {
                     //throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
                 //}
-                catch(final BTreeException e) {
+                catch(final BTreeException | IOException e) {
                     LOG.warn("Exception while removing collection: " + e.getMessage(), e);
-                }
-                catch(final IOException e) {
-                    LOG.warn("Exception while removing collection: " + e.getMessage(), e);
-                }
-                finally {
+                } finally {
                     lock.release(Lock.WRITE_LOCK);
                 }
                 
@@ -1918,7 +1932,7 @@ public class NativeBroker extends DBBroker {
 		final TransactionManager transact = pool.getTransactionManager();
 		final Txn transaction = transact.beginTransaction();
 		try {
-			removeCollection(transaction, temp);
+			_removeCollection(transaction, temp);
 			transact.commit(transaction);
 		} catch(final Exception e) {
 			transact.abort(transaction);
@@ -2715,9 +2729,7 @@ public class NativeBroker extends DBBroker {
                 public Object start() {
                     try {
                         domDb.remove(txn, idx, null);
-                    } catch (final BTreeException e) {
-                        LOG.warn("start() - " + "error while removing doc", e);
-                    } catch (final IOException e) {
+                    } catch (final BTreeException | IOException e) {
                         LOG.warn("start() - " + "error while removing doc", e);
                     } catch (final TerminatedException e) {
                         LOG.warn("method terminated", e);
@@ -2891,7 +2903,7 @@ public class NativeBroker extends DBBroker {
     @Override
     public void defragXMLResource(final Txn txn, final DocumentImpl doc) {
         //TODO : use dedicated function in XmldbURI
-        LOG.debug("============> Defragmenting document " + 
+        LOG.debug("============> Defragmenting document " +
             doc.getCollection().getURI() + "/" + doc.getFileURI());
         final long start = System.currentTimeMillis();
         try {

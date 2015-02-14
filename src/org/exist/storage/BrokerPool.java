@@ -32,6 +32,7 @@ import java.util.Map.Entry;
 import org.apache.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
+import org.exist.TrashManager;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionCache;
 import org.exist.collections.CollectionConfiguration;
@@ -2151,6 +2152,16 @@ public class BrokerPool implements Database {
     	final String s = sout.toString();
     	LOG.info(s);
     	System.err.println(s);
+    }
+
+    private TrashManager trashManager;
+
+    public TrashManager getTrashManager() {
+        return trashManager;
+    }
+
+    public void setTrashManager(TrashManager trashManager) {
+        this.trashManager = trashManager;
     }
 
     private class StatusReporter extends Observable implements Runnable {

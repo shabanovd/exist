@@ -1156,11 +1156,7 @@ public class Folder extends NamedResource implements Cloneable {
 				handle.removeXMLResource(tx.tx, broker, dimpl.getFileURI());
 			}
 			commit();
-		} catch (PermissionDeniedException e) {
-			throw new DatabaseException(e);
-		} catch (LockException e) {
-			throw new DatabaseException(e);
-		} catch (TriggerException e) {
+		} catch (Exception e) {
 			throw new DatabaseException(e);
 		} finally {
 			release();
@@ -1185,11 +1181,7 @@ public class Folder extends NamedResource implements Cloneable {
 			throw new DatabaseException(pde.getMessage(), pde);
 		} catch (LockException e) {
 			throw new DatabaseException("lock denied", e);
-		} catch (IOException e) {
-			throw new DatabaseException(e);
-		} catch (TriggerException e) {
-			throw new DatabaseException(e);
-		} catch (EXistException e) {
+		} catch (Exception e) {
 			throw new DatabaseException(e);
 		} finally {
 			release();

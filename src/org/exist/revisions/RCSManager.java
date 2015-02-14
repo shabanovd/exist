@@ -1146,7 +1146,7 @@ public class RCSManager implements Constants {
         rh.endRestore(resource);
     }
     
-    private void remove(DBBroker broker, Txn tx, Collection docCol, DocumentImpl doc) throws TriggerException, PermissionDeniedException, LockException, TransactionException {
+    private void remove(DBBroker broker, Txn tx, Collection docCol, DocumentImpl doc) throws TriggerException, PermissionDeniedException, LockException, TransactionException, IOException {
         if (doc == null) return;
 
         docCol.removeResource(tx, broker, doc);

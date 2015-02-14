@@ -31,11 +31,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.log4j.Logger;
-import org.exist.Database;
-import org.exist.EXistException;
-import org.exist.Indexer;
-import org.exist.Resource;
-import org.exist.ResourceMetadata;
+import org.exist.*;
 import org.exist.collections.triggers.*;
 import org.exist.dom.*;
 import org.exist.security.Account;
@@ -1070,7 +1066,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
     }
     
-    public void removeResource(Txn txn, DBBroker broker, DocumentImpl doc) throws PermissionDeniedException, LockException, TriggerException {
+    public void removeResource(Txn txn, DBBroker broker, DocumentImpl doc) throws PermissionDeniedException, LockException, IOException, TriggerException {
         if (doc == null) return;
         
         if (doc.getCollection() != this) {
@@ -1092,15 +1088,39 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @param  broker
      * @param  docUri
      */
-    public void removeXMLResource(final Txn txn, final DBBroker broker, final XmldbURI docUri) throws PermissionDeniedException, TriggerException, LockException {
+    public void removeXMLResource(final Txn txn, final DBBroker broker, final XmldbURI docUri) throws PermissionDeniedException, TriggerException, LockException, IOException {
         
         if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.WRITE)) {
             throw new PermissionDeniedException("Permission denied to write collection: " + path);
         }
+
+        final Database db = broker.getBrokerPool();
+
+        TrashManager trashManager = db.getTrashManager();
+
+        if (trashManager != null) {
+
+            getLock().acquire(Lock.WRITE_LOCK);
+
+            try {
+
+                DocumentImpl doc = documents.get(docUri.getRawCollectionPath());
+
+                Collection destination = trashManager.move(broker, txn, doc);
+
+                if (destination != null) {
+
+                    broker.moveResource(txn, doc, destination, doc.getFileURI());
+
+                    return;
+                }
+            } finally {
+                getLock().release(Lock.WRITE_LOCK);
+            }
+        }
         
         DocumentImpl doc = null;
         
-        final BrokerPool db = broker.getBrokerPool();
         try {
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_XML, docUri);
 
@@ -1144,15 +1164,29 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
     }
     
-    private void removeXMLResource(Txn txn, DBBroker broker, DocumentImpl doc) throws PermissionDeniedException, TriggerException, LockException {
+    private void removeXMLResource(Txn txn, DBBroker broker, DocumentImpl doc) throws PermissionDeniedException, TriggerException, LockException, IOException {
         
         if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.WRITE)) {
             throw new PermissionDeniedException("Permission denied to write collection: " + path);
         }
+
+        final Database db = broker.getBrokerPool();
+
+        TrashManager trashManager = db.getTrashManager();
+
+        if (trashManager != null) {
+            Collection destination = trashManager.move(broker, txn, doc);
+
+            if (destination != null) {
+
+                broker.moveResource(txn, doc, destination, doc.getFileURI());
+
+                return;
+            }
+        }
         
         XmldbURI docUri = doc.getFileURI();
         
-        final BrokerPool db = broker.getBrokerPool();
         try {
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_XML, docUri);
 
@@ -1190,7 +1224,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
     }
 
-    public void removeBinaryResource(final Txn transaction, final DBBroker broker, final XmldbURI uri) throws PermissionDeniedException, LockException, TriggerException {
+    public void removeBinaryResource(final Txn transaction, final DBBroker broker, final XmldbURI uri) throws PermissionDeniedException, LockException, TriggerException, IOException {
         if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.WRITE)) {
             throw new PermissionDeniedException("Permission denied to write collection: " + path);
         }
@@ -1209,7 +1243,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
     }
 
-    public void removeBinaryResource(final Txn transaction, final DBBroker broker, final DocumentImpl doc) throws PermissionDeniedException, LockException, TriggerException {
+    public void removeBinaryResource(final Txn txn, final DBBroker broker, final DocumentImpl doc) throws PermissionDeniedException, LockException, IOException, TriggerException {
         if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.WRITE)) {
             throw new PermissionDeniedException("Permission denied to write collection: " + path);
         }
@@ -1217,8 +1251,22 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         if(doc == null) {
             return;  //TODO should throw an exception!!! Otherwise we dont know if the document was removed
         }
-        
+
         final Database db = broker.getBrokerPool();
+
+        TrashManager trashManager = db.getTrashManager();
+
+        if (trashManager != null) {
+            Collection destination = trashManager.move(broker, txn, doc);
+
+            if (destination != null) {
+
+                broker.moveResource(txn, doc, destination, doc.getFileURI());
+
+                return;
+            }
+        }
+
         
         try {
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_BINARY, doc.getFileURI());
@@ -1236,17 +1284,17 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             
             DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled(broker) ? getConfiguration(broker) : null);
 
-            trigger.beforeDeleteDocument(broker, transaction, doc);
+            trigger.beforeDeleteDocument(broker, txn, doc);
 
             try {
-                broker.removeBinaryResource(transaction, (BinaryDocument) doc);
+                broker.removeBinaryResource(txn, (BinaryDocument) doc);
             } catch (final IOException ex) {
                throw new PermissionDeniedException("Cannot delete file: " + doc.getURI().toString() + ": " + ex.getMessage(), ex);
             }
             
             documents.remove(doc.getFileURI().getRawCollectionPath());
             
-            trigger.afterDeleteDocument(broker, transaction, doc.getURI());
+            trigger.afterDeleteDocument(broker, txn, doc.getURI());
 
         } finally {
             db.getProcessMonitor().endJob();

@@ -277,14 +277,14 @@ public class ExistDocument extends ExistResource {
             txnManager.commit(txn);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Document deleted sucessfully");
+                LOG.debug("Document deleted successfully");
             }
 
         } catch (LockException e) {
             LOG.error("Resource is locked.", e);
             txnManager.abort(txn);
 
-        } catch (EXistException | TriggerException | PermissionDeniedException e) {
+        } catch (Exception e) {
             LOG.error(e);
             txnManager.abort(txn);
 

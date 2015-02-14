@@ -58,54 +58,47 @@ public interface Database {
     public String getId();
 
     /**
-     * 
      * @return SecurityManager
      */
     public SecurityManager getSecurityManager();
 
     /**
-     * 
      * @return IndexManager
      */
     public IndexManager getIndexManager();
 
     /**
-     * 
      * @return TransactionManager
      */
     public TransactionManager getTransactionManager();
 
     /**
-     * 
      * @return CacheManager
      */
     public CacheManager getCacheManager();
 
     /**
-     * 
      * @return Scheduler
      */
     public Scheduler getScheduler();
 
     /**
-	 * 
-	 */
+     *
+     */
     public void shutdown();
 
     /**
-     * 
      * @return Subject
      */
     public Subject getSubject();
 
     /**
-     * 
      * @param subject
      */
     public boolean setSubject(Subject subject);
 
     // TODO: remove 'throws EXistException'?
-    public DBBroker getBroker() throws EXistException; 
+    public DBBroker getBroker() throws EXistException;
 
     public DBBroker authenticate(String username, Object credentials) throws AuthenticationException;
 
@@ -133,13 +126,12 @@ public interface Database {
     /**
      * Returns the number of brokers currently serving requests for the database
      * instance.
-     * 
+     *
      * @return The brokers count
      */
     public int countActiveBrokers();
 
     /**
-     * 
      * @return Debuggee
      */
     public Debuggee getDebuggee();
@@ -190,4 +182,8 @@ public interface Database {
     public boolean isTransactional();
 
     public XMLReaderPool getParserPool();
+
+    public TrashManager getTrashManager();
+
+    public void setTrashManager(TrashManager trashManager);
 }
