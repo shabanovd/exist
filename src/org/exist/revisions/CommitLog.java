@@ -37,7 +37,7 @@ public class CommitLog implements CommitWriter, CommitReader {
     static final XmldbURI UNKNOWN_URI = XmldbURI.create("");
 
     class Action implements Change {
-        Operation op;
+        protected Operation op;
         XmldbURI uri;
         String id;
 
