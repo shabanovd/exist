@@ -1525,6 +1525,11 @@ public class BrokerPool implements Database {
 		return securityManager.getGuestSubject();
     }
 
+    long config_ts = 0;
+    public void configurationChanged() {
+        config_ts = System.currentTimeMillis();
+    }
+
     /**
      *  Get active broker for current thread
      * 
@@ -1635,7 +1640,13 @@ public class BrokerPool implements Database {
 					}
 			}
 			broker = inactiveBrokers.pop();
-			//activate the broker
+
+            if (broker.config_ts != config_ts) {
+                broker.config_ts = config_ts;
+                broker.initIndexModules();
+            }
+
+            //activate the broker
 			activeBrokers.put(Thread.currentThread(), broker);
 			
 			if (watchdog != null)

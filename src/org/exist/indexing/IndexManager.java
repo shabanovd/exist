@@ -98,9 +98,7 @@ public class IndexManager {
             return index;
         } catch (final ClassNotFoundException e) {
             LOG.warn("Class " + className + " not found. Cannot configure index.");
-        } catch (final IllegalAccessException e) {
-            LOG.warn("Exception while configuring index " + className + ": " + e.getMessage(), e);
-        } catch (final InstantiationException e) {
+        } catch (final IllegalAccessException | InstantiationException e) {
             LOG.warn("Exception while configuring index " + className + ": " + e.getMessage(), e);
         }
         return null;
@@ -111,6 +109,9 @@ public class IndexManager {
         indexers.put(index.getIndexId(), index);
         if (LOG.isInfoEnabled())
             {LOG.info("Registered index " + index.getClass() + " as " + index.getIndexId());}
+
+        pool.configurationChanged();
+
         return index;
     }
 
