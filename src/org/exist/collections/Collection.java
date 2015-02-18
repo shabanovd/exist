@@ -261,7 +261,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         final Iterator<XmldbURI> subCollectionIterator = subCollections.iterator();
         while(subCollectionIterator.hasNext()) {
             final XmldbURI subCollectionURI = subCollectionIterator.next();
-            final CollectionEntry entry = new SubCollectionEntry(subCollectionURI);
+            final CollectionEntry entry = new SubCollectionEntry(path.append(subCollectionURI));
             entry.readMetadata(broker);
             list.add(entry);
         }
@@ -283,11 +283,11 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         return entry;
     }
 
-    public CollectionEntry getResourceEntry(final DBBroker broker, final String name) throws PermissionDeniedException {
+    public DocumentEntry getResourceEntry(final DBBroker broker, final String name) throws PermissionDeniedException {
         if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.READ)) {
             throw new PermissionDeniedException("Permission denied to read collection: " + path);
         }
-        final CollectionEntry entry = new DocumentEntry(documents.get(name));
+        final DocumentEntry entry = new DocumentEntry(documents.get(name));
         entry.readMetadata(broker);
         return entry;
     }

@@ -733,7 +733,7 @@ public class LocalCollection extends Observable implements CollectionImpl {
         } catch(final TriggerException e) {
             transact.abort(transaction);
             throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, e.getMessage(), e);
-        } catch(final LockException e) {
+        } catch(final Exception e) {
             transact.abort(transaction);
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         } finally {
