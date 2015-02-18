@@ -23,8 +23,6 @@ package org.exist.xquery.functions.xmldb;
 
 import org.apache.log4j.Logger;
 
-import java.net.URISyntaxException;
-
 import org.exist.dom.QName;
 import org.exist.security.Account;
 import org.exist.security.Group;
@@ -92,40 +90,38 @@ public class XMLDBChangeUser extends BasicFunction {
             "Use either sm:passwd for changing a password or sm:add-group-member to add a user to a group or sm:remove-group-member to remove a user from a group."
         )
     };
-	
+
     public XMLDBChangeUser(XQueryContext context, FunctionSignature signature) {
 	super(context, signature);
     }
-	
+
     /* (non-Javadoc)
      * @see org.exist.xquery.BasicFunction#eval(org.exist.xquery.value.Sequence[], org.exist.xquery.value.Sequence)
      */
     @Override
-    public Sequence eval(Sequence[] args, Sequence contextSequence) 
-	throws XPathException {
+    public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
+        final String userName = args[0].getStringValue();
+        Collection collection = null;
 
-	final String userName = args[0].getStringValue();
-	Collection collection = null;
-		
-	try {
-	    collection = new LocalCollection(context.getSubject(), context.getBroker().getBrokerPool(), XmldbURI.ROOT_COLLECTION_URI, context.getAccessContext());
-	    final UserManagementService ums = (UserManagementService) collection.getService("UserManagementService", "1.0");
-	    
-	    final Account oldUser = ums.getAccount(userName);
-	    if(oldUser == null) {
+        try {
+            collection = new LocalCollection(context.getSubject(), context.getBroker().getBrokerPool(), XmldbURI.ROOT_COLLECTION_URI, context.getAccessContext());
+            final UserManagementService ums = (UserManagementService) collection.getService("UserManagementService", "1.0");
+
+            final Account oldUser = ums.getAccount(userName);
+            if(oldUser == null) {
                 logger.error("User " + userName + " not found");
                 throw new XPathException(this, "User " + userName + " not found");
-	    }
+            }
 
             final Group oldPrimaryGroup = oldUser.getDefaultGroup();
             final UserAider user;
             if(oldPrimaryGroup != null) {
                 //dont forget to set the primary group
-                user = new UserAider(oldUser.getName(), oldPrimaryGroup); 
+                user = new UserAider(oldUser.getRealm().getId(), oldUser.getName(), oldPrimaryGroup);
             } else {
-                user = new UserAider(oldUser.getName()); 
+                user = new UserAider(oldUser.getRealm().getId(), oldUser.getName());
             }
-	    
+
             //copy the umask
             user.setUserMask(oldUser.getUserMask());
             
@@ -141,26 +137,26 @@ public class XMLDBChangeUser extends BasicFunction {
             if(!args[1].isEmpty()) {
                 // set password
                 user.setPassword(args[1].getStringValue());
-	    } else {
+            } else {
                 //use the old password
                 user.setEncodedPassword(oldUser.getPassword());
                 user.setPasswordDigest(oldUser.getDigestPassword());
-	    }
-	    
+            }
+
             //change the groups?
             if(!args[2].isEmpty()) {
                 // set groups
                 for(final SequenceIterator i = args[2].iterate(); i.hasNext(); ) {
                     user.addGroup(i.nextItem().getStringValue());
                 }
-	    } else {
+            } else {
                 user.setGroups(oldUser.getGroups());
             }
 
-	    ums.updateAccount(user);
-	} catch(final XMLDBException xe) {
-	    logger.error("Failed to update user " + userName, xe);
-	    throw new XPathException(this, "Failed to update user " + userName, xe);
+            ums.updateAccount(user);
+        } catch(final XMLDBException xe) {
+            logger.error("Failed to update user " + userName, xe);
+            throw new XPathException(this, "Failed to update user " + userName, xe);
         } finally {
             if (null != collection) {
                 try {
@@ -169,8 +165,8 @@ public class XMLDBChangeUser extends BasicFunction {
                     logger.warn(xmldbe);
                 }
             }
-	}
-	
+        }
+
         return Sequence.EMPTY_SEQUENCE;
     }
 }
