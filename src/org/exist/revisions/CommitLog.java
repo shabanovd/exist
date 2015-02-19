@@ -199,6 +199,7 @@ public class CommitLog implements CommitWriter, CommitReader {
         isClosed = true;
 
         if (isDone) manager.commit(this);
+        else manager.rollback(this);
     }
 
     private void checkIsOpen() {

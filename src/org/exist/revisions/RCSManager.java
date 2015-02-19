@@ -119,6 +119,8 @@ public class RCSManager implements Constants {
 
     List<EventListener<CommitLog>> commitsListener = new ArrayList<>();
 
+    Map<Thread, CommitWriter> activeCommits = new HashMap<>();
+
     public RCSManager(PluginsManager manager) throws PermissionDeniedException, IOException {
 
         this.manager = manager;
@@ -214,7 +216,20 @@ public class RCSManager implements Constants {
     }
 
     public CommitWriter commit(Handler handler) {
-        return new CommitLog(this, handler);
+
+        Thread cur = Thread.currentThread();
+
+        if (activeCommits.get(cur) != null) throw new RuntimeException("only one active commit allow");
+
+        CommitLog commit = new CommitLog(this, handler);
+
+        activeCommits.put(cur, commit);
+
+        return commit;
+    }
+
+    public CommitWriter activeCommit() {
+        return activeCommits.get(Thread.currentThread());
     }
 
     private void process(DBBroker broker, XMLStreamWriter log, Collection collection, Path logPath, BackupHandler bh, Handler h)
@@ -323,7 +338,18 @@ public class RCSManager implements Constants {
         
     }
 
+    private void removeCommit(CommitLog commitLog) {
+        CommitWriter active = activeCommits.remove(Thread.currentThread());
+        if (active != commitLog) LOG.error("commitLog different from active one");
+    }
+
+    protected void rollback(CommitLog commitLog) {
+        removeCommit(commitLog);
+    }
+
     protected void commit(CommitLog commitLog) throws IOException, XMLStreamException {
+
+        removeCommit(commitLog);
         
         DBBroker broker = db.getActiveBroker();
 
