@@ -348,74 +348,75 @@ public class RCSManager implements Constants {
     }
 
     protected void commit(CommitLog commitLog) throws IOException, XMLStreamException {
+        try {
+            DBBroker broker = db.getActiveBroker();
 
-        removeCommit(commitLog);
-        
-        DBBroker broker = db.getActiveBroker();
+            BackupHandler bh = broker.getDatabase().getPluginsManager().getBackupHandler(LOG); //TODO: use Handler for logging!
 
-        BackupHandler bh = broker.getDatabase().getPluginsManager().getBackupHandler(LOG); //TODO: use Handler for logging!
+            Path logPath = logPath(commitLogsFolder);
 
-        Path logPath = logPath(commitLogsFolder);
-        
-        String commitId = logPath.getFileName().toString();
+            String commitId = logPath.getFileName().toString();
 
-        commitLog.id = commitId;
+            commitLog.id = commitId;
 
-        Path logRelativePath = rcFolder.relativize(logPath);
-        
-        try (BufferedWriter commitLogStream = Files.newBufferedWriter(logPath, ENCODING)) {
-            XMLOutputFactory outputFactory = XMLOutputFactory.newInstance();
-            
-            XMLStreamWriter log = outputFactory.createXMLStreamWriter(commitLogStream);
-        
-            log.writeStartDocument();
-            
-            log.writeStartElement("RCS", "commit-log", "http://exist-db.org/RCS");
-            log.writeDefaultNamespace(Namespaces.EXIST_NS);
-            //writer.writeNamespace(MetaData.PREFIX, MetaData.NAMESPACE_URI);
-            
-            log.writeAttribute("id", commitId);
+            Path logRelativePath = rcFolder.relativize(logPath);
 
-            log.writeStartElement("author");
-            log.writeCData(commitLog.author());
-            log.writeEndElement();
+            try (BufferedWriter commitLogStream = Files.newBufferedWriter(logPath, ENCODING)) {
+                XMLOutputFactory outputFactory = XMLOutputFactory.newInstance();
 
-            log.writeStartElement("message");
-            log.writeCData(commitLog.message());
-            log.writeEndElement();
-    
-            for (Change action : commitLog.acts) {
-                
-                //processEntry(doc, broker, serializer, log, logPath, h);
-                
-                log.writeStartElement("entry");
+                XMLStreamWriter log = outputFactory.createXMLStreamWriter(commitLogStream);
 
-                try {
-                    Path folder = makeRevision(broker, action, logRelativePath, bh, commitLog.handler);
+                log.writeStartDocument();
 
-                    if (folder != null) {
-                        log.writeAttribute("uri", action.uri().toString());
-                        log.writeAttribute("path", rcFolder.relativize(folder).toString());
-                    }
-                    
-                } catch (Exception e) {
-                    commitLog.handler.error(action.uri(), e);
+                log.writeStartElement("RCS", "commit-log", "http://exist-db.org/RCS");
+                log.writeDefaultNamespace(Namespaces.EXIST_NS);
+                //writer.writeNamespace(MetaData.PREFIX, MetaData.NAMESPACE_URI);
 
-                    log.writeAttribute("error", e.getMessage());
-                }
-                
+                log.writeAttribute("id", commitId);
+
+                log.writeStartElement("author");
+                log.writeCData(commitLog.author());
                 log.writeEndElement();
-            }
-        
-            log.writeEndDocument();
-        }
 
-        for (EventListener<CommitLog> listener : commitsListener) {
-            try {
-                listener.onEvent(commitLog);
-            } catch (Exception e) {
-                LOG.error(e.getMessage(), e);
+                log.writeStartElement("message");
+                log.writeCData(commitLog.message());
+                log.writeEndElement();
+
+                for (Change action : commitLog.acts) {
+
+                    //processEntry(doc, broker, serializer, log, logPath, h);
+
+                    log.writeStartElement("entry");
+
+                    try {
+                        Path folder = makeRevision(broker, action, logRelativePath, bh, commitLog.handler);
+
+                        if (folder != null) {
+                            log.writeAttribute("uri", action.uri().toString());
+                            log.writeAttribute("path", rcFolder.relativize(folder).toString());
+                        }
+
+                    } catch (Exception e) {
+                        commitLog.handler.error(action.uri(), e);
+
+                        log.writeAttribute("error", e.getMessage());
+                    }
+
+                    log.writeEndElement();
+                }
+
+                log.writeEndDocument();
             }
+
+            for (EventListener<CommitLog> listener : commitsListener) {
+                try {
+                    listener.onEvent(commitLog);
+                } catch (Exception e) {
+                    LOG.error(e.getMessage(), e);
+                }
+            }
+        } finally {
+            removeCommit(commitLog);
         }
     }
 
