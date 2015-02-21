@@ -378,7 +378,9 @@
         <root url="file://$PROJECT_DIR$/extensions/modules/lib" />
       </CLASSES>
       <JAVADOC />
-      <SOURCES />
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.ideaLibSources/lucene-facet-4.9.0-sources.jar!/" />
+      </SOURCES>
       <jarDirectory url="file://$PROJECT_DIR$/extensions/fluent/lib" recursive="false" />
       <jarDirectory url="file://$PROJECT_DIR$/extensions/indexes/lucene/lib" recursive="false" />
       <jarDirectory url="file://$PROJECT_DIR$/extensions/modules/lib" recursive="false" />
@@ -386,12 +388,24 @@
       <jarDirectory url="file://$PROJECT_DIR$/extensions/xqdoc/lib" recursive="false" />
       <jarDirectory url="file://$PROJECT_DIR$/lib/extensions" recursive="false" />
     </library>
-    <library name="main">
+    <library name="joda-time-2.2">
       <CLASSES>
-        <root url="file://$PROJECT_DIR$/build/classes" />
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/joda-time-2.2.jar!/" />
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/opensaml-2.6.1.jar!/" />
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/openws-1.5.1.jar!/" />
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/xmlsec-1.5.6.jar!/" />
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/xmltooling-1.4.1.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
+    </library>
+    <library name="lib">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/extensions/webdav/lib" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+      <jarDirectory url="file://$PROJECT_DIR$/extensions/webdav/lib" recursive="false" />
     </library>
     <library name="optional">
       <CLASSES>
@@ -400,13 +414,6 @@
       <JAVADOC />
       <SOURCES />
       <jarDirectory url="file://$PROJECT_DIR$/lib/optional" recursive="false" />
-    </library>
-    <library name="test">
-      <CLASSES>
-        <root url="file://$PROJECT_DIR$/test/classes" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
     </library>
     <library name="tools">
       <CLASSES>
@@ -433,4 +440,3 @@
     </library>
   </component>
 </project>
-
