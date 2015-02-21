@@ -19,36 +19,55 @@
  */
 package org.exist.revisions;
 
-import org.exist.Database;
-import org.exist.Indexer;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.exist.*;
 import org.exist.collections.Collection;
+import org.exist.dom.BinaryDocument;
 import org.exist.dom.DocumentImpl;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
+import org.exist.storage.md.MetaData;
 import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
 import org.exist.xmldb.XmldbURI;
 import org.w3c.dom.*;
+import org.xml.sax.SAXException;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.File;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 
+import static java.nio.file.Files.createDirectories;
 import static org.exist.Operation.UPDATE;
+import static org.exist.dom.DocumentImpl.*;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  */
-public class Converter {
+public class Converter implements Constants {
+
+    JsonFactory f = new JsonFactory();
 
     Database db;
     RCSManager rcs;
 
     int count = 0;
+    int count_ = 0;
     int count_binary = 0;
 
-    Converter(Database db) {
+    public Converter(Database db) {
         this.db = db;
 
         rcs = RCSManager.get();
@@ -91,33 +110,103 @@ public class Converter {
 
                         DocumentImpl meta = it_revs.next();
 
-                        CommitLog log = readMeta(broker, meta, revision_uri);
+                        CommitLog commitLog = readMeta(broker, meta, revision_uri);
 
-//                        XmldbURI rev_id = meta.getFileURI();
-//
-//                        System.out.println("  " + rev_id);
-//
-//                        if (fcCol == null) {
-//                            count_++;
-//
-//                        } else {
-//                            DocumentImpl full_copy = fcCol.getDocument(broker, rev_id);
-//
-//                            if (full_copy == null) {
-//                                count++;
-//                            } else if (full_copy.getResourceType() == DocumentImpl.BINARY_FILE) {
-//                                count_binary++;
-//                            }
-//                        }
+                        String str = commitLog.id;
+                        Path logPath = rcs.commitLogsFolder.resolve( str.substring(0, 7) ).resolve( str );
+
+                        Files.createDirectories(logPath.getParent());
+
+                        writeLog(broker, fcCol, meta, logPath, commitLog);
                     }
                 }
             }
         }
 
-        System.out.println(count + " / " + count_binary);
+        System.out.println(count + " / " + count_ + " / " + count_binary);
+    }
+
+    private Path write_data(DBBroker broker, Collection fcCol, DocumentImpl meta, Change action, Path logPath) throws PermissionDeniedException, SAXException, IOException, XMLStreamException {
+        XmldbURI rev_id = meta.getFileURI();
+
+        System.out.println("  " + rev_id);
+
+        if (fcCol == null) {
+            count_++;
+
+        } else {
+            DocumentImpl doc = fcCol.getDocument(broker, rev_id);
+
+            if (doc == null) {
+                count++;
+            } else {
+                if (doc.getResourceType() == DocumentImpl.BINARY_FILE) {
+                    count_binary++;
+                }
+
+                return makeRevision(broker, action.id(), action.uri(), doc, logPath);
+            }
+        }
+
+        return null;
+    }
+
+    private void writeLog(DBBroker broker, Collection fcCol, DocumentImpl meta, Path logPath, CommitLog commitLog) throws IOException, XMLStreamException {
+
+        Path logRelativePath = rcs.rcFolder.relativize(logPath);
+
+        try (BufferedWriter commitLogStream = Files.newBufferedWriter(logPath, ENCODING)) {
+            XMLOutputFactory outputFactory = XMLOutputFactory.newInstance();
+
+            XMLStreamWriter log = outputFactory.createXMLStreamWriter(commitLogStream);
+
+            log.writeStartDocument();
+
+            log.writeStartElement("RCS", "commit-log", "http://exist-db.org/RCS");
+            log.writeDefaultNamespace(Namespaces.EXIST_NS);
+            //writer.writeNamespace(MetaData.PREFIX, MetaData.NAMESPACE_URI);
+
+            log.writeAttribute("id", commitLog.id());
+
+            log.writeStartElement("author");
+            log.writeCData(commitLog.author());
+            log.writeEndElement();
+
+            log.writeStartElement("message");
+            log.writeCData(commitLog.message());
+            log.writeEndElement();
+
+            for (Change action : commitLog.acts) {
+
+                //processEntry(doc, broker, serializer, log, logPath, h);
+
+                log.writeStartElement("entry");
+
+                try {
+                    Path folder = write_data(broker, fcCol, meta, action, logRelativePath);
+
+                    if (folder != null) {
+                        log.writeAttribute("uri", action.uri().toString());
+                        log.writeAttribute("path", rcs.rcFolder.relativize(folder).toString());
+                    }
+
+                } catch (Exception e) {
+                    log.writeAttribute("error", e.getMessage());
+                }
+
+                log.writeEndElement();
+            }
+
+            log.writeEndDocument();
+        }
     }
 
     private CommitLog readMeta(DBBroker broker, DocumentImpl meta, XmldbURI revision_uri) throws Exception {
+
+        StringWriter writer = new StringWriter();
+
+        JsonGenerator json = f.createJsonGenerator(writer);
+        json.writeStartObject();
 
         CommitLog log = new CommitLog(RCSManager.get(), null);
 
@@ -129,11 +218,11 @@ public class Converter {
 
             switch (node.getLocalName()) {
                 case "properties":
-                    readProperties(log, node, revision_uri);
+                    readProperties(json, log, node, revision_uri);
 
                     break;
                 case "additional-version-metadata":
-                    readAdditional(log, node);
+                    readAdditional(json, log, node);
 
                     break;
                 case "version-data":
@@ -144,6 +233,10 @@ public class Converter {
                     throw new RuntimeException("unknown node: "+node);
             }
         }
+        json.writeEndObject();
+        json.close();
+
+        log.message(writer.getBuffer().toString());
 
         return log;
     }
@@ -173,9 +266,7 @@ public class Converter {
         if (doc.getResourceType() == DocumentImpl.BINARY_FILE) count_binary++;
     }
 
-    private void readAdditional(CommitLog log, Element element) {
-
-        String properties = log.message();
+    private void readAdditional(JsonGenerator json, CommitLog log, Element element) throws IOException {
 
         NodeList nodes = element.getChildNodes();
         for (int i = 0; i < nodes.getLength(); i++) {
@@ -186,23 +277,19 @@ public class Converter {
                     //attribute 'name' & text is value
 
                     String name = node.getAttribute("name");
-                    properties += "<"+name+">"+node.getNodeValue()+"</"+name+">";
+                    json.writeObjectField(name, node.getNodeValue());
 
                     break;
                 default:
                     throw new RuntimeException("unknown node: "+node);
             }
         }
-
-        log.message(properties);
     }
 
-    private void readProperties(CommitLog log, Element element, XmldbURI revision_uri) {
+    private void readProperties(JsonGenerator json, CommitLog log, Element element, XmldbURI revision_uri) throws IOException {
 
         String id = null;
         XmldbURI uri = null;
-
-        String properties = "";
 
         NodeList nodes = element.getChildNodes();
         for (int i = 0; i < nodes.getLength(); i++) {
@@ -240,19 +327,19 @@ public class Converter {
 
                     break;
                 case "revision": //number
-                    properties += "<old-revision-id>"+node.getNodeValue()+"</old-revision-id>";
+                    json.writeObjectField("old-revision-id", node.getNodeValue());
 
                     break;
                 case "type": //minor or major
-                    properties += "<type>"+node.getNodeValue()+"</type>";
+                    json.writeObjectField("type", node.getNodeValue());
 
                     break;
                 case "comment":
-                    log.message(node.getNodeValue());
+                    json.writeObjectField("comment", node.getNodeValue());
 
                     break;
                 case "changed": //true or false
-                    properties += "<changed>"+node.getNodeValue()+"</changed>";
+                    json.writeObjectField("changed", node.getNodeValue());
 
                     break;
                 default:
@@ -270,8 +357,176 @@ public class Converter {
 
         log.delete(id, uri);
         ((CommitLog.Action) log.acts.get(0)).op = UPDATE;
+    }
 
-        log.message(properties);
+    protected Path makeRevision(DBBroker broker, String uuid, XmldbURI uri, DocumentImpl doc, Path logPath)
+            throws IOException, PermissionDeniedException, SAXException, XMLStreamException {
+
+        if (uuid == null) throw new RuntimeException("no uuid");
+
+        Path revPath = rcs.revFolder(uuid, rcs.uuidFolder);
+
+        if (revPath == null) throw new RuntimeException("can't create revision folder");
+
+        String type = XML;
+
+        MessageDigest digest = rcs.messageDigest();
+
+        Path dataFile = Files.createTempFile(rcs.tmpFolder, "hashing", "data");
+
+        switch (doc.getResourceType()) {
+            case XML_FILE:
+
+                //dataFile = folder.resolve(XML_DATA);
+
+                try (OutputStream fileStream = Files.newOutputStream(dataFile)) {
+
+                    Writer writerStream = new OutputStreamWriter(
+                            new DigestOutputStream(fileStream, digest),
+                            ENCODING.newEncoder()
+                    );
+
+                    try (Writer writer = new BufferedWriter(writerStream)) {
+                        rcs.serializer(broker).serialize(doc, writer);
+                    }
+                }
+
+                break;
+
+            case BINARY_FILE:
+
+                //dataFile = folder.resolve(BIN_DATA);
+
+                try (InputStream is = broker.getBinaryResource((BinaryDocument)doc)) {
+                    try (OutputStream fileStream = Files.newOutputStream(dataFile)) {
+
+                        DigestOutputStream stream = new DigestOutputStream(fileStream, digest);
+
+                        IOUtils.copy(is, stream);
+                    }
+                }
+
+                type = BIN;
+
+                break;
+
+            default:
+                throw new RuntimeException("unknown type");
+        }
+
+        String hash = rcs.digestHex(digest);
+
+        //check hash storage
+        Path hashPath = rcs.resourceFolder(hash, rcs.hashesFolder);
+        if (Files.notExists(hashPath)) {
+            createDirectories(hashPath.getParent());
+            Files.move(dataFile, hashPath);
+        } else {
+            FileUtils.deleteQuietly(dataFile.toFile());
+            //if fail it will be clean up next restart or it possible detect old files by last access time
+        }
+
+        processMetas(logPath.toString(), uuid, type, hash, uri, doc, revPath);
+
+        return revPath;
+    }
+
+    private void processMetas(String logPath, String uuid, String type, String hash, XmldbURI uri, Resource resource, Path location) throws XMLStreamException, IOException {
+        try (OutputStream stream = Files.newOutputStream(location)) {
+            _processMetas(logPath, uuid, type, hash, uri, resource, stream);
+        }
+    }
+
+    private void _processMetas(String logPath, String uuid, String type, String hash, XmldbURI uri, Resource resource, OutputStream stream) throws XMLStreamException, IOException {
+
+//        XmldbURI uri = resource.getURI();
+        String url = uri.toString();
+        String name = uri.lastSegment().toString();
+
+        ResourceMetadata metadata = resource.getMetadata();
+
+        String mimeType = metadata.getMimeType();
+
+//        long createdTime = metadata.getCreated();
+//        long lastModified = metadata.getLastModified();
+//
+//        Permission perm = resource.getPermissions();
+
+//        String parentUuid = null;
+//        XmldbURI parentUri = uri.removeLastSegment();
+//
+//        if (!(uri.equalsInternal(XmldbURI.DB)
+//                || parentUri.equalsInternal(XmldbURI.DB)
+//                || parentUri.equalsInternal(XmldbURI.EMPTY_URI)
+//        )
+//                ) {
+//            parentUuid = md.URItoUUID(parentUri);
+//            if (parentUuid == null) {
+//                if (h != null) h.error(uri, "missing parent's uuid");
+//            }
+//        }
+
+//        GregorianCalendar date = new GregorianCalendar(GMT);
+
+        XMLOutputFactory outputFactory = XMLOutputFactory.newInstance();
+
+        final XMLStreamWriter writer = outputFactory.createXMLStreamWriter(stream, "UTF-8");
+
+        writer.writeStartDocument("UTF-8", "1.0");
+        writer.writeStartElement("RCS", "metas", "http://exist-db.org/RCS");
+        writer.writeDefaultNamespace(Namespaces.EXIST_NS);
+        writer.writeNamespace(MetaData.PREFIX, MetaData.NAMESPACE_URI);
+
+        write(writer, EL_UUID, uuid);
+        write(writer, EL_RESOURCE_TYPE, type);
+
+        if (hash != null) write(writer, EL_DATA_HASH, hash);
+
+        write(writer, EL_LOG_PATH, logPath);
+
+        write(writer, EL_FILE_NAME, name);
+        write(writer, EL_FILE_PATH, url);
+
+//        if (parentUuid != null) {
+//            write(writer, PARENT_UUID, parentUuid);
+//        }
+
+        write(writer, EL_META_TYPE, mimeType);
+
+//        date.setTimeInMillis(createdTime);
+//        write(writer, EL_CREATED, DatatypeConverter.printDateTime(date));
+//
+//        date.setTimeInMillis(lastModified);
+//        write(writer, EL_LAST_MODIFIED, DatatypeConverter.printDateTime(date));
+
+
+//        writer.writeStartElement(EL_PERMISSION);
+//        writeUnixStylePermissionAttributes(writer, perm);
+//        if(perm instanceof ACLPermission) {
+//            writeACLPermission(writer, (ACLPermission)perm);
+//        }
+//        writer.writeEndElement();
+
+
+//        writer.writeStartElement(MetaData.PREFIX, EL_METASTORAGE, MetaData.NAMESPACE_URI);
+//        writer.writeAttribute(MetaData.PREFIX, MetaData.NAMESPACE_URI, EL_UUID, uuid);
+//
+//        if (bh != null) bh.backup(resource, writer);
+//
+//        writer.writeEndElement();
+
+        writer.writeEndElement();
+        writer.writeEndDocument();
+
+        writer.flush();
+        writer.close();
+    }
+
+    private void write(XMLStreamWriter w, String name, String value) throws XMLStreamException {
+        w.writeStartElement(name);
+        //writer.writeAttribute(name, value);
+        w.writeCharacters(value);
+        w.writeEndElement();
     }
 
     public static void main(String[] args) throws Exception {

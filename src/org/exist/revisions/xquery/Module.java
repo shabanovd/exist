@@ -38,6 +38,7 @@ public class Module extends AbstractInternalModule {
     public final static String RELEASED_IN_VERSION = "eXist-2.2";
 
     public static final FunctionDef[] functions = {
+        new FunctionDef(FnConvert.signatures[0], FnConvert.class),
         new FunctionDef(FnCommit.signatures[0], FnCommit.class)
     };
     

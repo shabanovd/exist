@@ -281,7 +281,7 @@ public class RCSManager implements Constants {
                                 }
                                 
                             } catch (Exception e) {
-                                h.error(uri, e);
+                                if (h != null) h.error(uri, e);
 
                                 log.writeAttribute("error", e.getMessage());
                             }
@@ -329,7 +329,7 @@ public class RCSManager implements Constants {
             }
             
         } catch (Exception e) {
-            h.error(doc.getURI(), e);
+            if (h != null) h.error(doc.getURI(), e);
             
             log.writeAttribute("error", e.getMessage());
         }
@@ -449,7 +449,7 @@ public class RCSManager implements Constants {
         throw new IOException("can't create commit log");
     }
 
-    private Serializer serializer(DBBroker broker) {
+    protected Serializer serializer(DBBroker broker) {
         Serializer serializer = broker.getSerializer();
         serializer.setUser(broker.getSubject());
         try {
@@ -486,7 +486,7 @@ public class RCSManager implements Constants {
                 Collection col = broker.getCollection(action.uri());
 
                 if (col == null) {
-                    h.error(action.uri(), "not found");
+                    if (h != null) h.error(action.uri(), "not found");
                     return null;
                 }
 
@@ -509,20 +509,20 @@ public class RCSManager implements Constants {
     protected XmldbURI uri(String id, Handler h) {
         Metas metas = md.getMetas(id);
         if (metas == null) {
-            h.error(id, "missing metas");
+            if (h != null) h.error(id, "missing metas");
             return null;
         }
 
         String uri = metas.getURI();
         if (uri == null) {
-            h.error(id, "missing uri");
+            if (h != null) h.error(id, "missing uri");
             return null;
         }
 
         try {
             return XmldbURI.create(uri);
         } catch (Exception e) {
-            h.error(id, "uri '"+uri+"' is not XmldbURI one");
+            if (h != null) h.error(id, "uri '"+uri+"' is not XmldbURI one");
         }
 
         return CommitLog.UNKNOWN_URI;
@@ -532,13 +532,13 @@ public class RCSManager implements Constants {
     protected String uuid(XmldbURI uri, Handler h) {
         Metas metas = md.getMetas(uri);
         if (metas == null) {
-            h.error(uri, "missing metas");
+            if (h != null) h.error(uri, "missing metas");
             return null;
         }
 
         String uuid = metas.getUUID();
         if (uuid == null) {
-            h.error(uri, "missing uuid");
+            if (h != null) h.error(uri, "missing uuid");
             return null;
         }
         
@@ -551,7 +551,7 @@ public class RCSManager implements Constants {
         Path revMeta = revFolder(uuid, uuidFolder);
 
         if (revMeta == null) {
-            h.error(uri, "can't create revision file");
+            if (h != null) h.error(uri, "can't create revision file");
             return null;
         }
 
@@ -560,7 +560,7 @@ public class RCSManager implements Constants {
             storeLastMetas(logPath.toString(), uuid, uri, metasStream, h);
         }
 
-        h.processed(uri);
+        if (h != null) h.processed(uri);
 
         return revMeta;
     }
@@ -575,18 +575,18 @@ public class RCSManager implements Constants {
         Path revMeta = revFolder(uuid, uuidFolder);
         
         if (revMeta == null) {
-            h.error(uri, "can't create revision file");
+            if (h != null) h.error(uri, "can't create revision file");
             return null;
         }
 
         processMetas(logPath.toString(), uuid, COL, null, col, revMeta, bh, h);
-        
-        h.processed(uri);
+
+        if (h != null) h.processed(uri);
         
         return revMeta;
     }
 
-    private Path makeRevision(DBBroker broker, String uuid, XmldbURI uri, DocumentImpl doc, Path logPath, BackupHandler bh, Handler h)
+    protected Path makeRevision(DBBroker broker, String uuid, XmldbURI uri, DocumentImpl doc, Path logPath, BackupHandler bh, Handler h)
             throws IOException, PermissionDeniedException, SAXException, XMLStreamException {
         
         if (uuid == null) {
@@ -596,7 +596,7 @@ public class RCSManager implements Constants {
         Path revPath = revFolder(uuid, uuidFolder);
         
         if (revPath == null) {
-            h.error(uri, "can't create revision folder");
+            if (h != null) h.error(uri, "can't create revision folder");
             return null;
         }
 
@@ -643,7 +643,7 @@ public class RCSManager implements Constants {
             break;
         
         default:
-            h.error(uri, "unknown type");
+            if (h != null) h.error(uri, "unknown type");
             return null;
         }
 
@@ -660,13 +660,13 @@ public class RCSManager implements Constants {
         }
 
         processMetas(logPath.toString(), uuid, type, hash, doc, revPath, bh, h);
-        
-        h.processed(uri);
+
+        if (h != null) h.processed(uri);
         
         return revPath;
     }
     
-    private Path resourceFolder(String docId, Path folder) {
+    protected Path resourceFolder(String docId, Path folder) {
         
         return folder
                 .resolve(docId.substring(0, 4))
@@ -674,7 +674,7 @@ public class RCSManager implements Constants {
                 .resolve(docId);
     }
 
-    private Path revFolder(String docId, Path folder) throws IOException {
+    protected Path revFolder(String docId, Path folder) throws IOException {
         
         Path location = resourceFolder(docId, folder);
 
@@ -701,18 +701,18 @@ public class RCSManager implements Constants {
 
         try (OutputStream metasStream = Files.newOutputStream(location)) {
 
-            processMetas(logPath, uuid, type, hash, resource, metasStream, bh, h);
+            _processMetas(logPath, uuid, type, hash, resource, metasStream, bh, h);
 
         }
     }
     
-    private String digestHex(MessageDigest digest) {
+    protected String digestHex(MessageDigest digest) {
         return Hex.encodeHexString(digest.digest());
     }
     
-    private MessageDigest messageDigest() throws IOException {
+    protected MessageDigest messageDigest() throws IOException {
         try {
-            return MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256);
+            return MessageDigest.getInstance(MessageDigestAlgorithms.SHA_512);
         } catch (NoSuchAlgorithmException e) {
             throw new IOException(e);
         }
@@ -733,7 +733,7 @@ public class RCSManager implements Constants {
                 ) {
             parentUuid = md.URItoUUID(parentUri);
             if (parentUuid == null) {
-                h.error(uri, "missing parent's uuid");
+                if (h != null) h.error(uri, "missing parent's uuid");
             }
         }
 
@@ -765,7 +765,7 @@ public class RCSManager implements Constants {
         writer.close();
     }
     
-    private void processMetas(String logPath, String uuid, String type, String hash, Resource resource, OutputStream stream, BackupHandler bh, Handler h) throws XMLStreamException, IOException {
+    private void _processMetas(String logPath, String uuid, String type, String hash, Resource resource, OutputStream stream, BackupHandler bh, Handler h) throws XMLStreamException, IOException {
 
         XmldbURI uri = resource.getURI();
         String url = uri.toString();
@@ -790,7 +790,7 @@ public class RCSManager implements Constants {
         ) {
             parentUuid = md.URItoUUID(parentUri);
             if (parentUuid == null) {
-                h.error(uri, "missing parent's uuid");
+                if (h != null) h.error(uri, "missing parent's uuid");
             }
         }
 
@@ -839,29 +839,8 @@ public class RCSManager implements Constants {
         writer.writeStartElement(MetaData.PREFIX, EL_METASTORAGE, MetaData.NAMESPACE_URI);
         writer.writeAttribute(MetaData.PREFIX, MetaData.NAMESPACE_URI, EL_UUID, uuid);
 
-        bh.backup(resource, writer);
+        if (bh != null) bh.backup(resource, writer);
 
-//        md.streamMetas(uri, new MetaStreamListener() {
-//
-//            @Override
-//            public void metadata(String uuid, String key, Object value) {
-//                try {
-//                    writer.writeStartElement(MDStorageManager.PREFIX, key, MetaData.NAMESPACE_URI);
-//                    writer.writeAttribute(MDStorageManager.PREFIX, MetaData.NAMESPACE_URI, EL_UUID, uuid);
-//
-//                    if (value instanceof String) {
-//                        writer.writeCharacters(value.toString());
-//
-//                    } else {
-//                        //XXX: log?
-//                    }
-//                    writer.writeEndElement();
-//                } catch (XMLStreamException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//
-//        });
         writer.writeEndElement();
 
         writer.writeEndElement();
@@ -1024,10 +1003,10 @@ public class RCSManager implements Constants {
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {
-                h.error(location, e);
+                if (h != null) h.error(location, e);
             }
         }
-        //h.error(location, "no revisions");
+        //if (h != null) h.error(location, "no revisions");
     }
 
     protected void restoreRevision(DBBroker broker, XmldbURI newUrl, Path rev, Handler h) throws Exception {
@@ -1101,7 +1080,7 @@ public class RCSManager implements Constants {
             tx.success();
         }
 
-        h.processed(url);
+        if (h != null) h.processed(url);
     }
 
     private void createCollection(DBBroker broker, Txn tx, XmldbURI url, MetasHandler dh) throws PermissionDeniedException, IOException, TriggerException {
