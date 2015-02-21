@@ -48,6 +48,7 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
+import java.util.Scanner;
 
 import static java.nio.file.Files.createDirectories;
 import static org.exist.Operation.UPDATE;
@@ -75,50 +76,49 @@ public class Converter implements Constants {
 
     public void run() throws Exception {
 
-        try (DBBroker broker = db.authenticate("admin", "")) {
+        DBBroker broker = db.getActiveBroker();
 
-            XmldbURI organizations_uri = XmldbURI.DB.append("organizations");
+        XmldbURI organizations_uri = XmldbURI.DB.append("organizations");
 
-            Collection organizations = broker.getCollection(organizations_uri);
+        Collection organizations = broker.getCollection(organizations_uri);
 
-            Iterator<XmldbURI> it_orgs = organizations.collectionIteratorNoLock(broker);
-            while (it_orgs.hasNext()) {
+        Iterator<XmldbURI> it_orgs = organizations.collectionIteratorNoLock(broker);
+        while (it_orgs.hasNext()) {
 
-                XmldbURI organization_name = it_orgs.next();
+            XmldbURI organization_name = it_orgs.next();
 
-                System.out.println("Organization: " + organization_name);
+            System.out.println("Organization: " + organization_name);
 
-                XmldbURI organization_uri = organizations_uri.append(organization_name).append("metadata").append("versions");
+            XmldbURI organization_uri = organizations_uri.append(organization_name).append("metadata").append("versions");
 
-                Collection resources = broker.getCollection(organization_uri);
+            Collection resources = broker.getCollection(organization_uri);
 
-                Iterator<XmldbURI> it_rs = resources.collectionIteratorNoLock(broker);
-                while (it_rs.hasNext()) {
+            Iterator<XmldbURI> it_rs = resources.collectionIteratorNoLock(broker);
+            while (it_rs.hasNext()) {
 
-                    XmldbURI resource_name = it_rs.next();
+                XmldbURI resource_name = it_rs.next();
 
-                    System.out.println(" "+resource_name);
+                System.out.println(" "+resource_name);
 
-                    XmldbURI revision_uri = organization_uri.append(resource_name);
-                    Collection revisions = broker.getCollection(revision_uri);
+                XmldbURI revision_uri = organization_uri.append(resource_name);
+                Collection revisions = broker.getCollection(revision_uri);
 
-                    Collection.CollectionEntry fc_url = revisions.getSubCollectionEntry(broker, "exist-versions");
-                    Collection fcCol = broker.getCollection(fc_url.getUri());
+                Collection.CollectionEntry fc_url = revisions.getSubCollectionEntry(broker, "exist-versions");
+                Collection fcCol = broker.getCollection(fc_url.getUri());
 
-                    Iterator<DocumentImpl> it_revs = revisions.iterator(broker);
-                    while (it_revs.hasNext()) {
+                Iterator<DocumentImpl> it_revs = revisions.iterator(broker);
+                while (it_revs.hasNext()) {
 
-                        DocumentImpl meta = it_revs.next();
+                    DocumentImpl meta = it_revs.next();
 
-                        CommitLog commitLog = readMeta(broker, meta, revision_uri);
+                    CommitLog commitLog = readMeta(broker, meta, revision_uri);
 
-                        String str = commitLog.id;
-                        Path logPath = rcs.commitLogsFolder.resolve( str.substring(0, 7) ).resolve( str );
+                    String str = commitLog.id;
+                    Path logPath = rcs.commitLogsFolder.resolve( str.substring(0, 7) ).resolve( str );
 
-                        Files.createDirectories(logPath.getParent());
+                    Files.createDirectories(logPath.getParent());
 
-                        writeLog(broker, fcCol, meta, logPath, commitLog);
-                    }
+                    writeLog(broker, fcCol, meta, logPath, commitLog);
                 }
             }
         }
@@ -214,7 +214,7 @@ public class Converter implements Constants {
         for (int i = 0; i < nodes.getLength(); i++) {
             Element node = (Element)nodes.item(i);
 
-            System.out.println(node);
+//            System.out.println(node);
 
             switch (node.getLocalName()) {
                 case "properties":
@@ -539,7 +539,11 @@ public class Converter implements Constants {
 
         Converter converter = new Converter(pool);
 
-        try {
+        System.out.println("password: ");
+        Scanner s = new Scanner(System.in);
+        String pass = s.next();
+
+        try (DBBroker broker = pool.authenticate("admin", pass)) {
             converter.run();
         } finally {
             pool.shutdown();
