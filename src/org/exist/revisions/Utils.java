@@ -59,8 +59,9 @@ public class Utils {
     }
 
     final static int TAG_DATA_HASH_POS = 200;
-    final static int TAG_DATA_HASH_LENGTH = 71;
     final static String TAG_DATA_HASH = "<"+Constants.EL_DATA_HASH+">";
+    final static int HASH_LENGTH = 128;
+    final static int TAG_DATA_HASH_LENGTH = HASH_LENGTH + 1 + 6; //71;
 
     protected static String readHash(Path location) throws IOException {
         try (SeekableByteChannel ch = Files.newByteChannel(location,StandardOpenOption.READ)) {
@@ -79,9 +80,9 @@ public class Utils {
                 }
             }
 
-            if (bb.get(bb.position() + 64) != '<') return null;
+            if (bb.get(bb.position() + HASH_LENGTH) != '<') return null;
 
-            return new String(bb.array(), bb.position(), 64);
+            return new String(bb.array(), bb.position(), HASH_LENGTH);
         }
     }
 

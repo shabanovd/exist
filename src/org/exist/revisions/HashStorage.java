@@ -87,7 +87,7 @@ public class HashStorage {
 
     private MessageDigest messageDigest() throws IOException {
         try {
-            return MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256);
+            return MessageDigest.getInstance(MessageDigestAlgorithms.SHA_512);
         } catch (NoSuchAlgorithmException e) {
             throw new IOException(e);
         }
