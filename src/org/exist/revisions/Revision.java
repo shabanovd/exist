@@ -29,11 +29,14 @@ import org.exist.memtree.DocumentImpl;
 import org.exist.memtree.MemTreeBuilder;
 import org.exist.storage.DBBroker;
 import org.exist.xmldb.XmldbURI;
+import org.exist.xquery.XPathException;
+import org.exist.xquery.XQueryContext;
+import org.exist.xquery.value.Base64BinaryValueType;
+import org.exist.xquery.value.BinaryValue;
+import org.exist.xquery.value.BinaryValueFromInputStream;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-
-import javax.xml.parsers.ParserConfigurationException;
 
 import static org.exist.revisions.Utils.*;
 
@@ -92,7 +95,11 @@ public class Revision implements Comparable<Revision> {
     }
     
     public InputStream getData() throws IOException {
-        return  RCSManager.get().data(readHash(location));
+        return resource.holder.data(readHash(location));
+    }
+
+    public BinaryValue getBinaryValue(XQueryContext context) throws IOException, XPathException {
+        return BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), getData());
     }
 
     public DocumentImpl getXML(Database db) throws IOException, SAXException {
@@ -126,14 +133,14 @@ public class Revision implements Comparable<Revision> {
     }
 
     public MetasHandler metadata() throws IOException {
-        return RCSManager.get().metadata(location);
+        return resource.holder.metadata(location);
     }
 
     public void restore(DBBroker broker, Handler h) throws Exception {
-        RCSManager.get().restoreRevision(broker, null, location, h);
+        resource.holder.restoreRevision(broker, null, location, h);
     }
 
     public void restore(DBBroker broker, XmldbURI newUrl, Handler h) throws Exception {
-        RCSManager.get().restoreRevision(broker, newUrl, location, h);
+        resource.holder.restoreRevision(broker, newUrl, location, h);
     }
 }

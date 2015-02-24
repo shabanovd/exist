@@ -50,7 +50,7 @@ public class CommitLog implements CommitWriter, CommitReader {
         Action(Operation op, XmldbURI uri) {
             this.op = op;
             this.uri = uri;
-            this.id = manager.uuid(uri, handler);
+            this.id = holder.uuid(uri, handler);
         }
 
         Action(Operation op, String id) {
@@ -80,7 +80,7 @@ public class CommitLog implements CommitWriter, CommitReader {
         }
     }
 
-    RCSManager manager;
+    RCSHolder holder;
     Handler handler;
 
     boolean isDone = false;
@@ -93,9 +93,9 @@ public class CommitLog implements CommitWriter, CommitReader {
 
     List<Change> acts = new ArrayList<>(256);
 
-    CommitLog(RCSManager manager, Handler handler) {
+    CommitLog(RCSHolder holder, Handler handler) {
         this.handler = handler;
-        this.manager = manager;
+        this.holder = holder;
     }
 
     public String id() {
@@ -198,8 +198,8 @@ public class CommitLog implements CommitWriter, CommitReader {
     public void close() throws IOException, XMLStreamException {
         isClosed = true;
 
-        if (isDone) manager.commit(this);
-        else manager.rollback(this);
+        if (isDone) holder.commit(this);
+        else holder.rollback(this);
     }
 
     private void checkIsOpen() {

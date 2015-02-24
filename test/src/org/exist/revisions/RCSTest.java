@@ -133,9 +133,11 @@ public class RCSTest {
 
             RCSManager manager = RCSManager.get();
 
-            manager.snapshot(root, h);
+            RCSHolder holder = manager.getOrCreateHolder("test");
 
-            manager.restore(broker.getDataFolder().toPath().resolve("RCS"), h);
+            holder.snapshot(root, h);
+
+            holder.restore(broker.getDataFolder().toPath().resolve("RCS"), h);
 
             System.out.println("Test PASSED.");
         } catch (Exception e) {
@@ -165,11 +167,13 @@ public class RCSTest {
 
             Handler h = new TestHandler();
 
-            RCSManager rcs = RCSManager.get();
+            RCSManager manager = RCSManager.get();
+
+            RCSHolder holder = manager.getOrCreateHolder("test");
 
             XmldbURI colURL = root.getURI();
 
-            try (CommitWriter commit = rcs.commit(h)) {
+            try (CommitWriter commit = holder.commit(h)) {
 
                 commit
                     .author("somebody")
@@ -194,7 +198,7 @@ public class RCSTest {
             String doc1uuid = metas.getUUID();
             assertNotNull(doc1uuid);
 
-            RCSResource resource = rcs.resource(doc1uuid);
+            RCSResource resource = holder.resource(doc1uuid);
             assertNotNull(resource);
 
             Revision rev = resource.lastRevision();

@@ -32,12 +32,15 @@ import java.util.List;
  *
  */
 public class RCSResource {
-    
-    Path location;
 
+    RCSHolder holder;
+
+    Path location;
     String uuid;
 
-    protected RCSResource(Path location) {
+    protected RCSResource(RCSHolder holder, Path location) {
+
+        this.holder = holder;
         
         uuid = location.getFileName().toString();
         

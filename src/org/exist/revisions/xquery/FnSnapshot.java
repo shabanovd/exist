@@ -25,6 +25,7 @@ import javax.xml.stream.XMLStreamException;
 
 import org.exist.collections.Collection;
 import org.exist.dom.QName;
+import org.exist.revisions.RCSHolder;
 import org.exist.revisions.RCSManager;
 import org.exist.security.PermissionDeniedException;
 import org.exist.util.LockException;
@@ -49,10 +50,12 @@ public class FnSnapshot extends BasicFunction {
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
             new QName("snapshot", Module.NAMESPACE_URI, Module.PREFIX),
-            "Create snapshot of collection, subcollections and documents.",
+            "Create snapshot of collection, sub collections and documents.",
             new SequenceType[]{
+                new FunctionParameterSequenceType("oid", Type.STRING, Cardinality.EXACTLY_ONE,
+                        "Organization id"),
                 new FunctionParameterSequenceType("collection", Type.STRING, Cardinality.EXACTLY_ONE,
-                "URI path of collections in database. Collection URIs should end on a '/'.")
+                    "URI path of collections in database. Collection URIs should end on a '/'.")
             },
             new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "")
         )
@@ -64,10 +67,13 @@ public class FnSnapshot extends BasicFunction {
 
     @Override
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
+
+        String oid = args[0].getStringValue();
+        RCSHolder holder = RCSManager.get().getHolder(oid);
+
+        if (holder == null) throw new XPathException(this, "No organisation  '"+oid+"'.");
         
-        RCSManager manager = RCSManager.get();
-        
-        XmldbURI uri = XmldbURI.create(args[0].getStringValue());
+        XmldbURI uri = XmldbURI.create(args[1].getStringValue());
         
         Collection collection;
         try {
@@ -79,7 +85,7 @@ public class FnSnapshot extends BasicFunction {
         ResponseBuilder rb = new ResponseBuilder();
         
         try {
-            manager.snapshot(collection, rb);
+            holder.snapshot(collection, rb);
 
         } catch (IOException | XMLStreamException | PermissionDeniedException | LockException e) {
             throw new XPathException(this, e);

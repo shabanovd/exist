@@ -22,6 +22,7 @@ package org.exist.revisions.xquery;
 import java.io.IOException;
 
 import org.exist.dom.QName;
+import org.exist.revisions.RCSHolder;
 import org.exist.revisions.RCSManager;
 import org.exist.revisions.RCSResource;
 import org.exist.revisions.Revision;
@@ -49,8 +50,10 @@ public class FnRevisions extends BasicFunction {
             new QName("revisions", Module.NAMESPACE_URI, Module.PREFIX),
             "Get revisions id for resource.",
             new SequenceType[]{
+                new FunctionParameterSequenceType("oid", Type.STRING, Cardinality.EXACTLY_ONE,
+                    "Organization id"),
                 new FunctionParameterSequenceType("uuid", Type.STRING, Cardinality.EXACTLY_ONE,
-                "Resource UUID.")
+                    "Resource UUID.")
             },
             new FunctionReturnSequenceType(Type.LONG, Cardinality.ZERO_OR_MORE, "")
         )
@@ -62,15 +65,18 @@ public class FnRevisions extends BasicFunction {
 
     @Override
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
-        
+
+        String oid = args[0].getStringValue();
+        RCSHolder holder = RCSManager.get().getHolder(oid);
+
+        if (holder == null) throw new XPathException(this, "No organisation  '"+oid+"'.");
+
         ValueSequence result = new ValueSequence();
-        
-        RCSManager manager = RCSManager.get();
-        
-        String uuid = args[0].getStringValue();
+
+        String uuid = args[1].getStringValue();
         
         try {
-            RCSResource resource = manager.resource(uuid);
+            RCSResource resource = holder.resource(uuid);
             
             for (Revision rev : resource.revisions()) {
                 

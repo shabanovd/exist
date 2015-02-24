@@ -33,10 +33,10 @@ import java.util.Iterator;
  */
 public class Commits implements Iterable<CommitReader> {
 
-    RCSManager manager;
+    RCSHolder holder;
 
-    Commits(RCSManager manager) {
-        this.manager = manager;
+    Commits(RCSHolder holder) {
+        this.holder = holder;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class Commits implements Iterable<CommitReader> {
         ArrayList<Path> months;
 
         CommitsIterator() {
-            Path folder = manager.commitLogsFolder;
+            Path folder = holder.commitLogsFolder;
 
             months = new ArrayList<>();
 
@@ -67,9 +67,6 @@ public class Commits implements Iterable<CommitReader> {
                     return o1.getFileName().compareTo(o2.getFileName());
                 }
             });
-
-
-
         }
 
         @Override
@@ -84,7 +81,6 @@ public class Commits implements Iterable<CommitReader> {
 
         @Override
         public void remove() {
-
         }
     }
 }

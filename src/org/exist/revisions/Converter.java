@@ -62,7 +62,6 @@ public class Converter implements Constants {
     JsonFactory f = new JsonFactory();
 
     Database db;
-    RCSManager rcs;
 
     int count = 0;
     int count_ = 0;
@@ -70,11 +69,11 @@ public class Converter implements Constants {
 
     public Converter(Database db) {
         this.db = db;
-
-        rcs = RCSManager.get();
     }
 
     public void run() throws Exception {
+
+        RCSManager rcs = RCSManager.get();
 
         DBBroker broker = db.getActiveBroker();
 
@@ -88,6 +87,8 @@ public class Converter implements Constants {
             XmldbURI organization_name = it_orgs.next();
 
             System.out.println("Organization: " + organization_name);
+
+            RCSHolder holder = rcs.getOrCreateHolder(organization_name.lastSegment().toString());
 
             XmldbURI organization_uri = organizations_uri.append(organization_name).append("metadata").append("versions");
 
@@ -111,14 +112,14 @@ public class Converter implements Constants {
 
                     DocumentImpl meta = it_revs.next();
 
-                    CommitLog commitLog = readMeta(broker, meta, revision_uri);
+                    CommitLog commitLog = readMeta(holder, broker, meta, revision_uri);
 
                     String str = commitLog.id;
-                    Path logPath = rcs.commitLogsFolder.resolve( str.substring(0, 7) ).resolve( str );
+                    Path logPath = holder.commitLogsFolder.resolve( str.substring(0, 7) ).resolve( str );
 
                     Files.createDirectories(logPath.getParent());
 
-                    writeLog(broker, fcCol, meta, logPath, commitLog);
+                    writeLog(holder, broker, fcCol, meta, logPath, commitLog);
                 }
             }
         }
@@ -126,7 +127,7 @@ public class Converter implements Constants {
         System.out.println(count + " / " + count_ + " / " + count_binary);
     }
 
-    private Path write_data(DBBroker broker, Collection fcCol, DocumentImpl meta, Change action, Path logPath) throws PermissionDeniedException, SAXException, IOException, XMLStreamException {
+    private Path write_data(RCSHolder holder, DBBroker broker, Collection fcCol, DocumentImpl meta, Change action, Path logPath) throws PermissionDeniedException, SAXException, IOException, XMLStreamException {
         XmldbURI rev_id = meta.getFileURI();
 
         System.out.println("  " + rev_id);
@@ -144,16 +145,16 @@ public class Converter implements Constants {
                     count_binary++;
                 }
 
-                return makeRevision(broker, action.id(), action.uri(), doc, logPath);
+                return makeRevision(holder, broker, action.id(), action.uri(), doc, logPath);
             }
         }
 
         return null;
     }
 
-    private void writeLog(DBBroker broker, Collection fcCol, DocumentImpl meta, Path logPath, CommitLog commitLog) throws IOException, XMLStreamException {
+    private void writeLog(RCSHolder holder, DBBroker broker, Collection fcCol, DocumentImpl meta, Path logPath, CommitLog commitLog) throws IOException, XMLStreamException {
 
-        Path logRelativePath = rcs.rcFolder.relativize(logPath);
+        Path logRelativePath = holder.rcFolder.relativize(logPath);
 
         try (BufferedWriter commitLogStream = Files.newBufferedWriter(logPath, ENCODING)) {
             XMLOutputFactory outputFactory = XMLOutputFactory.newInstance();
@@ -183,11 +184,11 @@ public class Converter implements Constants {
                 log.writeStartElement("entry");
 
                 try {
-                    Path folder = write_data(broker, fcCol, meta, action, logRelativePath);
+                    Path folder = write_data(holder, broker, fcCol, meta, action, logRelativePath);
 
                     if (folder != null) {
                         log.writeAttribute("uri", action.uri().toString());
-                        log.writeAttribute("path", rcs.rcFolder.relativize(folder).toString());
+                        log.writeAttribute("path", holder.rcFolder.relativize(folder).toString());
                     }
 
                 } catch (Exception e) {
@@ -201,14 +202,14 @@ public class Converter implements Constants {
         }
     }
 
-    private CommitLog readMeta(DBBroker broker, DocumentImpl meta, XmldbURI revision_uri) throws Exception {
+    private CommitLog readMeta(RCSHolder holder, DBBroker broker, DocumentImpl meta, XmldbURI revision_uri) throws Exception {
 
         StringWriter writer = new StringWriter();
 
         JsonGenerator json = f.createJsonGenerator(writer);
         json.writeStartObject();
 
-        CommitLog log = new CommitLog(RCSManager.get(), null);
+        CommitLog log = new CommitLog(holder, null);
 
         NodeList nodes = meta.getDocumentElement().getChildNodes();
         for (int i = 0; i < nodes.getLength(); i++) {
@@ -316,12 +317,12 @@ public class Converter implements Constants {
                     //2013-05-28T17:23:12.094Z
                     long ts = DatatypeConverter.parseDateTime(node.getNodeValue()).getTimeInMillis();
 
-                    GregorianCalendar date = new GregorianCalendar(rcs.GMT);
+                    GregorianCalendar date = new GregorianCalendar(GMT);
 
                     date.setTimeInMillis(ts);
                     String str = DatatypeConverter.printDateTime(date);
 
-                    if (rcs.noDots) str = str.replace(':','_');
+                    if (RCSManager.get().noDots) str = str.replace(':','_');
 
                     log.id = str;
 
@@ -359,20 +360,20 @@ public class Converter implements Constants {
         ((CommitLog.Action) log.acts.get(0)).op = UPDATE;
     }
 
-    protected Path makeRevision(DBBroker broker, String uuid, XmldbURI uri, DocumentImpl doc, Path logPath)
+    protected Path makeRevision(RCSHolder holder, DBBroker broker, String uuid, XmldbURI uri, DocumentImpl doc, Path logPath)
             throws IOException, PermissionDeniedException, SAXException, XMLStreamException {
 
         if (uuid == null) throw new RuntimeException("no uuid");
 
-        Path revPath = rcs.revFolder(uuid, rcs.uuidFolder);
+        Path revPath = holder.revFolder(uuid, holder.uuidFolder);
 
         if (revPath == null) throw new RuntimeException("can't create revision folder");
 
         String type = XML;
 
-        MessageDigest digest = rcs.messageDigest();
+        MessageDigest digest = holder.messageDigest();
 
-        Path dataFile = Files.createTempFile(rcs.tmpFolder, "hashing", "data");
+        Path dataFile = Files.createTempFile(holder.tmpFolder, "hashing", "data");
 
         switch (doc.getResourceType()) {
             case XML_FILE:
@@ -387,7 +388,7 @@ public class Converter implements Constants {
                     );
 
                     try (Writer writer = new BufferedWriter(writerStream)) {
-                        rcs.serializer(broker).serialize(doc, writer);
+                        RCSManager.get().serializer(broker).serialize(doc, writer);
                     }
                 }
 
@@ -414,10 +415,10 @@ public class Converter implements Constants {
                 throw new RuntimeException("unknown type");
         }
 
-        String hash = rcs.digestHex(digest);
+        String hash = holder.digestHex(digest);
 
         //check hash storage
-        Path hashPath = rcs.resourceFolder(hash, rcs.hashesFolder);
+        Path hashPath = holder.resourceFolder(hash, holder.hashesFolder);
         if (Files.notExists(hashPath)) {
             createDirectories(hashPath.getParent());
             Files.move(dataFile, hashPath);

@@ -22,6 +22,7 @@ package org.exist.revisions.xquery;
 import java.io.IOException;
 
 import org.exist.dom.QName;
+import org.exist.revisions.RCSHolder;
 import org.exist.revisions.RCSManager;
 import org.exist.revisions.RCSResource;
 import org.exist.revisions.Revision;
@@ -53,10 +54,12 @@ public class FnRevision extends BasicFunction {
             REV_AS_XML,
             "Get revision.",
             new SequenceType[]{
+                new FunctionParameterSequenceType("oid", Type.STRING, Cardinality.EXACTLY_ONE,
+                    "Organization id"),
                 new FunctionParameterSequenceType("uuid", Type.STRING, Cardinality.EXACTLY_ONE,
-                "Resource UUID."),
+                    "Resource UUID."),
                 new FunctionParameterSequenceType("rev-id", Type.LONG, Cardinality.EXACTLY_ONE,
-                "Revision id")
+                    "Revision id")
             },
             new FunctionReturnSequenceType(Type.DOCUMENT, Cardinality.ZERO_OR_ONE, "")
         ),
@@ -64,10 +67,12 @@ public class FnRevision extends BasicFunction {
             REV_AS_BIN,
             "Get revision.",
             new SequenceType[]{
+                new FunctionParameterSequenceType("oid", Type.STRING, Cardinality.EXACTLY_ONE,
+                    "Organization id"),
                 new FunctionParameterSequenceType("uuid", Type.STRING, Cardinality.EXACTLY_ONE,
-                "Resource UUID."),
+                    "Resource UUID."),
                 new FunctionParameterSequenceType("rev-id", Type.LONG, Cardinality.EXACTLY_ONE,
-                "Revision id")
+                    "Revision id")
             },
             new FunctionReturnSequenceType(Type.BASE64_BINARY, Cardinality.ZERO_OR_ONE, "")
         )
@@ -79,23 +84,22 @@ public class FnRevision extends BasicFunction {
 
     @Override
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
+
+        String oid = args[0].getStringValue();
+        RCSHolder holder = RCSManager.get().getHolder(oid);
+
+        if (holder == null) throw new XPathException(this, "No organisation  '"+oid+"'.");
         
-        RCSManager manager = RCSManager.get();
-        
-        String uuid = args[0].getStringValue();
+        String uuid = args[1].getStringValue();
         
         try {
-            RCSResource resource = manager.resource(uuid);
+            RCSResource resource = holder.resource(uuid);
             
-            Revision rev = resource.revision(Long.valueOf( args[1].getStringValue() ));
+            Revision rev = resource.revision(Long.valueOf( args[2].getStringValue() ));
             
             if (getSignature().getName() == REV_AS_BIN) {
                 
-                return BinaryValueFromInputStream.getInstance(
-                    getContext(), 
-                    new Base64BinaryValueType(), 
-                    rev.getData()
-                );
+                return rev.getBinaryValue(getContext());
                 
             } else if (getSignature().getName() == REV_AS_XML) {
                 
