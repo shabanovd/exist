@@ -102,6 +102,10 @@ public class CommitLog implements CommitWriter, CommitReader {
         return id;
     }
 
+    public RCSHolder rcsHolder() {
+        return holder;
+    }
+
     public CommitLog author(String author) {
         this.author = author;
         return this;

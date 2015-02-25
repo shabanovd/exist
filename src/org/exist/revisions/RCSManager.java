@@ -25,6 +25,7 @@ import java.util.*;
 
 import org.apache.log4j.Logger;
 import org.exist.*;
+import org.exist.EventListener;
 import org.exist.plugin.PluginsManager;
 import org.exist.security.*;
 import org.exist.storage.DBBroker;
@@ -57,6 +58,8 @@ public class RCSManager {
     Path data_folder;
 
     boolean noDots = false;
+
+    List<EventListener<CommitLog>> commitsListener = new ArrayList<>();
 
     Map<Thread, CommitWriter> activeCommits = new HashMap<>();
 
@@ -154,5 +157,12 @@ public class RCSManager {
         
         return serializer;
     }
-    
+
+    public boolean registerCommitsListener(EventListener<CommitLog> listener) {
+        return commitsListener.add(listener);
+    }
+
+    public boolean unregisterCommitsListener(EventListener<CommitLog> listener) {
+        return commitsListener.remove(listener);
+    }
 }

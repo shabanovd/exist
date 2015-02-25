@@ -98,8 +98,6 @@ public class RCSHolder implements Constants {
 
     Path tmpFolder;
 
-    List<EventListener<CommitLog>> commitsListener = new ArrayList<>();
-
     public RCSHolder(RCSManager manager, Path path) throws IOException {
         this.manager = manager;
 
@@ -124,14 +122,6 @@ public class RCSHolder implements Constants {
 
     public HashStorage hashStorage() {
         return hashStorage;
-    }
-
-    public boolean registerCommitsListener(EventListener<CommitLog> listener) {
-        return commitsListener.add(listener);
-    }
-
-    public boolean unregisterCommitsListener(EventListener<CommitLog> listener) {
-        return commitsListener.remove(listener);
     }
 
     public Iterable<CommitReader> commits() {
@@ -355,7 +345,7 @@ public class RCSHolder implements Constants {
                 log.writeEndDocument();
             }
 
-            for (EventListener<CommitLog> listener : commitsListener) {
+            for (EventListener<CommitLog> listener : manager.commitsListener) {
                 try {
                     listener.onEvent(commitLog);
                 } catch (Exception e) {
