@@ -53,6 +53,7 @@ import java.util.Scanner;
 import static java.nio.file.Files.createDirectories;
 import static org.exist.Operation.UPDATE;
 import static org.exist.dom.DocumentImpl.*;
+import static org.exist.revisions.RCSManager.LOG;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -120,6 +121,14 @@ public class Converter implements Constants {
                     Files.createDirectories(logPath.getParent());
 
                     writeLog(holder, broker, fcCol, meta, logPath, commitLog);
+
+                    for (EventListener<CommitLog> listener : RCSManager.get().commitsListener) {
+                        try {
+                            listener.onEvent(commitLog);
+                        } catch (Exception e) {
+                            LOG.error(e.getMessage(), e);
+                        }
+                    }
                 }
             }
         }
