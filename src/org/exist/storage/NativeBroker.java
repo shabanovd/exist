@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
+import org.exist.DoAbort;
 import org.exist.EXistException;
 import org.exist.Indexer;
 import org.exist.TrashManager;
@@ -1384,7 +1385,12 @@ public class NativeBroker extends DBBroker {
 
         if (trashManager != null) {
 
-            Collection destination = trashManager.move(this, txn, collection);
+            Collection destination;
+            try {
+                destination = trashManager.move(this, txn, collection);
+            } catch (DoAbort e) {
+                return false;
+            }
 
             if (destination != null) {
 

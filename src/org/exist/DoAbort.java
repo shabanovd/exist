@@ -19,38 +19,8 @@
  */
 package org.exist;
 
-import org.exist.collections.Collection;
-import org.exist.dom.DocumentImpl;
-import org.exist.storage.DBBroker;
-import org.exist.storage.txn.Txn;
-
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  */
-public interface TrashManager {
-
-    /**
-     * Method return collection where resource should be moved to instead of remove.
-     *
-     * To allow remove operation return null.
-     *
-     * @param broker
-     * @param txn
-     * @param col
-     * @return
-     */
-    Collection move(DBBroker broker, Txn txn, Collection col) throws DoAbort;
-
-    /**
-     * Method return collection where resource should be moved to instead of remove.
-     *
-     * To allow remove operation return null.
-     *
-     * @param broker
-     * @param txn
-     * @param doc
-     * @return
-     */
-    Collection move(DBBroker broker, Txn txn, DocumentImpl doc) throws DoAbort;
-
+public class DoAbort extends Exception {
 }
