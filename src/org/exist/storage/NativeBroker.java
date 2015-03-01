@@ -1235,13 +1235,6 @@ public class NativeBroker extends DBBroker {
             throw new PermissionDeniedException("Account "+getSubject().getName()+" have insufficient privileges on collection " + parent.getURI() + " to move collection " + collection.getURI());
         }
         
-        /*
-         * If replacing another collection in the move i.e. /db/col1/A -> /db/col2 (where /db/col2/A exists)
-         * we have to make sure the permissions to remove /db/col2/A are okay!
-         * 
-         * So we must call removeCollection on /db/col2/A
-         * Which will ensure that collection can be removed and then remove it.
-         */
         final XmldbURI movedToCollectionUri = destination.getURI().append(newName);
         final Collection existingMovedToCollection = getCollection(movedToCollectionUri);
         if(existingMovedToCollection != null) {
@@ -1272,10 +1265,10 @@ public class NativeBroker extends DBBroker {
                     pool.getProcessMonitor().endJob();
                 }
             }
+            return;
         }
 
         pool.getProcessMonitor().startJob(ProcessMonitor.ACTION_MOVE_COLLECTION, collection.getURI());
-
         try {
 
             final XmldbURI srcURI = collection.getURI();
@@ -1300,7 +1293,6 @@ public class NativeBroker extends DBBroker {
         } finally {
             pool.getProcessMonitor().endJob();
         }
-
     }
 
     private void moveBinaryFork(Txn transaction, File sourceDir, Collection destination, XmldbURI newName) throws IOException {
