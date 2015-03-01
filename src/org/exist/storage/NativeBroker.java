@@ -1094,7 +1094,7 @@ public class NativeBroker extends DBBroker {
 
                 final DocumentTrigger docTrigger = new DocumentTriggers(this);
 
-                final Collection newCollection = doCopyCollection(transaction, docTrigger, collection, destination, newName);
+                final Collection newCollection = doCopyCollection(transaction, docTrigger, collection, destination, newName, false);
 
                 trigger.afterCopyCollection(this, transaction, newCollection, srcURI);
             } finally {
@@ -1104,7 +1104,7 @@ public class NativeBroker extends DBBroker {
         }
     }
 
-    private Collection doCopyCollection(final Txn transaction, final DocumentTrigger trigger, final Collection collection, final Collection destination, XmldbURI newName) throws PermissionDeniedException, IOException, EXistException, TriggerException, LockException {
+    private Collection doCopyCollection(final Txn transaction, final DocumentTrigger trigger, final Collection collection, final Collection destination, XmldbURI newName, boolean isMoveTrigger) throws PermissionDeniedException, IOException, EXistException, TriggerException, LockException {
 
         if(newName == null) {
             newName = collection.getURI().lastSegment();
@@ -1127,7 +1127,11 @@ public class NativeBroker extends DBBroker {
             //TODO The code below seems quite different to that in NativeBroker#copyResource presumably should be the same?
 
             final XmldbURI newUri = destCollection.getURI().append(child.getFileURI());
-            trigger.beforeCopyDocument(this, transaction, child, newUri);
+            if (isMoveTrigger) {
+                trigger.beforeMoveDocument(this, transaction, child, newUri);
+            } else {
+                trigger.beforeCopyDocument(this, transaction, child, newUri);
+            }
 
             //are we overwriting an existing document?
             final CollectionEntry oldDoc;
@@ -1175,7 +1179,11 @@ public class NativeBroker extends DBBroker {
                 createdDoc = newDoc;
             }
 
-            trigger.afterCopyDocument(this, transaction, createdDoc, child.getURI());
+            if (isMoveTrigger) {
+                trigger.afterMoveDocument(this, transaction, createdDoc, child.getURI());
+            } else {
+                trigger.afterCopyDocument(this, transaction, createdDoc, child.getURI());
+            }
         }
         saveCollection(transaction, destCollection);
 
@@ -1188,7 +1196,7 @@ public class NativeBroker extends DBBroker {
                 LOG.warn("Child collection '" + childName + "' not found");
             } else {
                 try {
-                    doCopyCollection(transaction, trigger, child, destCollection, childName);
+                    doCopyCollection(transaction, trigger, child, destCollection, childName, isMoveTrigger);
                 } finally {
                     child.release(Lock.WRITE_LOCK);
                 }
@@ -1255,9 +1263,9 @@ public class NativeBroker extends DBBroker {
 
                     final DocumentTrigger docTrigger = new DocumentTriggers(this);
 
-                    doCopyCollection(txn, docTrigger, collection, destination, newName);
+                    doCopyCollection(txn, docTrigger, collection, destination, newName, true);
 
-                    doRemoveCollection(txn, collection);
+                    doRemoveCollection(txn, collection, false);
 
                     trigger.afterMoveCollection(this, txn, collection, srcURI);
                 } finally {
@@ -1421,7 +1429,7 @@ public class NativeBroker extends DBBroker {
         }
 
 
-        return doRemoveCollection(txn, collection);
+        return doRemoveCollection(txn, collection, true);
     }
 
     /**
@@ -1436,7 +1444,7 @@ public class NativeBroker extends DBBroker {
      * @return true if the collection was removed, false otherwise
      * @throws TriggerException
      */
-    private boolean doRemoveCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
+    private boolean doRemoveCollection(final Txn txn, Collection collection, boolean fireTrigger) throws PermissionDeniedException, IOException, TriggerException {
         
         if(pool.isReadOnly()) {
             throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
@@ -1476,7 +1484,7 @@ public class NativeBroker extends DBBroker {
             
             final CollectionTrigger colTrigger = new CollectionTriggers(this, parent);
             
-            colTrigger.beforeDeleteCollection(this, txn, collection);
+            if (fireTrigger) colTrigger.beforeDeleteCollection(this, txn, collection);
             
             final long start = System.currentTimeMillis();
             final CollectionCache collectionsCache = pool.getCollectionsCache();
@@ -1501,7 +1509,7 @@ public class NativeBroker extends DBBroker {
                     //TODO : resulve URIs !!! (uri.resolve(childName))
                     final Collection childCollection = openCollection(uri.append(childName), Lock.WRITE_LOCK);
                     try {
-                        doRemoveCollection(txn, childCollection);
+                        doRemoveCollection(txn, childCollection, fireTrigger);
 		            } catch (NullPointerException npe) {
 			            LOG.error("childCollection '" + childName + "' is corrupted. Caught NPE to be able to actually remove the parent.");
                     } finally {
@@ -1592,7 +1600,7 @@ public class NativeBroker extends DBBroker {
                 for(final Iterator<DocumentImpl> i = collection.iterator(this); i.hasNext();) {
                     final DocumentImpl doc = i.next();
 
-                    docTrigger.beforeDeleteDocument(this, txn, doc);
+                    if (fireTrigger) docTrigger.beforeDeleteDocument(this, txn, doc);
 
                     //Remove doc's metadata
                     // WM: now removed in one step. see above.
@@ -1631,8 +1639,8 @@ public class NativeBroker extends DBBroker {
                             return null;
                         }
                     }.run();
-                    
-                    docTrigger.afterDeleteDocument(this, txn, doc.getURI());
+
+                    if (fireTrigger) docTrigger.afterDeleteDocument(this, txn, doc.getURI());
                     
                     //Make doc's id available again
                     collectionsDb.freeResourceId(doc.getDocId());
@@ -1667,7 +1675,7 @@ public class NativeBroker extends DBBroker {
                     LOG.debug("Removing collection '" + collName + "' took " + (System.currentTimeMillis() - start));
                 }
                 
-                colTrigger.afterDeleteCollection(this, txn, collection.getURI());
+                if (fireTrigger) colTrigger.afterDeleteCollection(this, txn, collection.getURI());
 
                 return true;
                 
@@ -1954,7 +1962,7 @@ public class NativeBroker extends DBBroker {
 		final TransactionManager transact = pool.getTransactionManager();
 		final Txn transaction = transact.beginTransaction();
 		try {
-			doRemoveCollection(transaction, temp);
+			doRemoveCollection(transaction, temp, true);
 			transact.commit(transaction);
 		} catch(final Exception e) {
 			transact.abort(transaction);
