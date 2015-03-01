@@ -1069,10 +1069,10 @@ public class NativeBroker extends DBBroker {
         final XmldbURI dstURI = destination.getURI().append(newName);
 
         if(collection.getURI().equals(dstURI)) {
-            throw new PermissionDeniedException("Cannot move collection to itself '"+collection.getURI()+"'.");
+            throw new PermissionDeniedException("Cannot copy collection to itself '"+collection.getURI()+"'.");
         }
         if(collection.getId() == destination.getId()) {
-            throw new PermissionDeniedException("Cannot move collection to itself '"+collection.getURI()+"'.");
+            throw new PermissionDeniedException("Cannot copy collection to itself '"+collection.getURI()+"'.");
         }
 
 
@@ -1202,7 +1202,7 @@ public class NativeBroker extends DBBroker {
     }
 
     @Override
-    public void moveCollection(Txn transaction, Collection collection, Collection destination, XmldbURI newName)  throws PermissionDeniedException, LockException, IOException, TriggerException {
+    public void moveCollection(Txn txn, Collection collection, Collection destination, XmldbURI newName) throws PermissionDeniedException, LockException, IOException, TriggerException, EXistException {
 
         if(pool.isReadOnly()) {
             throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
@@ -1246,7 +1246,33 @@ public class NativeBroker extends DBBroker {
         final XmldbURI movedToCollectionUri = destination.getURI().append(newName);
         final Collection existingMovedToCollection = getCollection(movedToCollectionUri);
         if(existingMovedToCollection != null) {
-            removeCollection(transaction, existingMovedToCollection);
+//            removeCollection(transaction, existingMovedToCollection);
+
+            final CollectionCache collectionsCache = pool.getCollectionsCache();
+            synchronized(collectionsCache) {
+                final Lock lock = collectionsDb.getLock();
+                try {
+                    pool.getProcessMonitor().startJob(ProcessMonitor.ACTION_MOVE_COLLECTION, collection.getURI());
+                    lock.acquire(Lock.WRITE_LOCK);
+
+                    final XmldbURI srcURI = collection.getURI();
+                    final XmldbURI dstURI = destination.getURI().append(newName);
+
+                    final CollectionTrigger trigger = new CollectionTriggers(this, parent);
+                    trigger.beforeMoveCollection(this, txn, collection, dstURI);
+
+                    final DocumentTrigger docTrigger = new DocumentTriggers(this);
+
+                    doCopyCollection(txn, docTrigger, collection, destination, newName);
+
+                    doRemoveCollection(txn, collection);
+
+                    trigger.afterMoveCollection(this, txn, collection, srcURI);
+                } finally {
+                    lock.release(Lock.WRITE_LOCK);
+                    pool.getProcessMonitor().endJob();
+                }
+            }
         }
 
         pool.getProcessMonitor().startJob(ProcessMonitor.ACTION_MOVE_COLLECTION, collection.getURI());
@@ -1258,19 +1284,19 @@ public class NativeBroker extends DBBroker {
 
             final CollectionTrigger trigger = new CollectionTriggers(this, parent);
 
-            trigger.beforeMoveCollection(this, transaction, collection, dstURI);
+            trigger.beforeMoveCollection(this, txn, collection, dstURI);
 
             // sourceDir must be known in advance, because once moveCollectionRecursive
             // is called, both collection and destination can point to the same resource
             final File fsSourceDir = getCollectionFile(fsDir, collection.getURI(),false);
 
             // Need to move each collection in the source tree individually, so recurse.
-            moveCollectionRecursive(transaction, trigger, collection, destination, newName, false);
+            moveCollectionRecursive(txn, trigger, collection, destination, newName, false);
 
             // For binary resources, though, just move the top level directory and all descendants come with it.
-            moveBinaryFork(transaction, fsSourceDir, destination, newName);
+            moveBinaryFork(txn, fsSourceDir, destination, newName);
 
-            trigger.afterMoveCollection(this, transaction, collection, srcURI);
+            trigger.afterMoveCollection(this, txn, collection, srcURI);
 
         } finally {
             pool.getProcessMonitor().endJob();
@@ -1377,7 +1403,7 @@ public class NativeBroker extends DBBroker {
     }
 
     @Override
-    public boolean removeCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
+    public boolean removeCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException, EXistException {
         if(pool.isReadOnly()) throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
 
         TrashManager trashManager = pool.getTrashManager();
@@ -1399,7 +1425,7 @@ public class NativeBroker extends DBBroker {
         }
 
 
-        return _removeCollection(txn, collection);
+        return doRemoveCollection(txn, collection);
     }
 
     /**
@@ -1414,7 +1440,7 @@ public class NativeBroker extends DBBroker {
      * @return true if the collection was removed, false otherwise
      * @throws TriggerException
      */
-    private boolean _removeCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
+    private boolean doRemoveCollection(final Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException {
         
         if(pool.isReadOnly()) {
             throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
@@ -1479,7 +1505,7 @@ public class NativeBroker extends DBBroker {
                     //TODO : resulve URIs !!! (uri.resolve(childName))
                     final Collection childCollection = openCollection(uri.append(childName), Lock.WRITE_LOCK);
                     try {
-                        _removeCollection(txn, childCollection);
+                        doRemoveCollection(txn, childCollection);
 		            } catch (NullPointerException npe) {
 			            LOG.error("childCollection '" + childName + "' is corrupted. Caught NPE to be able to actually remove the parent.");
                     } finally {
@@ -1932,7 +1958,7 @@ public class NativeBroker extends DBBroker {
 		final TransactionManager transact = pool.getTransactionManager();
 		final Txn transaction = transact.beginTransaction();
 		try {
-			_removeCollection(transaction, temp);
+			doRemoveCollection(transaction, temp);
 			transact.commit(transaction);
 		} catch(final Exception e) {
 			transact.abort(transaction);

@@ -1137,7 +1137,7 @@ public class RESTServer {
     }
 
     public void doDelete(final DBBroker broker, final String path, final HttpServletRequest request, final HttpServletResponse response)
-            throws PermissionDeniedException, NotFoundException, IOException, BadRequestException {
+            throws PermissionDeniedException, NotFoundException, IOException, BadRequestException, EXistException {
         final XmldbURI pathURI = XmldbURI.create(path);
         if (checkForXQueryTarget(broker, pathURI, request, response)) {
             return;

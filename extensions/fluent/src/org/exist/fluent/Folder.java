@@ -895,11 +895,7 @@ public class Folder extends NamedResource implements Cloneable {
 			broker.removeCollection(tx.tx, handle);
 			createInternal(path);
 			commit();
-		} catch (PermissionDeniedException e) {
-			throw new DatabaseException(e);
-		} catch (IOException e) {
-			throw new DatabaseException(e);
-		} catch (TriggerException e) {
+		} catch (Exception e) {
 			throw new DatabaseException(e);
 		} finally {
 			release();
@@ -928,13 +924,7 @@ public class Folder extends NamedResource implements Cloneable {
 			// end hack
 			broker.removeCollection(tx.tx, handle);
 			commit();
-		} catch (PermissionDeniedException e) {
-			throw new RuntimeException(e);
-		} catch (IOException e) {
-			throw new DatabaseException(e);
-		} catch (LockException e) {
-			throw new DatabaseException(e);
-		} catch (TriggerException e) {
+		} catch (Exception e) {
 			throw new DatabaseException(e);
 		} finally {
 			release();

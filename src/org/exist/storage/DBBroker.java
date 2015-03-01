@@ -449,7 +449,7 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
      * @throws TriggerException 
      * 
      */
-    public abstract boolean removeCollection(Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException;
+    public abstract boolean removeCollection(Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException, EXistException;
 
     /**
      * Remove a document from the database.
@@ -635,7 +635,7 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
 	 */
 	public abstract void moveCollection(Txn transaction, Collection collection,
 			Collection destination, XmldbURI newName)
-			throws PermissionDeniedException, LockException, IOException, TriggerException;
+            throws PermissionDeniedException, LockException, IOException, TriggerException, EXistException;
 
 	/**
 	 * Move a resource to the destination collection and rename it.
