@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.log4j.Logger;
+import org.exist.DoAbort;
 import org.exist.EXistException;
 import org.exist.Indexer;
 import org.exist.TrashManager;
@@ -55,10 +56,8 @@ import org.exist.collections.CollectionConfigurationException;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.triggers.CollectionTrigger;
 import org.exist.collections.triggers.CollectionTriggers;
-import org.exist.collections.triggers.CollectionTriggersVisitor;
 import org.exist.collections.triggers.DocumentTrigger;
 import org.exist.collections.triggers.DocumentTriggers;
-import org.exist.collections.triggers.DocumentTriggersVisitor;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.*;
 import org.exist.indexing.StreamListener;
@@ -1410,7 +1409,12 @@ public class NativeBroker extends DBBroker {
 
         if (trashManager != null) {
 
-            Collection destination = trashManager.move(this, txn, collection);
+            Collection destination;
+            try {
+                destination = trashManager.move(this, txn, collection);
+            } catch (DoAbort e) {
+                return false;
+            }
 
             if (destination != null) {
 

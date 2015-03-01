@@ -1106,12 +1106,16 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 
                 DocumentImpl doc = documents.get(docUri.getRawCollectionPath());
 
-                Collection destination = trashManager.move(broker, txn, doc);
+                Collection destination;
+                try {
+                    destination = trashManager.move(broker, txn, doc);
+                } catch (DoAbort e) {
+                    return;
+                }
 
                 if (destination != null) {
 
                     broker.moveResource(txn, doc, destination, doc.getFileURI());
-
                     return;
                 }
             } finally {
@@ -1175,12 +1179,16 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         TrashManager trashManager = db.getTrashManager();
 
         if (trashManager != null) {
-            Collection destination = trashManager.move(broker, txn, doc);
+            Collection destination;
+            try {
+                destination = trashManager.move(broker, txn, doc);
+            } catch (DoAbort e) {
+                return;
+            }
 
             if (destination != null) {
 
                 broker.moveResource(txn, doc, destination, doc.getFileURI());
-
                 return;
             }
         }
@@ -1257,12 +1265,16 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         TrashManager trashManager = db.getTrashManager();
 
         if (trashManager != null) {
-            Collection destination = trashManager.move(broker, txn, doc);
+            Collection destination;
+            try {
+                destination = trashManager.move(broker, txn, doc);
+            } catch (DoAbort e) {
+                return;
+            }
 
             if (destination != null) {
 
                 broker.moveResource(txn, doc, destination, doc.getFileURI());
-
                 return;
             }
         }
