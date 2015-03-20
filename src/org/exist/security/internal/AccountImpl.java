@@ -21,19 +21,14 @@
  */
 package org.exist.security.internal;
 
-import org.exist.security.AbstractRealm;
-import org.exist.security.AbstractAccount;
+import org.exist.security.*;
 import org.apache.log4j.Logger;
 import org.exist.config.Configuration;
 import org.exist.config.ConfigurationException;
 import org.exist.config.Configurator;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsElement;
-import org.exist.security.Group;
-import org.exist.security.PermissionDeniedException;
-import org.exist.security.SchemaType;
 import org.exist.security.SecurityManager;
-import org.exist.security.Account;
 import org.exist.security.internal.aider.UserAider;
 
 import java.io.IOException;
@@ -264,6 +259,13 @@ public class AccountImpl extends AbstractAccount {
             this.password = _cred.toString();
             this.digestPassword = _cred.getDigest();
         }
+    }
+
+    @Override
+    public void setCredential(final Credential credential) {
+        this._cred = credential;
+        this.password = _cred.toString();
+        this.digestPassword = _cred.getDigest();
     }
 
     public final static class SecurityProperties {

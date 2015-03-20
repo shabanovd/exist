@@ -48,8 +48,8 @@ public class Password implements Credential {
     //private
     private final String pw;
     private final String digestPw;
-    
-    private final static Hash DEFAULT_ALGORITHM = Hash.RIPEMD160;
+
+    public final static Hash DEFAULT_ALGORITHM = Hash.RIPEMD160;
     private final Hash algorithm;
     
     final Pattern ptnHash = Pattern.compile("\\{([A-Z0-9]+)\\}(.*)");
@@ -76,6 +76,11 @@ public class Password implements Credential {
         }
     }
 
+    public Password(final Account account, final Hash algorithm, final String encodedHash) {
+        this.algorithm = algorithm;
+        this.pw = encodedHash;
+        this.digestPw = digest(account.getName(), account.getRealmId(), pw);
+    }
     
     @Override
     public String getDigest() {

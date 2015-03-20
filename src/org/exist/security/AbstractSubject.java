@@ -123,6 +123,11 @@ public abstract class AbstractSubject implements Subject {
         account.setPassword(passwd);
     }
 
+    @Override
+    public void setCredential(final Credential credential) {
+        account.setCredential(credential);
+    }
+
     /* (non-Javadoc)
      * @see org.exist.security.User#getRealm()
      */

@@ -84,6 +84,8 @@ public interface User extends Principal {
 	 */
 	public void setPassword(String passwd);
 
+    public void setCredential(Credential credential);
+
 	/**
 	 * Get the user's password
 	 * 
