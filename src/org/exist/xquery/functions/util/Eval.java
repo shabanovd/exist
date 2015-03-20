@@ -135,7 +135,8 @@ public class Eval extends BasicFunction {
     protected static final FunctionReturnSequenceType RETURN_THREADID_TYPE = new FunctionReturnSequenceType(Type.STRING, Cardinality.EXACTLY_ONE, "The ID of the asynchronously executing thread.");
     protected static final FunctionReturnSequenceType RETURN_ITEM_TYPE = new FunctionReturnSequenceType(Type.ITEM, Cardinality.ZERO_OR_MORE, "the results of the evaluated XPath/XQuery expression");
 
-    private final static ExecutorService asyncExecutorService = Executors.newCachedThreadPool(new AsyncQueryThreadFactory());
+    private final static ExecutorService asyncExecutorService = Executors.newFixedThreadPool(5, new AsyncQueryThreadFactory());
+    //.newCachedThreadPool(new AsyncQueryThreadFactory());
     private static class AsyncQueryThreadFactory implements ThreadFactory {
         private int id = 0;
 
