@@ -107,7 +107,7 @@ public class CollectionEvents implements CollectionTrigger {
             MDStorageManager.LOG.fatal(e,e);
         }
 
-        // removeIndex(oldUri);
+        // removeBinary(oldUri);
         index(collection);
     }
 
@@ -138,7 +138,7 @@ public class CollectionEvents implements CollectionTrigger {
 //                deleteCollectionRecursive(broker, child);
 //            }
 //        }
-        // removeIndex(collection.getURI());
+        // removeBinary(collection.getURI());
     }
 
     @Override

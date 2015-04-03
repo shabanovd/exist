@@ -30,8 +30,8 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.NumericUtils;
+import org.exist.Resource;
 import org.exist.collections.Collection;
 import org.exist.dom.*;
 import org.exist.indexing.*;
@@ -49,7 +49,6 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.ByteConversion;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
-import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.modules.range.RangeQueryRewriter;
 import org.exist.xquery.value.*;
@@ -1041,6 +1040,6 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     @Override
-    public void removeIndex(XmldbURI url) {
+    public void removeBinary(BinaryDocument doc) {
     }
 }

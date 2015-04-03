@@ -44,7 +44,6 @@ import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.txn.Txn;
 import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.Occurrences;
-import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.TerminatedException;
 import org.exist.xquery.XQueryContext;
@@ -256,6 +255,6 @@ public class IndexStatisticsWorker implements IndexWorker {
     }
 
     @Override
-    public void removeIndex(XmldbURI url) {
+    public void removeBinary(BinaryDocument doc) {
     }
 }

@@ -192,14 +192,12 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             case StreamListener.STORE:
                 write();
                 break;
-            case StreamListener.REMOVE_ALL_NODES:
-                removeDocument(currentDoc.getDocId());
-                break;
             case StreamListener.REMOVE_SOME_NODES:
                 removeNodes();
                 break;
+            case StreamListener.REMOVE_ALL_NODES:
             case StreamListener.REMOVE_BINARY:
-            	removePlainTextIndexes();
+                removeDocument(currentDoc.getDocId());
             	break;
         }
     }
@@ -331,10 +329,6 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
     }
 
-    protected void removePlainTextIndexes() {
-        removeIndex(currentDoc.getURI());
-    }
-    
     public void removeCollection(Collection collection, DBBroker broker, boolean reindex) {
         if (LOG.isDebugEnabled())
             LOG.debug("Removing collection " + collection.getURI());
@@ -1779,11 +1773,11 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     @Override
-    public void removeIndex(XmldbURI url) {
+    public void removeBinary(BinaryDocument doc) {
         IndexWriter writer = null;
         try {
             writer = index.getWriter();
-            String uri = url.toString();
+            String uri = doc.getURI().toString();
             Term dt = new Term(FIELD_DOC_URI, uri);
             writer.deleteDocuments(dt);
         } catch (IOException e) {

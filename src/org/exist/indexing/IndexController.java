@@ -436,7 +436,7 @@ public class IndexController {
         //setMode(StreamListener.REMOVE_BINARY);
         
         for (final IndexWorker worker : indexWorkers.values()) {
-            worker.removeIndex(doc.getURI());
+            worker.removeBinary(doc);
         }
     }
 }
