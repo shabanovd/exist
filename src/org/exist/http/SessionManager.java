@@ -24,6 +24,8 @@ package org.exist.http;
 import org.apache.log4j.Logger;
 import org.exist.scheduler.JobException;
 import org.exist.scheduler.JobException.JobExceptionAction;
+import org.exist.scheduler.ScheduledJobInfo;
+import org.exist.scheduler.Scheduler;
 import org.exist.scheduler.UserJavaJob;
 import org.exist.storage.BrokerPool;
 import org.exist.xquery.value.Sequence;
@@ -80,12 +82,20 @@ public class SessionManager {
         }
     }
 
-    private QueryResult[] slots = new QueryResult[32];
+    private static QueryResult[] slots = new QueryResult[32];
 
     public SessionManager(BrokerPool pool) {
+        TimeoutCheck task = new TimeoutCheck();
+
+        Scheduler scheduler = pool.getScheduler();
+
+        for (ScheduledJobInfo job : scheduler.getScheduledJobs()) {
+            if (task.getName().equals( job.getName() )) return;
+        }
+
         final Properties props = new Properties();
         props.put("session-manager", this);
-        pool.getScheduler().createPeriodicJob(TIMEOUT_CHECK_PERIOD, new TimeoutCheck(), 2000, props);
+        scheduler.createPeriodicJob(TIMEOUT_CHECK_PERIOD, task, 2000, props);
     }
 
     public int add(String query, Sequence sequence) {
