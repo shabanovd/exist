@@ -222,13 +222,20 @@ public class SystemImportHandler extends DefaultHandler {
             if(currentCollection == null) {
                 throw new SAXException("Collection not found: " + collUri);
             }
+
+            Integer m = Permission.DEFAULT_COLLECTION_PERM;
+            try {
+                m = Integer.parseInt(mode, 8);
+            } catch (NumberFormatException e) {
+                LOG.warn("Collection '"+collUri+"' mode is invalid '"+mode+"', use default!");
+            }
             
             final DeferredPermission deferredPermission;
             if(name.startsWith(XmldbURI.SYSTEM_COLLECTION)) {
                 //prevents restore of a backup from changing System collection ownership
-                deferredPermission = new CollectionDeferredPermission(listener, currentCollection, SecurityManager.SYSTEM, SecurityManager.DBA_GROUP, Integer.parseInt(mode, 8));
+                deferredPermission = new CollectionDeferredPermission(listener, currentCollection, SecurityManager.SYSTEM, SecurityManager.DBA_GROUP, m);
             } else {
-                deferredPermission = new CollectionDeferredPermission(listener, currentCollection, owner, group, Integer.parseInt(mode, 8));
+                deferredPermission = new CollectionDeferredPermission(listener, currentCollection, owner, group, m);
             }
 
             rh.endRestore(currentCollection);
@@ -409,12 +416,19 @@ public class SystemImportHandler extends DefaultHandler {
 
 				txnManager.commit(txn);
 
+                Integer mode = Permission.DEFAULT_RESOURCE_PERM;
+                try {
+                    mode = Integer.parseInt(perms, 8);
+                } catch (NumberFormatException e) {
+                    LOG.warn("Document '"+docUri+"' @ '"+currentCollection.getURI()+"' mode is invalid '"+mode+"', use default!");
+                }
+
                 final DeferredPermission deferredPermission;
                 if(name.startsWith(XmldbURI.SYSTEM_COLLECTION)) {
                     //prevents restore of a backup from changing system collection resource ownership
-                    deferredPermission = new ResourceDeferredPermission(listener, resource, SecurityManager.SYSTEM, SecurityManager.DBA_GROUP, Integer.parseInt(perms, 8));
+                    deferredPermission = new ResourceDeferredPermission(listener, resource, SecurityManager.SYSTEM, SecurityManager.DBA_GROUP, mode);
                 } else {
-                    deferredPermission = new ResourceDeferredPermission(listener, resource, owner, group, Integer.parseInt(perms, 8));
+                    deferredPermission = new ResourceDeferredPermission(listener, resource, owner, group, mode);
                 }
                 
                 rh.endRestore(resource);
