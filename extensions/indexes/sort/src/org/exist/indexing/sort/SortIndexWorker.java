@@ -15,7 +15,6 @@ import org.exist.storage.btree.IndexQuery;
 import org.exist.storage.btree.Value;
 import org.exist.storage.lock.Lock;
 import org.exist.util.*;
-import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.TerminatedException;
 import org.exist.xquery.XQueryContext;
@@ -87,11 +86,7 @@ public class SortIndexWorker implements IndexWorker {
                 byte[] key = computeKey(id, item.getNode());
                 index.btree.addValue(new Value(key), idx++);
             }
-        } catch (LockException e) {
-            throw new EXistException("Exception caught while creating sort index: " + e.getMessage(), e);
-        } catch (BTreeException e) {
-            throw new EXistException("Exception caught while creating sort index: " + e.getMessage(), e);
-        } catch (IOException e) {
+        } catch (LockException | BTreeException | IOException e) {
             throw new EXistException("Exception caught while creating sort index: " + e.getMessage(), e);
         } finally {
             lock.release(Lock.WRITE_LOCK);
@@ -118,11 +113,7 @@ public class SortIndexWorker implements IndexWorker {
             lock.acquire(Lock.READ_LOCK);
             byte[] key = computeKey(id, proxy);
             return index.btree.findValue(new Value(key));
-        } catch (LockException e) {
-            throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (BTreeException e) {
-            throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (IOException e) {
+        } catch (LockException | BTreeException | IOException e) {
             throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
         } finally {
             lock.release(Lock.READ_LOCK);
@@ -148,11 +139,7 @@ public class SortIndexWorker implements IndexWorker {
             index.btree.remove(query, null);
 
             removeId(name);
-        } catch (BTreeException e) {
-            throw new EXistException("Exception caught while deleting sort index: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new EXistException("Exception caught while deleting sort index: " + e.getMessage(), e);
-        } catch (TerminatedException e) {
+        } catch (BTreeException | IOException | TerminatedException e) {
             throw new EXistException("Exception caught while deleting sort index: " + e.getMessage(), e);
         } finally {
             lock.release(Lock.READ_LOCK);
@@ -172,11 +159,7 @@ public class SortIndexWorker implements IndexWorker {
             byte[] toKey = computeKey(id, doc.getDocId() + 1);
             final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
             index.btree.remove(query, null);
-        } catch (BTreeException e) {
-            throw new EXistException("Exception caught while deleting sort index: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new EXistException("Exception caught while deleting sort index: " + e.getMessage(), e);
-        } catch (TerminatedException e) {
+        } catch (BTreeException | IOException | TerminatedException e) {
             throw new EXistException("Exception caught while deleting sort index: " + e.getMessage(), e);
         } finally {
             lock.release(Lock.READ_LOCK);
@@ -200,15 +183,7 @@ public class SortIndexWorker implements IndexWorker {
                 remove(doc, (short) id);
             }
 
-        } catch (BTreeException e) {
-            SortIndex.LOG.debug("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (IOException e) {
-            SortIndex.LOG.debug("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (TerminatedException e) {
-            SortIndex.LOG.debug("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (LockException e) {
-            SortIndex.LOG.debug("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (EXistException e) {
+        } catch (BTreeException | IOException | LockException | TerminatedException | EXistException e) {
             SortIndex.LOG.debug("Exception caught while reading sort index: " + e.getMessage(), e);
         } finally {
             lock.release(Lock.READ_LOCK);
@@ -237,11 +212,7 @@ public class SortIndexWorker implements IndexWorker {
                 index.btree.query(query, callback);
                 id = (short)(callback.max + 1);
                 registerId(id, name);
-            } catch (IOException e) {
-                throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
-            } catch (BTreeException e) {
-                throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
-            } catch (TerminatedException e) {
+            } catch (IOException | BTreeException | TerminatedException e) {
                 throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
             } finally {
                 lock.release(Lock.READ_LOCK);
@@ -276,11 +247,7 @@ public class SortIndexWorker implements IndexWorker {
         try {
             lock.acquire(Lock.READ_LOCK);
             index.btree.addValue(new Value(key), id);
-        } catch (LockException e) {
-            throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (BTreeException e) {
-            throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (IOException e) {
+        } catch (LockException | BTreeException | IOException e) {
             throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
         } finally {
             lock.release(Lock.READ_LOCK);
@@ -295,11 +262,7 @@ public class SortIndexWorker implements IndexWorker {
         try {
             lock.acquire(Lock.READ_LOCK);
             index.btree.removeValue(new Value(key));
-        } catch (LockException e) {
-            throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (BTreeException e) {
-            throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (IOException e) {
+        } catch (LockException | BTreeException | IOException e) {
             throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
         } finally {
             lock.release(Lock.READ_LOCK);
@@ -314,9 +277,7 @@ public class SortIndexWorker implements IndexWorker {
         try {
             lock.acquire(Lock.READ_LOCK);
             return (short) index.btree.findValue(new Value(key));
-        } catch (BTreeException e) {
-            throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
-        } catch (IOException e) {
+        } catch (BTreeException | IOException e) {
             throw new EXistException("Exception caught while reading sort index: " + e.getMessage(), e);
         } finally {
             lock.release(Lock.READ_LOCK);
@@ -395,6 +356,6 @@ public class SortIndexWorker implements IndexWorker {
     }
 
     @Override
-    public void removeIndex(XmldbURI url) {
+    public void removeBinary(BinaryDocument doc) {
     }
 }
