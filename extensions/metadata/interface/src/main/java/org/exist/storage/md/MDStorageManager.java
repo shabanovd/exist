@@ -291,21 +291,23 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 			String key = atts.getValue(NAMESPACE_URI, KEY);
 			String value = atts.getValue(NAMESPACE_URI, VALUE);
 			
-			if (currentMetas == null) {
-				md._addMeta(collectionMetas, uuid, key, value);
-			} else {
+			if (currentMetas != null) {
 				md._addMeta(currentMetas, uuid, key, value);
+			} else if (collectionMetas != null) {
+				md._addMeta(collectionMetas, uuid, key, value);
 			}
 		}
 	}
 
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
-        if (localName.equals("collection")) {
-        	;
-        } else if (localName.equals("resource")) {
-    		currentMetas = null;
-        }
+		if (localName.equals("collection")) {
+			collectionMetas = null;
+			currentMetas = null;
+
+		} else if (localName.equals("resource")) {
+			currentMetas = null;
+		}
 	}
 
 	@Override
@@ -346,12 +348,11 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
                 currentMetas = md.addMetas(resource.getURI());
             }
         }
-
     }
 
     @Override
     public void endRestore(Resource resource) {
-        if (!resource.isFolder()) currentMetas = null;
+        //if (!resource.isFolder()) currentMetas = null;
     }
 
 	@Override
