@@ -93,7 +93,7 @@ public class MetasImpl implements Metas {
 
 			MetaDataImpl.instance.addMeta(m);
 		}
-		MetaDataImpl.instance.indexMetas(this);
+//		MetaDataImpl.instance.indexMetas(this);
 		
 		return m;
 	}
@@ -103,7 +103,7 @@ public class MetasImpl implements Metas {
 	}
 
     public void delete(String key) {
-        MetaDataImpl.instance.delMeta(uuid, key);
+        MetaDataImpl.instance.delMetaByKey(uuid, key);
     }
 
     protected void setURL(String url) {
@@ -111,7 +111,7 @@ public class MetasImpl implements Metas {
 	}
 
 	public List<Meta> metas() {
-		List<Meta> metas = new ArrayList<Meta>();
+		List<Meta> metas = new ArrayList<>();
 		
 		EntityCursor<MetaImpl> sub = MetaDataImpl.instance.getMetaKeys(this);
 		try {

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.exist.storage.md.MetaData;
+import org.exist.storage.md.RestoreFromBackup;
 import org.exist.xquery.AbstractInternalModule;
 import org.exist.xquery.FunctionDef;
 import org.exist.xquery.XPathException;
@@ -60,7 +61,9 @@ public class MetadataModule extends AbstractInternalModule {
         new FunctionDef( UUID.signatures[0], UUID.class ),
 		new FunctionDef( UUID.signatures[1], UUID.class ),
 
-        new FunctionDef( Reindex.signatures[0], Reindex.class )
+        new FunctionDef( Reindex.signatures[0], Reindex.class ),
+
+		new FunctionDef( RestoreFromBackup.signatures[0], RestoreFromBackup.class )
 	};
 	
 	public MetadataModule(Map<String, List<? extends Object>> parameters) throws XPathException {

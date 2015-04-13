@@ -329,14 +329,14 @@ public class MetaDataImpl extends MetaData {
 
 		docByUUID.delete(d.getUUID());
 		
-        indexRemoveMetas(d);
+//        indexRemoveMetas(d);
 	}
 
     protected MetaImpl addMeta(Metas doc, String key, Object value) {
 		MetaImpl m = new MetaImpl(doc.getUUID(), key, value);
 		metadataByUUID.put(m);
 		
-        indexMetas(doc);
+//        indexMetas(doc);
 
         return m;
 	}
@@ -345,7 +345,7 @@ public class MetaDataImpl extends MetaData {
 		MetaImpl m = new MetaImpl(doc.getUUID(), uuid, key, value);
 		metadataByUUID.put(m);
 		
-		indexMetas(doc);
+//		indexMetas(doc);
 		
 		return m;
 	}
@@ -408,27 +408,44 @@ public class MetaDataImpl extends MetaData {
 		return metadataByUUID.get(uuid);
 	}
 
-    protected void delMeta(String docUUID, String key) {
+    protected void delMeta(String docUUID, String uuid) {
         //System.out.println("key = "+key);
 
         EntityCursor<MetaImpl> sub = metadata.subIndex(docUUID).entities();
         try {
-            for (MetaImpl m : sub)
-                if (m.getKey().equals(key)) {
-                    sub.delete();
-                }
-
+            for (MetaImpl m : sub) {
+				if (m.getUUID().equals(uuid)) {
+					sub.delete();
+				}
+			}
         } finally {
             sub.close();
         }
         
-        indexMetas(getMetas(docUUID));
+//        indexMetas(getMetas(docUUID));
     }
+
+	protected void delMetaByKey(String docUUID, String key) {
+		//System.out.println("key = "+key);
+
+		EntityCursor<MetaImpl> sub = metadata.subIndex(docUUID).entities();
+		try {
+			for (MetaImpl m : sub) {
+				if (m.getKey().equals(key)) {
+					sub.delete();
+				}
+			}
+		} finally {
+			sub.close();
+		}
+
+//		indexMetas(getMetas(docUUID));
+	}
 
     @Deprecated //use void resources(String key, String value, Consumer<Resource> consumer)
     public List<DocumentImpl> matchDocuments(String key, String value) throws EXistException {
 
-        final List<DocumentImpl> list = new ArrayList<DocumentImpl>();
+        final List<DocumentImpl> list = new ArrayList<>();
 
         resources(key, value, new Consumer<Resource>() {
             @Override
@@ -444,7 +461,7 @@ public class MetaDataImpl extends MetaData {
 
     public void resources(String key, String value, Consumer<Resource> consumer) throws EXistException {
 
-        EntityJoin<String, MetaImpl> join = new EntityJoin<String, MetaImpl>(metadataByUUID);
+        EntityJoin<String, MetaImpl> join = new EntityJoin<>(metadataByUUID);
         join.addCondition(keyToMeta, key);
         join.addCondition(valueToMeta, value);
 
@@ -465,7 +482,7 @@ public class MetaDataImpl extends MetaData {
     @Deprecated //use void resourcesByKey(String key, Consumer<Resource> consumer)
     public List<DocumentImpl> matchDocumentsByKey(String key) throws EXistException {
 
-        final List<DocumentImpl> list = new ArrayList<DocumentImpl>();
+        final List<DocumentImpl> list = new ArrayList<>();
 
         resourcesByKey(key, new Consumer<Resource>() {
             @Override
@@ -481,7 +498,7 @@ public class MetaDataImpl extends MetaData {
 
     public void resourcesByKey(String key, Consumer<Resource> consumer) throws EXistException {
 
-        EntityJoin<String, MetaImpl> join = new EntityJoin<String, MetaImpl>(metadataByUUID);
+        EntityJoin<String, MetaImpl> join = new EntityJoin<>(metadataByUUID);
         join.addCondition(keyToMeta, key);
 
         ForwardCursor<MetaImpl> entities = join.entities();
@@ -501,7 +518,7 @@ public class MetaDataImpl extends MetaData {
     @Deprecated //use void resourcesByValue(String value, Consumer<Resource> consumer)
     public List<DocumentImpl> matchDocumentsByValue(String value) throws EXistException {
 
-        final List<DocumentImpl> list = new ArrayList<DocumentImpl>();
+        final List<DocumentImpl> list = new ArrayList<>();
 
         resourcesByValue(value, new Consumer<Resource>() {
             @Override
@@ -517,7 +534,7 @@ public class MetaDataImpl extends MetaData {
 
     public void resourcesByValue(String value, Consumer<Resource> consumer) throws EXistException {
 
-        EntityJoin<String, MetaImpl> join = new EntityJoin<String, MetaImpl>(metadataByUUID);
+        EntityJoin<String, MetaImpl> join = new EntityJoin<>(metadataByUUID);
         join.addCondition(valueToMeta, value);
 
         ForwardCursor<MetaImpl> entities = join.entities();
@@ -650,27 +667,4 @@ public class MetaDataImpl extends MetaData {
 		
 		return d.getUUID();
 	}
-	
-	//lucene index methods
-    public void indexMetas(Metas metas) {
-//        System.out.println("indexMetas");
-        //XXX: update lucene!!!
-//        PlugToLucene plug = new PlugToLucene(this);
-//        plug.addMetas(metas);
-    }
-
-    private void indexRemoveMetas(Metas metas) {
-//        System.out.println("indexRemoveMetas");
-        //XXX: update lucene!!!
-//        PlugToLucene plug = new PlugToLucene(this);
-//        plug.removeMetas(metas);
-    }
-    
-//    public NodeImpl search(String queryText, List<String> toBeMatchedURIs) throws XPathException {
-//        return (new PlugToLucene(this)).search(queryText, toBeMatchedURIs);
-//    }
-//
-//    public List<String> searchDocuments(String queryText, List<String> toBeMatchedURIs) throws XPathException {
-//        return (new PlugToLucene(this)).searchDocuments(queryText, toBeMatchedURIs);
-//    }
 }
