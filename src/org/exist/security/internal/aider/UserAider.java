@@ -24,11 +24,7 @@ package org.exist.security.internal.aider;
 import java.util.*;
 
 import org.exist.config.Configuration;
-import org.exist.security.Account;
-import org.exist.security.Group;
-import org.exist.security.Permission;
-import org.exist.security.PermissionDeniedException;
-import org.exist.security.SchemaType;
+import org.exist.security.*;
 import org.exist.security.internal.RealmImpl;
 import org.exist.security.realm.Realm;
 import org.exist.storage.DBBroker;
@@ -253,6 +249,11 @@ public class UserAider implements Account {
     @Override
     public void setPassword(final String passwd) {
         password = passwd;
+    }
+
+    @Override
+    public void setCredential(final Credential credential) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /* (non-Javadoc)

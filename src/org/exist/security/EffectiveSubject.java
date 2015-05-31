@@ -214,6 +214,11 @@ public class EffectiveSubject implements Subject {
     }
 
     @Override
+    public void setCredential(final Credential credential) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
     public String getPassword() {
         throw new UnsupportedOperationException("The Effective User has no password!");
     }
