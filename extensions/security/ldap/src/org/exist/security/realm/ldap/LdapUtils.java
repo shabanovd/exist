@@ -35,10 +35,9 @@ public class LdapUtils {
 	protected final static Logger LOG = Logger.getLogger(LdapUtils.class);
 
 	public static void closeContext(LdapContext ctx) {
+		if (ctx == null) return;
 		try {
-			if (ctx != null) {
-				ctx.close();
-			}
+			ctx.close();
 		} catch (NamingException e) {
 			if (LOG.isDebugEnabled()) {
 				LOG.error("Exception while closing LDAP context. ", e);
