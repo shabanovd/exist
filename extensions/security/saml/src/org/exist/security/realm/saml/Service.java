@@ -179,15 +179,12 @@ public class Service implements Configurable {
             final Account account = found;
 
             try {
-                realm.executeAsSystemUser(new AbstractRealm.Unit<Account>() {
-                    @Override
-                    public Account execute(DBBroker broker) throws EXistException, PermissionDeniedException {
-                        account.addGroup(set_group);
+                realm.executeAsSystemUser(broker -> {
+                    account.addGroup(set_group);
 
-                        account.save();
+                    account.save();
 
-                        return account;
-                    }
+                    return account;
                 });
             } catch (EXistException | PermissionDeniedException e) {
                 throw new AuthenticationException(

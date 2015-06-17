@@ -114,14 +114,9 @@ public abstract class ExtractConfigAbstract {
 									+ " in index definition");
 				}
 			}
-			
-			QName qname = new QName(localName, namespaceURI, prefix);
-			
-			if (isAttribute)
-				qname.setNameType(ElementValue.ATTRIBUTE);
-			
-			return qname;
-			
+
+			return new QName(localName, namespaceURI, prefix, isAttribute ? ElementValue.ATTRIBUTE : ElementValue.ELEMENT);
+
 		} catch (IllegalArgumentException e) {
 			throw new DatabaseConfigurationException(
 					"Metadata extractor configuration error: " + e.getMessage(), e);

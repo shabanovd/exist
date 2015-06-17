@@ -54,10 +54,7 @@ public class MetasImpl implements Metas {
 	protected MetasImpl(DocumentImpl doc) {
 		setURL(doc.getURI().toString());
 
-		if (doc.getUUID() == null)
-			uuid = (new UUID()).toString();
-		else
-			uuid = doc.getUUID().toString();
+		uuid = (new UUID()).toString();
 	}
 	
 	protected MetasImpl(Collection col) {

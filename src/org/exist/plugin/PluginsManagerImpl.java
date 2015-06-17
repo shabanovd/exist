@@ -36,13 +36,13 @@ import org.exist.backup.RestoreHandler;
 import org.exist.collections.Collection;
 import org.exist.config.*;
 import org.exist.config.annotation.*;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.Permission;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xmldb.XmldbURI;
-import org.w3c.dom.Document;
 import org.xml.sax.Attributes;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
@@ -305,7 +305,7 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 		}
 
 		@Override
-		public void backup(Document document, AttributesImpl attrs) {
+		public void backup(DocumentImpl document, AttributesImpl attrs) {
 			for (final Plug plugin : jacks.values()) {
 				if (plugin instanceof BackupHandler) {
 					try {
@@ -318,7 +318,7 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 		}
 
 		@Override
-		public void backup(Document document, SAXSerializer serializer) throws SAXException {
+		public void backup(DocumentImpl document, SAXSerializer serializer) throws SAXException {
 			for (final Plug plugin : jacks.values()) {
 				if (plugin instanceof BackupHandler) {
 					try {

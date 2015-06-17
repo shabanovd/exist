@@ -491,6 +491,27 @@ public abstract class AbstractRealm implements Realm, Configurable {
     public java.util.Collection<? extends String> findGroupnamesWhereGroupnameContains(final String fragment) {
         return Collections.EMPTY_LIST;
     }
+
+    public interface Unit<R> {
+        R execute(DBBroker broker) throws EXistException, PermissionDeniedException;
+    }
+
+    public <R> R executeAsSystemUser(final Unit<R> unit) throws EXistException, PermissionDeniedException {
+
+        DBBroker broker = null;
+        Subject currentSubject = getDatabase().getSubject();
+        try {
+            //elevate to system privs
+            broker = getDatabase().get(getSecurityManager().getSystemSubject());
+
+            return unit.execute(broker);
+        } finally {
+            if(broker != null) {
+                broker.setSubject(currentSubject);
+                getDatabase().release(broker);
+            }
+        }
+    }
     
     protected static class PrincipalDbByName<V extends Principal> {
         private final Map<String, V> db = new HashMap<>(65);

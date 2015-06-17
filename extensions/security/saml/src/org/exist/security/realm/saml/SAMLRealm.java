@@ -94,20 +94,13 @@ public class SAMLRealm extends AbstractRealm {
             primaryGroup = getGroup(SAML);
             if (primaryGroup == null)
                 try {
-                    primaryGroup = executeAsSystemUser(new Unit<Group>() {
-                        @Override
-                        public Group execute(DBBroker broker) throws EXistException, PermissionDeniedException {
-                            return addGroup(new GroupAider(ID, SAML));
-                        }
-                    });
+                    primaryGroup = executeAsSystemUser(broker -> addGroup(new GroupAider(ID, SAML)));
 
                     if (primaryGroup == null)
                         throw new ConfigurationException("SAML realm can not create primary group 'SAML'.");
 
                 } catch (PermissionDeniedException e) {
                     throw e;
-                } catch (ConfigurationException e) {
-                    throw new PermissionDeniedException(e);
                 } catch (EXistException e) {
                     throw new PermissionDeniedException(e);
                 }
@@ -121,32 +114,29 @@ public class SAMLRealm extends AbstractRealm {
     }
 
     @Override
-    public boolean deleteAccount(Account account) throws PermissionDeniedException, EXistException, ConfigurationException {
+    public boolean deleteAccount(Account account) throws PermissionDeniedException, EXistException {
         return false;
     }
 
     @Override
-    public boolean deleteGroup(Group group) throws PermissionDeniedException, EXistException, ConfigurationException {
+    public boolean deleteGroup(Group group) throws PermissionDeniedException, EXistException {
         return false;
     }
 
     protected Account createAccountInDatabase(final String username, final Map<SchemaType, String> metadata) throws AuthenticationException {
 
         try {
-            return executeAsSystemUser(new Unit<Account>() {
-                @Override
-                public Account execute(DBBroker broker) throws EXistException, PermissionDeniedException {
-                    // create the user account
-                    UserAider userAider = new UserAider(ID, username, getPrimaryGroup());
+            return executeAsSystemUser(broker -> {
+                // create the user account
+                UserAider userAider = new UserAider(ID, username, getPrimaryGroup());
 
-                    // store any requested metadata
-                    for (Entry<SchemaType, String> entry : metadata.entrySet())
-                        userAider.setMetadataValue(entry.getKey(), entry.getValue());
+                // store any requested metadata
+                for (Entry<SchemaType, String> entry : metadata.entrySet())
+                    userAider.setMetadataValue(entry.getKey(), entry.getValue());
 
-                    Account account = getSecurityManager().addAccount(userAider);
+                Account account = getSecurityManager().addAccount(userAider);
 
-                    return account;
-                }
+                return account;
             });
         } catch (Exception e) {
             throw new AuthenticationException(AuthenticationException.UNNOWN_EXCEPTION, e.getMessage(), e);

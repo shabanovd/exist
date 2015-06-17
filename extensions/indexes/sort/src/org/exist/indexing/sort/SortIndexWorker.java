@@ -1,10 +1,6 @@
 package org.exist.indexing.sort;
 
-import org.exist.dom.persistent.NodeProxy;
-import org.exist.dom.persistent.NodeSet;
-import org.exist.dom.persistent.IStoredNode;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.*;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.indexing.IndexController;

@@ -280,7 +280,7 @@ public class ExistDocument extends ExistResource {
 
         } catch (LockException e) {
             LOG.error("Resource is locked.", e);
-        } catch (EXistException | TriggerException | PermissionDeniedException e) {
+        } catch (Exception e) {
             LOG.error(e);
         } finally {
 

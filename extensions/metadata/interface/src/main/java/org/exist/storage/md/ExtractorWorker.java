@@ -28,16 +28,8 @@ import java.util.Stack;
 import java.util.TreeSet;
 
 import org.exist.collections.Collection;
-import org.exist.dom.AttrImpl;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.CharacterDataImpl;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.ElementImpl;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.*;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
 import org.exist.indexing.AbstractStreamListener;
 import org.exist.indexing.IndexController;
 import org.exist.indexing.IndexWorker;
@@ -137,7 +129,7 @@ public class ExtractorWorker implements IndexWorker {
 	}
 
 	@Override
-	public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf) {
+	public IStoredNode getReindexRoot(IStoredNode node, NodePath path, boolean insert, boolean includeSelf) {
 		return null;
 	}
 
@@ -297,7 +289,7 @@ public class ExtractorWorker implements IndexWorker {
 		}
 
 		@Override
-		public void characters(Txn transaction, CharacterDataImpl text, NodePath path) {
+		public void characters(Txn transaction, AbstractCharacterData text, NodePath path) {
 			if (contentStack != null && !contentStack.isEmpty()) {
 				for (TextExtractor extractor : contentStack) {
 					extractor.beforeCharacters();

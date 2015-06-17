@@ -19,6 +19,7 @@
  */
 package org.exist.storage.md.xquery;
 
+import org.exist.collections.Collection;
 import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.storage.md.Meta;

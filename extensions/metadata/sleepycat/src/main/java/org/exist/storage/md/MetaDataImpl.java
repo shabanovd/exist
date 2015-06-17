@@ -31,7 +31,6 @@ import org.exist.EXistException;
 import org.exist.Resource;
 import org.exist.collections.Collection;
 import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -42,7 +41,6 @@ import org.exist.xmldb.XmldbURI;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.persist.*;
-import org.w3c.dom.Document;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -103,7 +101,7 @@ public class MetaDataImpl extends MetaData {
 		LOG.debug("ready ... ");
 
 		MetaDataImpl.instance = this;
-		MetaData.instance = this;
+		MetaData.inst = this;
 
 		LOG.debug("done.");
     }
@@ -167,7 +165,7 @@ public class MetaDataImpl extends MetaData {
 		return d;
 	}
 
-	private Metas _addMetas(DocumentAtExist doc) {
+	private Metas _addMetas(DocumentImpl doc) {
 		MetasImpl d = new MetasImpl(doc);
 		docByUUID.put(d);
 		
@@ -220,7 +218,7 @@ public class MetaDataImpl extends MetaData {
 		return _addMetas(uri);
 	}
 
-    public Metas addMetas(DocumentAtExist doc) {
+    public Metas addMetas(DocumentImpl doc) {
     	Metas _d = getMetas(doc.getURI(), false);
     	
     	if (_d != null)
@@ -238,7 +236,7 @@ public class MetaDataImpl extends MetaData {
 		return _addMetas(col);
 	}
 
-    public Metas getMetas(DocumentAtExist doc) {
+    public Metas getMetas(DocumentImpl doc) {
     	return getMetas(doc.getURI(), true);
     }
 

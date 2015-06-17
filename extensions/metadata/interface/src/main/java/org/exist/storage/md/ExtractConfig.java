@@ -85,7 +85,7 @@ public class ExtractConfig extends ExtractConfigAbstract {
 
 	public boolean match(NodePath other) {
 		if (isQNameIndex)
-			return other.getLastComponent().equalsSimple(path.getLastComponent());
+			return other.getLastComponent().equals(path.getLastComponent());
 		
 		return path.match(other);
 	}

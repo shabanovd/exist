@@ -21,8 +21,8 @@ package org.exist.backup;
 
 import org.exist.Resource;
 import org.exist.collections.Collection;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.util.serializer.SAXSerializer;
-import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
@@ -40,6 +40,6 @@ public interface BackupHandler {
 	public void backup(Collection collection, AttributesImpl attrs);
 	public void backup(Collection collection, SAXSerializer serializer) throws SAXException;
 
-	public void backup(Document document, AttributesImpl attrs);
-	public void backup(Document document, SAXSerializer serializer) throws SAXException;
+	public void backup(DocumentImpl document, AttributesImpl attrs);
+	public void backup(DocumentImpl document, SAXSerializer serializer) throws SAXException;
 }

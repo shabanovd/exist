@@ -229,7 +229,7 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	}
 
 	@Override
-	public void backup(DocumentAtExist document, AttributesImpl attrs) {
+	public void backup(DocumentImpl document, AttributesImpl attrs) {
 	    if (document == null)
 	        return;
 	    
@@ -242,7 +242,7 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	}
 
 	@Override
-	public void backup(DocumentAtExist document, SAXSerializer serializer) throws SAXException {
+	public void backup(DocumentImpl document, SAXSerializer serializer) throws SAXException {
 	    if (document == null)
 	        return;
 	    
