@@ -911,6 +911,7 @@ public class RCSHolder implements Constants {
         //XXX: make safer
 
         String revHash = readHash(location);
+        if (revHash == null) return UNKNOWN;
 
         String calcHash = digestHex(digest);
 
@@ -1180,7 +1181,7 @@ public class RCSHolder implements Constants {
                         //content;
                         break;
                     case EL_META_TYPE:
-                        //content;
+                        resource.getMetadata().setMimeType(content);
                         break;
                     case EL_CREATED:
                         //DatatypeConverter.parseDateTime(content).getTimeInMillis();
