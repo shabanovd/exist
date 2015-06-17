@@ -22,6 +22,13 @@
       <sourceFolder url="file://$MODULE_DIR$/extensions/indexes/range/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/extensions/xslt/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/extensions/xslt/test/src" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/indexes/sort/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/indexes/sort/test/src" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/metadata/interface/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/metadata/interface/src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/metadata/sleepycat/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/security/saml/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/webdav/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/extensions/modules/src/org/exist/xquery/modules/cqlparser" />
       <excludeFolder url="file://$MODULE_DIR$/extensions/modules/src/org/exist/xquery/modules/jfreechart" />
       <excludeFolder url="file://$MODULE_DIR$/extensions/modules/src/org/exist/xquery/modules/memcached" />
@@ -54,5 +61,6 @@
     </orderEntry>
     <orderEntry type="library" name="exquery-restxq" level="project" />
     <orderEntry type="library" name="exquery-core" level="project" />
+    <orderEntry type="library" name="saml" level="project" />
   </component>
 </module>

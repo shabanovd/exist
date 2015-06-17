@@ -1416,6 +1416,17 @@
       <SOURCES />
       <jarDirectory url="file://$PROJECT_DIR$/lib/optional" recursive="false" />
     </library>
+    <library name="saml">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/joda-time-2.2.jar!/" />
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/opensaml-2.6.1.jar!/" />
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/openws-1.5.1.jar!/" />
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/xmlsec-1.5.6.jar!/" />
+        <root url="jar://$PROJECT_DIR$/extensions/security/saml/lib/xmltooling-1.4.1.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
     <library name="tools">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/tools/ircbot/lib/pircbot.jar!/" />
