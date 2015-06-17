@@ -39,11 +39,12 @@ import java.util.Date;
 
 import oracle.jdbc.OracleTypes;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.exist.Namespaces;
-import org.exist.dom.QName;
+import org.exist.dom.persistent.QName;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -77,7 +78,7 @@ import org.w3c.dom.NodeList;
  */
 public class ExecuteFunction extends BasicFunction {
 		
-    private static final Logger LOG = Logger.getLogger(ExecuteFunction.class);
+    private static final Logger LOG = LogManager.getLogger(ExecuteFunction.class);
 	
 	final static FunctionSignature[] signatures = {
 		new FunctionSignature(

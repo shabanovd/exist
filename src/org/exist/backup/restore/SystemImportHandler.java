@@ -31,10 +31,10 @@ import org.xml.sax.helpers.DefaultHandler;
 import org.exist.Namespaces;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentMetadata;
-import org.exist.dom.DocumentTypeImpl;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentMetadata;
+import org.exist.dom.persistent.DocumentTypeImpl;
 import org.exist.security.ACLPermission;
 import org.exist.security.Permission;
 import org.exist.security.SecurityManager;
@@ -54,7 +54,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.backup.BackupDescriptor;
 import org.exist.backup.restore.listener.RestoreListener;
 import org.exist.security.ACLPermission.ACE_ACCESS_TYPE;
@@ -75,7 +76,7 @@ import org.xml.sax.XMLReader;
  */
 public class SystemImportHandler extends DefaultHandler {
     
-    private final static Logger LOG = Logger.getLogger(SystemImportHandler.class);
+    private final static Logger LOG = LogManager.getLogger(SystemImportHandler.class);
     private final static SAXParserFactory saxFactory = SAXParserFactory.newInstance();
     static {
         saxFactory.setNamespaceAware(true);
@@ -199,8 +200,7 @@ public class SystemImportHandler extends DefaultHandler {
             }
 
         	final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
-        	final Txn txn = txnManager.beginTransaction();
-        	try {
+        	try(final Txn txn = txnManager.beginTransaction()) {
         		currentCollection = broker.getOrCreateCollection(txn, collUri);
         		
         		rh.startRestore(currentCollection, atts);
@@ -209,11 +209,8 @@ public class SystemImportHandler extends DefaultHandler {
 
         		txnManager.commit(txn);
         	} catch (final Exception e) {
-        		txnManager.abort(txn);
         		throw new SAXException(e);
-    		} finally {
-                txnManager.close(txn);
-            }
+    		}
 
             currentCollection = mkcol(collUri, getDateFromXSDateTimeStringForItem(created, name));
 
@@ -381,10 +378,9 @@ public class SystemImportHandler extends DefaultHandler {
             }
 
 			final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
-			final Txn txn = txnManager.beginTransaction();
 	
 			DocumentImpl resource = null;
-			try {
+            try(final Txn txn = txnManager.beginTransaction()) {
 				if ("XMLResource".equals(type)) {
 					// store as xml resource
 					
@@ -437,10 +433,8 @@ public class SystemImportHandler extends DefaultHandler {
                 
                 return deferredPermission;
 			} catch (final Exception e) {
-				txnManager.abort(txn);
 				throw new IOException(e);
 			} finally {
-                txnManager.close(txn);
 //				if (resource != null)
 //					resource.getUpdateLock().release(Lock.READ_LOCK);
 			}
@@ -465,16 +459,11 @@ public class SystemImportHandler extends DefaultHandler {
 		        if(col != null) {
 		        	//delete
 		        	final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
-		        	final Txn txn = txnManager.beginTransaction();
-		        	try {
+		        	try(final Txn txn = txnManager.beginTransaction()) {
 		                broker.removeCollection(txn, col);
 		        		txnManager.commit(txn);
 		        	} catch (final Exception e) {
-		        		txnManager.abort(txn);
-		        		
 		                listener.warn("Failed to remove deleted collection: " + name + ": " + e.getMessage());
-					} finally {
-                        txnManager.close(txn);
                     }
 		        }
         	} catch (final Exception e) {
@@ -489,9 +478,7 @@ public class SystemImportHandler extends DefaultHandler {
 	        	
 	        	if (doc != null) {
 	        		final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
-	        		final Txn txn = txnManager.beginTransaction();
-		            try {
-		            	
+		            try(final Txn txn = txnManager.beginTransaction()) {
 		            	if (doc.getResourceType() == DocumentImpl.BINARY_FILE) {
 		                	currentCollection.removeBinaryResource(txn, broker, uri);
 		            	} else {
@@ -500,12 +487,8 @@ public class SystemImportHandler extends DefaultHandler {
 		            	txnManager.commit(txn);
 	
 		            } catch(final Exception e) {
-		            	txnManager.abort(txn);
-		            	
 		                listener.warn("Failed to remove deleted resource: " + name + ": " + e.getMessage());
-		            } finally {
-                        txnManager.close(txn);
-                    }
+		            }
                 }
         	} catch (final Exception e) {
                 listener.warn("Failed to remove deleted resource: " + name + ": " + e.getMessage());
@@ -553,19 +536,15 @@ public class SystemImportHandler extends DefaultHandler {
     private Collection mkcol(XmldbURI collPath, Date created) throws SAXException {
         
     	final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
-    	final Txn txn = txnManager.beginTransaction();
-    	try {
+    	try(final Txn txn = txnManager.beginTransaction()) {
     		final Collection col = broker.getOrCreateCollection(txn, collPath);
     		
     		txnManager.commit(txn);
     		
     		return col;
     	} catch (final Exception e) {
-    		txnManager.abort(txn);
     		throw new SAXException(e);
-		} finally {
-            txnManager.close(txn);
-        }
+		}
     }
     
     class CollectionDeferredPermission extends AbstractDeferredPermission<Collection> {
@@ -580,8 +559,7 @@ public class SystemImportHandler extends DefaultHandler {
             	getTarget().getLock().acquire(Lock.WRITE_LOCK);
 
                 final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
-                final Txn txn = txnManager.beginTransaction();
-            	try {
+                try(final Txn txn = txnManager.beginTransaction()) {
                     final Permission permission = getTarget().getPermissions();
 	                permission.setOwner(getOwner());
 	                permission.setGroup(getGroup());
@@ -596,14 +574,7 @@ public class SystemImportHandler extends DefaultHandler {
 	                broker.saveCollection(txn, getTarget());
 	                
 	                txnManager.commit(txn);
-                
-            	} catch (final Exception xe) {
-                	txnManager.abort(txn);
-                	
-                	throw xe;
-
             	} finally {
-                    txnManager.close(txn);
                 	getTarget().release(Lock.WRITE_LOCK);
                 }
                 
@@ -627,9 +598,8 @@ public class SystemImportHandler extends DefaultHandler {
             	getTarget().getUpdateLock().acquire(Lock.WRITE_LOCK);
 
             	final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
-                final Txn txn = txnManager.beginTransaction();
 
-	            try {
+                try(final Txn txn = txnManager.beginTransaction()) {
 	            	
 	            	final Permission permission = getTarget().getPermissions();
 	                permission.setOwner(getOwner());
@@ -645,13 +615,7 @@ public class SystemImportHandler extends DefaultHandler {
 	                broker.storeXMLResource(txn, getTarget());
 	                txnManager.commit(txn);
 	            	
-	            } catch(final Exception xe) {
-	            	txnManager.abort(txn);
-	            	
-	            	throw xe;
-	            	
 	            } finally {
-                    txnManager.close(txn);
 	                getTarget().getUpdateLock().release(Lock.WRITE_LOCK);
 	            }
             

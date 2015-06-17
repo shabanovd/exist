@@ -37,11 +37,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import javax.xml.transform.Source;
 import javax.xml.transform.sax.SAXSource;
 
-import org.apache.log4j.Logger;
-import org.exist.memtree.DocumentBuilderReceiver;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.SAXAdapter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.memtree.DocumentBuilderReceiver;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.NodeValue;
 import org.w3c.dom.Document;
@@ -60,7 +61,7 @@ import org.xml.sax.XMLReader;
  * @version 1.1
  */
 public class ModuleUtils {
-	protected final static Logger LOG = Logger.getLogger(ModuleUtils.class);
+	protected final static Logger LOG = LogManager.getLogger(ModuleUtils.class);
 
 	/**
 	 * Takes a String of XML and Creates an XML Node from it using SAX in the
@@ -243,7 +244,7 @@ public class ModuleUtils {
 	 */
 	public static DocumentImpl htmlToXHtml(XQueryContext context, String url, InputSource srcHtml, Map<String, Boolean> parserFeatures, Map<String, String>parserProperties) throws IOException, SAXException {
             // we use eXist's in-memory DOM implementation
-            org.exist.memtree.DocumentImpl memtreeDoc = null;
+            org.exist.dom.memtree.DocumentImpl memtreeDoc = null;
 
             // use Neko to parse the HTML content to XML
             XMLReader reader = null;
@@ -277,6 +278,11 @@ public class ModuleUtils {
             }
 
             final SAXAdapter adapter = new SAXAdapter();
+
+            // allow multiple attributes of the same name attached to the same element
+            // to enhance resilience against bad HTML. The last attribute value wins.
+            adapter.setReplaceAttributeFlag(true);
+
             reader.setContentHandler(adapter);
             reader.parse(srcHtml);
             final Document doc = adapter.getDocument();

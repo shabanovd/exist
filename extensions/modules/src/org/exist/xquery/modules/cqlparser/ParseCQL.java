@@ -28,12 +28,13 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import org.exist.Namespaces;
 import org.exist.dom.QName;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.ErrorCodes;
@@ -70,7 +71,7 @@ public class ParseCQL extends BasicFunction {
 	private static final String OutputTypeXCQL = "XCQL";
 	
 	@SuppressWarnings("unused")
-	private static final Logger logger = Logger.getLogger(ParseCQL.class);
+	private static final Logger logger = LogManager.getLogger(ParseCQL.class);
 	
     public final static FunctionSignature signature =
         new FunctionSignature(

@@ -1,36 +1,34 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-06 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
- *  
+ *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
  *  as published by the Free Software Foundation; either version 2
  *  of the License, or (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  \$Id\$
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.pragmas;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.collections.Collection;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
 import org.exist.indexing.StructuralIndex;
 import org.exist.storage.QNameRangeIndexSpec;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
-import org.exist.xquery.functions.fn.ExtFulltext;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Type;
@@ -42,7 +40,7 @@ public class Optimize extends Pragma {
 
     public  final static QName OPTIMIZE_PRAGMA = new QName("optimize", Namespaces.EXIST_NS, "exist");
 
-    private final static Logger LOG = Logger.getLogger(Optimize.class);
+    private final static Logger LOG = LogManager.getLogger(Optimize.class);
 
     private boolean enabled = true;
     private XQueryContext context;
@@ -173,7 +171,7 @@ public class Optimize extends Pragma {
         }
     }
 
-    public void before(XQueryContext context, Expression expression) throws XPathException {
+    public void before(XQueryContext context, Expression expression, Sequence contextSequence) throws XPathException {
         if (innerExpr != null)
             {return;}
         innerExpr = expression;
@@ -208,12 +206,6 @@ public class Optimize extends Pragma {
 
             public void visit(Expression expression) {
                 super.visit(expression);
-            }
-
-            public void visitFtExpression(ExtFulltext fulltext) {
-                if (LOG.isTraceEnabled())
-                    {LOG.trace("exist:optimize: found optimizable: " + fulltext.getClass().getName());}
-                addOptimizable(fulltext);
             }
 
             public void visitGeneralComparison(GeneralComparison comparison) {

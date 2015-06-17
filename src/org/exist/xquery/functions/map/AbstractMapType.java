@@ -18,7 +18,8 @@ import java.util.Map;
  * @author Wolfgang Meier
  */
 public abstract class AbstractMapType extends FunctionReference
-        implements Map.Entry<AtomicValue, Sequence>, Iterable<Map.Entry<AtomicValue, Sequence>> {
+        implements Map.Entry<AtomicValue, Sequence>, Iterable<Map.Entry<AtomicValue, Sequence>>,
+        Lookup.LookupSupport {
 
     private static final Comparator<AtomicValue> DEFAULT_COMPARATOR = new FunDistinctValues.ValueComparator(null);
 
@@ -49,9 +50,14 @@ public abstract class AbstractMapType extends FunctionReference
 
     public abstract AbstractMapType remove(AtomicValue key);
 
-    public abstract int getItemCount();
+    public abstract int getKeyType();
 
-    public abstract int getItemType();
+    public abstract int size();
+
+    @Override
+    public int getItemType() {
+        return Type.MAP;
+    };
 
     @Override
     public int getType() {

@@ -22,10 +22,10 @@
 package org.exist.xquery.modules.range;
 
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
-import org.exist.dom.VirtualNodeSet;
+import org.exist.dom.persistent.VirtualNodeSet;
 import org.exist.indexing.range.RangeIndex;
 import org.exist.indexing.range.RangeIndexConfig;
 import org.exist.indexing.range.RangeIndexConfigElement;
@@ -92,6 +92,13 @@ public class Lookup extends Function implements Optimizable {
                     "all nodes from the input node set whose node value is equal to the key.")
         ),
         new FunctionSignature(
+            new QName("ne", RangeIndexModule.NAMESPACE_URI, RangeIndexModule.PREFIX),
+            DESCRIPTION,
+            PARAMETER_TYPE,
+            new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_MORE,
+                    "all nodes from the input node set whose node value is not equal to the key.")
+        ),
+        new FunctionSignature(
             new QName("starts-with", RangeIndexModule.NAMESPACE_URI, RangeIndexModule.PREFIX),
             DESCRIPTION,
             PARAMETER_TYPE,
@@ -129,7 +136,7 @@ public class Lookup extends Function implements Optimizable {
 
     public static Lookup create(XQueryContext context, RangeIndex.Operator operator, NodePath contextPath) {
         for (FunctionSignature sig: signatures) {
-            if (sig.getName().getLocalName().equals(operator.toString())) {
+            if (sig.getName().getLocalPart().equals(operator.toString())) {
                 return new Lookup(context, sig, contextPath);
             }
         }
@@ -155,11 +162,14 @@ public class Lookup extends Function implements Optimizable {
         this.contextPath = contextPath;
     }
 
-    public void setFallback(Expression expression) {
+    public void setFallback(Expression expression, int optimizeAxis) {
         if (expression instanceof InternalFunctionCall) {
             expression = ((InternalFunctionCall)expression).getFunction();
         }
         this.fallback = expression;
+        // we need to know the axis at this point. the optimizer will call
+        // getOptimizeAxis before analyze
+        this.axis = optimizeAxis;
     }
 
     public Expression getFallback() {
@@ -172,7 +182,6 @@ public class Lookup extends Function implements Optimizable {
         steps.add(path);
 
         Expression arg = arguments.get(1).simplify();
-        arg = new Atomize(context, arg);
         arg = new DynamicCardinalityCheck(context, Cardinality.ZERO_OR_MORE, arg,
                 new org.exist.xquery.util.Error(org.exist.xquery.util.Error.FUNC_PARAM_CARDINALITY, "2", mySignature));
         steps.add(arg);
@@ -191,28 +200,32 @@ public class Lookup extends Function implements Optimizable {
                 if (outerExpr != null && outerExpr instanceof LocationStep) {
                     LocationStep outerStep = (LocationStep) outerExpr;
                     NodeTest test = outerStep.getTest();
-                    if (test.getName() == null)
+                    if (test.getName() == null) {
                         contextQName = new QName(null, null, null);
-                    else if (test.isWildcardTest())
+                    } else if (test.isWildcardTest()) {
                         contextQName = test.getName();
-                    else
+                    } else {
                         contextQName = new QName(test.getName());
-                    if (outerStep.getAxis() == Constants.ATTRIBUTE_AXIS || outerStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS)
-                        contextQName.setNameType(ElementValue.ATTRIBUTE);
+                    }
+                    if (outerStep.getAxis() == Constants.ATTRIBUTE_AXIS || outerStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS) {
+                        contextQName = new QName(contextQName.getLocalPart(), contextQName.getNamespaceURI(), contextQName.getPrefix(), ElementValue.ATTRIBUTE);
+                    }
                     contextStep = firstStep;
                     axis = outerStep.getAxis();
                     optimizeSelf = true;
                 }
             } else if (lastStep != null && firstStep != null) {
                 NodeTest test = lastStep.getTest();
-                if (test.getName() == null)
+                if(test.getName() == null) {
                     contextQName = new QName(null, null, null);
-                else if (test.isWildcardTest())
+                } else if(test.isWildcardTest()) {
                     contextQName = test.getName();
-                else
+                } else {
                     contextQName = new QName(test.getName());
-                if (lastStep.getAxis() == Constants.ATTRIBUTE_AXIS || lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS)
-                    contextQName.setNameType(ElementValue.ATTRIBUTE);
+                }
+                if (lastStep.getAxis() == Constants.ATTRIBUTE_AXIS || lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS) {
+                    contextQName = new QName(contextQName.getLocalPart(), contextQName.getNamespaceURI(), contextQName.getPrefix(), ElementValue.ATTRIBUTE);
+                }
                 axis = firstStep.getAxis();
                 optimizeChild = steps.size() == 1 &&
                         (axis == Constants.CHILD_AXIS || axis == Constants.ATTRIBUTE_AXIS);
@@ -258,7 +271,7 @@ public class Lookup extends Function implements Optimizable {
 
         try {
             preselectResult = index.query(getExpressionId(), docs, contextSequence.toNodeSet(), qnames, keys, operator, NodeSet.DESCENDANT);
-        } catch (IOException e) {
+        } catch (XPathException | IOException e) {
             throw new XPathException(this, "Error while querying full text index: " + e.getMessage(), e);
         }
         //LOG.info("preselect for " + Arrays.toString(keys) + " on " + contextSequence.getItemCount() + "returned " + preselectResult.getItemCount() +
@@ -273,15 +286,21 @@ public class Lookup extends Function implements Optimizable {
     }
 
     private RangeIndex.Operator getOperator() {
-        final String calledAs = getSignature().getName().getLocalName();
+        final String calledAs = getSignature().getName().getLocalPart();
         return RangeIndexModule.OPERATOR_MAP.get(calledAs);
     }
 
     private AtomicValue[] getKeys(Sequence contextSequence) throws XPathException {
-        Sequence keySeq = getArgument(1).eval(contextSequence);
+        RangeIndexConfigElement config = findConfiguration(contextSequence);
+        int targetType = config != null ? config.getType() : Type.ITEM;
+        Sequence keySeq = Atomize.atomize(getArgument(1).eval(contextSequence));
         AtomicValue[] keys = new AtomicValue[keySeq.getItemCount()];
         for (int i = 0; i < keys.length; i++) {
-            keys[i] = (AtomicValue) keySeq.itemAt(i);
+            if (targetType == Type.ITEM) {
+                keys[i] = (AtomicValue) keySeq.itemAt(i);
+            } else {
+                keys[i] = keySeq.itemAt(i).convertTo(targetType);
+            }
         }
         return keys;
     }
@@ -410,7 +429,7 @@ public class Lookup extends Function implements Optimizable {
 
     @Override
     public int getOptimizeAxis() {
-        return Constants.DESCENDANT_AXIS;
+        return axis;
     }
 
     @Override

@@ -1,22 +1,21 @@
 /*
- *  eXist-db SecurityManager Module Extension
- *  Copyright (C) 2013 Adam Retter <adam@existsolutions.com>
+ * eXist Open Source Native XML Database
+ * Copyright (C) 2015 The eXist Project
+ * http://exist-db.org
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *  $Id$
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 package org.exist.xquery.functions.securitymanager;
 
@@ -119,7 +118,7 @@ public class GroupManagementFunction extends BasicFunction {
         try {
             final String groupName = args[0].itemAt(0).getStringValue();
 
-            if(isCalledAs(qnCreateGroup.getLocalName())) {
+            if(isCalledAs(qnCreateGroup.getLocalPart())) {
                 if(securityManager.hasGroup(groupName)) {
                     throw new XPathException("The group with name " + groupName + " already exists.");
                 }
@@ -144,7 +143,7 @@ public class GroupManagementFunction extends BasicFunction {
 
                 securityManager.addGroup(group);
 
-            } else if(isCalledAs(qnRemoveGroup.getLocalName()) || isCalledAs(qnDeleteGroup.getLocalName())) {
+            } else if(isCalledAs(qnRemoveGroup.getLocalPart()) || isCalledAs(qnDeleteGroup.getLocalPart())) {
 
                 if(!securityManager.hasGroup(groupName)) {
                     throw new XPathException("The group with name " + groupName + " does not exist.");

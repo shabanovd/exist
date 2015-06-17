@@ -37,7 +37,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.xml.transform.OutputKeys;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.http.Descriptor;
 import org.exist.security.AuthenticationException;
@@ -56,6 +57,7 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.util.MimeTable;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
+import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.Constants;
@@ -68,7 +70,8 @@ import org.exist.xquery.functions.session.SessionModule;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.Item;
 import org.exist.debuggee.DebuggeeFactory;
-import org.exist.dom.XMLUtil;
+import org.exist.dom.persistent.XMLUtil;
+import org.xml.sax.SAXException;
 
 /**
  * Servlet to generate HTML output from an XQuery file.
@@ -103,7 +106,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
     
     private static final long serialVersionUID = 5266794852401553015L;
 
-    private static final Logger LOG = Logger.getLogger(XQueryServlet.class);
+    private static final Logger LOG = LogManager.getLogger(XQueryServlet.class);
 
     // Request attributes
     public static final String ATTR_XQUERY_USER = "xquery.user";
@@ -423,7 +426,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 //        URI baseUri;
 //        try {
 //            baseUri = new URI(request.getScheme(),
-//                    null/*user info?*/, request.getLocalName(), request.getLocalPort(),
+//                    null/*user info?*/, request.getLocalPart(), request.getLocalPort(),
 //                    request.getRequestURI(), null, null);
 //        } catch(URISyntaxException e) {
 //            baseUri = null;
@@ -523,21 +526,8 @@ public class XQueryServlet extends AbstractExistHttpServlet {
                 request.setAttribute(requestAttr, resultSequence);
                 
             } else {
-            	final Serializer serializer = broker.getSerializer();
-            	serializer.reset();
-            
-            	final SerializerPool serializerPool = SerializerPool.getInstance();
-
-            	final SAXSerializer sax = (SAXSerializer) serializerPool.borrowObject(SAXSerializer.class);
-            	try {
-	            	sax.setOutput(output, outputProperties);
-	            	serializer.setProperties(outputProperties);
-	            	serializer.setSAXHandlers(sax, sax);
-	            	serializer.toSAX(resultSequence, 1, resultSequence.getItemCount(), false, false);
-                    
-            	} finally {
-            		serializerPool.returnObject(sax);
-            	}
+                XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, output);
+                serializer.serialize(resultSequence);
             }
             
 		} catch (final PermissionDeniedException e) {

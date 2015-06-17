@@ -22,7 +22,8 @@
 package org.exist.webdav;
 
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.bradmcevoy.http.Resource;
 import com.bradmcevoy.http.ResourceFactory;
@@ -35,7 +36,7 @@ import javax.xml.transform.OutputKeys;
 
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
@@ -49,7 +50,7 @@ import org.exist.xmldb.XmldbURI;
  */
 public class ExistResourceFactory implements ResourceFactory {
 
-    private final static Logger LOG = Logger.getLogger(ExistResourceFactory.class);
+    private final static Logger LOG = LogManager.getLogger(ExistResourceFactory.class);
     private BrokerPool brokerPool = null;
     
     //	default output properties for the XML serialization

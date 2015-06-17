@@ -36,13 +36,14 @@ import javax.xml.transform.sax.TemplatesHandler;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
-import org.exist.dom.DocumentAtExist;
-import org.exist.dom.ElementAtExist;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.xquery.XPathException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.xml.sax.XMLFilter;
 
 /**
@@ -51,7 +52,7 @@ import org.xml.sax.XMLFilter;
  */
 public class TransformerFactoryImpl extends SAXTransformerFactory {
 	
-    private final static Logger LOG = Logger.getLogger(TransformerFactoryImpl.class);
+    private final static Logger LOG = LogManager.getLogger(TransformerFactoryImpl.class);
 
     private BrokerPool pool = null;
     
@@ -131,14 +132,14 @@ public class TransformerFactoryImpl extends SAXTransformerFactory {
 		//XXX: handle buffered input stream
 		if (source instanceof SourceImpl) {
 			try {
-				return XSL.compile((ElementAtExist) ((DocumentAtExist)((SourceImpl)source).source).getDocumentElement());
+				return XSL.compile(((Document) ((SourceImpl) source).source).getDocumentElement());
 			} catch (XPathException e) {
 				LOG.debug(e);
 		    	throw new TransformerConfigurationException("Compilation error.",e);
 			}
-		} else if (source instanceof ElementAtExist) {
+		} else if (source instanceof Element) {
 			try {
-				return XSL.compile((ElementAtExist)source);
+				return XSL.compile((Element)source);
 			} catch (XPathException e) {
 				LOG.debug(e);
 		    	throw new TransformerConfigurationException("Compilation error.",e);

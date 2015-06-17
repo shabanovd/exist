@@ -4,7 +4,7 @@ package org.exist.storage.lock;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
-import org.exist.dom.BinaryDocument;
+import org.exist.dom.persistent.BinaryDocument;
 import org.exist.EXistException;
 import org.exist.TestUtils;
 import org.exist.xmldb.XmldbURI;
@@ -77,19 +77,12 @@ public class GetXMLResourceNoLockTest {
 
 	@Before
 	public void setup() throws IOException, DatabaseConfigurationException {
-	
-		
-		System.out.println("Stuff before! dddd ");
-		
 		dataDirBackup = TestUtils.moveDataDirToTempAndCreateClean();
 		database = TestUtils.startupDatabase();
 	}
 	
 	@After
 	public void tearDown() throws IOException, DatabaseConfigurationException {
-		
-		System.out.println("Yay after!");
-		
 		TestUtils.stopDatabase(database);
 		TestUtils.moveDataDirBack(dataDirBackup);
 	}
@@ -97,15 +90,12 @@ public class GetXMLResourceNoLockTest {
 
     private void storeTestResource() throws EXistException {
         
-        BrokerPool pool = BrokerPool.getInstance();
-        DBBroker broker = null;
-        try {
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            TransactionManager transact = pool.getTransactionManager();
-            
-            Txn transaction = transact.beginTransaction();
-            System.out.println("Transaction started ...");
-            
+        final BrokerPool pool = BrokerPool.getInstance();
+
+        final TransactionManager transact = pool.getTransactionManager();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                final Txn transaction = transact.beginTransaction()) {
+
             Collection collection = broker
                     .getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
             
@@ -117,12 +107,9 @@ public class GetXMLResourceNoLockTest {
                     DOCUMENT_NAME_URI , EMPTY_BINARY_FILE.getBytes(), "text/text");
             
             transact.commit(transaction);
-            System.out.println("Transaction commited ...");
         } catch (Exception e) {
             fail(e.getMessage());
             
-        } finally {
-            pool.release(broker);
         }
     }
 }

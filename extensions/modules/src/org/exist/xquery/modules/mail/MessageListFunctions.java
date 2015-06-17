@@ -49,9 +49,10 @@ import javax.mail.search.SearchTerm;
 import javax.mail.search.SentDateTerm;
 import javax.mail.search.SubjectTerm;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -81,7 +82,7 @@ import org.w3c.dom.NodeList;
  */
 public class MessageListFunctions extends BasicFunction
 {
-	protected static final Logger logger = Logger.getLogger(MessageListFunctions.class);
+	protected static final Logger logger = LogManager.getLogger(MessageListFunctions.class);
 
 	public final static FunctionSignature signatures[] = {
 		new FunctionSignature(
@@ -217,7 +218,6 @@ public class MessageListFunctions extends BasicFunction
 		
 		try {
 			msgList = folder.getMessages();
-			
 			prefetchMessages( folder, msgList );
 		}
 		catch( MessagingException me ) {
@@ -309,8 +309,8 @@ public class MessageListFunctions extends BasicFunction
 					Message message = msgList[ i ];
 					
 					builder.startElement( new QName( "message", MailModule.NAMESPACE_URI, MailModule.PREFIX ), null );
-					
-					builder.addAttribute( new QName( "number", null, null ), String.valueOf( i ) );
+
+					builder.addAttribute( new QName( "number", null, null ), String.valueOf(message.getMessageNumber()) );
 					
 					// Sent Date
 					if( message.getSentDate() != null ) {

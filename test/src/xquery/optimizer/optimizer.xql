@@ -15,7 +15,9 @@ declare namespace stats="http://exist-db.org/xquery/profiling";
 declare variable $ot:COLLECTION_CONFIG := 
     <collection xmlns="http://exist-db.org/collection-config/1.0">
         <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
-            <fulltext default="none" attributes="false"/>
+            <lucene>
+                <text qname="name"/>
+            </lucene>
             <create qname="name" type="xs:string"/>
         </index>
     </collection>;
@@ -372,4 +374,47 @@ function ot:optimize-map-entry($name as xs:string) {
     )
     return
         $map("key")
+};
+
+declare
+    %test:stats
+    %test:args("Rudi Rüssel")
+    %test:assertXPath("$result//stats:function[@calls = 1]")
+function ot:optimize-self($name as xs:string) {
+    collection($ot:COLLECTION)//address/name[self::name = $name]
+};
+
+declare
+    %test:stats
+    %test:args("Rudi Rüssel")
+    %test:assertXPath("$result//stats:function[@calls = 1]")
+function ot:optimize-self-element($name as xs:string) {
+    collection($ot:COLLECTION)//address/name[self::* = $name]
+};
+
+declare
+    %test:stats
+    %test:args("Rudi Rüssel")
+    %test:assertXPath("$result//stats:index[@calls = 1]")
+function ot:optimize-grouped-context($name as xs:string) {
+    collection($ot:COLLECTION)//(name)[ft:query(., $name)]
+};
+
+declare
+    %test:stats
+    %test:args("Rudi Rüssel")
+    %test:assertXPath("$result//stats:index[@calls = 1]")
+function ot:optimize-grouped-context2($name as xs:string) {
+    collection($ot:COLLECTION)//(name|foo)[ft:query(., $name)]
+};
+
+declare %private function ot:collection-helper($path as xs:string) {
+    collection($path)//address
+};
+
+declare
+    %test:args("Rudi Rüssel")
+    %test:assertEquals("Rüsselsheim")
+function ot:do-not-simplify($name as xs:string) {
+    ot:collection-helper($ot:COLLECTION)[ft:query(name, $name)]/city/string()
 };

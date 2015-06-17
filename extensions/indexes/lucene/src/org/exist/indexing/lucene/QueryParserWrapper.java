@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,7 +19,8 @@
  */
 package org.exist.indexing.lucene;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.Query;
@@ -36,7 +37,7 @@ import java.lang.reflect.InvocationTargetException;
  */
 public abstract class QueryParserWrapper {
 
-    private final static Logger LOG = Logger.getLogger(QueryParserWrapper.class);
+    private final static Logger LOG = LogManager.getLogger(QueryParserWrapper.class);
 
     public QueryParserWrapper(String field, Analyzer analyzer) {
     }

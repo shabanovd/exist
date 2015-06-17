@@ -23,7 +23,8 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.*;
 import org.exist.EventListener;
 import org.exist.plugin.PluginsManager;
@@ -40,7 +41,7 @@ import org.exist.storage.serializers.Serializer;
  */
 public class RCSManager {
 
-    protected final static Logger LOG = Logger.getLogger( RCSManager.class );
+    protected final static Logger LOG = LogManager.getLogger( RCSManager.class );
 
     private static final String DIR_NAME = "organizations";
     private static final String INDEX_DIR_NAME = "RCS";

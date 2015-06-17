@@ -21,11 +21,12 @@
  */
 package org.exist.http.servlets;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.AuthenticationException;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
@@ -103,7 +104,7 @@ public class XSLTServlet extends HttpServlet {
     private final static String REQ_ATTRIBUTE_OUTPUT = "xslt.output.";
     private final static String REQ_ATTRIBUTE_BASE = "xslt.base";
     
-    private final static Logger LOG = Logger.getLogger(XSLTServlet.class);
+    private final static Logger LOG = LogManager.getLogger(XSLTServlet.class);
 
     private BrokerPool pool;
     

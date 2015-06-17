@@ -21,12 +21,13 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.NodeHandle;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
 import org.exist.numbering.NodeId;
 import org.exist.storage.UpdateListener;
 import org.exist.xquery.*;
@@ -48,7 +49,7 @@ import org.exist.xquery.value.Type;
  */
 public class FunDoc extends Function {
 
-    protected static final Logger logger = Logger.getLogger(FunDoc.class);
+    protected static final Logger logger = LogManager.getLogger(FunDoc.class);
 
     public final static FunctionSignature signature =
         new FunctionSignature(
@@ -129,18 +130,21 @@ public class FunDoc extends Function {
         if (listener == null) {
             listener = new UpdateListener() {
 
+                @Override
                 public void documentUpdated(DocumentImpl document, int event) {
                     // clear all
                 }
 
+                @Override
                 public void unsubscribe() {
                     FunDoc.this.listener = null;
                 }
 
-                public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
+                public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
                     // not relevant
                 }
 
+                @Override
                 public void debug() {
                     logger.debug("UpdateListener: Line: " + getLine() +
                         ": " + FunDoc.this.toString());

@@ -21,9 +21,10 @@
  */
 package org.exist.http;
 
-import org.apache.log4j.Logger;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.Subject;
 import org.exist.security.xacml.AccessContext;
 import org.exist.source.DBSource;
@@ -58,7 +59,7 @@ import java.util.Properties;
  */
 public class AuditTrailSessionListener implements HttpSessionListener {
 
-    private final static Logger LOG = Logger.getLogger(AuditTrailSessionListener.class);
+    private final static Logger LOG = LogManager.getLogger(AuditTrailSessionListener.class);
     private static final String REGISTER_CREATE_XQUERY_SCRIPT_PROPERTY = "org.exist.http.session_create_listener";
     private static final String REGISTER_DESTROY_XQUERY_SCRIPT_PROPERTY = "org.exist.http.session_destroy_listener";
 

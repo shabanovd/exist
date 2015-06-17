@@ -21,7 +21,7 @@
  */
 package org.exist.security;
 
-import java.util.LinkedList;
+import java.util.Arrays;
 import org.exist.jetty.JettyStart;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
@@ -30,6 +30,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
@@ -42,26 +44,24 @@ import org.xmldb.api.modules.XMLResource;
  *
  * @author Adam Retter <adam.retter@googlemail.com>
  */
-@RunWith (Parameterized.class)
+@RunWith(Parameterized.class)
 public class XmldbApiSecurityTest extends AbstractApiSecurityTest {
-
-    private String baseUri;
 
     private static JettyStart server;
 
-    public XmldbApiSecurityTest(final String baseUri) {
-        this.baseUri = baseUri;
-    }
-
-    @Parameterized.Parameters
-    public static LinkedList<String[]> instances() {
-        LinkedList<String[]> params = new LinkedList<String[]>();
-        params.add(new String[] { "xmldb:exist://" });
-        params.add(new String[] { "xmldb:exist://localhost:" + System.getProperty("jetty.port", "8088") + "/xmlrpc" });
-        
-        return params;
-    }
+    @Parameters(name = "{0}")
+    public static java.util.Collection<Object[]> data() {
+        return Arrays.asList(new Object[][] {
+            { "local", "xmldb:exist://" },
+            { "remote", "xmldb:exist://localhost:" + System.getProperty("jetty.port", "8088") + "/xmlrpc" }
+        });
+    };
     
+    @Parameter
+    public String apiName;
+    
+    @Parameter(value = 1)
+    public String baseUri;
     
     
     @Override
@@ -368,8 +368,7 @@ public class XmldbApiSecurityTest extends AbstractApiSecurityTest {
 //            DatabaseManager.registerDatabase(database);
 //            Collection root = DatabaseManager.getCollection("xmldb:exist:///db", "admin", "");
 //            assertNotNull(root);
-            
-            System.out.println("Starting standalone server...");
+
             server = new JettyStart();
             server.run();
     }
@@ -384,7 +383,6 @@ public class XmldbApiSecurityTest extends AbstractApiSecurityTest {
 //        } catch (XMLDBException e) {
 //            e.printStackTrace();
 //        }
-        System.out.println("Shutdown standalone server...");
         server.shutdown();
         server = null;
     }

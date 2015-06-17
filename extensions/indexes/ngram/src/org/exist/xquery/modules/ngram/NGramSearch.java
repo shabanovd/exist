@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,19 +19,17 @@
  */
 package org.exist.xquery.modules.ngram;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.log4j.Logger;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.EmptyNodeSet;
-import org.exist.dom.Match;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.EmptyNodeSet;
+import org.exist.dom.persistent.Match;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
 import org.exist.indexing.ngram.NGramIndex;
 import org.exist.indexing.ngram.NGramIndexWorker;
@@ -46,7 +44,6 @@ import org.exist.xquery.modules.ngram.query.StartAnchor;
 import org.exist.xquery.modules.ngram.query.Wildcard;
 import org.exist.xquery.modules.ngram.query.WildcardedExpression;
 import org.exist.xquery.modules.ngram.query.WildcardedExpressionSequence;
-import org.exist.xquery.modules.ngram.utils.F;
 import org.exist.xquery.modules.ngram.utils.NodeProxies;
 import org.exist.xquery.modules.ngram.utils.NodeSets;
 import org.exist.xquery.util.Error;
@@ -78,7 +75,7 @@ public class NGramSearch extends Function implements Optimizable {
         + "'?', '*', '+' and character sequences matching the regular expression {[0-9]+,[0-9]+} not immediately preceeded by an unescaped period, '.', stand for themselves."
         + "'^' and '$' not at the very beginning or end of the search string, respectively, stand for themselves.";
 
-    protected static Logger LOG = Logger.getLogger(NGramSearch.class);
+    protected static Logger LOG = LogManager.getLogger(NGramSearch.class);
 
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(new QName("contains", NGramModule.NAMESPACE_URI, NGramModule.PREFIX),
@@ -164,10 +161,12 @@ public class NGramSearch extends Function implements Optimizable {
                     LocationStep outerStep = (LocationStep) outerExpr;
                     NodeTest test = outerStep.getTest();
                     if (!test.isWildcardTest() && test.getName() != null) {
-                        contextQName = new QName(test.getName());
                         if (outerStep.getAxis() == Constants.ATTRIBUTE_AXIS
-                            || outerStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS)
-                            contextQName.setNameType(ElementValue.ATTRIBUTE);
+                            || outerStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS) {
+                            contextQName = new QName(test.getName(), ElementValue.ATTRIBUTE);
+                        } else {
+                            contextQName = new QName(test.getName());
+                        }
                         contextStep = firstStep;
                         axis = outerStep.getAxis();
                         optimizeSelf = true;
@@ -176,10 +175,12 @@ public class NGramSearch extends Function implements Optimizable {
             } else if (lastStep != null && firstStep != null) {
                 NodeTest test = lastStep.getTest();
                 if (!test.isWildcardTest() && test.getName() != null) {
-                    contextQName = new QName(test.getName());
                     if (lastStep.getAxis() == Constants.ATTRIBUTE_AXIS
-                        || lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS)
-                        contextQName.setNameType(ElementValue.ATTRIBUTE);
+                        || lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS) {
+                        contextQName = new QName(test.getName(), ElementValue.ATTRIBUTE);
+                    } else {
+                        contextQName = new QName(test.getName());
+                    }
                     axis = firstStep.getAxis();
                     optimizeChild = steps.size() == 1 &&
                         (axis == Constants.CHILD_AXIS || axis == Constants.ATTRIBUTE_AXIS);
@@ -271,7 +272,7 @@ public class NGramSearch extends Function implements Optimizable {
     }
 
     private String getLocalName() {
-        return getSignature().getName().getLocalName();
+        return getSignature().getName().getLocalPart();
     }
 
     private NodeSet processMatches(
@@ -294,19 +295,13 @@ public class NGramSearch extends Function implements Optimizable {
         else if (getLocalName().startsWith("ends-with"))
             result = NodeSets.getNodesMatchingAtEnd(result, getExpressionId());
 
-        result = NodeSets.fmapNodes(result, new F<NodeProxy, NodeProxy>() {
-
-            @Override
-            public NodeProxy f(NodeProxy a) {
-                return NodeProxies.fmapOwnMatches(a, new F<Match, Match>() {
-
-                    @Override
-                    public Match f(Match a) {
-                        return a.filterOutOverlappingOffsets();
-                    }
-                }, getExpressionId());
-            }
-        });
+        result = NodeSets.transformNodes(result, proxy ->
+                NodeProxies.transformOwnMatches(
+                        proxy,
+                        Match::filterOutOverlappingOffsets,
+                        getExpressionId()
+                )
+        );
 
         return result;
     }
@@ -519,18 +514,10 @@ public class NGramSearch extends Function implements Optimizable {
 
             final NodeSet nodesContainingFirstINgrams = result;
 
-            result = NodeSets.fmapNodes(nodes, new F<NodeProxy, NodeProxy>() {
-
-                @Override
-                public NodeProxy f(NodeProxy a) {
-                    NodeProxy before = nodesContainingFirstINgrams.get(a);
-                    if (before != null) {
-                        return getContinuousMatches(before, a);
-                    } else {
-                        return null;
-                    }
-                }
-            });
+            result = NodeSets.transformNodes(nodes, proxy ->
+                    Optional.ofNullable(nodesContainingFirstINgrams.get(proxy))
+                            .map(before -> getContinuousMatches(before, proxy))
+                            .orElse(null));
         }
         return result;
 	}
@@ -558,13 +545,7 @@ public class NGramSearch extends Function implements Optimizable {
             headMatch = headMatch.getNextMatch();
             }
         if (continuousMatch != null) {
-            NodeProxies.filterMatches(tail, new F<Match, Boolean>() {
-
-                @Override
-                public Boolean f(Match a) {
-                    return (a.getContextId() != getExpressionId());
-        }
-            });
+            NodeProxies.filterMatches(tail, match -> match.getContextId() != getExpressionId());
 
             tail.addMatch(continuousMatch);
             return tail;

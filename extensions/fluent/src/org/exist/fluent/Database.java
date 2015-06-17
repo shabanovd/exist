@@ -1,15 +1,18 @@
 package org.exist.fluent;
 
-import java.io.File;
-import java.text.MessageFormat;
-import java.util.*;
-
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.backup.*;
 import org.exist.collections.*;
 import org.exist.collections.Collection;
-import org.exist.dom.*;
+import org.exist.dom.persistent.AttrImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.dom.persistent.NodeHandle;
+import org.exist.dom.persistent.TextImpl;
 import org.exist.security.*;
 import org.exist.security.xacml.AccessContext;
 import org.exist.storage.*;
@@ -20,6 +23,10 @@ import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
+
+import java.io.File;
+import java.text.MessageFormat;
+import java.util.*;
 
 /**
  * <p>The global entry point to an embedded instance of the <a href='http://exist-db.org'>eXist </a>database.
@@ -43,7 +50,7 @@ import org.exist.xquery.value.*;
  */
 public class Database {
 	
-	private static final Logger LOG = Logger.getLogger(Database.class);
+	private static final Logger LOG = LogManager.getLogger(Database.class);
 
 	/**
 	 * Start up the database, configured using the given config file.  This method must be
@@ -517,13 +524,14 @@ public class Database {
 		public void dropIndex(DocumentImpl doc) throws ReadOnlyException {
 			stale(normalizePath(doc.getURI().getCollectionPath()));
 		}
-		public void removeNode(StoredNode node, NodePath currentPath, String content) {
-			stale(normalizePath(((DocumentImpl) node.getOwnerDocument()).getURI().getCollectionPath()) + "#" + node.getNodeId());
+                @Override
+		public void removeNode(NodeHandle node, NodePath currentPath, String content) {
+			stale(normalizePath((node.getOwnerDocument()).getURI().getCollectionPath()) + "#" + node.getNodeId());
 		}
 		public void flush() {}
 		public void setDocument(DocumentImpl document) {}
 		public void storeAttribute(AttrImpl node, NodePath currentPath, int indexingHint, RangeIndexSpec spec, boolean remove) {}
-		public void storeText(TextImpl node, NodePath currentPath, int indexingHint) {}
+		public void storeText(TextImpl node, NodePath currentPath) {}
 		public void sync() {}
 		public void printStatistics() {}
 		
@@ -543,7 +551,7 @@ public class Database {
 	private static final Defragmenter defragmenter = new Defragmenter();
 	
 	private static class Defragmenter implements Runnable {
-		private static final Logger LOG = Logger.getLogger("org.exist.fluent.Database.defragmenter");
+		private static final Logger LOG = LogManager.getLogger("org.exist.fluent.Database.defragmenter");
 		private static final long DEFRAG_INTERVAL = 10000;  // ms
 		private Set<DocumentImpl> docsToDefrag = new TreeSet<DocumentImpl>();
 		private Thread thread;

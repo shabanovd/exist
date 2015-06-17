@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -28,6 +28,7 @@ import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -129,9 +130,13 @@ public class XMLToQuery {
             Element elem = (Element) termList.item(i);
             String text = getText(elem);
             if (text.indexOf('?') > -1 || text.indexOf('*') > 0) {
-                Term[] expanded = expandTerms(field, text);
-                if (expanded.length > 0)
-                    query.add(expanded);
+                try {
+                    Term[] expanded = expandTerms(field, text);
+                    if (expanded.length > 0)
+                        query.add(expanded);
+                } catch (IOException e) {
+                    throw new XPathException("IO error while expanding query terms: " + e.getMessage(), e);
+                }
             } else {
                 String termStr = getTerm(field, text, analyzer);
                 if (termStr != null)
@@ -190,9 +195,9 @@ public class XMLToQuery {
                         case "first":
                             list.add(getSpanFirst(field, (Element) child, analyzer));
                             break;
-//                      case "regex":
-//                          list.add(getSpanRegex(field, (Element) child, analyzer));
-
+                        case "regex":
+                            list.add(getSpanRegex(field, (Element) child, analyzer));
+                            break;
                         default:
                             throw new XPathException("Unknown query element: " + child.getNodeName());
                     }
@@ -209,10 +214,10 @@ public class XMLToQuery {
     		list.add(new SpanTermQuery(new Term(field, termStr)));
     }
 
-//    private SpanQuery getSpanRegex(String field, Element node, Analyzer analyzer) {
-//    	String regex = getText(node);
-//    	return new SpanRegexQuery(new Term(field, regex));
-//    }
+    private SpanQuery getSpanRegex(String field, Element node, Analyzer analyzer) {
+    	String regex = getText(node);
+    	return new SpanMultiTermQueryWrapper<RegexpQuery>(new RegexpQuery(new Term(field, regex)));
+    }
     
     private SpanQuery getSpanFirst(String field, Element node, Analyzer analyzer) throws XPathException {
     	int slop = getSlop(node);
@@ -254,14 +259,11 @@ public class XMLToQuery {
         return -1;
     }
 
-    private Term[] expandTerms(String field, String queryStr) throws XPathException {
-        List<Term> termList = new ArrayList<>(8);
-        Automaton automaton = WildcardQuery.toAutomaton(new Term(field, queryStr));
-        CompiledAutomaton compiled = new CompiledAutomaton(automaton);
-        IndexReader reader = null;
-        try {
-            reader = index.getReader();
-
+    private Term[] expandTerms(String field, String queryStr) throws XPathException, IOException {
+        return index.withReader(reader -> {
+            final Automaton automaton = WildcardQuery.toAutomaton(new Term(field, queryStr));
+            final CompiledAutomaton compiled = new CompiledAutomaton(automaton);
+            final List<Term> termList = new ArrayList<>(8);
             for (AtomicReaderContext atomic : reader.leaves()) {
                 Terms terms = atomic.reader().terms(field);
                 if (terms != null) {
@@ -274,13 +276,9 @@ public class XMLToQuery {
                     }
                 }
             }
-        } catch (IOException e) {
-            throw new XPathException("Lucene index error while creating query: " + e.getMessage(), e);
-        } finally {
-            index.releaseReader(reader);
-        }
-        Term[] matchingTerms = new Term[termList.size()];
-        return termList.toArray(matchingTerms);
+            Term[] matchingTerms = new Term[termList.size()];
+            return termList.toArray(matchingTerms);
+        });
     }
 
     private Query termQuery(String field, Element node, Analyzer analyzer) throws XPathException {

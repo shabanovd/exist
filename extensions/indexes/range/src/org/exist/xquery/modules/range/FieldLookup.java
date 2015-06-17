@@ -21,17 +21,22 @@
  */
 package org.exist.xquery.modules.range;
 
-import org.exist.dom.DocumentSet;
-import org.exist.dom.NodeSet;
+import org.exist.collections.Collection;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
 import org.exist.indexing.range.RangeIndex;
+import org.exist.indexing.range.RangeIndexConfig;
 import org.exist.indexing.range.RangeIndexWorker;
+import org.exist.storage.IndexSpec;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.util.Error;
 import org.exist.xquery.value.*;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 public class FieldLookup extends Function implements Optimizable {
@@ -65,6 +70,14 @@ public class FieldLookup extends Function implements Optimizable {
             PARAMETER_TYPE,
             new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_MORE,
                 "all nodes from the field set whose node value is equal to the key."),
+            true
+        ),
+        new FunctionSignature(
+            new QName("field-ne", RangeIndexModule.NAMESPACE_URI, RangeIndexModule.PREFIX),
+            "General field lookup function based on non-equality comparison. Normally this will be used by the query optimizer.",
+            PARAMETER_TYPE,
+            new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_MORE,
+                    "all nodes from the field set whose node value is not equal to the key."),
             true
         ),
         new FunctionSignature(
@@ -161,7 +174,6 @@ public class FieldLookup extends Function implements Optimizable {
         }
         for (int i = j; i < arguments.size(); i++) {
             Expression arg = arguments.get(i).simplify();
-            arg = new Atomize(context, arg);
             arg = new DynamicCardinalityCheck(context, Cardinality.ONE_OR_MORE, arg,
                     new org.exist.xquery.util.Error(org.exist.xquery.util.Error.FUNC_PARAM_CARDINALITY, "1", mySignature));
             steps.add(arg);
@@ -207,7 +219,7 @@ public class FieldLookup extends Function implements Optimizable {
 
         Sequence[] keys = new Sequence[getArgumentCount() - j];
         for (int i = j; i < getArgumentCount(); i++) {
-            keys[i - j] = getArgument(i).eval(contextSequence);
+            keys[i - j] = Atomize.atomize(getArgument(i).eval(contextSequence));
         }
         DocumentSet docs = contextSequence.getDocumentSet();
 
@@ -270,11 +282,26 @@ public class FieldLookup extends Function implements Optimizable {
                     operators[i] = operator;
                 }
             }
+            if (operators.length != fields.getItemCount()) {
+                throw new XPathException(this, "Number of operators specified must correspond to number of fields queried");
+            }
             Sequence[] keys = new Sequence[getArgumentCount() - j];
+            SequenceIterator fieldIter = fields.unorderedIterator();
             for (int i = j; i < getArgumentCount(); i++) {
                 keys[i - j] = getArgument(i).eval(contextSequence);
+                int targetType = Type.ITEM;
+                if (fieldIter.hasNext()) {
+                    String field = fieldIter.nextItem().getStringValue();
+                    targetType = getType(contextSequence, field);
+                }
+                if (targetType != Type.ITEM) {
+                    keys[i -j] = keys[i - j].convertTo(targetType);
+                }
             }
 
+            if (keys.length < fields.getItemCount()) {
+                throw new XPathException(this, "Number of keys to look up must correspond to number of fields specified");
+            }
             RangeIndexWorker index = (RangeIndexWorker) context.getBroker().getIndexController().getWorkerByIndexId(RangeIndex.ID);
 
             try {
@@ -301,8 +328,31 @@ public class FieldLookup extends Function implements Optimizable {
     }
 
     private RangeIndex.Operator getOperator() {
-        final String calledAs = getSignature().getName().getLocalName();
+        final String calledAs = getSignature().getName().getLocalPart();
         return RangeIndexModule.OPERATOR_MAP.get(calledAs.substring("field-".length()));
+    }
+
+    public int getType(Sequence contextSequence, String field) {
+        if (contextSequence == null) {
+            return Type.ITEM;
+        }
+        for (final Iterator<Collection> i = contextSequence.getCollectionIterator(); i.hasNext(); ) {
+            final Collection collection = i.next();
+            if (collection.getURI().startsWith(XmldbURI.SYSTEM_COLLECTION_URI)) {
+                continue;
+            }
+            IndexSpec idxConf = collection.getIndexConfiguration(context.getBroker());
+            if (idxConf != null) {
+                RangeIndexConfig config = (RangeIndexConfig) idxConf.getCustomIndexSpec(RangeIndex.ID);
+                if (config != null) {
+                    int type = config.getType(field);
+                    if (type != Type.ITEM) {
+                        return type;
+                    }
+                }
+            }
+        }
+        return Type.ITEM;
     }
 
     @Override

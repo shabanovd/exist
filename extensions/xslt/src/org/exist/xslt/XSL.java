@@ -29,11 +29,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
-import org.exist.dom.DocumentAtExist;
-import org.exist.dom.ElementAtExist;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.xquery.AnalyzeContextInfo;
@@ -44,6 +43,8 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xslt.compiler.Factory;
 import org.exist.xslt.compiler.XSLElement;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -72,12 +73,12 @@ import org.xml.sax.XMLReader;
  */
 public class XSL {
 
-    private final static Logger LOG = Logger.getLogger(XSL.class);
+    private final static Logger LOG = LogManager.getLogger(XSL.class);
 
     public XSL() {
 	}
     
-    protected static XSLStylesheet compile(ElementAtExist source) throws XPathException {
+    protected static XSLStylesheet compile(Element source) throws XPathException {
     	BrokerPool pool = null;
     	DBBroker broker = null;
     	try {
@@ -91,7 +92,7 @@ public class XSL {
 		}
     }
 
-    protected static XSLStylesheet compile(ElementAtExist source, DBBroker broker) throws XPathException {
+    protected static XSLStylesheet compile(Element source, DBBroker broker) throws XPathException {
     	long start = System.currentTimeMillis();
     	
     	XSLElement stylesheet = new XSLElement(source);
@@ -144,10 +145,10 @@ public class XSL {
 			reader.setContentHandler(adapter);
 			reader.parse(src);
 		
-			DocumentAtExist document = (DocumentAtExist) adapter.getDocument();
+			Document document = adapter.getDocument();
 //			document.setContext(new XSLContext(broker));
 			//return receiver.getDocument();
-			return compile((ElementAtExist) document.getDocumentElement(), broker);
+			return compile(document.getDocumentElement(), broker);
 		} catch (ParserConfigurationException e) {
         	LOG.debug(e);
 			throw new XPathException(e);

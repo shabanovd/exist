@@ -1,6 +1,6 @@
 /*
  * eXist Open Source Native XML Database
- * Copyright (C) 2014 The eXist Project
+ * Copyright (C) 2015 The eXist Project
  * http://exist-db.org
  *
  * This program is free software; you can redistribute it and/or
@@ -16,13 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software Foundation
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
- *  $Id$
  */
 package org.exist.xquery.functions.securitymanager;
 
 import org.exist.dom.QName;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.security.Subject;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -67,7 +65,7 @@ public class IdFunction extends BasicFunction {
      * 
      * @return An in-memory document describing the accounts
      */
-    private org.exist.memtree.DocumentImpl functionId() throws XPathException {
+    private org.exist.dom.memtree.DocumentImpl functionId() throws XPathException {
         final MemTreeBuilder builder = context.getDocumentBuilder();
         builder.startDocument();
 

@@ -34,12 +34,13 @@ import java.util.List;
 
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import org.exist.dom.NodeProxy;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.storage.serializers.Serializer;
 import org.exist.validation.ValidationReport;
 import org.exist.validation.ValidationReportItem;
@@ -65,7 +66,7 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public class Shared {
 
-    private final static Logger LOG = Logger.getLogger(Shared.class);
+    private final static Logger LOG = LogManager.getLogger(Shared.class);
     public final static String simplereportText = "true() if the " +
             "document is valid and no single problem occured, false() for " +
             "all other conditions. For detailed validation information " +
@@ -138,7 +139,7 @@ public class Shared {
 
             if (item instanceof NodeProxy) {
                 final NodeProxy np = (NodeProxy) item;
-                final String url = "xmldb:exist://" + np.getDocument().getBaseURI();
+                final String url = "xmldb:exist://" + np.getOwnerDocument().getBaseURI();
                 LOG.debug("Document detected, adding URL " + url);
                 streamSource.setSystemId(url);
             }
@@ -218,7 +219,7 @@ public class Shared {
 
             if (item instanceof NodeProxy) {
                 final NodeProxy np = (NodeProxy) item;
-                url = np.getDocument().getBaseURI();
+                url = np.getOwnerDocument().getBaseURI();
                 LOG.debug("Document detected, adding URL " + url);
             }
 

@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -30,8 +30,8 @@ import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.Resource;
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentAtExist;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -42,6 +42,7 @@ import org.exist.xmldb.XmldbURI;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.persist.*;
+import org.w3c.dom.Document;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -228,13 +229,13 @@ public class MetaDataImpl extends MetaData {
 		return _addMetas(doc);
 	}
 
-    public Metas addMetas(Collection doc) {
-    	Metas _d = getMetas(doc.getURI(), false);
+    public Metas addMetas(Collection col) {
+    	Metas _c = getMetas(col.getURI(), false);
     	
-    	if (_d != null)
-    		return _d;
+    	if (_c != null)
+    		return _c;
     	
-		return _addMetas(doc);
+		return _addMetas(col);
 	}
 
     public Metas getMetas(DocumentAtExist doc) {

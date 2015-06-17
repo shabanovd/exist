@@ -54,13 +54,14 @@ import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.log4j.Logger;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.NodeProxy;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.http.servlets.ResponseWrapper;
-import org.exist.memtree.DocumentBuilderReceiver;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.DocumentBuilderReceiver;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.numbering.NodeId;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
@@ -100,7 +101,7 @@ import org.xml.sax.SAXException;
  */
 public class Transform extends BasicFunction {
 	
-	private static final Logger logger = Logger.getLogger(Transform.class);
+	private static final Logger logger = LogManager.getLogger(Transform.class);
 
 	public final static FunctionSignature signatures[] = {
 		new FunctionSignature(
@@ -381,9 +382,9 @@ public class Transform extends BasicFunction {
                     {
 						//as this is a persistent node (e.g. a stylesheet stored in the db)
 						//set the URI Resolver as a DatabaseResolver
-						factory.setURIResolver(new EXistURIResolver(root.getDocument().getCollection().getURI().toString()));
+						factory.setURIResolver(new EXistURIResolver(root.getOwnerDocument().getCollection().getURI().toString()));
 					
-						final String uri = XmldbURI.XMLDB_URI_PREFIX + context.getBroker().getBrokerPool().getId() + "://" + root.getDocument().getURI();
+						final String uri = XmldbURI.XMLDB_URI_PREFIX + context.getBroker().getBrokerPool().getId() + "://" + root.getOwnerDocument().getURI();
 						templates = getSource(factory, uri);
 					}
 				}

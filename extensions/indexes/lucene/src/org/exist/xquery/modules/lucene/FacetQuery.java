@@ -20,10 +20,10 @@
 package org.exist.xquery.modules.lucene;
 
 import org.apache.log4j.Logger;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
-import org.exist.dom.VirtualNodeSet;
+import org.exist.dom.persistent.VirtualNodeSet;
 import org.exist.indexing.lucene.LuceneIndex;
 import org.exist.indexing.lucene.LuceneIndexWorker;
 import org.exist.storage.ElementValue;
@@ -147,8 +147,12 @@ public class FacetQuery extends Function implements Optimizable {
                         contextQName = test.getName();
                     else
                         contextQName = new QName(test.getName());
-                    if (outerStep.getAxis() == Constants.ATTRIBUTE_AXIS || outerStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS)
-                        contextQName.setNameType(ElementValue.ATTRIBUTE);
+                    if (outerStep.getAxis() == Constants.ATTRIBUTE_AXIS || outerStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS) {
+                        contextQName = new QName(
+                            contextQName.getLocalPart(), contextQName.getNamespaceURI(), contextQName.getPrefix(),
+                            ElementValue.ATTRIBUTE
+                        );
+                    }
                     contextStep = firstStep;
                     axis = outerStep.getAxis();
                     optimizeSelf = true;
@@ -161,9 +165,12 @@ public class FacetQuery extends Function implements Optimizable {
                     contextQName = test.getName();
                 else
                     contextQName = new QName(test.getName());
-                if (lastStep.getAxis() == Constants.ATTRIBUTE_AXIS || lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS)
-                    contextQName.setNameType(ElementValue.ATTRIBUTE);
-                axis = firstStep.getAxis();
+                if (lastStep.getAxis() == Constants.ATTRIBUTE_AXIS || lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS) {
+                    contextQName = new QName(
+                        contextQName.getLocalPart(), contextQName.getNamespaceURI(), contextQName.getPrefix(),
+                        ElementValue.ATTRIBUTE
+                    );
+                }                axis = firstStep.getAxis();
                 optimizeChild = steps.size() == 1 &&
                     (axis == Constants.CHILD_AXIS || axis == Constants.ATTRIBUTE_AXIS);
                 contextStep = lastStep;

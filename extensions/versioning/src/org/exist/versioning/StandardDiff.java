@@ -1,12 +1,13 @@
 package org.exist.versioning;
 
 import bmsi.util.Diff;
-import org.apache.log4j.Logger;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.NodeProxy;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.numbering.NodeId;
-import org.exist.stax.EmbeddedXMLStreamReader;
+import org.exist.stax.ExtendedXMLStreamReader;
 import org.exist.storage.DBBroker;
 import org.exist.util.serializer.Receiver;
 import org.exist.util.serializer.SAXSerializer;
@@ -26,7 +27,7 @@ import java.util.TreeMap;
 
 public class StandardDiff implements org.exist.versioning.Diff {
 
-    private final static Logger LOG = Logger.getLogger(StandardDiff.class);
+    private final static Logger LOG = LogManager.getLogger(StandardDiff.class);
 
     public final static String NAMESPACE = "http://exist-db.org/versioning";
     public final static String PREFIX = "v";
@@ -211,12 +212,12 @@ public class StandardDiff implements org.exist.versioning.Diff {
     }
 
     protected DiffNode[] getNodes(DBBroker broker, DocumentImpl root) throws XMLStreamException, IOException {
-        EmbeddedXMLStreamReader reader = broker.newXMLStreamReader(new NodeProxy(root, NodeId.DOCUMENT_NODE, root.getFirstChildAddress()), false);
+        ExtendedXMLStreamReader reader = broker.newXMLStreamReader(new NodeProxy(root, NodeId.DOCUMENT_NODE, root.getFirstChildAddress()), false);
         List<DiffNode> nodes = new ArrayList<DiffNode>();
         DiffNode node;
         while (reader.hasNext()) {
             int status = reader.next();
-            NodeId nodeId = (NodeId) reader.getProperty(EmbeddedXMLStreamReader.PROPERTY_NODE_ID);
+            NodeId nodeId = (NodeId) reader.getProperty(ExtendedXMLStreamReader.PROPERTY_NODE_ID);
             switch (status) {
                 case XMLStreamReader.START_ELEMENT:
                     node = new DiffNode(nodeId, status, reader.getQName());

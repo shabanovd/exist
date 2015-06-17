@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -20,24 +20,31 @@
 package org.exist.storage.md;
 
 import java.io.File;
+import java.io.IOException;
 
 import junit.framework.TestCase;
 
+import org.exist.EXistException;
 import org.exist.backup.SystemExport;
 import org.exist.backup.SystemImport;
-import org.exist.backup.restore.listener.DefaultRestoreListener;
+import org.exist.backup.restore.listener.LogRestoreListener;
 import org.exist.backup.restore.listener.RestoreListener;
 import org.exist.collections.Collection;
+import org.exist.collections.CollectionConfigurationException;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.IndexInfo;
-import org.exist.dom.BinaryDocument;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
 import org.exist.util.ConfigurationHelper;
+import org.exist.util.DatabaseConfigurationException;
+import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
+import org.xml.sax.SAXException;
 import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
 
@@ -72,8 +79,6 @@ public class BackupRestoreMDTest extends TestCase {
 
     //@Test
 	public void test_01() throws Exception {
-    	System.out.println("test_01");
-    	
     	startDB();
     	
     	MetaData md = MetaData.get();
@@ -144,7 +149,7 @@ public class BackupRestoreMDTest extends TestCase {
     	clean();
     	
     	SystemImport restore = new SystemImport(pool);
-		RestoreListener listener = new DefaultRestoreListener();
+		RestoreListener listener = new LogRestoreListener();
 		restore.restore(listener, "admin", "", "", file, "xmldb:exist://");
 
         broker = null;
@@ -211,25 +216,17 @@ public class BackupRestoreMDTest extends TestCase {
 //	}
     
 	//@BeforeClass
-    public static void startDB() {
-        DBBroker broker = null;
-        TransactionManager transact = null;
-        Txn transaction = null;
-        try {
-            File confFile = ConfigurationHelper.lookup("conf.xml");
-            Configuration config = new Configuration(confFile.getAbsolutePath());
-            BrokerPool.configure(1, 5, config);
-            pool = BrokerPool.getInstance();
-        	assertNotNull(pool);
-        	pool.getPluginsManager().addPlugin("org.exist.storage.md.Plugin");
+    public static void startDB() throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
+        final File confFile = ConfigurationHelper.lookup("conf.xml");
+        Configuration config = new Configuration(confFile.getAbsolutePath());
+        BrokerPool.configure(1, 5, config);
+        pool = BrokerPool.getInstance();
+        assertNotNull(pool);
+        pool.getPluginsManager().addPlugin("org.exist.storage.md.Plugin");
+        final TransactionManager transact = pool.getTransactionManager();
 
-        	broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);
-            transact = pool.getTransactionManager();
-            assertNotNull(transact);
-            transaction = transact.beginTransaction();
-            assertNotNull(transaction);
-            System.out.println("Transaction started ...");
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+            final Txn transaction = transact.beginTransaction()) {
 
             Collection root = broker.getOrCreateCollection(transaction, col1uri);
             assertNotNull(root);
@@ -238,23 +235,14 @@ public class BackupRestoreMDTest extends TestCase {
             CollectionConfigurationManager mgr = pool.getConfigurationManager();
             mgr.addConfiguration(transaction, broker, root, COLLECTION_CONFIG);
 
-            System.out.println("store "+doc1uri);
             IndexInfo info = root.validateXMLResource(transaction, broker, doc1uri.lastSegment(), XML);
             assertNotNull(info);
             root.store(transaction, broker, info, XML, false);
 
-            System.out.println("store "+doc2uri);
             BinaryDocument doc = root.addBinaryResource(transaction, broker, doc2uri.lastSegment(), BINARY.getBytes(), null);
             assertNotNull(doc);
 
             transact.commit(transaction);
-        } catch (Exception e) {
-            e.printStackTrace();
-            transact.abort(transaction);
-            fail(e.getMessage());
-        } finally {
-            if (pool != null)
-                pool.release(broker);
         }
 
         rundb();
@@ -281,18 +269,9 @@ public class BackupRestoreMDTest extends TestCase {
     }
 
     private static void clean() {
-    	System.out.println("CLEANING...");
-        DBBroker broker = null;
-        TransactionManager transact = null;
-        Txn transaction = null;
-        try {
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);
-            transact = pool.getTransactionManager();
-            assertNotNull(transact);
-            transaction = transact.beginTransaction();
-            assertNotNull(transaction);
-            System.out.println("Transaction started ...");
+        final TransactionManager transact = pool.getTransactionManager();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+            final Txn transaction = transact.beginTransaction()) {
 
             Collection root = broker.getOrCreateCollection(transaction, XmldbURI.ROOT_COLLECTION_URI.append("test"));
             assertNotNull(root);
@@ -300,12 +279,8 @@ public class BackupRestoreMDTest extends TestCase {
 
             transact.commit(transaction);
         } catch (Exception e) {
-        	transact.abort(transaction);
             e.printStackTrace();
             fail(e.getMessage());
-        } finally {
-            if (pool != null) pool.release(broker);
         }
-    	System.out.println("CLEANED.");
     }
 }

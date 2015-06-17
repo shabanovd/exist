@@ -21,19 +21,21 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.collections.Collection;
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.MutableDocumentSet;
-import org.exist.dom.NewArrayNodeSet;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.dom.persistent.NewArrayNodeSet;
+import org.exist.dom.persistent.NodeHandle;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
 import org.exist.numbering.NodeId;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.UpdateListener;
 import org.exist.storage.lock.Lock;
 import org.exist.util.LockException;
@@ -58,14 +60,13 @@ import org.exist.xquery.value.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.exist.security.PermissionDeniedException;
 
 /**
  * @author wolf
  */
 public class ExtCollection extends Function {
 
-    protected static final Logger logger = Logger.getLogger(ExtCollection.class);
+    protected static final Logger logger = LogManager.getLogger(ExtCollection.class);
 
     public final static FunctionSignature signature =
         new FunctionSignature(
@@ -97,7 +98,7 @@ public class ExtCollection extends Function {
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+	 * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
 	 */
 	public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
         if (context.getProfiler().isEnabled()) {
@@ -156,7 +157,7 @@ public class ExtCollection extends Function {
             
         }
         // iterate through all docs and create the node set
-        final NodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 1);
+        final NodeSet result = new NewArrayNodeSet();
         Lock dlock;
         DocumentImpl doc;
         for (final Iterator<DocumentImpl> i = docs.getDocumentIterator(); i.hasNext();) {
@@ -204,18 +205,22 @@ public class ExtCollection extends Function {
         if (listener == null) {
             listener = new UpdateListener() {
 
+                @Override
                 public void documentUpdated(DocumentImpl document, int event) {
                     //Nothing to do (previously was cache management)
                 }
 
+                @Override
                 public void unsubscribe() {
                     ExtCollection.this.listener = null;
                 }
 
-                public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
+                @Override
+                public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
                     // not relevant
                 }
 
+                @Override
                 public void debug() {
                     LOG.debug("UpdateListener: Line: " + getLine() + ": " +
                         ExtCollection.this.toString());

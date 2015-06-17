@@ -22,8 +22,9 @@
 package org.exist.xquery.functions.xmldb;
 
 import java.net.URISyntaxException;
-import org.apache.log4j.Logger;
-import org.exist.dom.DocumentImpl;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
@@ -49,7 +50,7 @@ import org.exist.xquery.value.Type;
  * @author Dannes Wessels (dannes@exist-db.org)
  */
 public class XMLDBSetMimeType extends BasicFunction {
-	protected static final Logger logger = Logger.getLogger(XMLDBSetMimeType.class);
+	protected static final Logger logger = LogManager.getLogger(XMLDBSetMimeType.class);
 	public final static FunctionSignature signature =
 		new FunctionSignature(
 			new QName("set-mime-type", XMLDBModule.NAMESPACE_URI, XMLDBModule.PREFIX),
@@ -131,10 +132,8 @@ public class XMLDBSetMimeType extends BasicFunction {
         final BrokerPool brokerPool = broker.getBrokerPool();
 
         DocumentImpl doc = null;
-        final TransactionManager txnManager = brokerPool.getTransactionManager();
-        final Txn txn = txnManager.beginTransaction();
 
-        try {
+        try(final Txn txn = brokerPool.getTransactionManager().beginTransaction()) {
             // relative collection Path: add the current base URI
             pathUri = context.getBaseURI().toXmldbURI().resolveCollectionPath(pathUri);
 
@@ -142,7 +141,7 @@ public class XMLDBSetMimeType extends BasicFunction {
             doc = (DocumentImpl) broker.getXMLResource(pathUri, Lock.WRITE_LOCK);
             if (doc == null) {
                 // no document selected, abort
-                txnManager.abort(txn);
+                txn.abort();
 
             } else {
                 // set new mime-type
@@ -152,12 +151,11 @@ public class XMLDBSetMimeType extends BasicFunction {
                 broker.storeMetadata(txn, doc);
                 
                 // commit changes
-                txnManager.commit(txn);
+                txn.commit();
             }
 
         } catch (final Exception e) {
-            txnManager.abort(txn);
-            logger.error(e.getMessage(), e);
+            logger.error(e.getMessage());
             throw new XPathException(this, e);
 
         } finally {
@@ -165,7 +163,6 @@ public class XMLDBSetMimeType extends BasicFunction {
             if (doc != null) {
                 doc.getUpdateLock().release(Lock.WRITE_LOCK);
             }
-            txnManager.close(txn);
         }
 
         return Sequence.EMPTY_SEQUENCE;

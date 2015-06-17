@@ -22,16 +22,17 @@
 
 package org.exist.xquery.functions.system;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 import org.exist.dom.QName;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.storage.BrokerPool;
 
 public class FunctionTrace extends BasicFunction {
 
-    protected final static Logger logger = Logger.getLogger(FunctionTrace.class);
+    protected final static Logger logger = LogManager.getLogger(FunctionTrace.class);
 
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
@@ -75,7 +76,7 @@ public class FunctionTrace extends BasicFunction {
     }
 
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
-    	logger.info("Entering " + SystemModule.PREFIX + ":" + getName().getLocalName());
+    	logger.info("Entering " + SystemModule.PREFIX + ":" + getName().getLocalPart());
         if (isCalledAs("clear-trace")) {
         	logger.info("Entering the " + SystemModule.PREFIX + ":clear-trace XQuery function");
             context.getBroker().getBrokerPool().getPerformanceStats().clear();
@@ -93,7 +94,7 @@ public class FunctionTrace extends BasicFunction {
 
         } else if (isCalledAs("tracing-enabled")) {
         	logger.info("Entering the " + SystemModule.PREFIX + ":tracing-enabled XQuery function");
-        	logger.info("Exiting " + SystemModule.PREFIX + ":" + getName().getLocalName());
+        	logger.info("Exiting " + SystemModule.PREFIX + ":" + getName().getLocalPart());
             return BooleanValue.valueOf(context.getBroker().getBrokerPool().getPerformanceStats().isEnabled());
             
         } else {
@@ -105,10 +106,10 @@ public class FunctionTrace extends BasicFunction {
             final BrokerPool brokerPool = context.getBroker().getBrokerPool();
             brokerPool.getPerformanceStats().toXML(builder);
             builder.endDocument();
-        	logger.info("Exiting " + SystemModule.PREFIX + ":" + getName().getLocalName());
+        	logger.info("Exiting " + SystemModule.PREFIX + ":" + getName().getLocalPart());
             return (NodeValue)builder.getDocument().getDocumentElement();
         }
-    	logger.info("Exiting " + SystemModule.PREFIX + ":" + getName().getLocalName());
+    	logger.info("Exiting " + SystemModule.PREFIX + ":" + getName().getLocalPart());
         return Sequence.EMPTY_SEQUENCE;
     }
 }

@@ -23,13 +23,13 @@ package org.exist.xquery;
 
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.dom.ContextItem;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.NewArrayNodeSet;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.ContextItem;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.NewArrayNodeSet;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
-import org.exist.dom.VirtualNodeSet;
+import org.exist.dom.persistent.VirtualNodeSet;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ElementValue;
 import org.exist.storage.IndexSpec;
@@ -199,10 +199,12 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
                     final NodeTest     test      = outerStep.getTest();
 
                     if( !test.isWildcardTest() && ( test.getName() != null ) ) {
-                        contextQName = new QName( test.getName() );
+
 
                         if( ( outerStep.getAxis() == Constants.ATTRIBUTE_AXIS ) || ( outerStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS ) ) {
-                            contextQName.setNameType( ElementValue.ATTRIBUTE );
+                            contextQName = new QName(test.getName(), ElementValue.ATTRIBUTE);
+                        } else {
+                            contextQName = new QName(test.getName());
                         }
                         contextStep  = firstStep;
                         axis         = outerStep.getAxis();
@@ -213,10 +215,12 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
                 final NodeTest test = lastStep.getTest();
 
                 if( !test.isWildcardTest() && ( test.getName() != null ) ) {
-                    contextQName = new QName( test.getName() );
+
 
                     if( ( lastStep.getAxis() == Constants.ATTRIBUTE_AXIS ) || ( lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS ) ) {
-                        contextQName.setNameType( ElementValue.ATTRIBUTE );
+                        contextQName = new QName( test.getName(), ElementValue.ATTRIBUTE );
+                    } else {
+                        contextQName = new QName( test.getName() );
                     }
                     contextStep = lastStep;
                     axis        = firstStep.getAxis();
@@ -328,10 +332,10 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
         	{preselectResult = new NewArrayNodeSet();}
         
         // Iterate through each item in the right-hand sequence
-        for( final SequenceIterator itRightSeq = rightSeq.iterate(); itRightSeq.hasNext(); ) {
+        for( final SequenceIterator itRightSeq = Atomize.atomize(rightSeq).iterate(); itRightSeq.hasNext(); ) {
 
             //Get the index key
-            Item key = itRightSeq.nextItem().atomize();
+            Item key = itRightSeq.nextItem();
 
             //if key has truncation, convert it to string
             if( truncation != Constants.TRUNC_NONE ) {
@@ -410,7 +414,7 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
 
 
     /* (non-Javadoc)
-     * @see org.exist.xquery.Expression#eval(org.exist.xquery.StaticContext, org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+     * @see org.exist.xquery.Expression#eval(org.exist.xquery.StaticContext, org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
      */
     public Sequence eval( Sequence contextSequence, Item contextItem ) throws XPathException
     {
@@ -527,7 +531,7 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
             result = BooleanValue.valueOf( compareAtomic( collator, AtomicValue.EMPTY_VALUE, AtomicValue.EMPTY_VALUE ) );
         } else if( ls.isEmpty() && !rs.isEmpty() ) {
 
-            for( final SequenceIterator i2 = rs.iterate(); i2.hasNext(); ) {
+            for( final SequenceIterator i2 = Atomize.atomize(rs).iterate(); i2.hasNext(); ) {
 
                 if( compareAtomic( collator, AtomicValue.EMPTY_VALUE, i2.nextItem().atomize() ) ) {
                     result = BooleanValue.TRUE;
@@ -536,7 +540,7 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
             }
         } else if( !ls.isEmpty() && rs.isEmpty() ) {
 
-            for( final SequenceIterator i1 = ls.iterate(); i1.hasNext(); ) {
+            for( final SequenceIterator i1 = Atomize.atomize(ls).iterate(); i1.hasNext(); ) {
                 final AtomicValue lv = i1.nextItem().atomize();
 
                 if( compareAtomic( collator, lv, AtomicValue.EMPTY_VALUE ) ) {
@@ -544,11 +548,11 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
                     break;
                 }
             }
-        } else if( ls.hasOne() && rs.hasOne() ) {
+        } else if( ls.hasOne() && rs.hasOne() && ls.itemAt(0).getType() != Type.ARRAY && rs.itemAt(0).getType() != Type.ARRAY) {
             result = BooleanValue.valueOf( compareAtomic( collator, ls.itemAt( 0 ).atomize(), rs.itemAt( 0 ).atomize() ) );
         } else {
 
-            for( final SequenceIterator i1 = ls.iterate(); i1.hasNext(); ) {
+            for( final SequenceIterator i1 = Atomize.atomize(ls).iterate(); i1.hasNext(); ) {
                 final AtomicValue lv = i1.nextItem().atomize();
 
                 if( rs.isEmpty() ) {
@@ -557,7 +561,7 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
                         result = BooleanValue.TRUE;
                         break;
                     }
-                } else if( rs.hasOne() ) {
+                } else if( rs.hasOne() && rs.itemAt(0).getType() != Type.ARRAY) {
 
                     if( compareAtomic( collator, lv, rs.itemAt( 0 ).atomize() ) ) {
 
@@ -567,7 +571,7 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
                     }
                 } else {
 
-                    for( final SequenceIterator i2 = rs.iterate(); i2.hasNext(); ) {
+                    for( final SequenceIterator i2 = Atomize.atomize(rs).iterate(); i2.hasNext(); ) {
 
                         if( compareAtomic( collator, lv, i2.nextItem().atomize() ) ) {
                             result = BooleanValue.TRUE;
@@ -622,7 +626,7 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
                 do {
                     final Sequence rs = getRight().eval( context.getNode().toSequence() );
 
-                    for( final SequenceIterator i2 = rs.iterate(); i2.hasNext(); ) {
+                    for( final SequenceIterator i2 = Atomize.atomize(rs).iterate(); i2.hasNext(); ) {
                         final AtomicValue rv = i2.nextItem().atomize();
 
                         if( compareAtomic( collator, lv, rv ) ) {
@@ -637,7 +641,7 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
                 final AtomicValue lv = item.atomize();
                 final Sequence    rs = getRight().eval( contextSequence );
 
-                for( final SequenceIterator i2 = rs.iterate(); i2.hasNext(); ) {
+                for( final SequenceIterator i2 = Atomize.atomize(rs).iterate(); i2.hasNext(); ) {
                     final AtomicValue rv = i2.nextItem().atomize();
 
                     if( compareAtomic( collator, lv, rv ) ) {
@@ -760,10 +764,10 @@ public class GeneralComparison extends BinaryOp implements Optimizable, IndexUse
             NodeSet           result = null;
 
             //Iterate through the right hand sequence
-            for( final SequenceIterator itRightSeq = rightSeq.iterate(); itRightSeq.hasNext(); ) {
+            for( final SequenceIterator itRightSeq = Atomize.atomize(rightSeq).iterate(); itRightSeq.hasNext(); ) {
 
                 //Get the index key
-                Item key = itRightSeq.nextItem().atomize();
+                Item key = itRightSeq.nextItem();
 
                 //if key has truncation, convert it to string
                 if( truncation != Constants.TRUNC_NONE ) {

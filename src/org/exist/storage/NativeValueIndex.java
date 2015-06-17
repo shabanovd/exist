@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-04 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -13,22 +13,36 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *  $Id$
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.storage;
 
 //import java.io.EOFException;
 
-import org.apache.log4j.Logger;
+import org.exist.dom.TypedQNameComparator;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.QName;
+import org.exist.dom.persistent.AttrImpl;
+import org.exist.dom.persistent.AbstractCharacterData;
+import org.exist.dom.persistent.TextImpl;
+import org.exist.dom.persistent.ElementImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.IStoredNode;
+import org.exist.dom.persistent.NodeHandle;
+import org.exist.dom.persistent.SymbolTable;
+import org.exist.dom.persistent.NewArrayNodeSet;
+import org.exist.dom.persistent.NodeSet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import org.exist.xquery.XQueryWatchDog;
 import org.w3c.dom.Node;
+
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.dom.*;
 import org.exist.indexing.AbstractStreamListener;
 import org.exist.indexing.IndexUtils;
 import org.exist.indexing.IndexWorker;
@@ -63,7 +77,9 @@ import org.exist.xquery.value.Type;
 
 import java.io.File;
 import java.io.IOException;
+
 import java.text.Collator;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -89,7 +105,7 @@ import java.util.TreeMap;
  */
 public class NativeValueIndex implements ContentLoadingObserver {
 
-    private final static Logger LOG = Logger.getLogger(NativeValueIndex.class);
+    private final static Logger LOG = LogManager.getLogger(NativeValueIndex.class);
 
     public static final String FILE_NAME = "values.dbx";
     public static final String FILE_KEY_IN_CONFIG = "db-connection.values";
@@ -182,7 +198,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
     }
 
     /* (non-Javadoc)
-     * @see org.exist.storage.ContentLoadingObserver#setDocument(org.exist.dom.DocumentImpl)
+     * @see org.exist.storage.ContentLoadingObserver#setDocument(org.exist.dom.persistent.DocumentImpl)
      */
     public void setDocument(DocumentImpl document) {
         for (byte section = 0; section <= IDX_QNAME; section++) {
@@ -206,9 +222,9 @@ public class NativeValueIndex implements ContentLoadingObserver {
      */
     public void storeElement(ElementImpl node, String content, int xpathType,
         byte indexType, boolean remove) {
-        if (doc.getDocId() != node.getDocId()) {
+        if (doc.getDocId() != node.getOwnerDocument().getDocId()) {
             throw( new IllegalArgumentException( "Document id ('" + doc.getDocId() +
-                "') and proxy id ('" + node.getDocId() + "') differ !"));
+                "') and proxy id ('" + node.getOwnerDocument().getDocId() + "') differ !"));
         }
         AtomicValue atomic = convertToAtomic(xpathType, content);
         //Ignore if the value can't be successfully atomized
@@ -263,8 +279,8 @@ public class NativeValueIndex implements ContentLoadingObserver {
             return;
         }
 
-        if( ( doc != null ) && ( doc.getDocId() != node.getDocId() ) ) {
-            throw( new IllegalArgumentException( "Document id ('" + doc.getDocId() + "') and proxy id ('" + node.getDocId() + "') differ !" ) );
+        if( ( doc != null ) && ( doc.getDocId() != node.getOwnerDocument().getDocId() ) ) {
+            throw( new IllegalArgumentException( "Document id ('" + doc.getDocId() + "') and proxy id ('" + node.getOwnerDocument().getDocId() + "') differ !" ) );
         }
 
         AtomicValue atomic = convertToAtomic( xpathType, value );
@@ -308,12 +324,12 @@ public class NativeValueIndex implements ContentLoadingObserver {
     }
 
 
-    public StoredNode getReindexRoot( StoredNode node, NodePath nodePath )
+    public <T extends IStoredNode> IStoredNode getReindexRoot(IStoredNode<T> node, NodePath nodePath )
     {
-        doc = node.getDocument();
+        doc = node.getOwnerDocument();
         final NodePath   path        = new NodePath( nodePath );
-        StoredNode root        = null;
-        StoredNode currentNode = ( ( ( node.getNodeType() == Node.ELEMENT_NODE ) || ( node.getNodeType() == Node.ATTRIBUTE_NODE ) ) ? node : node.getParentStoredNode() );
+        IStoredNode root        = null;
+        IStoredNode currentNode = ( ( ( node.getNodeType() == Node.ELEMENT_NODE ) || ( node.getNodeType() == Node.ATTRIBUTE_NODE ) ) ? node : node.getParentStoredNode() );
 
         while( currentNode != null ) {
             final GeneralRangeIndexSpec rSpec = doc.getCollection().getIndexByPathConfiguration( broker, path );
@@ -333,7 +349,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
     }
 
 
-    public void reindex( StoredNode node )
+    public void reindex(IStoredNode node )
     {
         if( node == null ) {
             return;
@@ -343,15 +359,13 @@ public class NativeValueIndex implements ContentLoadingObserver {
     }
 
 
-    public void storeText( TextImpl node, NodePath currentPath, int indexingHint )
+    public void storeText( TextImpl node, NodePath currentPath )
     {
-        // TODO Auto-generated method stub
     }
 
 
-    public void removeNode( StoredNode node, NodePath currentPath, String content )
+    public void removeNode(NodeHandle node, NodePath currentPath, String content )
     {
-        // TODO Auto-generated method stub
     }
 
 
@@ -663,7 +677,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
 
 
     /* Drop all index entries for the given document.
-     * @see org.exist.storage.IndexGenerator#dropIndex(org.exist.dom.DocumentImpl)
+     * @see org.exist.storage.IndexGenerator#dropIndex(org.exist.dom.persistent.DocumentImpl)
      */
     //TODO : note that this is *not* this.doc -pb
     public void dropIndex( DocumentImpl document ) throws ReadOnlyException
@@ -1762,20 +1776,17 @@ public class NativeValueIndex implements ContentLoadingObserver {
             this.value = atomic;
         }
 
+        final static TypedQNameComparator comparator = new TypedQNameComparator();
+
         public int compareTo( QNameKey other )
         {
-            final int cmp = qname.compareTo( other.qname );
+            final int cmp = comparator.compare(qname, other.qname);
 
             if( cmp == 0 ) {
                 return( value.compareTo( other.value ) );
             } else {
                 return( cmp );
             }
-        }
-        
-        @Override
-        public String toString() {
-        	return "QNameKey '"+qname+"' = '"+value+"'";
         }
     }
 
@@ -1857,7 +1868,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
             len  = data.length;
             pos  = OFFSET_IDX_TYPE;
             final short namespaceId = symbols.getNSSymbol( qname.getNamespaceURI() );
-            final short localNameId = symbols.getSymbol( qname.getLocalName() );
+            final short localNameId = symbols.getSymbol( qname.getLocalPart() );
             data[OFFSET_IDX_TYPE] = IDX_QNAME;
             ByteConversion.intToByte( collectionId, data, OFFSET_COLLECTION_ID );
             data[OFFSET_QNAME_TYPE] = qname.getNameType();
@@ -1889,7 +1900,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
             data[QNameValue.OFFSET_IDX_TYPE] = IDX_QNAME;
             ByteConversion.intToByte( collectionId, data, QNameValue.OFFSET_COLLECTION_ID );
             final short namespaceId            = symbols.getNSSymbol( qname.getNamespaceURI() );
-            final short localNameId            = symbols.getSymbol( qname.getLocalName() );
+            final short localNameId            = symbols.getSymbol( qname.getLocalPart() );
             data[QNameValue.OFFSET_QNAME_TYPE] = qname.getNameType();
             ByteConversion.shortToByte( namespaceId, data, QNameValue.OFFSET_NS_URI );
             ByteConversion.shortToByte( localNameId, data, QNameValue.OFFSET_LOCAL_NAME );
@@ -1985,7 +1996,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
         }
 
 
-        public void characters( Txn transaction, CharacterDataImpl text, NodePath path )
+        public void characters( Txn transaction, AbstractCharacterData text, NodePath path )
         {
             if( ( contentStack != null ) && !contentStack.isEmpty() ) {
 

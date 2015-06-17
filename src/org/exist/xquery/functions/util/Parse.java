@@ -21,13 +21,14 @@
  */
 package org.exist.xquery.functions.util;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.NodeImpl;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.NodeImpl;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.validation.ValidationReport;
 import org.exist.xquery.*;
 import org.exist.xquery.functions.validation.Shared;
@@ -52,7 +53,7 @@ public class Parse extends BasicFunction {
 
 	protected static final FunctionParameterSequenceType TO_BE_PARSED_PARAMETER = new FunctionParameterSequenceType( "to-be-parsed", Type.STRING, Cardinality.ZERO_OR_ONE, "The string to be parsed" );
 
-	protected static final Logger logger = Logger.getLogger(Parse.class);
+	protected static final Logger logger = LogManager.getLogger(Parse.class);
 
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(

@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -32,21 +32,11 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
-import org.exist.dom.AttrImpl;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.CharacterDataImpl;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.ElementImpl;
-import org.exist.dom.ExtArrayNodeSet;
-import org.exist.dom.Match;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.*;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
-import org.exist.dom.SymbolTable;
 import org.exist.indexing.AbstractMatchListener;
 import org.exist.indexing.AbstractStreamListener;
 import org.exist.indexing.Index;
@@ -91,7 +81,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
-    private static final Logger LOG = Logger.getLogger(NGramIndexWorker.class);
+    private static final Logger LOG = LogManager.getLogger(NGramIndexWorker.class);
 
     private static final String INDEX_ELEMENT = "ngram";
     private static final String QNAME_ATTR = "qname";
@@ -512,10 +502,10 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     @Override
-    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf) {
+    public <T extends IStoredNode> IStoredNode getReindexRoot(IStoredNode<T> node, NodePath path, boolean insert, boolean includeSelf) {
         if (node.getNodeType() == Node.ATTRIBUTE_NODE)
             return null;
-        IndexSpec indexConf = node.getDocument().getCollection().getIndexConfiguration(broker);
+        IndexSpec indexConf = node.getOwnerDocument().getCollection().getIndexConfiguration(broker);
         if (indexConf != null) {
             Map<?,?> config = (Map<?,?>) indexConf.getCustomIndexSpec(NGramIndex.ID);
             if (config == null)
@@ -530,12 +520,12 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 }
             }
             if (reindexRequired) {
-                StoredNode topMost = null;
-                StoredNode currentNode = node;
+                IStoredNode topMost = null;
+                IStoredNode<T> currentNode = node;
                 while (currentNode != null) {
                     if (config.get(currentNode.getQName()) != null)
                     	topMost = currentNode;
-                    if (currentNode.getDocument().getCollection().isTempCollection() && currentNode.getNodeId().getTreeLevel() == 2)
+                    if (currentNode.getOwnerDocument().getCollection().isTempCollection() && currentNode.getNodeId().getTreeLevel() == 2)
                         break;
                     //currentNode = (StoredNode) currentNode.getParentNode();
                     currentNode = currentNode.getParentStoredNode();
@@ -676,7 +666,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
 
         @Override
-        public void characters(Txn transaction, CharacterDataImpl text, NodePath path) {
+        public void characters(Txn transaction, AbstractCharacterData text, NodePath path) {
             if (contentStack != null && !contentStack.isEmpty()) {
                 for (XMLString next : contentStack) {
                     next.append(text.getXMLString());
@@ -723,7 +713,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 if (proxy.getNodeId().isDescendantOf(nextMatch.getNodeId())) {
                     if (ancestors == null)
                         ancestors = new ExtArrayNodeSet();
-                    ancestors.add(new NodeProxy(proxy.getDocument(), nextMatch.getNodeId()));
+                    ancestors.add(new NodeProxy(proxy.getOwnerDocument(), nextMatch.getNodeId()));
                 }
                 nextMatch = nextMatch.getNextMatch();
             }
@@ -911,7 +901,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             data[0] = IDX_QNAME;
             ByteConversion.intToByte(collectionId, data, COLLECTION_ID_OFFSET);
             final short namespaceId = symbols.getNSSymbol(qname.getNamespaceURI());
-            final short localNameId = symbols.getSymbol(qname.getLocalName());
+            final short localNameId = symbols.getSymbol(qname.getLocalPart());
             data[NAMETYPE_OFFSET] = qname.getNameType();
             ByteConversion.shortToByte(namespaceId, data, NAMESPACE_OFFSET);
             ByteConversion.shortToByte(localNameId, data, LOCALNAME_OFFSET);
@@ -924,7 +914,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             data[0] = IDX_QNAME;
             ByteConversion.intToByte(collectionId, data, COLLECTION_ID_OFFSET);
             final short namespaceId = symbols.getNSSymbol(qname.getNamespaceURI());
-            final short localNameId = symbols.getSymbol(qname.getLocalName());
+            final short localNameId = symbols.getSymbol(qname.getLocalPart());
             data[NAMETYPE_OFFSET] = qname.getNameType();
             ByteConversion.shortToByte(namespaceId, data, NAMESPACE_OFFSET);
             ByteConversion.shortToByte(localNameId, data, LOCALNAME_OFFSET);
@@ -967,7 +957,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     return true;
                 while (is.available() > 0) {
                     int storedDocId = is.readInt();
-                    is.readByte();
+                    byte nameType = is.readByte();
                     int occurrences = is.readInt();
                     //Read (variable) length of node IDs + frequency + offsets
                     int length = is.readFixedInt();
@@ -982,27 +972,27 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         NodeId nodeId = index.getDatabase().getNodeFactory().createFromStream(previous, is);
                         previous = nodeId;
                         int freq = is.readInt();
-                        NodeProxy storedNode = new NodeProxy(storedDocument, nodeId);
+                        NodeProxy nodeProxy = new NodeProxy(storedDocument, nodeId, nameTypeToNodeType(nameType));
                         // if a context set is specified, we can directly check if the
                         // matching node is a descendant of one of the nodes
                         // in the context set.
                         if (contextSet != null) {
                             int sizeHint = contextSet.getSizeHint(storedDocument);
                             if (returnAncestor) {
-                                NodeProxy parentNode = contextSet.parentWithChild(storedNode, false, true, NodeProxy.UNKNOWN_NODE_LEVEL);
+                                NodeProxy parentNode = contextSet.parentWithChild(nodeProxy, false, true, NodeProxy.UNKNOWN_NODE_LEVEL);
                                 if (parentNode != null) {
                                     readMatches(ngram, is, nodeId, freq, parentNode);
                                     resultSet.add(parentNode, sizeHint);
                                 } else
                                     is.skip(freq);
                             } else {
-                                readMatches(ngram, is, nodeId, freq, storedNode);
-                                resultSet.add(storedNode, sizeHint);
+                                readMatches(ngram, is, nodeId, freq, nodeProxy);
+                                resultSet.add(nodeProxy, sizeHint);
                             }
                             // otherwise, we add all text nodes without check
                         } else {
-                            readMatches(ngram, is, nodeId, freq, storedNode);
-                            resultSet.add(storedNode, Constants.NO_SIZE_HINT);
+                            readMatches(ngram, is, nodeId, freq, nodeProxy);
+                            resultSet.add(nodeProxy, Constants.NO_SIZE_HINT);
                         }
                         context.proceed();
                     }
@@ -1011,6 +1001,20 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             } catch (IOException e) {
                 LOG.error(e.getMessage(), e);
                 return true;
+            }
+        }
+
+        private short nameTypeToNodeType(final byte nameType) {
+            switch(nameType) {
+                case ElementValue.ELEMENT:
+                    return Node.ELEMENT_NODE;
+
+                case ElementValue.ATTRIBUTE:
+                    return Node.ATTRIBUTE_NODE;
+
+                case ElementValue.UNKNOWN:
+                default:
+                    return NodeProxy.UNKNOWN_NODE_TYPE;
             }
         }
 

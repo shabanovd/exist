@@ -20,10 +20,14 @@
  */
 package org.exist.storage.index;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import org.exist.Database;
+import org.exist.storage.BrokerPool;
 import org.exist.storage.BufferStats;
 import org.exist.storage.CacheManager;
+import org.exist.storage.DefaultCacheManager;
 import org.exist.storage.NativeBroker;
 import org.exist.storage.StorageAddress;
 import org.exist.storage.btree.BTree;
@@ -54,6 +58,7 @@ import org.exist.util.ReadOnlyException;
 import org.exist.util.sanity.SanityCheck;
 import org.exist.xquery.Constants;
 import org.exist.xquery.TerminatedException;
+
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import java.io.EOFException;
@@ -84,7 +89,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class BFile extends BTree {
 
-    protected final static Logger LOGSTATS = Logger.getLogger( NativeBroker.EXIST_STATISTICS_LOGGER );
+    protected final static Logger LOGSTATS = LogManager.getLogger( NativeBroker.EXIST_STATISTICS_LOGGER );
 
     public final static short FILE_FORMAT_VERSION_ID = 13;
     
@@ -1668,7 +1673,7 @@ public class BFile extends BTree {
                     return true;
                 } catch (final IOException e) {
                     LOG.error("IO exception occurred while saving page "
-                            + getPageNum(), e);
+                            + getPageNum());
                 }
             }
             return false;

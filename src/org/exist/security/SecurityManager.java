@@ -26,7 +26,7 @@ import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.config.Configurable;
 import org.exist.config.ConfigurationException;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.xacml.ExistPDP;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -172,4 +172,32 @@ public interface SecurityManager extends Configurable {
    public List<String> findUsernamesWhereNamePartStarts(String startsWith);
 
    Subject getCurrentSubject();
+
+   /**
+    * A receiver that is given the id of
+    * a security principal
+    */
+   public interface PrincipalIdReceiver {
+
+      /**
+       * Callback function which received a Principal id
+       *
+       * @param id The id of the principal
+       */
+      public void allocate(final int id);
+   }
+
+   /**
+    * Pre-allocates a new account id
+    *
+    * @param receiver A receiver that will receive the new account id
+    */
+   public void preAllocateAccountId(PrincipalIdReceiver receiver) throws PermissionDeniedException, EXistException;
+
+   /**
+    * Pre-allocates a new group id
+    *
+    * @param receiver A receiver that will receive the new group id
+    */
+   public void preAllocateGroupId(PrincipalIdReceiver receiver) throws PermissionDeniedException, EXistException;
 }

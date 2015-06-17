@@ -28,10 +28,15 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.PhraseQuery;
 import org.exist.Namespaces;
 import org.exist.dom.*;
+import org.exist.dom.persistent.IStoredNode;
+import org.exist.dom.persistent.Match;
+import org.exist.dom.persistent.NodeHandle;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.indexing.AbstractMatchListener;
 import org.exist.numbering.NodeId;
 import org.exist.stax.EmbeddedXMLStreamReader;
 import org.exist.stax.ExtendedXMLStreamReader;
+import org.exist.stax.IEmbeddedXMLStreamReader;
 import org.exist.storage.DBBroker;
 import org.exist.storage.IndexSpec;
 import org.exist.storage.NodePath;
@@ -39,7 +44,6 @@ import org.exist.util.serializer.AttrList;
 import org.xml.sax.SAXException;
 
 import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -125,7 +129,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 
     public void reset(DBBroker broker, NodeProxy proxy) throws SAXException {
 
-        IndexSpec indexConf = proxy.getDocument().getCollection().getIndexConfiguration(broker);
+        IndexSpec indexConf = proxy.getOwnerDocument().getCollection().getIndexConfiguration(broker);
         if (indexConf == null)
         	throw new SAXException("no Lucene config");
         
@@ -133,8 +137,8 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         
         reset(broker, proxy, config);
     }
-    
-    StoredNode firstElement = null;
+
+    NodeHandle firstElement = null;
     
     Stack<NodeId> stack = new Stack<NodeId>();
 
@@ -401,7 +405,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
     	}
     }
 
-    private NodeId nodeId(EmbeddedXMLStreamReader reader) {
+    private NodeId nodeId(IEmbeddedXMLStreamReader reader) {
     	return (NodeId) reader.getProperty(ExtendedXMLStreamReader.PROPERTY_NODE_ID);
     }
 
@@ -425,7 +429,7 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
         int level = 0;
         int textOffset = 0;
         try {
-            EmbeddedXMLStreamReader reader = broker.getXMLStreamReader(p, false);
+            IEmbeddedXMLStreamReader reader = broker.getXMLStreamReader(p, false);
             while (reader.hasNext()) {
                 int ev = reader.next();
                 switch (ev) {
@@ -617,15 +621,15 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
 
     private NodePath getPath(NodeProxy proxy) {
         NodePath path = new NodePath();
-        StoredNode node = (StoredNode) proxy.getNode();
+        IStoredNode node = (IStoredNode) proxy.getNode();
         walkAncestor(node, path);
         return path;
     }
 
-    private void walkAncestor(StoredNode node, NodePath path) {
+    private void walkAncestor(IStoredNode node, NodePath path) {
         if (node == null)
             return;
-        StoredNode parent = node.getParentStoredNode();
+        IStoredNode parent = node.getParentStoredNode();
         walkAncestor(parent, path);
         path.addComponent(node.getQName());
     }
@@ -634,28 +638,26 @@ public class LuceneMatchChunkListener extends AbstractMatchListener {
      * Get all query terms from the original queries.
      */
     private void getTerms() {
-        Set<Query> queries = new HashSet<Query>();
-        termMap = new TreeMap<Object, Query>();
-        Match nextMatch = this.match;
-        while (nextMatch != null) {
-            if (nextMatch.getIndexId() == LuceneIndex.ID) {
-                Query query = ((LuceneIndexWorker.LuceneMatch) nextMatch).getQuery();
-                if (!queries.contains(query)) {
-                    queries.add(query);
-                    IndexReader reader = null;
-                    try {
-                        reader = index.getReader();
-                        LuceneUtil.extractTerms(query, termMap, reader, false);
-                    } catch (IOException e) {
-                        LOG.warn("Error while highlighting lucene query matches: " + e.getMessage(), e);
-                    } catch (UnsupportedOperationException uoe) {
-                        LOG.warn("Error while highlighting lucene query matches: " + uoe.getMessage(), uoe);
-                    } finally {
-                        index.releaseReader(reader);
+        try {
+            index.withReader(reader -> {
+                Set<Query> queries = new HashSet<>();
+                termMap = new TreeMap<>();
+                Match nextMatch = this.match;
+                while (nextMatch != null) {
+                    if (LuceneIndex.ID.equals(nextMatch.getIndexId())) {
+                        Query query = ((LuceneIndexWorker.LuceneMatch) nextMatch).getQuery();
+                        if (!queries.contains(query)) {
+                            queries.add(query);
+
+                            LuceneUtil.extractTerms(query, termMap, reader, false);
+                        }
                     }
                 }
-            }
-            nextMatch = nextMatch.getNextMatch();
+                nextMatch = nextMatch.getNextMatch();
+                return null;
+            });
+        } catch (IOException | UnsupportedOperationException e) {
+            LOG.warn("Error while highlighting lucene query matches: " + e.getMessage(), e);
         }
     }
 

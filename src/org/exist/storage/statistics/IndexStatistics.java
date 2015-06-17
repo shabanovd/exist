@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,7 +19,8 @@
  */
 package org.exist.storage.statistics;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.backup.RawDataBackup;
 import org.exist.dom.QName;
 import org.exist.indexing.AbstractIndex;
@@ -54,7 +55,7 @@ public class IndexStatistics extends AbstractIndex implements RawBackupSupport {
 
     public final static String ID = IndexStatistics.class.getName();
 
-    protected final static Logger LOG = Logger.getLogger(IndexStatistics.class);
+    protected final static Logger LOG = LogManager.getLogger(IndexStatistics.class);
 
     private File dataFile;
     private DataGuide dataGuide = new DataGuide();

@@ -4,7 +4,8 @@ import java.util.*;
 
 import javax.xml.parsers.*;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.*;
 import org.w3c.dom.Node;
 
@@ -32,7 +33,7 @@ public class ElementBuilder<K> {
 		public T completed(Node[] nodes);
 	}
 	
-	private static final Logger LOG = Logger.getLogger(ElementBuilder.class);
+	private static final Logger LOG = LogManager.getLogger(ElementBuilder.class);
 	
 	private /* final */ CompletedCallback<K> callback;
 	private final boolean allowFragment;
@@ -139,7 +140,7 @@ public class ElementBuilder<K> {
 	 */
 	public ElementBuilder<K> node(Node node) {
 		checkDone();
-		if (node instanceof org.exist.memtree.NodeImpl) ((org.exist.memtree.NodeImpl) node).expand();
+		if (node instanceof org.exist.dom.memtree.NodeImpl) ((org.exist.dom.memtree.NodeImpl) node).expand();
 		
 		switch (node.getNodeType()) {
 			

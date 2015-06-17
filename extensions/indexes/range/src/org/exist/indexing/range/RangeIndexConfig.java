@@ -1,9 +1,11 @@
 package org.exist.indexing.range;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
+import org.exist.xquery.value.Type;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -11,11 +13,11 @@ import java.util.TreeMap;
 
 public class RangeIndexConfig {
 
-    protected static final Logger LOG = Logger.getLogger(RangeIndexConfig.class);
+    public static final Logger LOG = LogManager.getLogger(RangeIndexConfig.class);
 
-    protected Map<QName, RangeIndexConfigElement> paths = new TreeMap<QName, RangeIndexConfigElement>();
+    Map<QName, RangeIndexConfigElement> paths = new TreeMap<>();
 
-    protected Analyzer analyzer;
+    Analyzer analyzer;
 
     private PathIterator iterator = new PathIterator();
 
@@ -93,6 +95,18 @@ public class RangeIndexConfig {
             idxConf = idxConf.getNext();
         }
         return false;
+    }
+
+    public int getType(String field) {
+        for (RangeIndexConfigElement conf : paths.values()) {
+            if (conf.isComplex()) {
+                int type = conf.getType(field);
+                if (type != Type.ITEM) {
+                    return type;
+                }
+            }
+        }
+        return Type.ITEM;
     }
 
     private class PathIterator implements Iterator<RangeIndexConfigElement> {

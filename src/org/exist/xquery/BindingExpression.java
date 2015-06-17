@@ -22,15 +22,16 @@
  */
 package org.exist.xquery;
 
-import org.apache.log4j.Logger;
-import org.exist.dom.ContextItem;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.ExtArrayNodeSet;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
-import org.exist.dom.StoredNode;
-import org.exist.dom.VirtualNodeSet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.ContextItem;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.ExtArrayNodeSet;
+import org.exist.dom.persistent.NodeHandle;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.NodeSet;
+import org.exist.dom.persistent.VirtualNodeSet;
 import org.exist.numbering.NodeId;
 import org.exist.storage.UpdateListener;
 import org.exist.xquery.value.BooleanValue;
@@ -50,7 +51,7 @@ import org.exist.xquery.value.ValueSequence;
 public abstract class BindingExpression extends AbstractExpression implements RewritableExpression {
 
 	protected final static Logger LOG =
-		Logger.getLogger(BindingExpression.class);
+		LogManager.getLogger(BindingExpression.class);
 
     protected final static SequenceType POSITIONAL_VAR_TYPE = 
         new SequenceType(Type.INTEGER, Cardinality.EXACTLY_ONE);
@@ -166,7 +167,7 @@ public abstract class BindingExpression extends AbstractExpression implements Re
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.exist.xquery.Expression#eval(org.exist.xquery.StaticContext, org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+	 * @see org.exist.xquery.Expression#eval(org.exist.xquery.StaticContext, org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
 	 */
 	public abstract Sequence eval(Sequence contextSequence,    Item contextItem, Sequence resultSequence, GroupedValueSequenceTable groupedSequence) 
 		throws XPathException;
@@ -190,8 +191,8 @@ public abstract class BindingExpression extends AbstractExpression implements Re
 
 				for (final NodeProxy current : nodes) {
 					int sizeHint = Constants.NO_SIZE_HINT;
-					if(lastDoc == null || current.getDocument() != lastDoc) {
-						lastDoc = current.getDocument();
+					if(lastDoc == null || current.getOwnerDocument() != lastDoc) {
+						lastDoc = current.getOwnerDocument();
 						sizeHint = nodes.getSizeHint(lastDoc);
 					}
 					ContextItem	context = current.getContext();                
@@ -256,7 +257,7 @@ public abstract class BindingExpression extends AbstractExpression implements Re
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.exist.xquery.Expression#preselect(org.exist.dom.DocumentSet, org.exist.xquery.StaticContext)
+	 * @see org.exist.xquery.Expression#preselect(org.exist.dom.persistent.DocumentSet, org.exist.xquery.StaticContext)
 	 */
 	public DocumentSet preselect(DocumentSet in_docs) throws XPathException {
 		return in_docs;
@@ -316,17 +317,21 @@ public abstract class BindingExpression extends AbstractExpression implements Re
             this.sequence = sequence;
         }
         
+        @Override
         public void documentUpdated(DocumentImpl document, int event) {
         }
 
-        public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
+        @Override
+        public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
             sequence.nodeMoved(oldNodeId, newNode);
         }
 
+        @Override
         public void unsubscribe() {
             BindingExpression.this.listener = null;
         }
 
+        @Override
         public void debug() {
         }
     }

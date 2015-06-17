@@ -1,5 +1,7 @@
+sudo: false
 language: java
+notifications:
+  hipchat: ec8fcfa661addc56a361a8ef536320@integrations
 jdk:
- - openjdk7
- - oraclejdk7
-script: ./build.sh clean clean-all all
+ - oraclejdk8
+script: ./build.sh -Dexist.autodeploy=off -Dtest.haltonerror=true -Dtest.haltonfailure=true travis

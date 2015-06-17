@@ -21,7 +21,6 @@
  */
 package org.exist.xquery.functions.math;
 
-import org.apache.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -45,7 +44,7 @@ import org.exist.xquery.value.Type;
  */
 public class OneParamFunctions extends BasicFunction {
 	
-	//private static final Logger logger = Logger.getLogger(OneParamFunctions.class);
+	//private static final Logger logger = LogManager.getLogger(OneParamFunctions.class);
     
     public static final String ACOS = "acos";
     public static final String ASIN = "asin";
@@ -144,7 +143,7 @@ public class OneParamFunctions extends BasicFunction {
     }
     
     /* (non-Javadoc)
-     * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+     * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
      */
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
     	
@@ -165,7 +164,7 @@ public class OneParamFunctions extends BasicFunction {
             
         } else {          
             double calcValue = 0;
-            final String functionName = getSignature().getName().getLocalName();
+            final String functionName = getSignature().getName().getLocalPart();
             if (ACOS.equals(functionName)) {
                 calcValue = Math.acos(value.getDouble());
                 

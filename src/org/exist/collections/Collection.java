@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,6 +19,14 @@
  */
 package org.exist.collections;
 
+import org.exist.*;
+import org.exist.dom.QName;
+import org.exist.dom.persistent.DocumentMetadata;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DefaultDocumentSet;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,10 +38,9 @@ import java.util.Observer;
 import java.util.TreeMap;
 
 import org.apache.commons.io.input.CloseShieldInputStream;
-import org.apache.log4j.Logger;
-import org.exist.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.collections.triggers.*;
-import org.exist.dom.*;
 import org.exist.security.Account;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
@@ -85,7 +92,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 
     private final static int DOCUMENT_SIZE = 450;
     
-    private final static Logger LOG = Logger.getLogger(Collection.class);
+    private final static Logger LOG = LogManager.getLogger(Collection.class);
     
     public final static int UNKNOWN_COLLECTION_ID = -1;
     
@@ -1785,7 +1792,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
                 } else {
                     //TODO : use a more elaborated method ? No triggers...
                     broker.removeXMLResource(transaction, oldDoc, false);
-                    oldDoc.copyOf(document);
+                    oldDoc.copyOf(document, true);
                     indexer.setDocumentObject(oldDoc);
                     //old has become new at this point
                     document = oldDoc;

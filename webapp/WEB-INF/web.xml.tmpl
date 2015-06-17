@@ -4,11 +4,11 @@
     |
     | The URL mapping for rest, xmlrpc, soap etc are handled now by the
     | XQueryURLRewrite servlet filter. See for details below.
-    |
-    | $Id: web.xml 14172 2011-04-12 09:49:26Z deliriumsky $
     +-->
-<web-app xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" version="2.4">
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+    version="3.0">
 
     <description>eXist Open Source Native XML Database</description>
     <display-name>eXist XML Database</display-name>
@@ -33,27 +33,6 @@
         </init-param>
     </servlet>
     -->
-
-    <!--
-        Log4jInit initializes Log4j.
-        Only needed when eXist is deployed as a .war file in e.g. Tomcat.
-    -->
-    <servlet>
-        <servlet-name>log4j-init</servlet-name>
-        <servlet-class>org.exist.http.servlets.Log4jInit</servlet-class>
-
-        <init-param>
-            <param-name>log4j-init-file</param-name>
-            <param-value>WEB-INF/log4j.xml</param-value>
-        </init-param>
-
-        <init-param>
-            <param-name>log4j-log-dir</param-name>
-            <param-value>WEB-INF/logs</param-value>
-        </init-param>
-
-        <load-on-startup>1</load-on-startup>
-    </servlet>
 
     <!--
         RpcServlet provides XML-RPC access.
@@ -246,20 +225,6 @@
     </servlet>
 
     <!--
-        Axis provides SOAP access eXist's web-services.
-    -->
-    <servlet>
-        <servlet-name>AxisServlet</servlet-name>
-        <servlet-class>org.apache.axis.transport.http.AxisServlet</servlet-class>
-    </servlet>
-
-    <servlet>
-        <servlet-name>AdminServlet</servlet-name>
-        <servlet-class>org.apache.axis.transport.http.AdminServlet</servlet-class>
-        <load-on-startup>100</load-on-startup>
-    </servlet>
-
-    <!--
         Atom Publishing Protocol.
     -->
     <servlet>
@@ -328,29 +293,6 @@
     <servlet-mapping>
         <servlet-name>XQueryServlet</servlet-name>
         <url-pattern>*.xql</url-pattern>
-    </servlet-mapping>
-    -->
-
-    <!-- SOAP (Apache Axis) -->
-    <!--
-    <servlet-mapping>
-        <servlet-name>AxisServlet</servlet-name>
-        <url-pattern>/axis-servlet/AxisServlet</url-pattern>
-    </servlet-mapping>
-
-    <servlet-mapping>
-        <servlet-name>AxisServlet</servlet-name>
-        <url-pattern>*.jws</url-pattern>
-    </servlet-mapping>
-
-    <servlet-mapping>
-        <servlet-name>AxisServlet</servlet-name>
-        <url-pattern>/services/*</url-pattern>
-    </servlet-mapping>
-
-    <servlet-mapping>
-        <servlet-name>AdminServlet</servlet-name>
-        <url-pattern>/axis-servlet/AdminServlet</url-pattern>
     </servlet-mapping>
     -->
 

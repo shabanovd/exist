@@ -27,11 +27,12 @@ import javax.xml.parsers.SAXParserFactory;
 
 import net.spy.memcached.MemcachedClient;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -50,7 +51,7 @@ import org.xml.sax.XMLReader;
 
 public class MemcachedGetFunction extends BasicFunction
 {
-	protected static final Logger logger = Logger.getLogger(MemcachedGetFunction.class);
+	protected static final Logger logger = LogManager.getLogger(MemcachedGetFunction.class);
 
 	public final static FunctionSignature signatures[] = {
 		new FunctionSignature(

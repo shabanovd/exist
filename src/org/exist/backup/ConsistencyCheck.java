@@ -21,14 +21,17 @@
  */
 package org.exist.backup;
 
+import org.exist.security.Account;
+import org.exist.security.Group;
+import org.exist.security.Permission;
 import org.exist.storage.StorageAddress;
 import org.w3c.dom.Node;
 
 import org.exist.collections.Collection;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.ElementImpl;
-import org.exist.dom.StoredNode;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.ElementImpl;
+import org.exist.dom.persistent.IStoredNode;
 import org.exist.management.Agent;
 import org.exist.management.AgentFactory;
 import org.exist.numbering.NodeId;
@@ -127,6 +130,7 @@ public class ConsistencyCheck
         if (callback != null)
         	{callback.startCollection( uri.toString() );}
 
+        checkPermissions(collection, errors);
         try {
             for(final Iterator<XmldbURI> i = collection.collectionIteratorNoLock(broker); i.hasNext(); ) {
                 final XmldbURI childUri = i.next();
@@ -165,6 +169,7 @@ public class ConsistencyCheck
             }
         }
     }
+
 
 
     public int getDocumentCount() throws TerminatedException
@@ -226,9 +231,51 @@ public class ConsistencyCheck
         }
     }
 
+    public void checkPermissions(Collection collection, List<ErrorReport> errorList) {
+        try {
+            Permission perms = collection.getPermissions();
+            Account owner = perms.getOwner();
+            if (owner == null) {
+                final ErrorReport.CollectionError error = new ErrorReport.CollectionError( ErrorReport.ACCESS_FAILED, "Owner account not found for collection: " + collection.getURI());
+                error.setCollectionId( collection.getId() );
+                error.setCollectionURI( collection.getURI() );
+                errorList.add(error);
+            }
+            Group group = perms.getGroup();
+            if (group == null) {
+                final ErrorReport.CollectionError error = new ErrorReport.CollectionError( ErrorReport.ACCESS_FAILED, "Owner group not found for collection: " + collection.getURI());
+                error.setCollectionId( collection.getId() );
+                error.setCollectionURI( collection.getURI() );
+                errorList.add(error);
+            }
+        } catch(Exception e) {
+            final ErrorReport.CollectionError error = new ErrorReport.CollectionError( ErrorReport.ACCESS_FAILED, "Exception caught while : " + collection.getURI());
+            error.setCollectionId( collection.getId() );
+            error.setCollectionURI( collection.getURI() );
+            errorList.add(error);
+        }
+    }
+
+    public ErrorReport checkPermissions(final DocumentImpl doc) {
+        try {
+            Permission perms = doc.getPermissions();
+            Account owner = perms.getOwner();
+            if (owner == null) {
+                return new ErrorReport.ResourceError(ErrorReport.RESOURCE_ACCESS_FAILED, "Owner account not found for document " + doc.getFileURI());
+            }
+            Group group = perms.getGroup();
+            if (group == null) {
+                return new ErrorReport.ResourceError(ErrorReport.RESOURCE_ACCESS_FAILED, "Owner group not found for document " + doc.getFileURI());
+            }
+        } catch(Exception e) {
+            return new ErrorReport.ResourceError(ErrorReport.RESOURCE_ACCESS_FAILED, "Exception caught while checking permissions on document " + doc.getFileURI(), e);
+        }
+        return null;
+    }
+
     /**
      * Check if data for the given XML document exists. Tries to load the document's root element.
-     * This check is certainly not as comprehensive as {@link #checkXMLTree(org.exist.dom.DocumentImpl)},
+     * This check is certainly not as comprehensive as {@link #checkXMLTree(org.exist.dom.persistent.DocumentImpl)},
      * but much faster.
      *
      * @param doc the document object to check
@@ -277,7 +324,7 @@ public class ConsistencyCheck
                         EmbeddedXMLStreamReader reader = null;
                         try {
                             final ElementImpl             root            = (ElementImpl)doc.getDocumentElement();
-                            reader = broker.getXMLStreamReader( root, true );
+                            reader = (EmbeddedXMLStreamReader)broker.getXMLStreamReader( root, true );
                             NodeId                  nodeId;
                             boolean                 attribsAllowed  = false;
                             int                     expectedAttribs = 0;
@@ -349,7 +396,7 @@ public class ConsistencyCheck
                                             }
                                         }
 
-                                        final StoredNode node = reader.getNode();
+                                        final IStoredNode node = reader.getNode();
                                         if( node.getNodeType() != Node.ELEMENT_NODE ) {
                                             return( new org.exist.backup.ErrorReport.ResourceError( ErrorReport.INCORRECT_NODE_TYPE, "Expected an element node, received node of type " + node.getNodeType() ) );
                                         }
@@ -514,11 +561,14 @@ public class ConsistencyCheck
                 }
             });
             for (DocumentImpl doc : documents) {
-                final ErrorReport report;
-                if (ConsistencyCheck.this.checkDocs) {
-                    report = checkXMLTree(doc);
-                } else {
-                    report = checkDocument(doc);
+                ErrorReport report;
+                report = checkPermissions(doc);
+                if (report == null) {
+                    if (ConsistencyCheck.this.checkDocs) {
+                        report = checkXMLTree(doc);
+                    } else {
+                        report = checkDocument(doc);
+                    }
                 }
                 if( report != null ) {
                     if(report instanceof ErrorReport.ResourceError) {

@@ -1,13 +1,12 @@
 package org.exist.xquery.value;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import java.io.FilterOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.xquery.XPathException;
+
+import java.io.*;
 
 /**
  * Representation of an XSD binary value e.g. (xs:base64Binary or xs:hexBinary)
@@ -20,7 +19,7 @@ import org.exist.xquery.XPathException;
  */
 public class BinaryValueFromBinaryString extends BinaryValue {
 
-    private final static Logger LOG = Logger.getLogger(BinaryValueFromBinaryString.class);
+    private final static Logger LOG = LogManager.getLogger(BinaryValueFromBinaryString.class);
     
     private final String value;
 
@@ -105,19 +104,7 @@ public class BinaryValueFromBinaryString extends BinaryValue {
             LOG.error("Unable to get read only buffer: " + ioe.getMessage(), ioe);
         }
 
-        return new InputStream() {
-            int offset = 0;
-            final byte data[] = baos.toByteArray();
-
-            @Override
-            public int read() throws IOException {
-
-                if(offset >= data.length) {
-                    return -1;
-                }
-                return data[offset++];
-            }
-        };
+        return new ByteArrayInputStream(baos.toByteArray());
     }
 
     @Override

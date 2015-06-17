@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,7 +19,8 @@
  */
 package org.exist.indexing.ngram;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.backup.RawDataBackup;
 import org.exist.indexing.AbstractIndex;
@@ -42,7 +43,7 @@ public class NGramIndex extends AbstractIndex implements RawBackupSupport {
 
     public final static String ID = NGramIndex.class.getName();
 
-    private final static Logger LOG = Logger.getLogger(NGramIndex.class);
+    private final static Logger LOG = LogManager.getLogger(NGramIndex.class);
 
 	protected BFile bf;
     private int gramSize = 3;

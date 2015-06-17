@@ -1,20 +1,27 @@
 package org.exist.storage;
 
+import org.exist.EXistException;
 import org.exist.collections.Collection;
+import org.exist.collections.CollectionConfigurationException;
 import org.exist.collections.IndexInfo;
-import org.exist.dom.DocumentImpl;
+import org.exist.collections.triggers.TriggerException;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
 import org.exist.util.Configuration;
+import org.exist.util.DatabaseConfigurationException;
+import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.TestUtils;
 import org.junit.After;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -33,8 +40,6 @@ public class LargeValuesTest {
     private String CONFIG_QNAME =
     	"<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
     	"	<index xmlns:x=\"http://www.foo.com\" xmlns:xx=\"http://test.com\">" +
-    	"		<fulltext default=\"none\">" +
-    	"		</fulltext>" +
         "       <create qname=\"@id\" type=\"xs:string\"/>" +
         "	</index>" +
     	"</collection>";
@@ -44,10 +49,8 @@ public class LargeValuesTest {
     private static final int KEY_LENGTH = 5000;
 
     @Test
-    public void storeAndRecover() {
+    public void storeAndRecover() throws PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, CollectionConfigurationException, SAXException, EXistException {
         for (int i = 0; i < 1; i++) {
-            System.out.println("-----------------------------------------------------");
-            System.out.println("Run: " + i);
             storeDocuments();
             restart();
             remove();
@@ -55,105 +58,96 @@ public class LargeValuesTest {
     }
 
     private File createDocument() throws IOException {
-        File file = File.createTempFile("eXistTest", ".xml");
-        OutputStream os = new FileOutputStream(file);
-        Writer writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+        final File file = File.createTempFile("eXistTest", ".xml");
 
-        Random r = new Random();
-        writer.write("<test>");
-        for (int i = 0; i < KEY_COUNT; i++) {
-            writer.write("<key id=\"");
-            int keySize = r.nextInt(KEY_LENGTH);
-            if (keySize == 0)
-                keySize = 1;
-            for (int j = 0; j < keySize; j++) {
-                char ch;
-                do {
-                    ch = (char) r.nextInt(0x5A);
-                } while (ch < 0x41);
-                writer.write(ch);
+        try(final Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"))) {
+            final Random r = new Random();
+            writer.write("<test>");
+            for(int i = 0; i < KEY_COUNT; i++) {
+                writer.write("<key id=\"");
+                int keySize = r.nextInt(KEY_LENGTH);
+                if(keySize == 0) {
+                    keySize = 1;
+                }
+                for(int j = 0; j < keySize; j++) {
+                    char ch;
+                    do {
+                        ch = (char) r.nextInt(0x5A);
+                    } while(ch < 0x41);
+                    writer.write(ch);
+                }
+                writer.write("\"/>");
             }
-            writer.write("\"/>");
+            writer.write("</test>");
         }
-        writer.write("</test>");
-        writer.close();
+
         return file;
     }
 
     /**
      * Store some documents, reindex the collection and crash without commit.
      */
-    private void storeDocuments() {
-        BrokerPool pool = null;
-        DBBroker broker = null;
-        try {
-        	pool = startDB();
-        	assertNotNull(pool);
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);
-            TransactionManager transact = pool.getTransactionManager();
-            assertNotNull(transact);
-            Txn transaction = transact.beginTransaction();
-            assertNotNull(transaction);
-            System.out.println("Transaction started ...");
+    private void storeDocuments() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
+        final BrokerPool pool = startDB();
+        final TransactionManager transact = pool.getTransactionManager();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject())) {
 
-            Collection root = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
-            assertNotNull(root);
-            broker.saveCollection(transaction, root);
+            Collection root;
 
-            pool.getConfigurationManager().addConfiguration(transaction, broker, root, CONFIG_QNAME);
+            try(final Txn transaction = transact.beginTransaction()) {
 
-            transact.commit(transaction);
+                root = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
+                assertNotNull(root);
+                broker.saveCollection(transaction, root);
+
+                pool.getConfigurationManager().addConfiguration(transaction, broker, root, CONFIG_QNAME);
+
+                transact.commit(transaction);
+            }
+
             transact.getJournal().flushToLog(true);
-            
+
             BrokerPool.FORCE_CORRUPTION = true;
-            transaction = transact.beginTransaction();
-            File file = createDocument();
-            IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create("test.xml"),
-                    new InputSource(file.toURI().toASCIIString()));
-            assertNotNull(info);
-            root.store(transaction, broker, info, new InputSource(file.toURI().toASCIIString()), false);
-            broker.saveCollection(transaction, root);
 
-            transact.commit(transaction);
+            final File file = createDocument();
+            try(final Txn transaction = transact.beginTransaction()) {
+                final IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create("test.xml"),
+                        new InputSource(file.toURI().toASCIIString()));
+                assertNotNull(info);
+                root.store(transaction, broker, info, new InputSource(file.toURI().toASCIIString()), false);
+                broker.saveCollection(transaction, root);
+
+                transact.commit(transaction);
+            }
 
             transact.getJournal().flushToLog(true);
-            System.out.println("Transaction interrupted ...");
             file.delete();
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail(e.getMessage());
-        } finally {
-            if (pool != null)
-                pool.release(broker);
         }
     }
 
     /**
      * Just recover.
      */
-    private void restart() {
-        BrokerPool.FORCE_CORRUPTION = false;
-        BrokerPool pool = null;
-        DBBroker broker = null;
-        try {
-        	System.out.println("restart() ...\n");
-        	pool = startDB();
-        	assertNotNull(pool);
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);
+    private void restart() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, IOException, SAXException {
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.READ_LOCK);
+        BrokerPool.FORCE_CORRUPTION = false;
+        final BrokerPool pool = startDB();
+
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());) {
+            final Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.READ_LOCK);
             assertNotNull(root);
 
-            DocumentImpl doc = root.getDocument(broker, XmldbURI.create("test.xml"));
+            final DocumentImpl doc = root.getDocument(broker, XmldbURI.create("test.xml"));
             assertNotNull(doc);
-            Serializer serializer = broker.getSerializer();
+
+            final Serializer serializer = broker.getSerializer();
             serializer.reset();
-            File tempFile = File.createTempFile("eXist", ".xml");
-            Writer writer = new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8");
-            serializer.serialize(doc, writer);
-            tempFile.delete();
+
+            final File tempFile = File.createTempFile("eXist", ".xml");
+            try(final Writer writer = new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8")) {
+                serializer.serialize(doc, writer);
+                tempFile.delete();
+            }
 //            XQuery xquery = broker.getXQueryService();
 //            DocumentSet docs = broker.getAllXMLResources(new DefaultDocumentSet());
 //            Sequence result = xquery.execute("//key/@id/string()", docs.docsToNodeSet(), AccessContext.TEST);
@@ -165,40 +159,21 @@ public class LargeValuesTest {
 //                if (s.length() == 0)
 //                    break;
 //            }
-        } catch (Exception e) {
-            e.printStackTrace();
-	        fail(e.getMessage());
-        } finally {
-            if (pool != null)
-                pool.release(broker);
         }
     }
 
-    private void remove() {
-        BrokerPool pool = null;
-        DBBroker broker = null;
-        try {
-        	System.out.println("remove() ...\n");
-        	pool = startDB();
-        	assertNotNull(pool);
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);
-            TransactionManager transact = pool.getTransactionManager();
-            assertNotNull(transact);
-            Txn transaction = transact.beginTransaction();
-            assertNotNull(transaction);
+    private void remove() throws EXistException, PermissionDeniedException, DatabaseConfigurationException, IOException, TriggerException {
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.READ_LOCK);
+        final BrokerPool pool = startDB();
+        final TransactionManager transact = pool.getTransactionManager();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                final Txn transaction = transact.beginTransaction()) {
+
+            final Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.READ_LOCK);
             assertNotNull(root);
             broker.removeCollection(transaction, root);
 
             transact.commit(transaction);
-        } catch (Exception e) {
-            e.printStackTrace();
-	        fail(e.getMessage());
-        } finally {
-            if (pool != null)
-                pool.release(broker);
         }
     }
 
@@ -208,15 +183,9 @@ public class LargeValuesTest {
         BrokerPool.stopAll(false);
     }
 
-    protected BrokerPool startDB() {
-        try {
-            Configuration config = new Configuration();
-            BrokerPool.configure(1, 5, config);
-            return BrokerPool.getInstance();
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail(e.getMessage());
-        }
-        return null;
+    protected BrokerPool startDB() throws DatabaseConfigurationException, EXistException {
+        final Configuration config = new Configuration();
+        BrokerPool.configure(1, 5, config);
+        return BrokerPool.getInstance();
     }
 }

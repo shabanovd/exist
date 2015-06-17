@@ -21,21 +21,24 @@
  */
 package org.exist.storage;
 
+import org.exist.EXistException;
 import org.exist.collections.Collection;
+import org.exist.collections.CollectionConfigurationException;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.IndexInfo;
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.MutableDocumentSet;
+import org.exist.collections.triggers.TriggerException;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.MutableDocumentSet;
 import org.exist.dom.QName;
+import org.exist.security.PermissionDeniedException;
 import org.exist.security.xacml.AccessContext;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
-import org.exist.util.Configuration;
-import org.exist.util.ConfigurationHelper;
-import org.exist.util.ValueOccurrences;
+import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
+import org.exist.xquery.XPathException;
 import org.exist.xquery.XQuery;
 import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.StringValue;
@@ -46,8 +49,11 @@ import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
+import java.io.IOException;
 import java.io.StringReader;
 
 public class RangeIndexUpdateTest {
@@ -86,24 +92,22 @@ public class RangeIndexUpdateTest {
     private static MutableDocumentSet docs;
 
     @Test
-    public void updates() {
-        DBBroker broker = null;
-        try {
-        	broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            TransactionManager transact = pool.getTransactionManager();
-            Txn transaction = transact.beginTransaction();
+    public void updates() throws EXistException, PermissionDeniedException, XPathException, ParserConfigurationException, IOException, SAXException, LockException {
+        final TransactionManager transact = pool.getTransactionManager();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                final Txn transaction = transact.beginTransaction();) {
 
             checkIndex(broker, docs, ITEM_QNAME, new StringValue("Chair"), 1);
             checkIndex(broker, docs, ITEM_QNAME, new StringValue("Table892.25"), 1);
             checkIndex(broker, docs, ITEM_QNAME, new StringValue("Cabinet1525.00"), 1);
 
-            XQuery xquery = broker.getXQueryService();
+            final XQuery xquery = broker.getXQueryService();
             assertNotNull(xquery);
-            Sequence seq = xquery.execute("//item[. = 'Chair']", null, AccessContext.TEST);
+            final Sequence seq = xquery.execute("//item[. = 'Chair']", null, AccessContext.TEST);
             assertNotNull(seq);
             assertEquals(1, seq.getItemCount());
 
-            XUpdateProcessor proc = new XUpdateProcessor(broker, docs, AccessContext.TEST);
+            final XUpdateProcessor proc = new XUpdateProcessor(broker, docs, AccessContext.TEST);
             assertNotNull(proc);
             proc.setBroker(broker);
             proc.setDocumentSet(docs);
@@ -146,57 +150,45 @@ public class RangeIndexUpdateTest {
             checkIndex(broker, docs, null, new StringValue("abc"), 1);
 
             transact.commit(transaction);
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail(e.getMessage());
-        } finally {
-            if (pool != null) {
-                pool.release(broker);
-            }
         }
     }
 
     private void checkIndex(DBBroker broker, DocumentSet docs, QName qname, StringValue term, int count) {
 
-        ValueOccurrences[] occurrences;
-        if (qname == null)
+        final ValueOccurrences[] occurrences;
+        if (qname == null) {
             occurrences = broker.getValueIndex().scanIndexKeys(docs, null, term);
-        else
-            occurrences = broker.getValueIndex().scanIndexKeys(docs, null, new QName[] { qname }, term);
+        } else {
+            occurrences = broker.getValueIndex().scanIndexKeys(docs, null, new QName[]{qname}, term);
+        }
+
         int found = 0;
-        for (int i = 0; i < occurrences.length; i++) {
-            ValueOccurrences occurrence = occurrences[i];
-            System.out.println("Found: " + occurrence.getValue());
-            if (occurrence.getValue().compareTo(term) == 0)
+        for (final ValueOccurrences occurrence : occurrences) {
+            if (occurrence.getValue().compareTo(term) == 0) {
                 found++;
+            }
         }
         assertEquals(count, found);
     }
 
     @BeforeClass
-    public static void startDB() {
-        DBBroker broker = null;
-        TransactionManager transact = null;
-        Txn transaction = null;
-        try {
-            File confFile = ConfigurationHelper.lookup("conf.xml");
-            Configuration config = new Configuration(confFile.getAbsolutePath());
-            BrokerPool.configure(1, 5, config);
-            pool = BrokerPool.getInstance();
-        	assertNotNull(pool);
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);
-            transact = pool.getTransactionManager();
-            assertNotNull(transact);
-            transaction = transact.beginTransaction();
-            assertNotNull(transaction);
-            System.out.println("Transaction started ...");
+    public static void startDB() throws DatabaseConfigurationException, EXistException, PermissionDeniedException, IOException, SAXException, CollectionConfigurationException, LockException {
+        final File confFile = ConfigurationHelper.lookup("conf.xml");
+        final Configuration config = new Configuration(confFile.getAbsolutePath());
+        BrokerPool.configure(1, 5, config);
+        pool = BrokerPool.getInstance();
 
-            Collection root = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
+
+        final TransactionManager transact = pool.getTransactionManager();
+
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+	            final Txn transaction = transact.beginTransaction()) {
+
+            final Collection root = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
             assertNotNull(root);
             broker.saveCollection(transaction, root);
 
-            CollectionConfigurationManager mgr = pool.getConfigurationManager();
+            final CollectionConfigurationManager mgr = pool.getConfigurationManager();
             mgr.addConfiguration(transaction, broker, root, COLLECTION_CONFIG);
 
             docs = new DefaultDocumentSet();
@@ -214,49 +206,29 @@ public class RangeIndexUpdateTest {
             docs.add(info.getDocument());
 
             transact.commit(transaction);
-        } catch (Exception e) {
-            e.printStackTrace();
-            transact.abort(transaction);
-            fail(e.getMessage());
-        } finally {
-            if (pool != null)
-                pool.release(broker);
         }
     }
 
     @AfterClass
-    public static void cleanup() {
-        DBBroker broker = null;
-        TransactionManager transact = null;
-        Txn transaction = null;
-        try {
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);
-            transact = pool.getTransactionManager();
-            assertNotNull(transact);
-            transaction = transact.beginTransaction();
-            assertNotNull(transaction);
-            System.out.println("Transaction started ...");
+    public static void cleanup() throws EXistException, PermissionDeniedException, IOException, TriggerException {
+        final TransactionManager transact = pool.getTransactionManager();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                final Txn transaction = transact.beginTransaction()) {
 
-            Collection root = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
+            final Collection root = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
             assertNotNull(root);
 //            broker.removeCollection(transaction, root);
 
-            Collection config = broker.getOrCreateCollection(transaction,
+            final Collection config = broker.getOrCreateCollection(transaction,
                 XmldbURI.create(XmldbURI.CONFIG_COLLECTION + "/db"));
             assertNotNull(config);
 //            broker.removeCollection(transaction, config);
 
             transact.commit(transaction);
-        } catch (Exception e) {
-        	transact.abort(transaction);
-            e.printStackTrace();
-            fail(e.getMessage());
         } finally {
-            if (pool != null) pool.release(broker);
+            BrokerPool.stopAll(false);
+            pool = null;
+            docs = null;
         }
-        BrokerPool.stopAll(false);
-        pool = null;
-        docs = null;
     }
 }

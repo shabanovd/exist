@@ -36,9 +36,9 @@ import javax.xml.parsers.SAXParserFactory;
 import junit.framework.TestCase;
 
 import org.exist.EXistException;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.indexing.spatial.AbstractGMLJDBCIndex.SpatialOperator;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.security.xacml.AccessContext;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -126,9 +126,7 @@ public class GMLIndexTest extends TestCase {
             assertNotNull(broker);
             GMLHSQLIndexWorker indexWorker = (GMLHSQLIndexWorker)broker.getIndexController().getWorkerByIndexId(AbstractGMLJDBCIndex.ID);
             //Unplugged
-            if (indexWorker == null) {
-                System.out.println("No spatial index found");
-            } else {
+            if (indexWorker != null) {
                 try {
                     Connection conn = null;
                     try {
@@ -145,7 +143,6 @@ public class GMLIndexTest extends TestCase {
                                 //Let be sure we have the right count
                             }
                             int count = rs.getRow();
-                            System.out.println(count + " geometries in the index");
                             ps.close();
                             assertTrue(count > 0);
                         }
@@ -178,10 +175,9 @@ public class GMLIndexTest extends TestCase {
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             AbstractGMLJDBCIndex index = (AbstractGMLJDBCIndex)pool.getIndexManager().getIndexById(AbstractGMLJDBCIndex.ID);
             //Unplugged
-            if (index == null)
-                System.out.println("No spatial index found");
-            else
+            if (index != null) {
                 assertTrue(index.checkIndex(broker));
+            }
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());
@@ -235,9 +231,7 @@ public class GMLIndexTest extends TestCase {
             assertNotNull(broker);
             AbstractGMLJDBCIndexWorker indexWorker = (AbstractGMLJDBCIndexWorker)broker.getIndexController().getWorkerByIndexId(AbstractGMLJDBCIndex.ID);
             //Unplugged
-            if (indexWorker == null)
-                System.out.println("No spatial index found");
-            else {
+            if (indexWorker != null) {
                 SAXParserFactory factory = SAXParserFactory.newInstance();
                 factory.setNamespaceAware(true);
                 InputSource src = new InputSource(new StringReader(IN_MEMORY_GML));
@@ -250,8 +244,6 @@ public class GMLIndexTest extends TestCase {
                 
                 Geometry EPSG4326_geometry = indexWorker.transformGeometry(currentGeometry, "osgb:BNG", "EPSG:4326");
                 assertNotNull(EPSG4326_geometry);
-                
-                System.out.println(EPSG4326_geometry);
                 
                 NodeSet ns = indexWorker.search(broker, null, EPSG4326_geometry, SpatialOperator.EQUALS);
                 assertTrue(ns.getLength() > 0);

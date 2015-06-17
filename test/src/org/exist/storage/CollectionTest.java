@@ -26,7 +26,7 @@ import java.io.Writer;
 import java.util.Iterator;
 
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.storage.btree.BTree;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -67,16 +67,10 @@ public class CollectionTest {
     private void store() {
         BrokerPool.FORCE_CORRUPTION = true;
         BrokerPool pool = startDB();
-        DBBroker broker = null;
-        Txn transaction = null;
-        TransactionManager transact = null;
-        try {
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());            
-            transact = pool.getTransactionManager();
-            
-            transaction = transact.beginTransaction();            
-            System.out.println("Transaction started ...");
-            
+        final TransactionManager transact = pool.getTransactionManager();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                final Txn transaction = transact.beginTransaction()) {
+
             Collection root = broker.getOrCreateCollection(transaction, TEST_COLLECTION_URI);
             broker.saveCollection(transaction, root);
             
@@ -84,35 +78,26 @@ public class CollectionTest {
             broker.saveCollection(transaction, test);
             
             transact.commit(transaction);
-            System.out.println("Transaction commited ...");
         } catch (Exception e) {
-        	transact.abort(transaction);
             fail(e.getMessage());              
-        } finally {
-            pool.release(broker);
         }
     }
     
     public void read() {
         BrokerPool.FORCE_CORRUPTION = false;
         BrokerPool pool = startDB();
-        
-        System.out.println("testRead() ...\n");
-        
+
         DBBroker broker = null;
         try {
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             BTree btree = ((NativeBroker)broker).getStorage(NativeBroker.COLLECTIONS_DBX_ID);
             Writer writer = new StringWriter();
             btree.dump(writer);
-            System.out.println(writer.toString());
-            
+
             Collection test = broker.getCollection(TEST_COLLECTION_URI.append("test2"));
             assertNotNull(test);
-            System.out.println("Contents of collection " + test.getURI() + ":");
             for (Iterator<DocumentImpl> i = test.iterator(broker); i.hasNext(); ) {
                 DocumentImpl next = i.next();
-                System.out.println("- " + next.getURI());
             }
         } catch (Exception e) {            
             fail(e.getMessage());              

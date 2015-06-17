@@ -35,9 +35,9 @@ import org.apache.xerces.xni.parser.XMLInputSource;
 
 import org.exist.Namespaces;
 import org.exist.dom.QName;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.storage.BrokerPool;
 import org.exist.util.Configuration;
 import org.exist.util.XMLReaderObjectFactory;
@@ -255,13 +255,13 @@ public class GrammarTooling extends BasicFunction  {
         final int nodeNr = builder.startElement("", "report", "report",null);
         
         final Grammar xsds[] = grammarpool.retrieveInitialGrammarSet(TYPE_XSD);
-        for(int i=0; i<xsds.length; i++){
-            writeGrammar(xsds[i], builder);
+        for (Grammar xsd : xsds) {
+            writeGrammar(xsd, builder);
         }
         
         final Grammar dtds[] = grammarpool.retrieveInitialGrammarSet(TYPE_DTD);
-        for(int i=0; i<dtds.length; i++){
-            writeGrammar(dtds[i], builder);
+        for (Grammar dtd : dtds) {
+            writeGrammar(dtd, builder);
         }
 
         builder.endElement();

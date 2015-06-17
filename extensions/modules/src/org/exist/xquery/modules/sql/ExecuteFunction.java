@@ -22,7 +22,8 @@
 
 package org.exist.xquery.modules.sql;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -31,7 +32,7 @@ import org.w3c.dom.NodeList;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -60,9 +61,9 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import org.exist.memtree.AppendingSAXAdapter;
-import org.exist.memtree.ReferenceNode;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.AppendingSAXAdapter;
+import org.exist.dom.memtree.ReferenceNode;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.xquery.value.DateTimeValue;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
@@ -80,7 +81,7 @@ import org.xml.sax.XMLReader;
  */
 public class ExecuteFunction extends BasicFunction
 {
-    private static final Logger             LOG                     = Logger.getLogger( ExecuteFunction.class );
+    private static final Logger             LOG                     = LogManager.getLogger( ExecuteFunction.class );
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(

@@ -1,21 +1,22 @@
 package org.exist.versioning;
 
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.NodeHandle;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
-import org.exist.dom.DocumentImpl;
 import org.exist.util.serializer.AttrList;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.serializers.CustomMatchListener;
 import org.exist.xquery.XPathException;
 import org.exist.xmldb.XmldbURI;
 import org.xml.sax.SAXException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 
 public class VersioningFilter extends CustomMatchListener {
 
-    private final static Logger LOG = Logger.getLogger(VersioningFilter.class);
+    private final static Logger LOG = LogManager.getLogger(VersioningFilter.class);
 
     public final static QName ATTR_REVISION = new QName("revision", StandardDiff.NAMESPACE, StandardDiff.PREFIX);
     public final static QName ATTR_KEY = new QName("key", StandardDiff.NAMESPACE, StandardDiff.PREFIX);
@@ -26,11 +27,12 @@ public class VersioningFilter extends CustomMatchListener {
     public VersioningFilter() {
     }
 
+    @Override
     public void startElement(QName qname, AttrList attribs) throws SAXException {
         if (elementStack == 0) {
-            StoredNode node = getCurrentNode();
+            final NodeHandle node = getCurrentNode();
             if (node != null) {
-                DocumentImpl doc = node.getDocument();
+                final DocumentImpl doc = node.getOwnerDocument();
                 XmldbURI uri = doc.getURI();
                 if (!uri.startsWith(XmldbURI.SYSTEM_COLLECTION_URI)) {
                     

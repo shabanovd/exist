@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -23,13 +23,13 @@ import java.io.IOException;
 
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
-import org.exist.dom.Match;
-import org.exist.dom.NodeProxy;
+import org.exist.dom.persistent.Match;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.indexing.ngram.NGramMatch;
 import org.exist.numbering.NodeId;
-import org.exist.stax.EmbeddedXMLStreamReader;
 import org.exist.stax.ExtendedXMLStreamReader;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -77,7 +77,7 @@ public class AddMatch extends BasicFunction {
 		String matchStr = null;
 		NodeId nodeId = null;
 		try {
-			for (EmbeddedXMLStreamReader reader = context.getBroker().getXMLStreamReader(node, true); reader.hasNext(); ) {
+			for (final XMLStreamReader reader = context.getBroker().getXMLStreamReader(node, true); reader.hasNext(); ) {
 			    int status = reader.next();
 			    if (status == XMLStreamConstants.CHARACTERS) {
 			    	matchStr = reader.getText();

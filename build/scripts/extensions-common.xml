@@ -6,6 +6,16 @@ to add: -pre-compile steps
 
    <description>Reusable build script for all exist-db extensions </description>
 
+   <import file="git-support.xml"/>
+
+   <condition property="junit.haltonerror" value="true" else="false">
+       <isset property="test.haltonerror"/>
+   </condition>
+
+   <condition property="junit.haltonfailure" value="true" else="false">
+       <isset property="test.haltonfailure"/>
+   </condition>
+
    <!-- must be overridden by scripts -->
    <property name="extension.name" value="NONAME"/>
 
@@ -191,7 +201,7 @@ to add: -pre-compile steps
       </javac>
    </target>
 
-   <target name="dist" description="Generate distributable" if="${extension.include}">
+   <target name="dist" depends="git.details" description="Generate distributable" if="${extension.include}">
 
       <echo>Generating jar for '${extension.name}'</echo>
 
@@ -239,7 +249,7 @@ to add: -pre-compile steps
       <antcall target="clean-3rd-party"/>
    </target>
 
-   <target name="javadoc" description="Generate javadoc" if="${extension.include}">
+   <target name="javadoc" depends="git.details" description="Generate javadoc" if="${extension.include}">
       <echo>Generating javadoc for '${extension.name}'</echo>
 
       <mkdir dir="${build.javadoc.dir}"/>
@@ -299,8 +309,10 @@ to add: -pre-compile steps
 
       <mkdir dir="${junit.report.dir}"/>
 
-      <junit haltonfailure="false" printsummary="yes" showoutput="${junit.output}"
+      <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="yes" showoutput="${junit.output}"
          maxmemory="${junit.forked.VM.maxmemory}">
+
+        <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
 
         <sysproperty key="jetty.port" value="${jetty.port}" />
         <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />

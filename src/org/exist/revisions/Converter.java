@@ -25,8 +25,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.exist.*;
 import org.exist.collections.Collection;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -52,7 +52,7 @@ import java.util.Scanner;
 
 import static java.nio.file.Files.createDirectories;
 import static org.exist.Operation.UPDATE;
-import static org.exist.dom.DocumentImpl.*;
+import static org.exist.dom.persistent.DocumentImpl.*;
 import static org.exist.revisions.RCSManager.LOG;
 
 /**

@@ -21,11 +21,12 @@
  */
 package org.exist.xquery.functions.system;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.NodeImpl;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.NodeImpl;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.storage.statistics.IndexStatistics;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -39,7 +40,7 @@ import org.xml.sax.SAXException;
 
 public class GetIndexStatistics extends BasicFunction {
 
-    protected final static Logger logger = Logger.getLogger(GetIndexStatistics.class);
+    protected final static Logger logger = LogManager.getLogger(GetIndexStatistics.class);
 
     public final static FunctionSignature signature = new FunctionSignature(
         new QName("get-index-statistics", SystemModule.NAMESPACE_URI, SystemModule.PREFIX),

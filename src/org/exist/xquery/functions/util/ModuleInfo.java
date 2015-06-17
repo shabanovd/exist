@@ -24,12 +24,12 @@ package org.exist.xquery.functions.util;
 
 import java.net.URI;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.security.xacml.AccessContext;
 import org.exist.source.Source;
 import org.exist.xquery.BasicFunction;
@@ -57,7 +57,7 @@ public class ModuleInfo extends BasicFunction {
 	protected static final FunctionParameterSequenceType NAMESPACE_URI_PARAMETER = new FunctionParameterSequenceType("namespace-uri", Type.STRING, Cardinality.EXACTLY_ONE, "The namespace URI of the module");
 	protected static final FunctionParameterSequenceType LOCATION_URI_PARAMETER = new FunctionParameterSequenceType("location-uri", Type.STRING, Cardinality.EXACTLY_ONE, "The location URI of the module");
 
-	protected static final Logger logger = Logger.getLogger(ModuleInfo.class);
+	protected static final Logger logger = LogManager.getLogger(ModuleInfo.class);
 
 	public final static FunctionSignature registeredModulesSig =
 		new FunctionSignature(
@@ -156,26 +156,26 @@ public class ModuleInfo extends BasicFunction {
 	public Sequence eval(Sequence[] args, Sequence contextSequence)
 			throws XPathException {
 		
-		if("get-module-description".equals(getSignature().getName().getLocalName())) {
+		if("get-module-description".equals(getSignature().getName().getLocalPart())) {
 			final String uri = args[0].getStringValue();
 			final Module module = context.getModule(uri);
 			if(module == null)
 				{throw new XPathException(this, "No module found matching namespace URI: " + uri);}
 			return new StringValue(module.getDescription());
-		} else if ("is-module-registered".equals(getSignature().getName().getLocalName())) {
+		} else if ("is-module-registered".equals(getSignature().getName().getLocalPart())) {
 			final String uri = args[0].getStringValue();
 			final Module module = context.getModule(uri);
 			return new BooleanValue(module != null);
-        } else if ("mapped-modules".equals(getSignature().getName().getLocalName())) {
+        } else if ("mapped-modules".equals(getSignature().getName().getLocalPart())) {
             final ValueSequence resultSeq = new ValueSequence();
             for (final Iterator<String> i = context.getMappedModuleURIs(); i.hasNext();) {
                 resultSeq.add(new StringValue(i.next().toString()));
             }
             return resultSeq;
-		} else if ("is-module-mapped".equals(getSignature().getName().getLocalName())) {
+		} else if ("is-module-mapped".equals(getSignature().getName().getLocalPart())) {
 			final String uri = args[0].getStringValue();
 			return new BooleanValue(((Map<String, String>)context.getBroker().getConfiguration().getProperty(XQueryContext.PROPERTY_STATIC_MODULE_MAP)).get(uri) != null);
-		} else if ("map-module".equals(getSignature().getName().getLocalName())) {
+		} else if ("map-module".equals(getSignature().getName().getLocalPart())) {
 			if (!context.getSubject().hasDbaRole()) {
 				final XPathException xPathException = new XPathException(this, "Permission denied, calling user '" + context.getSubject().getName() + "' must be a DBA to call this function.");
 				logger.error("Invalid user", xPathException);
@@ -186,7 +186,7 @@ public class ModuleInfo extends BasicFunction {
 			final Map <String, String> moduleMap = (Map<String, String>)context.getBroker().getConfiguration().getProperty(XQueryContext.PROPERTY_STATIC_MODULE_MAP);
 			moduleMap.put(namespace, location);
 			return Sequence.EMPTY_SEQUENCE;
-		} else if ("unmap-module".equals(getSignature().getName().getLocalName())) {
+		} else if ("unmap-module".equals(getSignature().getName().getLocalPart())) {
 			if (!context.getSubject().hasDbaRole()) {
 				final XPathException xPathException = new XPathException(this, "Permission denied, calling user '" + context.getSubject().getName() + "' must be a DBA to call this function.");
 				logger.error("Invalid user", xPathException);
@@ -196,7 +196,7 @@ public class ModuleInfo extends BasicFunction {
 			final Map <String, String> moduleMap = (Map<String, String>)context.getBroker().getConfiguration().getProperty(XQueryContext.PROPERTY_STATIC_MODULE_MAP);
 			moduleMap.remove(namespace);
 			return Sequence.EMPTY_SEQUENCE;
-		} else if ("get-module-info".equals(getSignature().getName().getLocalName())) {
+		} else if ("get-module-info".equals(getSignature().getName().getLocalPart())) {
 			context.pushDocumentContext();
 			
 			try {

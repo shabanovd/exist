@@ -27,9 +27,12 @@ import com.thaiopensource.validate.ValidateProperty;
 import com.thaiopensource.validate.ValidationDriver;
 import com.thaiopensource.validate.rng.CompactSchemaReader;
 import java.io.IOException;
-
-import org.apache.log4j.Logger;
-
+import java.io.InputStream;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.storage.BrokerPool;
 import org.exist.util.Configuration;
@@ -43,12 +46,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
-import java.io.InputStream;
-
 /**
  *  Validate XML documents with their grammars (DTD's and Schemas).
  *
@@ -56,10 +53,9 @@ import java.io.InputStream;
  */
 public class Validator {
 
-    private final static Logger logger = Logger.getLogger(Validator.class);
+    private final static Logger logger = LogManager.getLogger(Validator.class);
     private BrokerPool brokerPool = null;
     private GrammarPool grammarPool = null;
-    private Configuration config = null;
     private eXistXMLCatalogResolver systemCatalogResolver = null;
 
     /**
@@ -75,7 +71,7 @@ public class Validator {
         }
 
         // Get configuration
-        config = brokerPool.getConfiguration();
+        Configuration config = brokerPool.getConfiguration();
 
         // Check xerces version        
         final StringBuilder xmlLibMessage = new StringBuilder();
@@ -161,11 +157,11 @@ public class Validator {
             driver.validate(new InputSource(stream));
 
         } catch(final IOException ex) {
-            logger.error(ex.getMessage(), ex);
+            logger.error(ex);
             report.setThrowable(ex);
 
-        } catch(final Exception ex) {
-            logger.debug(ex.getMessage(), ex);
+        } catch(final SAXException ex) {
+            logger.debug(ex);
             report.setThrowable(ex);
 
         } finally {
@@ -246,12 +242,8 @@ public class Validator {
                 logger.debug("Document is not valid.");
             }
 
-        } catch(final IOException ex) {
-            logger.error(ex.getMessage(), ex);
-            report.setThrowable(ex);
-
-        } catch(final Exception ex) {
-            logger.error(ex.getMessage(), ex);
+        } catch(final ParserConfigurationException | SAXException | IOException ex) {
+            logger.error(ex);
             report.setThrowable(ex);
 
         } finally {

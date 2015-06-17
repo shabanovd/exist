@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,18 +19,24 @@
  */
 package org.exist.indexing.lucene;
 
-import org.apache.log4j.Logger;
+import org.exist.dom.persistent.IStoredNode;
+import org.exist.dom.QName;
+import org.exist.dom.persistent.Match;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.NewArrayNodeSet;
+import org.exist.dom.persistent.NodeSet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.PhraseQuery;
-import org.exist.dom.*;
 import org.exist.indexing.AbstractMatchListener;
 import org.exist.numbering.NodeId;
-import org.exist.stax.EmbeddedXMLStreamReader;
 import org.exist.stax.ExtendedXMLStreamReader;
+import org.exist.stax.IEmbeddedXMLStreamReader;
 import org.exist.storage.DBBroker;
 import org.exist.storage.IndexSpec;
 import org.exist.storage.NodePath;
@@ -48,7 +54,7 @@ import org.apache.lucene.util.AttributeSource.State;
 
 public class LuceneMatchListener extends AbstractMatchListener {
 
-    private static final Logger LOG = Logger.getLogger(LuceneMatchListener.class);
+    private static final Logger LOG = LogManager.getLogger(LuceneMatchListener.class);
 
     private Match match;
 
@@ -83,7 +89,7 @@ public class LuceneMatchListener extends AbstractMatchListener {
         this.match = proxy.getMatches();
         setNextInChain(null);
 
-        IndexSpec indexConf = proxy.getDocument().getCollection().getIndexConfiguration(broker);
+        IndexSpec indexConf = proxy.getOwnerDocument().getCollection().getIndexConfiguration(broker);
         if (indexConf != null)
             config = (LuceneConfig) indexConf.getCustomIndexSpec(LuceneIndex.ID);
 
@@ -101,7 +107,7 @@ public class LuceneMatchListener extends AbstractMatchListener {
             if (proxy.getNodeId().isDescendantOf(nextMatch.getNodeId())) {
                 if (ancestors == null)
                     ancestors = new NewArrayNodeSet();
-                ancestors.add(new NodeProxy(proxy.getDocument(), nextMatch.getNodeId()));
+                ancestors.add(new NodeProxy(proxy.getOwnerDocument(), nextMatch.getNodeId()));
             }
             nextMatch = nextMatch.getNextMatch();
         }
@@ -170,7 +176,7 @@ public class LuceneMatchListener extends AbstractMatchListener {
         int level = 0;
         int textOffset = 0;
         try {
-            EmbeddedXMLStreamReader reader = broker.getXMLStreamReader(p, false);
+            IEmbeddedXMLStreamReader reader = broker.getXMLStreamReader(p, false);
             while (reader.hasNext()) {
                 int ev = reader.next();
                 switch (ev) {
@@ -290,15 +296,15 @@ public class LuceneMatchListener extends AbstractMatchListener {
 
     private NodePath getPath(NodeProxy proxy) {
         NodePath path = new NodePath();
-        StoredNode node = (StoredNode) proxy.getNode();
+        IStoredNode node = (IStoredNode) proxy.getNode();
         walkAncestor(node, path);
         return path;
     }
 
-    private void walkAncestor(StoredNode node, NodePath path) {
+    private void walkAncestor(IStoredNode node, NodePath path) {
         if (node == null)
             return;
-        StoredNode parent = node.getParentStoredNode();
+        IStoredNode parent = node.getParentStoredNode();
         walkAncestor(parent, path);
         path.addComponent(node.getQName());
     }
@@ -307,26 +313,25 @@ public class LuceneMatchListener extends AbstractMatchListener {
      * Get all query terms from the original queries.
      */
     private void getTerms() {
-        Set<Query> queries = new HashSet<>();
-        termMap = new TreeMap<>();
-        Match nextMatch = this.match;
-        while (nextMatch != null) {
-            if (nextMatch.getIndexId() == LuceneIndex.ID) {
-                Query query = ((LuceneIndexWorker.LuceneMatch) nextMatch).getQuery();
-                if (!queries.contains(query)) {
-                    queries.add(query);
-                    IndexReader reader = null;
-                    try {
-                        reader = index.getReader();
-                        LuceneUtil.extractTerms(query, termMap, reader, false);
-                    } catch (IOException | UnsupportedOperationException e) {
-                        LOG.warn("Error while highlighting lucene query matches: " + e.getMessage(), e);
-                    } finally {
-                        index.releaseReader(reader);
+        try {
+            index.withReader(reader -> {
+                Set<Query> queries = new HashSet<>();
+                termMap = new TreeMap<>();
+                Match nextMatch = this.match;
+                while (nextMatch != null) {
+                    if (nextMatch.getIndexId() == LuceneIndex.ID) {
+                        Query query = ((LuceneIndexWorker.LuceneMatch) nextMatch).getQuery();
+                        if (!queries.contains(query)) {
+                            queries.add(query);
+                            LuceneUtil.extractTerms(query, termMap, reader, false);
+                        }
                     }
+                    nextMatch = nextMatch.getNextMatch();
                 }
-            }
-            nextMatch = nextMatch.getNextMatch();
+                return null;
+            });
+        } catch (IOException e) {
+            LOG.warn("Match listener caught IO exception while reading query tersm: " + e.getMessage(), e);
         }
     }
 

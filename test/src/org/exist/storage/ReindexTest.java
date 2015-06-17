@@ -33,7 +33,7 @@ public class ReindexTest {
     }
 
     @Test
-    public void runTests() {
+    public void reindexTests() {
         storeDocuments();
         closeDB();
 
@@ -48,53 +48,46 @@ public class ReindexTest {
      */
     public void storeDocuments() {
         BrokerPool.FORCE_CORRUPTION = true;
-        BrokerPool pool = null;
-        DBBroker broker = null;
-        try {
-        	pool = startDB();
-        	assertNotNull(pool);
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);
-            TransactionManager transact = pool.getTransactionManager();
-            assertNotNull(transact);
-            Txn transaction = transact.beginTransaction();
-            assertNotNull(transaction);
-            System.out.println("Transaction started ...");
+        final BrokerPool pool = startDB();
+        final TransactionManager transact = pool.getTransactionManager();
 
-            Collection root = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
-            assertNotNull(root);
-            broker.saveCollection(transaction, root);
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());) {
 
-            File files[] = dir.listFiles();
-            assertNotNull(files);
-            File f;
-            IndexInfo info;
-            for (int i = 0; i < files.length; i++) {
-                f = files[i];
-                MimeType mime = MimeTable.getInstance().getContentTypeFor(f.getName());
-                if (mime == null || mime.isXMLType()) {
-                    try {
-                        info = root.validateXMLResource(transaction, broker, XmldbURI.create(f.getName()), new InputSource(f.toURI().toASCIIString()));
-                        assertNotNull(info);
-                        root.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
-                    } catch (SAXException e) {
-                        System.err.println("Error found while parsing document: " + f.getName() + ": " + e.getMessage());
+
+            try(final Txn transaction = transact.beginTransaction()) {
+                assertNotNull(transaction);
+
+                Collection root = broker.getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
+                assertNotNull(root);
+                broker.saveCollection(transaction, root);
+
+                File files[] = dir.listFiles();
+                assertNotNull(files);
+                File f;
+                IndexInfo info;
+                for (int i = 0; i < files.length; i++) {
+                    f = files[i];
+                    MimeType mime = MimeTable.getInstance().getContentTypeFor(f.getName());
+                    if (mime == null || mime.isXMLType()) {
+                        try {
+                            info = root.validateXMLResource(transaction, broker, XmldbURI.create(f.getName()), new InputSource(f.toURI().toASCIIString()));
+                            assertNotNull(info);
+                            root.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                        } catch (SAXException e) {
+                            System.err.println("Error found while parsing document: " + f.getName() + ": " + e.getMessage());
+                        }
                     }
                 }
+                transact.commit(transaction);
             }
-            transact.commit(transaction);
 
-            transaction = transact.beginTransaction();
+            final Txn transaction = transact.beginTransaction();
             broker.reindexCollection(TestConstants.TEST_COLLECTION_URI);
 
             transact.getJournal().flushToLog(true);
-            System.out.println("Transaction interrupted ...");
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());
-        } finally {
-            if (pool != null)
-                pool.release(broker);
         }
     }
 
@@ -103,23 +96,13 @@ public class ReindexTest {
      */
     public void removeCollection() {
         BrokerPool.FORCE_CORRUPTION = false;
-        BrokerPool pool = null;
-        DBBroker broker = null;
-        TransactionManager transact;
-        Txn transaction;
-        try {
-        	pool = startDB();
-        	assertNotNull(pool);
+        final BrokerPool pool = startDB();
+        final TransactionManager transact = pool.getTransactionManager();
 
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                final Txn transaction = transact.beginTransaction();) {
 
             BrokerPool.FORCE_CORRUPTION = true;
-            transact = pool.getTransactionManager();
-            assertNotNull(transact);
-            transaction = transact.beginTransaction();
-            assertNotNull(transaction);
-            System.out.println("Transaction started ...");
 
             Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.WRITE_LOCK);
             assertNotNull(root);
@@ -127,12 +110,9 @@ public class ReindexTest {
             broker.removeCollection(transaction, root);
             transact.getJournal().flushToLog(true);
             transact.commit(transaction);
-            System.out.println("Transaction commited ...");
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());
-        } finally {
-            pool.release(broker);
         }
     }
 
@@ -144,7 +124,6 @@ public class ReindexTest {
         BrokerPool pool = null;
         DBBroker broker = null;
         try {
-        	System.out.println("testRead2() ...\n");
         	pool = startDB();
         	assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());

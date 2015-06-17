@@ -25,7 +25,8 @@ package org.exist.storage;
 import java.text.NumberFormat;
 import java.util.*;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsAttribute;
 import org.exist.security.Permission;
@@ -56,7 +57,7 @@ public class XQueryPool extends Object2ObjectHashMap {
 
 	public final static long TIMEOUT_CHECK_INTERVAL = 30000L;
 
-	private final static Logger LOG = Logger.getLogger(XQueryPool.class);
+	private final static Logger LOG = LogManager.getLogger(XQueryPool.class);
 
 	private long lastTimeOutCheck;
 	private long lastTimeOfCleanup;
@@ -125,22 +126,8 @@ public class XQueryPool extends Object2ObjectHashMap {
 	}
 
 	public void returnCompiledXQuery(Source source, CompiledXQuery xquery) {
-		// returnModules(xquery.getContext(), null);
 		returnObject(source, xquery);
 	}
-
-//	private void returnModules(XQueryContext context, ExternalModule self) {
-//		for (final Iterator<Module> it = context.getRootModules(); it.hasNext();) {
-//			final Module module = (Module) it.next();
-//			if (module != self && !module.isInternalModule()) {
-//				final ExternalModule extModule = (ExternalModule) module;
-//				// ((ModuleContext)extModule.getContext()).setParentContext(null);
-//				// Don't return recursively, since all modules are listed in the
-//				// top-level context
-//				returnObject(extModule.getSource(), extModule);
-//			}
-//		}
-//	}
 
 	private synchronized void returnObject(Source source, Object o) {
 		long ts = source.getCacheTimestamp();
@@ -168,34 +155,44 @@ public class XQueryPool extends Object2ObjectHashMap {
 		}
 	}
 
-	private synchronized Object borrowObject(DBBroker broker, Source source) {
-		final int idx = getIndex(source);
-		if (idx < 0) {
-			return null;
-		}
-		final Source key = (Source) keys[idx];
-		int validity = key.isValid(broker);
-		
-		if (validity == Source.UNKNOWN)
-			validity = key.isValid(source);
-		
-		if (validity == Source.INVALID || validity == Source.UNKNOWN) {
-			keys[idx] = REMOVED;
-			values[idx] = null;
-			LOG.debug(source.getKey() + " is invalid");
-			return null;
-		}
-		
-		final Stack stack = (Stack) values[idx];
-		if (stack == null || stack.isEmpty())
-			return null;
+	private Object borrowObject(DBBroker broker, Source source) {
 
-		// now check if the compiled expression is valid
-		// it might become invalid if an imported module has changed.
-		final CompiledXQuery query = (CompiledXQuery) stack.pop();
-		//final XQueryContext context = query.getContext();
-		//context.setBroker(broker);
-		if (!query.isValid()) {
+        CompiledXQuery query = null;
+        Source key = null;
+
+        synchronized (this) {
+            final int idx = getIndex(source);
+            if (idx < 0) {
+                return null;
+            }
+            key = (Source) keys[idx];
+            int validity = key.isValid(broker);
+            if (validity == Source.UNKNOWN)
+                validity = key.isValid(source);
+
+            if (validity == Source.INVALID || validity == Source.UNKNOWN) {
+                keys[idx] = REMOVED;
+                values[idx] = null;
+                LOG.debug(source.getKey() + " is invalid");
+                return null;
+            }
+            final Stack stack = (Stack) values[idx];
+            if (stack == null || stack.isEmpty())
+                return null;
+
+            // now check if the compiled expression is valid
+            // it might become invalid if an imported module has changed.
+            query = (CompiledXQuery) stack.pop();
+            final XQueryContext context = query.getContext();
+            //context.setBroker(broker);
+        }
+
+        // query.isValid() may open collections which in turn tries to acquire
+        // org.exist.storage.lock.ReentrantReadWriteLock. In order to avoid
+        // deadlocks with concurrent queries holding that lock while borrowing
+        // we must not hold onto the XQueryPool while calling isValid().
+
+		if (!query.isValid()) synchronized (this) {
 			// the compiled query is no longer valid: one of the imported
 			// modules may have changed
 			remove(key);
@@ -217,96 +214,6 @@ public class XQueryPool extends Object2ObjectHashMap {
 		//final XQueryContext context = query.getContext();
 		//context.setBroker(broker);
 		return query;
-		// if (!borrowModules(broker, context)) {
-		// // the compiled query is no longer valid: one of the imported
-		// // modules may have changed
-		// remove(source);
-		// return null;
-		// } else {
-		// if (query instanceof PathExpr) try {
-		// // This is necessary because eXist performs whole-expression
-		// analysis, so a function
-		// // can only be analyzed as part of the expression it's called from.
-		// It might be better
-		// // to make module functions more stand-alone, so they only need to be
-		// analyzed
-		// // once.
-		// context.analyzeAndOptimizeIfModulesChanged((PathExpr) query);
-		// } catch (XPathException e) {
-		// remove(source);
-		// return null;
-		// }
-		// return query;
-		// }
-	}
-
-	private synchronized boolean borrowModules(DBBroker broker, XQueryContext context) {
-		final Map<String, Module> borrowedModules = new TreeMap<String, Module>();
-		for (final Iterator<Module> it = context.getAllModules(); it.hasNext();) {
-			final Module module = it.next();
-			if (module == null || !module.isInternalModule()) {
-				final ExternalModule extModule = (ExternalModule) module;
-				final ExternalModule borrowedModule = borrowModule(broker, extModule.getSource(), context);
-				if (borrowedModule == null) {
-					for (final Iterator<Module> it2 = borrowedModules.values().iterator(); it2.hasNext();) {
-						final ExternalModule moduleToReturn = (ExternalModule) it2.next();
-						returnObject(moduleToReturn.getSource(), moduleToReturn);
-					}
-					return false;
-				}
-				borrowedModules.put(extModule.getNamespaceURI(), borrowedModule);
-			}
-		}
-		for (final Iterator it = borrowedModules.entrySet().iterator(); it.hasNext();) {
-			final Map.Entry entry = (Map.Entry) it.next();
-			final String moduleNamespace = (String) entry.getKey();
-			final ExternalModule module = (ExternalModule) entry.getValue();
-			// Modules that don't appear in the root context will be set in
-			// context.allModules by
-			// calling setModule below on the module that does import them
-			// directly.
-			if (context.getModule(moduleNamespace) != null) {
-				context.setModule(moduleNamespace, module);
-			}
-			final List<String> importedModuleNamespaceUris = new ArrayList<String>();
-			for (final Iterator<Module> it2 = module.getContext().getModules(); it2.hasNext();) {
-				final Module nestedModule = it2.next();
-				if (!nestedModule.isInternalModule()) {
-					importedModuleNamespaceUris.add(nestedModule.getNamespaceURI());
-				}
-			}
-			for (final Iterator<String> it2 = importedModuleNamespaceUris.iterator(); it2.hasNext();) {
-				final String namespaceUri = (String) it2.next();
-				final Module imported = (Module) borrowedModules.get(namespaceUri);
-				module.getContext().setModule(namespaceUri, imported);
-			}
-		}
-		return true;
-	}
-
-	public synchronized ExternalModule borrowModule(DBBroker broker, Source source, XQueryContext rootContext) {
-		final ExternalModule module = (ExternalModule) borrowObject(broker, source);
-		if (module == null)
-			{return null;}
-		final XQueryContext context = module.getContext();
-		//context.setBroker(broker);
-		if (!module.moduleIsValid(broker)) {
-			LOG.debug("Module with URI " + module.getNamespaceURI() + " has changed and needs to be reloaded");
-			remove(source);
-			return null;
-		} else {
-			// check all modules imported by the borrowed module and update them
-			if (!borrowModules(broker, context)) {
-				return null;
-			}
-			((ModuleContext) module.getContext()).updateModuleRefs(rootContext);
-			try {
-				module.analyzeGlobalVars();
-			} catch (final XPathException e) {
-				LOG.warn(e.getMessage(), e);
-			}
-			return module;
-		}
 	}
 
     public synchronized void clear() {

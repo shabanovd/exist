@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -61,9 +61,10 @@ public class LuceneModule extends AbstractInternalModule {
         
         new FunctionDef(InspectIndex.signatures[0], InspectIndex.class),
         new FunctionDef(RemoveIndex.signature, RemoveIndex.class),
-        
+
         new FunctionDef(Search.signatures[0], Search.class),
         new FunctionDef(Search.signatures[1], Search.class),
+        new FunctionDef(Search.signatures[2], Search.class),
 
         new FunctionDef(FacetSearch.signatures[0], FacetSearch.class),
         new FunctionDef(FacetSearch.signatures[1], FacetSearch.class),

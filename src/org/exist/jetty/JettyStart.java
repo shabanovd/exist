@@ -32,7 +32,8 @@ import java.util.TimerTask;
 
 import javax.servlet.Servlet;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Connector;
@@ -66,13 +67,14 @@ import org.xmldb.api.base.Database;
  */
 public class JettyStart extends Observable implements LifeCycle.Listener {
 
-    protected static final Logger logger = Logger.getLogger(JettyStart.class);
+    protected static final Logger logger = LogManager.getLogger(JettyStart.class);
 
     public static void main(String[] args) {
         final JettyStart start = new JettyStart();
         start.run(args, null);
     }
 
+    public final static String SIGNAL_STARTING = "jetty starting";
     public final static String SIGNAL_STARTED = "jetty started";
     public final static String SIGNAL_ERROR = "error";
 
@@ -143,8 +145,8 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
         
         logger.info("[jetty.home : " 
                 + System.getProperty("jetty.home") + "]");
-        logger.info("[log4j.configuration : " 
-                + System.getProperty("log4j.configuration") + "]");
+        logger.info("[log4j.configurationFile : "
+                + System.getProperty("log4j.configurationFile") + "]");
 
         try {
             // we register our own shutdown hook
@@ -190,6 +192,7 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
             
             server.setStopAtShutdown(true);
             server.addLifeCycleListener(this);
+
             BrokerPool.getInstance().registerShutdownListener(new ShutdownListenerImpl(server));
             server.start();
 
@@ -409,12 +412,16 @@ public class JettyStart extends Observable implements LifeCycle.Listener {
 
     public synchronized void lifeCycleStarting(LifeCycle lifeCycle) {
         logger.info("Jetty server starting...");
+        setChanged();
+        notifyObservers(SIGNAL_STARTING);
         status = STATUS_STARTING;
         notifyAll();
     }
 
     public synchronized void lifeCycleStarted(LifeCycle lifeCycle) {
         logger.info("Jetty server started.");
+        setChanged();
+        notifyObservers(SIGNAL_STARTED);
         status = STATUS_STARTED;
         notifyAll();
     }

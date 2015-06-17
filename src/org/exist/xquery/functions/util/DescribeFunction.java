@@ -24,10 +24,11 @@ package org.exist.xquery.functions.util;
 
 import java.util.Iterator;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.xquery.Annotation;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.Function;
@@ -52,7 +53,7 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public class DescribeFunction extends Function {
 	
-	protected static final Logger logger = Logger.getLogger(DescribeFunction.class);
+	protected static final Logger logger = LogManager.getLogger(DescribeFunction.class);
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(
@@ -73,7 +74,7 @@ public class DescribeFunction extends Function {
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+	 * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
 	 */
 	public Sequence eval(
 		Sequence contextSequence,

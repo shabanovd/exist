@@ -31,11 +31,12 @@ import java.util.Stack;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.backup.BackupDescriptor;
 import org.exist.backup.restore.listener.RestoreListener;
-import org.exist.dom.DocumentTypeImpl;
+import org.exist.dom.persistent.DocumentTypeImpl;
 import org.exist.security.ACLPermission.ACE_ACCESS_TYPE;
 import org.exist.security.ACLPermission.ACE_TARGET;
 import org.exist.security.SecurityManager;
@@ -67,7 +68,7 @@ import org.xmldb.api.modules.CollectionManagementService;
  */
 public class RestoreHandler extends DefaultHandler {
     
-    private final static Logger LOG = Logger.getLogger(RestoreHandler.class);
+    private final static Logger LOG = LogManager.getLogger(RestoreHandler.class);
     private final static SAXParserFactory saxFactory = SAXParserFactory.newInstance();
     static {
         saxFactory.setNamespaceAware(true);
@@ -254,6 +255,7 @@ public class RestoreHandler extends DefaultHandler {
                 reader.parse(is);
             } catch(SAXException e) {
                 listener.error("Could not parser for processing sub-collection: " + descriptor.getSymbolicPath(name, false));
+//                listener.error("SAX exception while reading sub-collection " + subDescriptor.getSymbolicPath() + " for processing: " + se.getMessage());
                 throw e;
             } catch(final ParserConfigurationException pce) {
                 listener.error("Could not initalise SAXParser for processing sub-collection: " + descriptor.getSymbolicPath(name, false));

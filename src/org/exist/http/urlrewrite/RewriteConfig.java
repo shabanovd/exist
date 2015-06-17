@@ -1,14 +1,15 @@
 package org.exist.http.urlrewrite;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.EXistException;
 import org.exist.security.PermissionDeniedException;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.xmldb.XmldbURI;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.xquery.regex.JDK15RegexTranslator;
 import org.exist.xquery.regex.RegexSyntaxException;
 import org.exist.xquery.Constants;
@@ -98,7 +99,7 @@ public class RewriteConfig {
         }
     }
 
-    private final static Logger LOG = Logger.getLogger(RewriteConfig.class);
+    private final static Logger LOG = LogManager.getLogger(RewriteConfig.class);
 
     // the list of established mappings
     private List<Mapping> mappings = new ArrayList<Mapping>();

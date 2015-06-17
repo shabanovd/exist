@@ -26,8 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
-
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.xerces.util.XMLCatalogResolver;
 import org.apache.xerces.xni.XMLResourceIdentifier;
 import org.apache.xerces.xni.XNIException;
@@ -59,7 +59,7 @@ public class eXistXMLCatalogResolver extends XMLCatalogResolver {
         LOG.debug("Initializing using catalogs, preferPublic="+preferPublic);
     }
     
-    private final static Logger LOG = Logger.getLogger(eXistXMLCatalogResolver.class);
+    private final static Logger LOG = LogManager.getLogger(eXistXMLCatalogResolver.class);
     
     /**
      *  Constructs a catalog resolver with the given list of entry files.
@@ -223,13 +223,7 @@ public class eXistXMLCatalogResolver extends XMLCatalogResolver {
     }
     
     private String getXriDetails(XMLResourceIdentifier xrid){
-        final StringBuilder sb = new StringBuilder();
-        sb.append("PublicId='").append(xrid.getPublicId()).append("' ");
-        sb.append("BaseSystemId='").append(xrid.getBaseSystemId()).append("' ");
-        sb.append("ExpandedSystemId='").append(xrid.getExpandedSystemId()).append("' ");
-        sb.append("LiteralSystemId='").append(xrid.getLiteralSystemId()).append("' ");
-        sb.append("Namespace='").append(xrid.getNamespace()).append("' ");
-        return sb.toString();
+        return "PublicId='" + xrid.getPublicId() + "' " + "BaseSystemId='" + xrid.getBaseSystemId() + "' " + "ExpandedSystemId='" + xrid.getExpandedSystemId() + "' " + "LiteralSystemId='" + xrid.getLiteralSystemId() + "' " + "Namespace='" + xrid.getNamespace() + "' ";
     }
 
 }

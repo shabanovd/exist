@@ -27,15 +27,16 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.EXistException;
 import org.exist.atom.Atom;
 import org.exist.atom.IncomingMessage;
 import org.exist.atom.OutgoingMessage;
 import org.exist.collections.Collection;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.http.BadRequestException;
 import org.exist.http.NotFoundException;
 import org.exist.security.Permission;
@@ -62,7 +63,7 @@ import org.xml.sax.SAXException;
  */
 public class AtomFeeds extends AtomModuleBase implements Atom {
 
-	protected final static Logger LOG = Logger.getLogger(AtomProtocol.class);
+	protected final static Logger LOG = LogManager.getLogger(AtomProtocol.class);
 	static final String FEED_DOCUMENT_NAME = ".feed.atom";
 	static final XmldbURI FEED_DOCUMENT_URI = XmldbURI
 			.create(FEED_DOCUMENT_NAME);

@@ -25,9 +25,12 @@ import java.io.*;
 
 import junit.framework.Assert;
 
+import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
-import org.exist.dom.NodeProxy;
+import org.exist.collections.triggers.TriggerException;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.security.PermissionDeniedException;
 import org.exist.security.xacml.AccessContext;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -82,15 +85,19 @@ public class QT3TS_To_junit {
 		init();
     }
 
-    public void init() throws Exception {
+    public void init() throws EXistException, PermissionDeniedException, IOException, TriggerException {
 		db = BrokerPool.getInstance();
 		
 		broker = db.get(db.getSecurityManager().getSystemSubject());
 		Assert.assertNotNull(broker);
-		
-		collection = broker.getOrCreateCollection(null, QT3TS_case.QT3_URI);
-		Assert.assertNotNull(collection);
-		broker.saveCollection(null, collection);
+
+        TransactionManager txnMgr = db.getTransactionManager();
+        try(final Txn txn = txnMgr.beginTransaction()) {
+            collection = broker.getOrCreateCollection(txn, QT3TS_case.QT3_URI);
+            Assert.assertNotNull(collection);
+            broker.saveCollection(txn, collection);
+            txnMgr.commit(txn);
+        }
     }
 
     public void release() throws Exception {
@@ -106,27 +113,34 @@ public class QT3TS_To_junit {
 
     public void load() throws Exception {
         File folder = new File(QT3TS_case.FOLDER);
-        
         File[] files = folder.listFiles();
-        for (File file : files) {
-        	if (file.isDirectory()) {
-        		if (file.getName().equals("CVS") 
-        				|| file.getName().equals("drivers")
-    				)
-            		continue; //ignore
-        		
-        		loadDirectory(file, collection);
-        	} else {
-				if (file.getName().equals(".project"))
-					continue; //ignore
-        		
-				loadFile(file, collection);
-        	}
+
+
+        final TransactionManager txnMgr = broker.getBrokerPool().getTransactionManager();
+        try(final Txn txn = txnMgr.beginTransaction()) {
+
+
+            for(File file : files) {
+                if(file.isDirectory()) {
+                    if(file.getName().equals("CVS")
+                        || file.getName().equals("drivers")
+                        )
+                        continue; //ignore
+
+                    loadDirectory(txn, file, collection);
+                } else {
+                    if(file.getName().equals(".project"))
+                        continue; //ignore
+
+                    loadFile(txn, file, collection);
+                }
+            }
+
+            txnMgr.commit(txn);
         }
     }
 
-    private void loadDirectory(File folder, Collection col) throws Exception {
-    	//System.out.println("******* loadDirectory "+folder.getName());
+    private void loadDirectory(Txn txn, File folder, Collection col) throws Exception {
     	if (!(folder.exists() && folder.canRead()))
     		return;
     	
@@ -139,16 +153,14 @@ public class QT3TS_To_junit {
         		if (file.getName().equals("CVS"))
             		continue; //ignore
         		
-        		loadDirectory(file, current);
+        		loadDirectory(txn, file, current);
         	} else {
-        		loadFile(file, current);
+        		loadFile(txn, file, current);
         	}
         }
     }
 
-    private void loadFile(File file, Collection col) throws Exception {
-    	//System.out.println("******* loadFile "+file.getName());
-    	
+    private void loadFile(Txn txn, File file, Collection col) throws Exception {
     	if (file.getName().endsWith(".html") 
     			|| file.getName().endsWith(".xsd")
     			|| file.getName().equals("badxml.xml")
@@ -163,39 +175,31 @@ public class QT3TS_To_junit {
     		return;
     	
         MimeType mime = getMimeTable().getContentTypeFor( file.getName() );
-        if (mime != null && mime.isXMLType()) {
-        	IndexInfo info = col.validateXMLResource(null, broker, 
-            		XmldbURI.create(file.getName()), 
-            		new InputSource(new FileInputStream(file))
-            	);
-            //info.getDocument().getMetadata().setMimeType();
-        	
-        	FileInputStream is = new FileInputStream(file);
-        	try {
-        	    col.store(null, broker, info, new InputSource(is), false);
-        	} finally {
-        	    is.close();
-        	}
-        } else {
-        	TransactionManager txManager = db.getTransactionManager();
-        	Txn txn = txManager.beginTransaction();
 
+        if (mime != null && mime.isXMLType()) {
+            IndexInfo info = col.validateXMLResource(txn, broker,
+                    XmldbURI.create(file.getName()),
+                    new InputSource(new FileInputStream(file))
+                );
+            //info.getDocument().getMetadata().setMimeType();
+
+            FileInputStream is = new FileInputStream(file);
             try {
-                FileInputStream is = new FileInputStream(file);
-                try {
-                    col.addBinaryResource(txn, broker,
-                            XmldbURI.create(file.getName()),
-                            is,
-                            MimeType.BINARY_TYPE.getName(), file.length());
-                } finally {
-                    is.close();
-                }
-                txManager.commit(txn);
+                col.store(txn, broker, info, new InputSource(is), false);
             } finally {
-                txManager.close(txn);
+                is.close();
+            }
+        } else {
+            FileInputStream is = new FileInputStream(file);
+            try {
+                col.addBinaryResource(txn, broker,
+                        XmldbURI.create(file.getName()),
+                        is,
+                        MimeType.BINARY_TYPE.getName(), file.length());
+            } finally {
+                is.close();
             }
         }
-    	//System.out.println(file);
     }
 
     private MimeTable mtable = null;
@@ -282,8 +286,6 @@ public class QT3TS_To_junit {
         	"    private String file = \""+file+"\";\n\n");
 
         for (NodeProxy p : results.toNodeSet()) {
-//        	System.out.println(p);
-
         	Node testSet = p.getNode();
         	NamedNodeMap attrs = testSet.getAttributes();
         	

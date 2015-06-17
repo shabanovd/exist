@@ -21,113 +21,111 @@
  */
 package org.exist.storage;
 
+import org.exist.EXistException;
 import org.exist.collections.IndexInfo;
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.MutableDocumentSet;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.security.PermissionDeniedException;
 import org.exist.security.xacml.AccessContext;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
+import org.exist.util.DatabaseConfigurationException;
+import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
+import org.exist.xquery.XPathException;
 import org.exist.xupdate.Modification;
 import org.exist.xupdate.XUpdateProcessor;
 import org.xml.sax.InputSource;
 import org.junit.Test;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.io.StringReader;
 
 public class RemoveTest extends AbstractUpdateTest {
     
     @Test
-    public void update() {
+    public void update() throws EXistException, DatabaseConfigurationException, LockException, SAXException, PermissionDeniedException, IOException, ParserConfigurationException, XPathException {
         BrokerPool.FORCE_CORRUPTION = true;
-        BrokerPool pool = null;        
-        DBBroker broker = null;
-        try {
-        	pool = startDB();
-        	assertNotNull(pool);
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            assertNotNull(broker);            
-            TransactionManager mgr = pool.getTransactionManager();
-            assertNotNull(mgr);
-            
-            IndexInfo info = init(broker, mgr);
+        final BrokerPool pool = startDB();
+        final TransactionManager mgr = pool.getTransactionManager();
+
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject())) {
+            final IndexInfo info = init(broker, mgr);
             assertNotNull(info);
-            MutableDocumentSet docs = new DefaultDocumentSet();
+            final MutableDocumentSet docs = new DefaultDocumentSet();
             docs.add(info.getDocument());
-            XUpdateProcessor proc = new XUpdateProcessor(broker, docs, AccessContext.TEST);
+            final XUpdateProcessor proc = new XUpdateProcessor(broker, docs, AccessContext.TEST);
             assertNotNull(proc);
             
-            Txn transaction = mgr.beginTransaction();
-            assertNotNull(transaction);
-            System.out.println("Transaction started ...");
-            
-            String xupdate;
-            Modification modifications[];
-            
-            // append some new element to records
-            for (int i = 1; i <= 50; i++) {
-                xupdate =
-                    "<xu:modifications version=\"1.0\" xmlns:xu=\"http://www.xmldb.org/xupdate\">" +
-                    "   <xu:append select=\"/products\">" +
-                    "       <product>" +
-                    "           <xu:attribute name=\"id\"><xu:value-of select=\"count(/products/product) + 1\"/></xu:attribute>" +
-                    "           <description>Product " + i + "</description>" +
-                    "           <price>" + (i * 2.5) + "</price>" +
-                    "           <stock>" + (i * 10) + "</stock>" +
-                    "       </product>" +
-                    "   </xu:append>" +
-                    "</xu:modifications>";
-                proc.setBroker(broker);
-                proc.setDocumentSet(docs);
-                modifications = proc.parse(new InputSource(new StringReader(xupdate)));
-                assertNotNull(modifications);
-                modifications[0].process(transaction);
-                proc.reset();
+            try(final Txn transaction = mgr.beginTransaction()) {
+
+                // append some new element to records
+                for (int i = 1; i <= 50; i++) {
+                    final String xupdate =
+                            "<xu:modifications version=\"1.0\" xmlns:xu=\"http://www.xmldb.org/xupdate\">" +
+                                    "   <xu:append select=\"/products\">" +
+                                    "       <product>" +
+                                    "           <xu:attribute name=\"id\"><xu:value-of select=\"count(/products/product) + 1\"/></xu:attribute>" +
+                                    "           <description>Product " + i + "</description>" +
+                                    "           <price>" + (i * 2.5) + "</price>" +
+                                    "           <stock>" + (i * 10) + "</stock>" +
+                                    "       </product>" +
+                                    "   </xu:append>" +
+                                    "</xu:modifications>";
+                    proc.setBroker(broker);
+                    proc.setDocumentSet(docs);
+                    final Modification modifications[] = proc.parse(new InputSource(new StringReader(xupdate)));
+                    assertNotNull(modifications);
+                    modifications[0].process(transaction);
+                    proc.reset();
+                }
+
+                mgr.commit(transaction);
             }
             
-            mgr.commit(transaction);
-            System.out.println("Transaction commited ...");
-            
-            Serializer serializer = broker.getSerializer();
+            final Serializer serializer = broker.getSerializer();
             serializer.reset();
             
-            DocumentImpl doc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append(TestConstants.TEST_XML_URI), Lock.READ_LOCK);
-            assertNotNull("Document '" + XmldbURI.ROOT_COLLECTION + "/test/test2/test.xml' should not be null", doc);
-            String data = serializer.serialize(doc);
-            System.out.println(data);
-            doc.getUpdateLock().release(Lock.READ_LOCK);
+            DocumentImpl doc = null;
+            try {
+                doc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append(TestConstants.TEST_XML_URI), Lock.READ_LOCK);
+                assertNotNull("Document '" + XmldbURI.ROOT_COLLECTION + "/test/test2/test.xml' should not be null", doc);
+                final String data = serializer.serialize(doc);
+            } finally {
+                if(doc != null) {
+                    doc.getUpdateLock().release(Lock.READ_LOCK);
+                }
+            }
             
             // the following transaction will not be committed and thus undone during recovery
-            transaction = mgr.beginTransaction();
-            System.out.println("Transaction started ...");
-            
+            final Txn transaction = mgr.beginTransaction();
+
             // remove elements
             for (int i = 1; i <= 25; i++) {
-                xupdate =
+                final String xupdate =
                     "<xu:modifications version=\"1.0\" xmlns:xu=\"http://www.xmldb.org/xupdate\">" +
                     "   <xu:remove select=\"/products/product[last()]\"/>" +
                     "</xu:modifications>";
                 proc.setBroker(broker);
                 proc.setDocumentSet(docs);
-                modifications = proc.parse(new InputSource(new StringReader(xupdate)));
+                final Modification modifications[] = proc.parse(new InputSource(new StringReader(xupdate)));
                 assertNotNull(modifications);
                 modifications[0].process(transaction);
                 proc.reset();
             }
             
-//          Don't commit...            
+//DO NOT COMMIT TRANSACTION
             pool.getTransactionManager().getJournal().flushToLog(true);
-            System.out.println("Transaction interrupted ...");
-	    } catch (Exception e) {            
-	        fail(e.getMessage());  
-	    } finally {
-            pool.release(broker);
-        }
+	    }
     }
 }

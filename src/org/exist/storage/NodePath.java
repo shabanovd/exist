@@ -24,9 +24,12 @@ package org.exist.storage;
 
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.util.FastStringBuffer;
+
+import javax.xml.XMLConstants;
 
 
 /**
@@ -34,7 +37,7 @@ import org.exist.util.FastStringBuffer;
  */
 public class NodePath implements Comparable<NodePath> {
 
-    private final static Logger LOG = Logger.getLogger(NodePath.class);
+    private final static Logger LOG = LogManager.getLogger(NodePath.class);
 
     /**
      * (Illegal) QNames used as a marker for arbitrary path steps.
@@ -208,6 +211,8 @@ public class NodePath implements Comparable<NodePath> {
         String prefix = QName.extractPrefix(component);
         final String localName = QName.extractLocalName(component);
         String namespaceURI = null;
+
+        //TODO simplify this code (AR)
         if (prefix != null) {
             namespaceURI = namespaces.get(prefix);
             if(namespaceURI == null) {
@@ -217,14 +222,16 @@ public class NodePath implements Comparable<NodePath> {
                 namespaceURI = "";
             }
         } else if (namespaces != null) {
-            namespaceURI = namespaces.get("");
+            namespaceURI = namespaces.get(XMLConstants.DEFAULT_NS_PREFIX);
         }
-        if (namespaceURI == null)
-            {namespaceURI = "";}
-        final QName qn = new QName(localName, namespaceURI, prefix);
-        LOG.debug("URI = " + namespaceURI);
-        if (isAttribute)
-            {qn.setNameType(ElementValue.ATTRIBUTE);}
+
+        final QName qn;
+        if (isAttribute) {
+            qn = new QName(localName, namespaceURI, prefix, ElementValue.ATTRIBUTE);
+        } else {
+            qn = new QName(localName, namespaceURI, prefix);
+        }
+        LOG.debug("URI = " + qn.getNamespaceURI());
         addComponent(qn);
     }
 

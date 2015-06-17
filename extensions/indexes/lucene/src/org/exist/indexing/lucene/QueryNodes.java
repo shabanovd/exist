@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -32,7 +32,6 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldValueHitQueue;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -40,9 +39,9 @@ import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.exist.Database;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.NodeProxy;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.indexing.lucene.LuceneIndexWorker.LuceneMatch;
 import org.exist.numbering.NodeId;
@@ -50,7 +49,7 @@ import org.exist.numbering.NodeIdFactory;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ElementValue;
 import org.exist.util.ByteConversion;
-import org.exist.xquery.TerminatedException;
+import org.exist.xquery.XPathException;
 import org.w3c.dom.Node;
 
 /**
@@ -65,13 +64,11 @@ public class QueryNodes {
 			QName qname, int contextId, 
 			DocumentSet docs, Query query, FacetsConfig facetsConfig,
 			SearchCallback<NodeProxy> callback, int maxHits, Sort sort)
-			throws IOException, ParseException, TerminatedException {
+        throws IOException, ParseException, XPathException {
 
 		LuceneIndex index = worker.index;
 
-		IndexSearcher searcher = null;
-		try {
-			searcher = index.getSearcher();
+        return index.withSearcher(searcher -> {
 
             FieldValueHitQueue<MyEntry> queue;
             if (sort == null) {
@@ -97,48 +94,42 @@ public class QueryNodes {
 			collector.finish();
 
 			return collector.facets(index.getTaxonomyReader(), facetsConfig);
-		} finally {
-			index.releaseSearcher(searcher);
-		}
+        });
 	}
-        public static Facets query(LuceneIndexWorker worker,
-                QName qname, int contextId, DocumentSet docs, Query query,
-                FacetsConfig facetsConfig, SearchCallback<NodeProxy> callback)
-                throws IOException, ParseException, TerminatedException {
-            
-            return query(worker, qname, contextId, docs, query, facetsConfig, callback, Integer.MAX_VALUE);
-            
-        }
+
+    public static Facets query(LuceneIndexWorker worker,
+            QName qname, int contextId, DocumentSet docs, Query query,
+            FacetsConfig facetsConfig, SearchCallback<NodeProxy> callback)
+        throws IOException, ParseException, XPathException {
+
+        return query(worker, qname, contextId, docs, query, facetsConfig, callback, Integer.MAX_VALUE);
+
+    }
 
 	public static Facets query(LuceneIndexWorker worker,
 			QName qname, int contextId, DocumentSet docs, Query query,
 			FacetsConfig facetsConfig, SearchCallback<NodeProxy> callback, int maxHits)
-			throws IOException, ParseException, TerminatedException {
+        throws IOException, ParseException, XPathException {
 
 		LuceneIndex index = worker.index;
 
-		IndexSearcher searcher = null;
-		try {
-			searcher = index.getSearcher();
+        return index.withSearcher(searcher -> {
 
 			NodeHitCollector collector = new NodeHitCollector(worker, maxHits, query, qname, contextId, docs, callback);
 
 			searcher.search(query, collector);
 
 			return collector.facets(index.getTaxonomyReader(), facetsConfig);
-
-		} finally {
-			index.releaseSearcher(searcher);
-		}
+		});
 	}
 
 	public static Facets query(LuceneIndexWorker worker,
-			DocumentSet docs, List<QName> qnames, int contextId,
+			DocumentSet docs, List<QName> names, int contextId,
 			String queryStr, FacetsConfig facetsConfig,
 			Properties options, SearchCallback<NodeProxy> callback)
-			throws IOException, ParseException, TerminatedException {
+			throws IOException, ParseException, XPathException {
 
-		qnames = worker.getDefinedIndexes(qnames);
+        List<QName> qnames = worker.getDefinedIndexes(names);
 
 		LuceneIndex index = worker.index;
 
@@ -146,9 +137,7 @@ public class QueryNodes {
 
 		DBBroker broker = db.getActiveBroker();
 
-		IndexSearcher searcher = null;
-		try {
-			searcher = index.getSearcher();
+        return index.withSearcher(searcher -> {
 
 			NodeHitCollector collector = 
 					new NodeHitCollector(worker, -1, null, null, contextId, docs, callback);
@@ -162,9 +151,14 @@ public class QueryNodes {
 				QueryParser parser = new QueryParser(
 						LuceneIndex.LUCENE_VERSION_IN_USE, field, analyzer);
 
-				worker.setOptions(options, parser);
+                Query query;
+                try {
+                    worker.setOptions(options, parser);
 
-				Query query = parser.parse(queryStr);
+                    query = parser.parse(queryStr);
+                } catch (ParseException e) {
+                    throw new XPathException(e);
+                }
 
 				collector.field = field;
 				collector.qname = qname;
@@ -174,10 +168,7 @@ public class QueryNodes {
 			}
 
 			return collector.facets(index.getTaxonomyReader(), facetsConfig);
-
-		} finally {
-			index.releaseSearcher(searcher);
-		}
+        });
 	}
 
 	private static class NodeHitCollector extends QueryFacetCollector {

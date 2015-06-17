@@ -21,68 +21,38 @@
  */
 package org.exist.xquery.modules.httpclient;
 
-import java.io.ByteArrayOutputStream;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpMethodBase;
-import org.apache.commons.httpclient.HttpState;
-import org.apache.commons.httpclient.NameValuePair;
-import org.apache.commons.httpclient.ProxyHost;
-import org.apache.commons.httpclient.URIException;
+import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.OptionsMethod;
 import org.apache.commons.httpclient.util.EncodingUtil;
-
-import org.apache.log4j.Logger;
-
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
+import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
-import org.exist.memtree.DocumentBuilderReceiver;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.memtree.DocumentBuilderReceiver;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.NodeImpl;
+import org.exist.util.Configuration;
 import org.exist.util.MimeTable;
 import org.exist.util.MimeType;
-import org.exist.xquery.BasicFunction;
-import org.exist.xquery.Cardinality;
-import org.exist.xquery.FunctionSignature;
-import org.exist.xquery.XPathException;
-import org.exist.xquery.XQueryContext;
-import org.exist.xquery.modules.ModuleUtils;
-import org.exist.xquery.value.Base64BinaryValueType;
-import org.exist.xquery.value.FunctionParameterSequenceType;
-import org.exist.xquery.value.FunctionReturnSequenceType;
-import org.exist.xquery.value.NodeValue;
-import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.Type;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import org.apache.commons.httpclient.Credentials;
-import org.apache.commons.httpclient.NTCredentials;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.io.input.CloseShieldInputStream;
-import org.exist.util.Configuration;
 import org.exist.util.io.CachingFilterInputStream;
 import org.exist.util.io.FilterInputStreamCache;
 import org.exist.util.io.FilterInputStreamCacheFactory;
-import org.exist.xquery.value.BinaryValue;
-import org.exist.xquery.value.BinaryValueFromInputStream;
+import org.exist.xquery.*;
+import org.exist.xquery.modules.ModuleUtils;
+import org.exist.xquery.value.*;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base class for HTTP client methods
@@ -95,8 +65,8 @@ import org.exist.xquery.value.BinaryValueFromInputStream;
 
 public abstract class BaseHTTPClientFunction extends BasicFunction
 {
-    protected static final Logger                        logger                         = Logger.getLogger( BaseHTTPClientFunction.class );
-	
+    protected static final Logger                        logger                         = LogManager.getLogger( BaseHTTPClientFunction.class );
+
     protected static final FunctionParameterSequenceType URI_PARAM                      = new FunctionParameterSequenceType( "url", Type.ANY_URI, Cardinality.EXACTLY_ONE, "The URL to process" );
     protected static final FunctionParameterSequenceType PUT_CONTENT_PARAM              = new FunctionParameterSequenceType( "content", Type.ITEM, Cardinality.EXACTLY_ONE, "The XML PUT payload/content. If it is an XML Node it will be serialized. If it is a binary stream it pass as it, any other type will be atomized into a string." );
     protected static final FunctionParameterSequenceType POST_CONTENT_PARAM             = new FunctionParameterSequenceType( "content", Type.ITEM, Cardinality.EXACTLY_ONE, "The XML POST payload/content. If it is an XML Node it will be serialized, any other type will be atomized into a string." );
@@ -111,6 +81,7 @@ public abstract class BaseHTTPClientFunction extends BasicFunction
     final static String                                  NAMESPACE_URI                  = HTTPClientModule.NAMESPACE_URI;
     final static String                                  PREFIX                         = HTTPClientModule.PREFIX;
     final static String                                  HTTP_MODULE_PERSISTENT_STATE 	= HTTPClientModule.HTTP_MODULE_PERSISTENT_STATE;
+    final static String                                  HTTP_MODULE_PERSISTENT_OPTIONS	= HTTPClientModule.HTTP_MODULE_PERSISTENT_OPTIONS;
 
     final static String                                  HTTP_EXCEPTION_STATUS_CODE     = "500";
 
@@ -153,20 +124,28 @@ public abstract class BaseHTTPClientFunction extends BasicFunction
     /**
      * Performs a HTTP Request.
      *
-     * @param   context         The context of the calling XQuery
-     * @param   method          The HTTP method for the request
-     * @param   persistState  	If true existing HTTP state (cookies, credentials, etc) are re-used and athe state is persisted for future HTTP Requests
+     * @param   context          The context of the calling XQuery
+     * @param   method           The HTTP method for the request
+     * @param   persistState  	 If true existing HTTP state (cookies, credentials, etc) are re-used and athe state is persisted for future HTTP Requests
+     * @param   parserFeatures   Map of NekoHtml parser features to be used for the HTML parser. If null, the session-wide options will be used.
+     * @param   parserProperties Map of NekoHtml parser properties to be used for the HTML parser. If null, the session-wide options will be used.
      *
      * @return  DOCUMENT ME!
      *
      * @throws  IOException     
      * @throws  XPathException  
      */
-    protected Sequence doRequest(final XQueryContext context, final HttpMethod method, final boolean persistState, final Map<String, Boolean> parserFeatures, final Map<String, String> parserProperties) throws IOException, XPathException {
+    protected Sequence doRequest(final XQueryContext context, final HttpMethod method, boolean persistState, Map<String, Boolean> parserFeatures, Map<String, String> parserProperties) throws IOException, XPathException {
         
         Sequence encodedResponse = null;
 
-        final HttpClient http = new HttpClient();
+        final HttpClient http = HTTPClientModule.httpClient;
+
+        FeaturesAndProperties defaultFeaturesAndProperties = (FeaturesAndProperties) context.getXQueryContextVar(HTTP_MODULE_PERSISTENT_OPTIONS);
+        if (defaultFeaturesAndProperties != null) {
+            if (parserFeatures   == null) parserFeatures   = defaultFeaturesAndProperties.getFeatures();
+            if (parserProperties == null) parserProperties = defaultFeaturesAndProperties.getProperties();
+        }
 
         //execute the request	
         try {
@@ -179,24 +158,6 @@ public abstract class BaseHTTPClientFunction extends BasicFunction
                     http.setState(state);
                 }
             }
-			
-            final String configFile = System.getProperty("http.configfile");
-            if(configFile != null) {
-                final File f = new File(configFile);
-                if(f.exists()) {
-                    setConfigFromFile(f, http);
-                } else {
-                    logger.warn("http.configfile '" + f.getAbsolutePath() + "' does not exist!");
-                }
-            }
-            
-            // Legacy: set the proxy server (if any)
-            final String proxyHost = System.getProperty("http.proxyHost");
-            if(proxyHost != null) {
-                //TODO: support for http.nonProxyHosts e.g. -Dhttp.nonProxyHosts="*.devonline.gov.uk|*.devon.gov.uk"
-                final ProxyHost proxy = new ProxyHost(proxyHost, Integer.parseInt(System.getProperty("http.proxyPort")));
-                http.getHostConfiguration().setProxyHost(proxy);
-            } 
 
             //perform the request
             final int statusCode = http.executeMethod(method);
@@ -214,79 +175,6 @@ public abstract class BaseHTTPClientFunction extends BasicFunction
 
         return encodedResponse;
     }
-    
-    private void setConfigFromFile(final File configFile, final HttpClient http) {
-        
-        if(logger.isDebugEnabled()) {
-            logger.debug("http.configfile='" + configFile.getAbsolutePath() + "'");
-        }
-
-        final Properties props = new Properties();
-        InputStream is = null;
-        try {
-
-            if(logger.isDebugEnabled()) {
-                logger.debug("Loading proxy settings from " + configFile.getAbsolutePath());
-            }
-
-            is = new FileInputStream(configFile);
-            props.load(is);
-        
-
-            // Hostname / port
-            final String proxyHost = props.getProperty("proxy.host");
-            final int proxyPort = Integer.valueOf(props.getProperty("proxy.port", "8080"));
-
-            // Username / password
-            final String proxyUser = props.getProperty("proxy.user");
-            final String proxyPassword = props.getProperty("proxy.password");
-
-            // NTLM specifics
-            String proxyDomain = props.getProperty("proxy.ntlm.domain");
-            if ("NONE".equalsIgnoreCase(proxyDomain)) {
-                if(logger.isDebugEnabled()) {
-                    logger.debug("Forcing removal NTLM");
-                }
-                proxyDomain = null;
-            }
-
-            // Set scope       
-            final AuthScope authScope = new AuthScope(proxyHost, proxyPort);
-
-            // Setup right credentials
-            final Credentials credentials;
-            if (proxyDomain == null) {
-                credentials = new UsernamePasswordCredentials(proxyUser, proxyPassword);
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Using NTLM authentication for '" + proxyDomain + "'");
-                }
-                credentials = new NTCredentials(proxyUser, proxyPassword, proxyHost, proxyDomain);
-            }
-
-            // Set details
-            final HttpState state = http.getState();
-            http.getHostConfiguration().setProxy(proxyHost, proxyPort);
-            state.setProxyCredentials(authScope, credentials);
-
-            if (logger.isDebugEnabled()) {
-                logger.info("Set proxy: " + proxyUser + "@" + proxyHost + ":" 
-                        + proxyPort + (proxyDomain == null ? "" : " (NTLM:'" 
-                        + proxyDomain + "')"));
-            }
-        } catch (final IOException ex) {
-            logger.error("Failed to read proxy configuration from '" + configFile + "'", ex);
-        } finally {
-            if(is != null) {
-                try {
-                    is.close();
-                } catch(final IOException ioe) {
-                    logger.warn(ioe.getMessage(), ioe);
-                }
-            }
-        }
-    }
-
 
     /**
      * Takes the HTTP Response and encodes it as an XML structure.
@@ -493,11 +381,10 @@ public abstract class BaseHTTPClientFunction extends BasicFunction
                         final byte buf[] = new byte[4096];
                         int read = -1;
                         while((read = cfis.read(buf)) > -1) {
-                            baos.write(buf);
+                            baos.write(buf, 0, read);
                         }
-                        
-                        builder.characters(URLEncoder.encode(EncodingUtil.getString(baos.toByteArray(), ((HttpMethodBase)method).getResponseCharSet()), "UTF-8"));
                         baos.close();
+                        builder.characters(URLEncoder.encode(EncodingUtil.getString(baos.toByteArray(), ((HttpMethodBase)method).getResponseCharSet()), "UTF-8"));
                     } else {
 
                         // Assume it's a binary body and Base64 encode it

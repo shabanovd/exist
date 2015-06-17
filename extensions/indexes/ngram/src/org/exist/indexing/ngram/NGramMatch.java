@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  */
 package org.exist.indexing.ngram;
 
-import org.exist.dom.Match;
+import org.exist.dom.persistent.Match;
 import org.exist.numbering.NodeId;
 
 public class NGramMatch extends Match {

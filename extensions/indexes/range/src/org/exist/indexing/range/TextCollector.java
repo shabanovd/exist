@@ -1,7 +1,7 @@
 package org.exist.indexing.range;
 
-import org.exist.dom.AttrImpl;
-import org.exist.dom.CharacterDataImpl;
+import org.exist.dom.persistent.AttrImpl;
+import org.exist.dom.persistent.AbstractCharacterData;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
 import org.exist.util.XMLString;
@@ -14,7 +14,7 @@ public interface TextCollector {
 
     public void endElement(QName qname, NodePath path);
 
-    public void characters(CharacterDataImpl text, NodePath path);
+    public void characters(AbstractCharacterData text, NodePath path);
 
     public void attribute(AttrImpl attribute, NodePath path);
 

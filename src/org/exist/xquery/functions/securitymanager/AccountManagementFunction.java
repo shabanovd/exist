@@ -7,12 +7,12 @@
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- *
+ *  
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software Foundation
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -44,7 +44,7 @@ public class AccountManagementFunction extends BasicFunction {
     public final static QName qnRemoveAccount = new QName("remove-account", SecurityManagerModule.NAMESPACE_URI, SecurityManagerModule.PREFIX);
     public final static QName qnPasswd = new QName("passwd", SecurityManagerModule.NAMESPACE_URI, SecurityManagerModule.PREFIX);
     public final static QName qnPasswdHash = new QName("passwd-hash", SecurityManagerModule.NAMESPACE_URI, SecurityManagerModule.PREFIX);
-
+    
     public final static FunctionSignature FNS_CREATE_ACCOUNT = new FunctionSignature(
         qnCreateAccount,
         "Creates a User Account.",
@@ -109,7 +109,7 @@ public class AccountManagementFunction extends BasicFunction {
             "Changes the password of a User Account.",
             new SequenceType[] {
                 new FunctionParameterSequenceType("username", Type.STRING, Cardinality.EXACTLY_ONE, "The User's username."),
-                new FunctionParameterSequenceType("password", Type.STRING, Cardinality.EXACTLY_ONE, "The new User's password."),
+                new FunctionParameterSequenceType("password", Type.STRING, Cardinality.EXACTLY_ONE, "The User's new password."),
             },
             new SequenceType(Type.EMPTY, Cardinality.ZERO)
     );
@@ -117,12 +117,13 @@ public class AccountManagementFunction extends BasicFunction {
     public final static FunctionSignature FNS_PASSWD_HASH = new FunctionSignature(
             qnPasswdHash,
             "Changes the password of a User Account by directly setting the stored digest password. The use-case for this function is migrating a user from one eXist instance to another.",
-            new SequenceType[]{
+            new SequenceType[] {
                 new FunctionParameterSequenceType("username", Type.STRING, Cardinality.EXACTLY_ONE, "The User's username."),
                 new FunctionParameterSequenceType("password-digest", Type.STRING, Cardinality.EXACTLY_ONE, "The encoded digest of the User's new password (assumes eXist's default digest algorithm)."),
             },
-        new SequenceType(Type.EMPTY, Cardinality.ZERO)
+            new SequenceType(Type.EMPTY, Cardinality.ZERO)
     );
+
     
     public AccountManagementFunction(final XQueryContext context, final FunctionSignature signature) {
         super(context, signature);
@@ -138,7 +139,7 @@ public class AccountManagementFunction extends BasicFunction {
         final String username = args[0].getStringValue();
 
         try {
-            if(isCalledAs(qnRemoveAccount.getLocalName())) {
+            if(isCalledAs(qnRemoveAccount.getLocalPart())) {
                 /* remove account */
                 if(!currentUser.hasDbaRole()) {
                     throw new XPathException("Only a DBA user may remove accounts.");
@@ -158,7 +159,7 @@ public class AccountManagementFunction extends BasicFunction {
 
                 final String password = args[1].getStringValue();
 
-                if(isCalledAs(qnPasswd.getLocalName()) | isCalledAs(qnPasswdHash.getLocalName())) {
+                if(isCalledAs(qnPasswd.getLocalPart()) | isCalledAs(qnPasswdHash.getLocalPart())) {
                     /* change password */
 
                     if(!(currentUser.getName().equals(username) || currentUser.hasDbaRole())) {
@@ -166,14 +167,16 @@ public class AccountManagementFunction extends BasicFunction {
                     }
 
                     final Account account = securityManager.getAccount(username);
-                    if(isCalledAs(qnPasswdHash.getLocalName())) {
+
+                    if(isCalledAs(qnPasswdHash.getLocalPart())) {
                         account.setCredential(new Password(account, Password.DEFAULT_ALGORITHM, password));
                     } else {
                         account.setPassword(password);
                     }
-                    securityManager.updateAccount(account);
 
-                } else if(isCalledAs(qnCreateAccount.getLocalName())) {
+                    securityManager.updateAccount(account);
+                    
+                } else if(isCalledAs(qnCreateAccount.getLocalPart())) {
                     /* create account */
                     if(!currentUser.hasDbaRole()) {
                         throw new XPathException("You must be a DBA to create a User Account.");

@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 package org.exist.collections.triggers;
 
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
@@ -44,7 +44,7 @@ import org.exist.xmldb.XmldbURI;
  * The DocumentTrigger interface is also called for binary resources. However, in this case, the trigger can not function as
  * a filter and the SAX-related methods are useless. Only {@link #prepare(int, DBBroker, Txn, XmldbURI, DocumentImpl)} and
  * {@link #finish(int, DBBroker, Txn, XmldbURI, DocumentImpl)} will be called. To determine if the document is a binary resource,
- * call {@link org.exist.dom.DocumentImpl#getResourceType()}.
+ * call {@link org.exist.dom.persistent.DocumentImpl#getResourceType()}.
  * 
  * The general contract for a trigger is as follows:
  * 

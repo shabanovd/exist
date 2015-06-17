@@ -1,5 +1,6 @@
 package org.exist.xslt;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.runners.Parameterized.Parameters;
@@ -15,7 +16,9 @@ import org.junit.Test;
 import static org.easymock.classextension.EasyMock.expect;
 import static org.easymock.classextension.EasyMock.verify;
 import static org.easymock.classextension.EasyMock.replay;
+import org.junit.After;
 import static org.junit.Assert.assertEquals;
+import org.junit.runners.Parameterized.Parameter;
 
 /**
  * @author Adam Retter <adam@exist-db.org>
@@ -23,20 +26,17 @@ import static org.junit.Assert.assertEquals;
 @RunWith(value = Parameterized.class)
 public class TransfomerFactoryAllocatorTest {
 
-    @Parameters
-    public static Collection data() {
-        Object[][] data = new Object[][] {
+    @Parameters(name = "{0}")
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][] {
             { "net.sf.saxon.TransformerFactoryImpl" },
             { "org.apache.xalan.processor.TransformerFactoryImpl" },
             { "org.exist.xslt.TransformerFactoryImpl" }
-        };
-        return Arrays.asList(data);
+        });
     }
 
-    private final String transformerFactoryClass;
-    public TransfomerFactoryAllocatorTest(String transformerFactoryClass) {
-        this.transformerFactoryClass = transformerFactoryClass;
-    }
+    @Parameter
+    public String transformerFactoryClass;
 
     @Test
     public void getTransformerFactory() {
@@ -57,5 +57,12 @@ public class TransfomerFactoryAllocatorTest {
         assertEquals(transformerFactoryClass, transformerFactory.getClass().getName());
 
         verify(mockBrokerPool, mockConfiguration);
+    }
+
+    @After
+    public void resetTransformerFactoryAllocatorSingleton() throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+        Field field = TransformerFactoryAllocator.class.getDeclaredField("saxTransformerFactory");
+        field.setAccessible(true);
+        field.set(null, null);
     }
 }

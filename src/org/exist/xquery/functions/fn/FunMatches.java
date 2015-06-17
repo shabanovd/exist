@@ -1,32 +1,29 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-09 Wolfgang M. Meier
- *  wolfgang@exist-db.org
- *  http://exist.sourceforge.net
- *  
+ *  Copyright (C) 2001-2015 The eXist Project
+ *  http://exist-db.org
+ *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
  *  as published by the Free Software Foundation; either version 2
  *  of the License, or (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.exist.xquery.functions.fn;
 
 import org.exist.EXistException;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.ExtArrayNodeSet;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.ExtArrayNodeSet;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ElementValue;
@@ -59,10 +56,10 @@ import java.util.regex.PatternSyntaxException;
  */
 public class FunMatches extends Function implements Optimizable, IndexUseReporter {
 
-	public static final String FUNCTION_DESCRIPTION_1_PARAM =
+	protected static final String FUNCTION_DESCRIPTION_1_PARAM =
 		"The function returns true if $input matches the regular expression " +
 		"supplied as $pattern, if present; otherwise, it returns false.\n\n";
-	public static final String FUNCTION_DESCRIPTION_2_PARAM =
+	protected static final String FUNCTION_DESCRIPTION_2_PARAM =
 		"The function returns true if $input matches the regular expression " +
 		"supplied as $pattern as influenced by the value of $flags, if present; " +
 		"otherwise, it returns false.\n\n" +
@@ -82,19 +79,19 @@ public class FunMatches extends Function implements Optimizable, IndexUseReporte
         "specification - this method allows zero or more items for the string argument.\n\n" +
 		"An error is raised [err:FORX0002] if the value of $pattern is invalid " +
 		"according to the rules described in section 7.6.1 Regular Expression Syntax.\n\n";
-	public static final String FUNCTION_DESCRIPTION_2_PARAM_2 =
+	protected static final String FUNCTION_DESCRIPTION_2_PARAM_2 =
 		"An error is raised [err:FORX0001] if the value of $flags is invalid " +
 		"according to the rules described in section 7.6.1 Regular Expression Syntax.";
 	
-	public static final String FUNCTION_DESCRIPTION_REGEX =
+	protected static final String FUNCTION_DESCRIPTION_REGEX =
 		"If $input is the empty sequence, it is interpreted as the zero-length string.\n\n" +
 		"Note:\n\n" +
 		"The text:matches-regex() variants of the fn:matches() functions are identical except that they avoid the translation of the specified regular expression from XPath2 to Java syntax. " +
 		"That is, the regular expression is evaluated as is, and must be valid according to Java regular expression syntax, rather than the more restrictive XPath2 syntax.";
 
-	public static final FunctionParameterSequenceType INPUT_ARG = new FunctionParameterSequenceType("input", Type.STRING, Cardinality.ZERO_OR_MORE, "The input string");
-	public static final FunctionParameterSequenceType PATTERN_ARG = new FunctionParameterSequenceType("pattern", Type.STRING, Cardinality.EXACTLY_ONE, "The pattern");
-	public static final FunctionParameterSequenceType FLAGS_ARG = new FunctionParameterSequenceType("flags", Type.STRING, Cardinality.EXACTLY_ONE, "The flags");
+	protected static final FunctionParameterSequenceType INPUT_ARG = new FunctionParameterSequenceType("input", Type.STRING, Cardinality.ZERO_OR_MORE, "The input string");
+	protected static final FunctionParameterSequenceType PATTERN_ARG = new FunctionParameterSequenceType("pattern", Type.STRING, Cardinality.EXACTLY_ONE, "The pattern");
+	protected static final FunctionParameterSequenceType FLAGS_ARG = new FunctionParameterSequenceType("flags", Type.STRING, Cardinality.EXACTLY_ONE, "The flags");
 
 	public final static FunctionSignature signatures[] = {
 		new FunctionSignature(
@@ -111,9 +108,7 @@ public class FunMatches extends Function implements Optimizable, IndexUseReporte
 			new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "true if the pattern is a match, false otherwise")
 		)
 	};
-		
-	// The following alternative functions are located in the text namespace! If the indexes of the signatures change then change TextModule as well!
-		
+
 	protected Matcher matcher = null;
 	protected Pattern pat = null;
 	
@@ -163,9 +158,12 @@ public class FunMatches extends Function implements Optimizable, IndexUseReporte
             if (firstStep != null && lastStep != null) {
 	            final NodeTest test = lastStep.getTest();
 	            if (!test.isWildcardTest() && test.getName() != null) {
-	                contextQName = new QName(test.getName());
-	                if (lastStep.getAxis() == Constants.ATTRIBUTE_AXIS || lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS)
-	                    {contextQName.setNameType(ElementValue.ATTRIBUTE);}
+
+	                if (lastStep.getAxis() == Constants.ATTRIBUTE_AXIS || lastStep.getAxis() == Constants.DESCENDANT_ATTRIBUTE_AXIS) {
+                        contextQName = new QName(test.getName(), ElementValue.ATTRIBUTE);
+                    } else {
+                        contextQName = new QName(test.getName());
+                    }
 	                contextStep = lastStep;
 	                axis = firstStep.getAxis();
 	                if (axis == Constants.SELF_AXIS && steps.size() > 1) {
@@ -283,7 +281,7 @@ public class FunMatches extends Function implements Optimizable, IndexUseReporte
     }
     
 	/* (non-Javadoc)
-	 * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+	 * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
 	 */
 	public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
         final long start = System.currentTimeMillis();

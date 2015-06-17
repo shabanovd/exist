@@ -24,8 +24,8 @@ package org.exist.xquery;
 
 import org.exist.Namespaces;
 import org.exist.dom.QName;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.util.XMLChar;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xquery.value.Item;
@@ -67,7 +67,7 @@ public class DynamicAttributeConstructor extends NodeConstructor {
     }
 
     public void setContentExpr(Expression expr) {
-        this.valueExpr  = new Atomize(context, expr);
+        this.valueExpr  = expr;
     }
 
     public Expression getContentExpr() {
@@ -122,11 +122,11 @@ public class DynamicAttributeConstructor extends NodeConstructor {
 				}
 
             //Not in the specs but... makes sense
-            if(!XMLChar.isValidName(qn.getLocalName()))
-            	{throw new XPathException(this, ErrorCodes.XPTY0004, "'" + qn.getLocalName() + "' is not a valid attribute name");}
+            if(!XMLChar.isValidName(qn.getLocalPart()))
+            	{throw new XPathException(this, ErrorCodes.XPTY0004, "'" + qn.getLocalPart() + "' is not a valid attribute name");}
             
-            if ("xmlns".equals(qn.getLocalName()) && qn.getNamespaceURI().isEmpty())
-            	{throw new XPathException(this, ErrorCodes.XQDY0044, "'" + qn.getLocalName() + "' is not a valid attribute name");}
+            if ("xmlns".equals(qn.getLocalPart()) && qn.getNamespaceURI().isEmpty())
+            	{throw new XPathException(this, ErrorCodes.XQDY0044, "'" + qn.getLocalPart() + "' is not a valid attribute name");}
 
             String value;
             final Sequence valueSeq = valueExpr.eval(contextSequence, contextItem);
@@ -134,7 +134,7 @@ public class DynamicAttributeConstructor extends NodeConstructor {
             	{value = "";}
             else {
                 final StringBuilder buf = new StringBuilder();
-                for(final SequenceIterator i = valueSeq.iterate(); i.hasNext(); ) {
+                for(final SequenceIterator i = Atomize.atomize(valueSeq).iterate(); i.hasNext(); ) {
                     final Item next = i.nextItem();
                     buf.append(next.getStringValue());
                     if(i.hasNext())
@@ -165,7 +165,7 @@ public class DynamicAttributeConstructor extends NodeConstructor {
     
     public static String normalize(Expression expr, QName qn, String value) throws XPathException {
         //normalize xml:id
-    	if (qn.equalsSimple(Namespaces.XML_ID_QNAME)) {
+    	if (qn.equals(Namespaces.XML_ID_QNAME)) {
     		value = StringValue.trimWhitespace(StringValue.collapseWhitespace(value));
             if (!XMLChar.isValidNCName(value))
                 {throw new XPathException(expr, ErrorCodes.XQDY0091, "Value of xml:id attribute is not a valid NCName: " + value);}

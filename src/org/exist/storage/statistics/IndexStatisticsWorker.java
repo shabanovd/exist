@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -20,20 +20,15 @@
 package org.exist.storage.statistics;
 
 import org.exist.collections.Collection;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.ElementImpl;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.*;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
 import org.exist.indexing.AbstractStreamListener;
 import org.exist.indexing.IndexController;
 import org.exist.indexing.IndexWorker;
 import org.exist.indexing.MatchListener;
 import org.exist.indexing.StreamListener;
 import org.exist.stax.EmbeddedXMLStreamReader;
+import org.exist.stax.ExtendedXMLStreamReader;
 import org.exist.storage.DBBroker;
 import org.exist.storage.NativeBroker;
 import org.exist.storage.NodePath;
@@ -51,7 +46,6 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Stack;
@@ -113,7 +107,7 @@ public class IndexStatisticsWorker implements IndexWorker {
         return mode;
     }
 
-    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf) {
+    public <T extends IStoredNode> IStoredNode getReindexRoot(IStoredNode<T> node, NodePath path, boolean insert, boolean includeSelf) {
         return null;
     }
 
@@ -152,7 +146,7 @@ public class IndexStatisticsWorker implements IndexWorker {
             final NodePath path = new NodePath();
             final Stack<NodeStats> stack = new Stack<NodeStats>();
             QName qname;
-            final EmbeddedXMLStreamReader reader = broker.getXMLStreamReader(root, false);
+            final ExtendedXMLStreamReader reader = broker.getXMLStreamReader(root, false);
             while (reader.hasNext()) {
                 final int status = reader.next();
                 switch (status) {
@@ -187,8 +181,20 @@ public class IndexStatisticsWorker implements IndexWorker {
         return false;
     }
 
-    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map<?,?> hints) {
+    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map hints) {
         return new Occurrences[0];
+    }
+
+    @Override
+    public void indexCollection(Collection col) {
+    }
+
+    @Override
+    public void indexBinary(BinaryDocument doc) {
+    }
+
+    @Override
+    public void removeBinary(BinaryDocument doc) {
     }
 
     private class StatisticsListener extends AbstractStreamListener {
@@ -244,17 +250,5 @@ public class IndexStatisticsWorker implements IndexWorker {
             }
             return true;
         }
-    }
-
-	@Override
-	public void indexCollection(Collection col) {
-	}
-
-    @Override
-    public void indexBinary(BinaryDocument doc) {
-    }
-
-    @Override
-    public void removeBinary(BinaryDocument doc) {
     }
 }

@@ -25,8 +25,8 @@ package org.exist.validation.resolver;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.xerces.xni.XMLResourceIdentifier;
 import org.apache.xerces.xni.XNIException;
 import org.apache.xerces.xni.parser.XMLEntityResolver;
@@ -35,6 +35,7 @@ import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.validation.internal.DatabaseResources;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 /**
  *  Resolve a resource by searching in database. Schema's are queried
@@ -43,7 +44,7 @@ import org.xml.sax.InputSource;
  * @author Dannes Wessels (dizzzz@exist-db.org)
  */
 public class SearchResourceResolver implements XMLEntityResolver {
-    private final static Logger LOG = Logger.getLogger(SearchResourceResolver.class);
+    private final static Logger LOG = LogManager.getLogger(SearchResourceResolver.class);
     
     private String collection=null;
     private BrokerPool brokerPool = null;
@@ -55,9 +56,8 @@ public class SearchResourceResolver implements XMLEntityResolver {
         brokerPool=pool;
     }
     
-    /**
-     *
-     */
+
+    @Override
     public XMLInputSource resolveEntity(XMLResourceIdentifier xri) throws XNIException, IOException {
         
         if(xri.getExpandedSystemId()==null && xri.getLiteralSystemId()==null && 
@@ -106,9 +106,8 @@ public class SearchResourceResolver implements XMLEntityResolver {
                 if(source!=null){
                     resourcePath=source.getSystemId();
                 }
-            } catch (final Exception ex) {
+            } catch (final SAXException | IOException ex) {
                 LOG.debug(ex);
-                ex.printStackTrace();
             }
             
             // set systemid?
@@ -142,23 +141,14 @@ public class SearchResourceResolver implements XMLEntityResolver {
         return xis;
     }
     
-    private String getXriDetails(XMLResourceIdentifier xrid){
-        final StringBuilder sb = new StringBuilder();
-        sb.append("PublicId='").append(xrid.getPublicId()).append("' ");
-        sb.append("BaseSystemId='").append(xrid.getBaseSystemId()).append("' ");
-        sb.append("ExpandedSystemId='").append(xrid.getExpandedSystemId()).append("' ");
-        sb.append("LiteralSystemId='").append(xrid.getLiteralSystemId()).append("' ");
-        sb.append("Namespace='").append(xrid.getNamespace()).append("' ");
-        return sb.toString();
+    private String getXriDetails(XMLResourceIdentifier xrid) {
+        return String.format("PublicId='%s' BaseSystemId='%s' ExpandedSystemId='%s' LiteralSystemId='%s' Namespace='%s' ", 
+                xrid.getPublicId(), xrid.getBaseSystemId(), xrid.getExpandedSystemId(), xrid.getLiteralSystemId(), xrid.getNamespace());
     }
 
-    private String getXisDetails(XMLInputSource xis){
-        final StringBuilder sb = new StringBuilder();
-        sb.append("PublicId='").append(xis.getPublicId()).append("' ");
-        sb.append("SystemId='").append(xis.getSystemId()).append("' ");
-        sb.append("BaseSystemId='").append(xis.getBaseSystemId()).append("' ");
-        sb.append("Encoding='").append(xis.getEncoding()).append("' ");
-        return sb.toString();
+    private String getXisDetails(XMLInputSource xis) {
+        return String.format("PublicId='%s' SystemId='%s' BaseSystemId='%s' Encoding='%s' ", 
+                xis.getPublicId(), xis.getSystemId(), xis.getBaseSystemId(), xis.getEncoding());
     }
-    
+
 }

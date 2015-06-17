@@ -25,10 +25,11 @@ package org.exist.xquery.functions.util;
 
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
-import org.exist.memtree.DocumentBuilderReceiver;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.DocumentBuilderReceiver;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -46,7 +47,7 @@ import org.xml.sax.SAXException;
 
 public class DeepCopyFunction extends BasicFunction {
 	
-	protected static final Logger logger = Logger.getLogger(DeepCopyFunction.class);
+	protected static final Logger logger = LogManager.getLogger(DeepCopyFunction.class);
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(

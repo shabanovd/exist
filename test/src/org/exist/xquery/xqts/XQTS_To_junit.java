@@ -126,7 +126,6 @@ public class XQTS_To_junit {
     }
 
     private void loadDirectory(File folder, Collection col) throws Exception {
-//        System.out.println("******* loadDirectory "+folder.getName());
         if (!(folder.exists() && folder.canRead()))
             return;
         
@@ -150,8 +149,6 @@ public class XQTS_To_junit {
     }
 
     private void loadFile(File file, Collection col) throws Exception {
-//        System.out.println("******* loadFile "+file.getName());
-        
         if (file.getName().endsWith(".html") 
                 || file.getName().endsWith(".xsd")
 //                || file.getName().equals("")
@@ -162,50 +159,27 @@ public class XQTS_To_junit {
             return;
         
         TransactionManager txManager = db.getTransactionManager();
-        Txn txn = null;
-        try {
-            MimeType mime = getMimeTable().getContentTypeFor( file.getName() );
+        try(final Txn txn = txManager.beginTransaction();
+                final FileInputStream is = new FileInputStream(file)) {
+            final MimeType mime = getMimeTable().getContentTypeFor( file.getName() );
             if (mime != null && mime.isXMLType()) {
-                txn = txManager.beginTransaction();
-
                 IndexInfo info = col.validateXMLResource(txn, broker, 
                         XmldbURI.create(file.getName()), 
                         new InputSource(new FileInputStream(file))
                     );
                 //info.getDocument().getMetadata().setMimeType();
-                FileInputStream is = new FileInputStream(file);
-                try {
-                    col.store(txn, broker, info, new InputSource(is), false);
-                } finally {
-                    is.close();
-                }
-
-                txManager.commit(txn);
+                col.store(txn, broker, info, new InputSource(is), false);
             } else {
-                txn = txManager.beginTransaction();
-    
-                FileInputStream is = new FileInputStream(file);
-                try {
-                    col.addBinaryResource(txn, broker, 
-                            XmldbURI.create(file.getName()), 
-                            is, 
-                            MimeType.BINARY_TYPE.getName(), file.length());
-                } finally {
-                    is.close();
-                }
-    
-                txManager.commit(txn);
+                col.addBinaryResource(txn, broker,
+                        XmldbURI.create(file.getName()),
+                        is,
+                        MimeType.BINARY_TYPE.getName(), file.length());
             }
+            txManager.commit(txn);
         } catch (Exception e) {
-            if (txn != null) {
-                txManager.abort(txn);
-            }
             System.out.println("fail to load file "+file.getName());
             e.printStackTrace();
-        } finally {
-            txManager.close(txn);
         }
-        //System.out.println(file);
     }
 
     private MimeTable mtable = null;

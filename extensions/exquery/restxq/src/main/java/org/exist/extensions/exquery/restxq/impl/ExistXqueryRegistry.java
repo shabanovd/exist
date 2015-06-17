@@ -35,9 +35,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.log4j.Logger;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
@@ -68,7 +69,7 @@ public class ExistXqueryRegistry {
     }
     
     
-    protected final static Logger LOG = Logger.getLogger(ExistXqueryRegistry.class);
+    protected final static Logger LOG = LogManager.getLogger(ExistXqueryRegistry.class);
     
     /**
      * Key is XQuery Module URI
@@ -289,7 +290,7 @@ public class ExistXqueryRegistry {
                     final List<RestXqService> services = findServices(broker, dependantModule);
                     registerServices(broker, services);
                 } else {
-                    LOG.info("Dependant '" + compiledModuleUri + "' has been resolved. Dependency on: " + dependant + "was removed");
+                    LOG.info("Dependant '" + compiledModuleUri + "' has been resolved. Dependency on: " + dependant + " was removed");
                     
                     //we need to remove dependant from the dependenciesTree of dependant
                     removeDependency(dependant, compiledModuleUri);

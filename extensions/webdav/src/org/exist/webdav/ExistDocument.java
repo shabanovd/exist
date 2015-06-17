@@ -30,9 +30,9 @@ import java.net.URISyntaxException;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.LockToken;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.LockToken;
 import org.exist.security.Account;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
@@ -194,7 +194,7 @@ public class ExistDocument extends ExistResource {
                     }
 
                 } catch (SAXException e) {
-                    LOG.error(e.getMessage(), e);
+                    LOG.error(e);
                     throw new IOException(String.format("Error while serializing XML document: %s", e.getMessage()), e);
                 }
 
@@ -205,11 +205,11 @@ public class ExistDocument extends ExistResource {
             }
 
         } catch (EXistException e) {
-            LOG.error(e.getMessage(), e);
+            LOG.error(e);
             throw new IOException(e.getMessage());
 
         } catch (PermissionDeniedException e) {
-            LOG.error(e.getMessage(), e);
+            LOG.error(e);
             throw e;
 
         } finally {
@@ -236,15 +236,13 @@ public class ExistDocument extends ExistResource {
             LOG.debug(String.format("Deleting %s", xmldbUri));
         }
 
-        DBBroker broker = null;
         Collection collection = null;
         DocumentImpl resource = null;
 
-        TransactionManager txnManager = brokerPool.getTransactionManager();
-        Txn txn = txnManager.beginTransaction();
+        final TransactionManager txnManager = brokerPool.getTransactionManager();
 
-        try {
-            broker = brokerPool.get(subject);
+        try(final DBBroker broker = brokerPool.get(subject);
+            final Txn txn = txnManager.beginTransaction()) {
 
             // Need to split path into collection and document name
             XmldbURI collName = xmldbUri.removeLastSegment();
@@ -277,25 +275,19 @@ public class ExistDocument extends ExistResource {
             txnManager.commit(txn);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Document deleted successfully");
+                LOG.debug("Document deleted sucessfully");
             }
 
         } catch (LockException e) {
             LOG.error("Resource is locked.", e);
-            txnManager.abort(txn);
-
-        } catch (Exception e) {
+        } catch (EXistException | TriggerException | PermissionDeniedException e) {
             LOG.error(e);
-            txnManager.abort(txn);
-
         } finally {
 
             // TODO: check if can be done earlier
             if (collection != null) {
                 collection.release(Lock.WRITE_LOCK);
             }
-            txnManager.close(txn);
-            brokerPool.release(broker);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Finished delete");
@@ -312,11 +304,9 @@ public class ExistDocument extends ExistResource {
             LOG.debug("Get current lock " + xmldbUri);
         }
 
-        DBBroker broker = null;
         DocumentImpl document = null;
 
-        try {
-            broker = brokerPool.get(subject);
+        try(final DBBroker broker = brokerPool.get(subject)) {
 
             // If it is not a collection, check if it is a document
             document = broker.getXMLResource(xmldbUri, Lock.READ_LOCK);
@@ -337,7 +327,7 @@ public class ExistDocument extends ExistResource {
             }
 
             // Retrieve Locktoken from document metadata
-            org.exist.dom.LockToken token = document.getMetadata().getLockToken();
+            org.exist.dom.persistent.LockToken token = document.getMetadata().getLockToken();
             if (token == null) {
 
                 if (LOG.isDebugEnabled()) {
@@ -364,8 +354,6 @@ public class ExistDocument extends ExistResource {
                 document.getUpdateLock().release(Lock.READ_LOCK);
             }
 
-            brokerPool.release(broker);
-
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Finished probe lock");
             }
@@ -382,13 +370,9 @@ public class ExistDocument extends ExistResource {
             LOG.debug("create lock " + xmldbUri);
         }
 
-        DBBroker broker = null;
         DocumentImpl document = null;
-        TransactionManager txnManager = null;
-        Txn txn = null;
 
-        try {
-            broker = brokerPool.get(subject);
+        try(final DBBroker broker = brokerPool.get(subject)) {
 
             // Try to get document (add catch?)
             document = broker.getXMLResource(xmldbUri, Lock.WRITE_LOCK);
@@ -440,10 +424,11 @@ public class ExistDocument extends ExistResource {
             document.setUserLock(subject);
 
             // Make token persistant
-            txnManager = brokerPool.getTransactionManager();
-            txn = txnManager.beginTransaction();
-            broker.storeMetadata(txn, document);
-            txnManager.commit(txn);
+            final TransactionManager txnManager = brokerPool.getTransactionManager();
+            try(final Txn txn = txnManager.beginTransaction()) {
+                broker.storeMetadata(txn, document);
+                txnManager.commit(txn);
+            }
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Successfully retrieved token");
@@ -454,32 +439,17 @@ public class ExistDocument extends ExistResource {
 
         } catch (EXistException | PermissionDeniedException e) {
             LOG.error(e);
-            if (txnManager != null) {
-                txnManager.abort(txn);
-            }
             throw e;
 
         } catch (TriggerException e) {
-            LOG.error(e.getMessage(), e);
-            //dead code, remove?
-            if (txnManager != null) {
-                txnManager.abort(txn);
-            }
-            //-----------------------
+            LOG.error(e);
             throw new EXistException(e);
-
 		} finally {
 
             // TODO: check if can be done earlier
             if (document != null) {
                 document.getUpdateLock().release(Lock.WRITE_LOCK);
             }
-
-            if (txnManager != null) {
-                txnManager.close(txn);
-            }
-            
-            brokerPool.release(broker);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Finished create lock");
@@ -496,14 +466,12 @@ public class ExistDocument extends ExistResource {
             LOG.debug("unlock " + xmldbUri);
         }
 
-        DBBroker broker = null;
         DocumentImpl document = null;
 
-        TransactionManager txnManager = brokerPool.getTransactionManager();
-        Txn txn = txnManager.beginTransaction();
+        final TransactionManager txnManager = brokerPool.getTransactionManager();
 
-        try {
-            broker = brokerPool.get(subject);
+        try(final DBBroker broker = brokerPool.get(subject);
+            final Txn txn = txnManager.beginTransaction()) {
 
 
             // Try to get document (add catch?)
@@ -539,22 +507,16 @@ public class ExistDocument extends ExistResource {
             txnManager.commit(txn);
 
         } catch (EXistException | PermissionDeniedException e) {
-            txnManager.abort(txn);
-            LOG.error(e.getMessage(), e);
+            LOG.error(e);
             throw e;
 
         } catch (TriggerException e) {
-            txnManager.abort(txn);
-            LOG.error(e.getMessage(), e);
+            LOG.error(e);
             throw new EXistException(e);
-
 		} finally {
-
             if (document != null) {
                 document.getUpdateLock().release(Lock.WRITE_LOCK);
             }
-            txnManager.close(txn);
-            brokerPool.release(broker);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Finished create lock");
@@ -575,22 +537,20 @@ public class ExistDocument extends ExistResource {
         try {
             newNameUri = XmldbURI.xmldbUriFor(newName);
         } catch (URISyntaxException ex) {
-            LOG.error(ex.getMessage(), ex);
+            LOG.error(ex);
             throw new EXistException(ex.getMessage());
         }
 
-        DBBroker broker = null;
         Collection srcCollection = null;
         DocumentImpl srcDocument = null;
 
         Collection destCollection = null;
 
 
-        TransactionManager txnManager = brokerPool.getTransactionManager();
-        Txn txn = txnManager.beginTransaction();
+        final TransactionManager txnManager = brokerPool.getTransactionManager();
 
-        try {
-            broker = brokerPool.get(subject);
+        try(final DBBroker broker = brokerPool.get(subject);
+            final Txn txn = txnManager.beginTransaction()) {
 
             // Need to split path into collection and document name
             XmldbURI srcCollectionUri = xmldbUri.removeLastSegment();
@@ -638,17 +598,14 @@ public class ExistDocument extends ExistResource {
 
         } catch (LockException e) {
             LOG.error("Resource is locked.", e);
-            txnManager.abort(txn);
             throw new EXistException(e.getMessage());
 
         } catch (EXistException e) {
-            LOG.error(e.getMessage(), e);
-            txnManager.abort(txn);
+            LOG.error(e);
             throw e;
 
         } catch (IOException | PermissionDeniedException | TriggerException e) {
             LOG.error(e);
-            txnManager.abort(txn);
             throw new EXistException(e.getMessage());
 
         } finally {
@@ -661,9 +618,6 @@ public class ExistDocument extends ExistResource {
             if (srcCollection != null) {
                 srcCollection.release(Lock.WRITE_LOCK);
             }
-
-            txnManager.close(txn);
-            brokerPool.release(broker);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Finished " + mode);
@@ -678,7 +632,6 @@ public class ExistDocument extends ExistResource {
             LOG.debug(String.format("refresh lock %s  lock=%s", xmldbUri, token));
         }
 
-        DBBroker broker = null;
         DocumentImpl document = null;
 
         if (token == null) {
@@ -688,12 +641,7 @@ public class ExistDocument extends ExistResource {
             throw new EXistException("token is null");
         }
 
-        // Prepare transaction
-        TransactionManager txnManager = null;
-        Txn txn = null;
-
-        try {
-            broker = brokerPool.get(subject);
+        try(final DBBroker broker = brokerPool.get(subject)) {
 
             // Try to get document (add catch?)
             document = broker.getXMLResource(xmldbUri, Lock.WRITE_LOCK);
@@ -738,10 +686,11 @@ public class ExistDocument extends ExistResource {
             lockToken.setTimeOut(LockToken.LOCK_TIMEOUT_INFINITE);
 
             // Make token persistant
-            txnManager = brokerPool.getTransactionManager();
-            txn = txnManager.beginTransaction();
-            broker.storeXMLResource(txn, document);
-            txnManager.commit(txn);
+            final TransactionManager txnManager = brokerPool.getTransactionManager();
+            try(final Txn txn = txnManager.beginTransaction()) {
+                broker.storeXMLResource(txn, document);
+                txnManager.commit(txn);
+            }
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Successfully retrieved token");
@@ -751,24 +700,12 @@ public class ExistDocument extends ExistResource {
 
         } catch (EXistException | PermissionDeniedException e) {
             LOG.error(e);
-            if (txnManager != null) {
-                txnManager.abort(txn);
-            }
             throw e;
-
         } finally {
 
             // TODO: check if can be done earlier
             if (document != null) {
                 document.getUpdateLock().release(Lock.WRITE_LOCK);
-            }
-            
-            if (txnManager != null) {
-                txnManager.close(txn);
-            }
-            
-            if(broker != null) {
-                brokerPool.release(broker);
             }
 
             if (LOG.isDebugEnabled()) {

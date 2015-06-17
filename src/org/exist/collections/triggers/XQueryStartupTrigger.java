@@ -25,9 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.SecurityManager;
@@ -73,7 +74,7 @@ import org.exist.xquery.value.Sequence;
  */
 public class XQueryStartupTrigger implements StartupTrigger {
 
-    protected final static Logger LOG = Logger.getLogger(XQueryStartupTrigger.class);
+    protected final static Logger LOG = LogManager.getLogger(XQueryStartupTrigger.class);
 
     private static final String XQUERY = "xquery";
     private static final String AUTOSTART_COLLECTION = "/db/system/autostart";
@@ -306,10 +307,8 @@ public class XQueryStartupTrigger implements StartupTrigger {
 
         LOG.info(String.format("Creating %s", AUTOSTART_COLLECTION));
 
-        TransactionManager txnManager = broker.getBrokerPool().getTransactionManager();
-        Txn txn = txnManager.beginTransaction();
-
-        try {
+        final TransactionManager txnManager = broker.getBrokerPool().getTransactionManager();
+        try(final Txn txn = txnManager.beginTransaction()) {
             XmldbURI newCollection = XmldbURI.create(AUTOSTART_COLLECTION, true);
 
             // Create collection
@@ -332,10 +331,6 @@ public class XQueryStartupTrigger implements StartupTrigger {
 
         } catch (Throwable ex) {
             LOG.error(ex);
-            txnManager.abort(txn);
-
-        } finally {
-            txnManager.close(txn);
         }
     }
 

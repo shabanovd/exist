@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.exist.dom.INodeHandle;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
 import org.w3c.dom.Document;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
@@ -36,7 +36,7 @@ import com.siemens.ct.exi.EXIFactory;
 import com.siemens.ct.exi.GrammarFactory;
 import com.siemens.ct.exi.api.sax.SAXEncoder;
 import com.siemens.ct.exi.exceptions.EXIException;
-import com.siemens.ct.exi.grammar.Grammar;
+import com.siemens.ct.exi.grammars.Grammars;
 import com.siemens.ct.exi.helpers.DefaultEXIFactory;
 
 public class EXISerializer implements ContentHandler, Receiver {
@@ -54,8 +54,8 @@ public class EXISerializer implements ContentHandler, Receiver {
 	public EXISerializer(OutputStream exiOutputStream, InputStream xsdInputStream) throws EXIException, IOException {
 		final EXIFactory exiFactory = DefaultEXIFactory.newInstance();
 		final GrammarFactory grammarFactory = GrammarFactory.newInstance();
-		final Grammar g = grammarFactory.createGrammar(xsdInputStream);
-		exiFactory.setGrammar(g);
+		final Grammars g = grammarFactory.createGrammars(xsdInputStream);
+		exiFactory.setGrammars(g);
 		encoder = new SAXEncoder(exiFactory);
 		encoder.setOutputStream(exiOutputStream);
 	}
@@ -87,19 +87,19 @@ public class EXISerializer implements ContentHandler, Receiver {
 			for(int x=0; x < attribs.size; x++) {
 				final QName attribQName = attribs.getQName(x);
 				attributes.addAttribute(attribQName.getNamespaceURI(),
-						attribQName.getLocalName(),
+						attribQName.getLocalPart(),
 						attribQName.getStringValue(),
 						UNKNOWN_TYPE,
 						attribs.getValue(x));
 			}
 		}
-		encoder.startElement(qname.getNamespaceURI(), qname.getLocalName(), null, attributes);
+		encoder.startElement(qname.getNamespaceURI(), qname.getLocalPart(), null, attributes);
 		
 	}
 
 	@Override
 	public void endElement(QName qname) throws SAXException {
-		encoder.endElement(qname.getNamespaceURI(), qname.getLocalName(), null);
+		encoder.endElement(qname.getNamespaceURI(), qname.getLocalPart(), null);
 		
 	}
 
@@ -145,7 +145,7 @@ public class EXISerializer implements ContentHandler, Receiver {
 	}
 
 	@Override
-	public void setCurrentNode(StoredNode node) {
+	public void setCurrentNode(INodeHandle node) {
 		// TODO Auto-generated method stub
 		
 	}

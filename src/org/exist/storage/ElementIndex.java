@@ -21,16 +21,17 @@
 package org.exist.storage;
 
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.ExtNodeSet;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.ExtNodeSet;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.util.Occurrences;
 import org.exist.xquery.NodeSelector;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Observable;
@@ -39,7 +40,7 @@ import java.util.TreeMap;
 /** base class for {@link org.exist.storage.structural.NativeStructuralIndex} */
 public abstract class ElementIndex extends Observable {
 
-    protected static Logger LOG = Logger.getLogger(ElementIndex.class.getName());
+    protected static Logger LOG = LogManager.getLogger(ElementIndex.class.getName());
 
     /** The broker that is using this value index */
     protected DBBroker broker;

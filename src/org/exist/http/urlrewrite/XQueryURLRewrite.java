@@ -31,7 +31,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.http.servlets.Authenticator;
 import org.exist.http.servlets.BasicAuthenticator;
@@ -40,6 +41,7 @@ import org.exist.source.Source;
 import org.exist.source.DBSource;
 import org.exist.source.SourceFactory;
 import org.exist.source.FileSource;
+import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xquery.functions.request.RequestModule;
 import org.exist.xquery.functions.response.ResponseModule;
 import org.exist.xquery.functions.session.SessionModule;
@@ -51,8 +53,8 @@ import org.exist.xquery.value.NodeValue;
 import org.exist.Namespaces;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.BinaryDocument;
 import org.exist.xmldb.XmldbURI;
 import org.exist.security.*;
 import org.exist.security.xacml.AccessContext;
@@ -114,7 +116,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class XQueryURLRewrite extends HttpServlet {
 
-    private static final Logger LOG = Logger.getLogger(XQueryURLRewrite.class);
+    private static final Logger LOG = LogManager.getLogger(XQueryURLRewrite.class);
 
     public final static String RQ_ATTR = "org.exist.forward";
     public final static String RQ_ATTR_REQUEST_URI = "org.exist.forward.request-uri";
@@ -452,23 +454,11 @@ public class XQueryURLRewrite extends HttpServlet {
 //        response.addHeader( "pragma", "no-cache" );
 //        response.addHeader( "Cache-Control", "no-cache" );
 
-        final Serializer serializer = broker.getSerializer();
-    	serializer.reset();
-    
-    	final SerializerPool serializerPool = SerializerPool.getInstance();
-
-    	final SAXSerializer sax = (SAXSerializer) serializerPool.borrowObject(SAXSerializer.class);
     	try {
-    		sax.setOutput(output, outputProperties);
-
-	    	serializer.setProperties(outputProperties);
-	    	serializer.setSAXHandlers(sax, sax);
-        	serializer.toSAX(resultSequence, 1, resultSequence.getItemCount(), false, false);
-        	
-    	} catch (final SAXException e) {
+            XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, output);
+        	serializer.serialize(resultSequence);
+    	} catch (final SAXException | XPathException e) {
     		throw new IOException(e);
-    	} finally {
-    		serializerPool.returnObject(sax);
     	}
     	output.flush();
     	output.close();
@@ -578,7 +568,7 @@ public class XQueryURLRewrite extends HttpServlet {
             rewrite = new PathForward(config, action, request.getRequestURI());
         } else if ("redirect".equals(action.getLocalName())) {
             rewrite = new Redirect(action, request.getRequestURI());
-//        } else if ("call".equals(action.getLocalName())) {
+//        } else if ("call".equals(action.getLocalPart())) {
 //            rewrite = new ModuleCall(action, queryContext, request.getRequestURI());
         }
         return rewrite;

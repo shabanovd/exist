@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -21,12 +21,12 @@ package org.exist.storage.md;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.Resource;
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentAtExist;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.MetaStorage;
 import org.exist.util.function.Consumer;
@@ -38,19 +38,18 @@ import org.exist.xmldb.XmldbURI;
  */
 public abstract class MetaData implements MetaStorage {
 
-    protected static MetaData instance = null;
-
-    public static MetaData get() {
-        return instance;
-    }
+	protected static MetaData inst = null;
+	
+	public static MetaData get() {
+		return inst;
+	}
+	
+	protected final static Logger LOG = LogManager.getLogger(MetaData.class);
 
     public final static String PREFIX = "md";
     public final static String NAMESPACE_URI = "http://exist-db.org/metadata";
 
-    protected final static Logger LOG = Logger.getLogger(MetaData.class);
-
     public abstract DocumentImpl getDocument(String uuid) throws EXistException, PermissionDeniedException;
-
     public abstract Collection getCollection(String uuid) throws EXistException, PermissionDeniedException;
 
     public abstract void resources(String key, String value, Consumer<Resource> consumer) throws EXistException;
@@ -70,7 +69,7 @@ public abstract class MetaData implements MetaStorage {
 
     public abstract Metas addMetas(XmldbURI uri);
 
-    public abstract Metas addMetas(DocumentAtExist doc);
+    public abstract Metas addMetas(DocumentImpl doc);
 
     public abstract Metas addMetas(Collection col);
 
@@ -87,7 +86,7 @@ public abstract class MetaData implements MetaStorage {
 
     public abstract Metas getMetas(String uuid);
 
-    public abstract Metas getMetas(DocumentAtExist doc);
+    public abstract Metas getMetas(DocumentImpl doc);
 
     public abstract Metas getMetas(XmldbURI uri);
 

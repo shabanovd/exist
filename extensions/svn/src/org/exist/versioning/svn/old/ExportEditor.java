@@ -35,7 +35,7 @@ import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.collections.triggers.TriggerException;
-import org.exist.dom.BinaryDocument;
+import org.exist.dom.persistent.BinaryDocument;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -278,6 +278,8 @@ public class ExportEditor implements ISVNEditor {
 			// }
 			String charset = SVNTranslator.getCharset(fileProperties
 					.getStringValue(SVNProperty.CHARSET),
+								  fileProperties
+					.getStringValue(SVNProperty.MIME_TYPE),
 					currentFile.getPath(), options);
 			byte[] eolBytes = null;
 			if (SVNProperty.EOL_STYLE_NATIVE.equals(fileProperties
@@ -441,10 +443,12 @@ public class ExportEditor implements ISVNEditor {
 		try {
 			transact.commit(transaction);
 		} catch (TransactionException e) {
-			SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_ERROR,
-					"error: failed on transaction's commit.");
-			throw new SVNException(err);
-		}
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_ERROR,
+                    "error: failed on transaction's commit.");
+            throw new SVNException(err);
+        } finally {
+            transact.close(transaction);
+        }
 
 		return null;
 	}

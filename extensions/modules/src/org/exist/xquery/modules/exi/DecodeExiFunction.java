@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.exist.dom.QName;
-import org.exist.memtree.AppendingSAXAdapter;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.AppendingSAXAdapter;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.ErrorCodes.JavaErrorCode;
@@ -47,7 +47,7 @@ import com.siemens.ct.exi.EXIFactory;
 import com.siemens.ct.exi.GrammarFactory;
 import com.siemens.ct.exi.api.sax.SAXDecoder;
 import com.siemens.ct.exi.exceptions.EXIException;
-import com.siemens.ct.exi.grammar.Grammar;
+import com.siemens.ct.exi.grammars.Grammars;
 import com.siemens.ct.exi.helpers.DefaultEXIFactory;
 
 /**
@@ -102,8 +102,8 @@ public class DecodeExiFunction extends BasicFunction {
 					Item xsdItem = args[1].itemAt(0);
 					InputStream xsdInputStream = EXIUtils.getInputStream(xsdItem, context);
 					GrammarFactory grammarFactory = GrammarFactory.newInstance();
-					Grammar grammar = grammarFactory.createGrammar(xsdInputStream);
-					exiFactory.setGrammar(grammar);
+					Grammars grammar = grammarFactory.createGrammars(xsdInputStream);
+					exiFactory.setGrammars(grammar);
 				}
 			}
 			SAXDecoder decoder = new SAXDecoder(exiFactory);

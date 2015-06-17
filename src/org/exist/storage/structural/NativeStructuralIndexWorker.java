@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,8 +19,10 @@
  */
 package org.exist.storage.structural;
 
+import org.exist.dom.TypedQNameComparator;
+import org.exist.dom.persistent.*;
+import org.exist.dom.QName;
 import org.exist.collections.Collection;
-import org.exist.dom.*;
 import org.exist.indexing.*;
 import org.exist.numbering.NodeId;
 import org.exist.storage.*;
@@ -40,7 +42,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.util.*;
-
 import org.exist.security.PermissionDeniedException;
 
 /**
@@ -53,7 +54,10 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     private NativeStructuralIndex index;
     private int mode = 0;
     private DocumentImpl document;
-    private Map<QName, List<NodeProxy>> pending = new TreeMap<QName, List<NodeProxy>>();
+
+    //TODO throw away this Comparator or use a different data struct here when we have moved
+    //nameType out of QName
+    private Map<QName, List<NodeProxy>> pending = new TreeMap<>(new TypedQNameComparator());
 
     public NativeStructuralIndexWorker(NativeStructuralIndex index) {
         this.index = index;
@@ -87,27 +91,11 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     public NodeSet findElementsByTagName(byte type, DocumentSet docs, QName qname, NodeSelector selector, Expression parent) {
         final Lock lock = index.btree.getLock();
-        final NewArrayNodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 256);
+        final NewArrayNodeSet result = new NewArrayNodeSet();
         final FindElementsCallback callback = new FindElementsCallback(type, result, docs, selector, parent);
-        // scan the document set to find document id ranges to query
-        final List<Range> ranges = new ArrayList<Range>();
-        Range next = null;
-        for (final Iterator<DocumentImpl> i = docs.getDocumentIterator(); i.hasNext(); ) {
-            final DocumentImpl doc = i.next();
-            if (next == null)
-                {next = new Range(doc.getDocId());}
-            else if (next.end + 1 == doc.getDocId())
-                {next.end++;}
-            else {
-                ranges.add(next);
-                next = new Range(doc.getDocId());
-            }
-        }
-        if (next != null)
-            {ranges.add(next);}
 
         // for each document id range, scan the index to find matches
-        for (final Range range : ranges) {
+        for (final Range range : getDocIdRanges(docs)) {
             final byte[] fromKey = computeKey(type, qname, range.start);
             final byte[] toKey = computeKey(type, qname, range.end + 1);
             final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
@@ -128,10 +116,37 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     }
 
     /**
-     * Internal helper class used by
-     * {@link NativeStructuralIndexWorker#findElementsByTagName(byte, org.exist.dom.DocumentSet, org.exist.dom.QName, org.exist.xquery.NodeSelector)}.
+     * Scan the document set to find document id ranges to query
+     *
+     * @param docs
+     * @return List of contiguous document id ranges
      */
-    private static class Range {
+    List<Range> getDocIdRanges(final DocumentSet docs) {
+        final List<Range> ranges = new ArrayList<>();
+        Range next = null;
+        for (final Iterator<DocumentImpl> i = docs.getDocumentIterator(); i.hasNext(); ) {
+            final DocumentImpl doc = i.next();
+            if (next == null) {
+                next = new Range(doc.getDocId());
+            } else if (next.end + 1 == doc.getDocId()) {
+                next.end++;
+            } else {
+                ranges.add(next);
+                next = new Range(doc.getDocId());
+            }
+        }
+        if (next != null) {
+            ranges.add(next);
+        }
+
+        return ranges;
+    }
+
+    /**
+     * Internal helper class used by
+     * {@link NativeStructuralIndexWorker#findElementsByTagName(byte, org.exist.dom.persistent.DocumentSet, org.exist.dom.QName, org.exist.xquery.NodeSelector)}.
+     */
+    static class Range {
         int start = -1;
         int end = -1;
 
@@ -154,12 +169,12 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     public NodeSet findDescendantsByTagName(byte type, QName qname, int axis, DocumentSet docs, NodeSet contextSet, int contextId, Expression parent) {
         final Lock lock = index.btree.getLock();
-        final NewArrayNodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 256);
+        final NewArrayNodeSet result = new NewArrayNodeSet();
         final FindDescendantsCallback callback = new FindDescendantsCallback(type, axis, contextId, result, parent);
         try {
             lock.acquire(Lock.READ_LOCK);
             for (final NodeProxy ancestor : contextSet) {
-                final DocumentImpl doc = ancestor.getDocument();
+                final DocumentImpl doc = ancestor.getOwnerDocument();
                 final NodeId ancestorId = ancestor.getNodeId();
                 callback.setAncestor(doc, ancestor);
                 byte[] fromKey, toKey;
@@ -189,7 +204,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     public NodeSet findAncestorsByTagName(byte type, QName qname, int axis, DocumentSet docs, NodeSet contextSet,
                                           int contextId) {
         final Lock lock = index.btree.getLock();
-        final NewArrayNodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 256);
+        final NewArrayNodeSet result = new NewArrayNodeSet();
         try {
             lock.acquire(Lock.READ_LOCK);
             for (final NodeProxy descendant : contextSet) {
@@ -198,7 +213,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
                     {parentId = descendant.getNodeId();}
                 else
                     {parentId = descendant.getNodeId().getParentId();}
-                final DocumentImpl doc = descendant.getDocument();
+                final DocumentImpl doc = descendant.getOwnerDocument();
                 while (parentId != NodeId.DOCUMENT_NODE) {
                     final byte[] key = computeKey(type, qname, doc.getDocId(), parentId);
                     final long address = index.btree.findValue(new Value(key));
@@ -234,10 +249,10 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     public NodeSet scanByType(byte type, int axis, NodeTest test, boolean useSelfAsContext, DocumentSet docs, 
     		NodeSet contextSet, int contextId) {
         final Lock lock = index.btree.getLock();
-        final NewArrayNodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 256);
+        final NewArrayNodeSet result = new NewArrayNodeSet();
         final FindDescendantsCallback callback = new FindDescendantsCallback(type, axis, contextId, useSelfAsContext, result, null);
         for (final NodeProxy ancestor : contextSet) {
-            final DocumentImpl doc = ancestor.getDocument();
+            final DocumentImpl doc = ancestor.getOwnerDocument();
             final NodeId ancestorId = ancestor.getNodeId();
             final List<QName> qnames = getQNamesForDoc(doc);
             try {
@@ -370,7 +385,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     }
     
     public String getIndexId() {
-        return NativeStructuralIndex.ID;
+        return index.getIndexId();
     }
 
     public String getIndexName() {
@@ -402,7 +417,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return mode;
     }
 
-    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf) {
+    public <T extends IStoredNode> IStoredNode getReindexRoot(IStoredNode<T> node, NodePath path, boolean insert, boolean includeSelf) {
         // if a node is inserted, we do not need to reindex the parent
         return insert ? null : node;
     }
@@ -560,9 +575,9 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             for (final QName qname : qnames) {
                 final String name;
                 if (qname.getNameType() == ElementValue.ATTRIBUTE) {
-                    name = "@" + qname.getLocalName();
+                    name = "@" + qname.getLocalPart();
                 } else {
-                    name = qname.getLocalName();
+                    name = qname.getLocalPart();
                 }
                 final byte[] fromKey = computeKey(qname.getNameType(), qname, doc.getDocId());
                 final byte[] toKey = computeKey(qname.getNameType(), qname, doc.getDocId() + 1);
@@ -609,14 +624,26 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return null;
     }
 
+    @Override
+    public void indexCollection(Collection col) {
+    }
+
+    @Override
+    public void indexBinary(BinaryDocument doc) {
+    }
+
+    @Override
+    public void removeBinary(BinaryDocument doc) {
+    }
+
     public BTree getStorage() {
         return index.btree;
     }
 
     private void addNode(QName qname, NodeProxy proxy) {
-        if (document.getDocId() != proxy.getDocument().getDocId()) {
+        if (document.getDocId() != proxy.getOwnerDocument().getDocId()) {
     		throw new IllegalArgumentException("Document id ('" + document.getDocId() + "') and proxy id ('" +
-    				proxy.getDocument().getDocId() + "') differ !");
+    				proxy.getOwnerDocument().getDocId() + "') differ !");
     	}
         //Is this qname already pending ?
         List<NodeProxy> buf = pending.get(qname);
@@ -669,7 +696,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     private byte[] computeKey(byte type, QName qname, int documentId, NodeId nodeId) {
         final SymbolTable symbols = index.getDatabase().getSymbols();
-        final short sym = symbols.getSymbol(qname.getLocalName());
+        final short sym = symbols.getSymbol(qname.getLocalPart());
         final short nsSym = symbols.getNSSymbol(qname.getNamespaceURI());
         final byte[] data = new byte[9 + nodeId.size()];
 
@@ -683,7 +710,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     private byte[] computeKey(byte type, QName qname, int documentId) {
         final SymbolTable symbols = index.getDatabase().getSymbols();
-        final short sym = symbols.getSymbol(qname.getLocalName());
+        final short sym = symbols.getSymbol(qname.getLocalPart());
         final short nsSym = symbols.getNSSymbol(qname.getNamespaceURI());
         final byte[] data = new byte[9];
 
@@ -704,7 +731,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     
     private byte[] computeDocKey(byte type, int documentId, QName qname) {
         final SymbolTable symbols = index.getDatabase().getSymbols();
-        final short sym = symbols.getSymbol(qname.getLocalName());
+        final short sym = symbols.getSymbol(qname.getLocalPart());
         final short nsSym = symbols.getNSSymbol(qname.getNamespaceURI());
         final byte[] data = new byte[10];
 
@@ -752,9 +779,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         final byte type = key[5];
         final short sym = ByteConversion.byteToShortH(key, 6);
         final short nsSym = ByteConversion.byteToShortH(key, 8);
-        final QName qname = new QName(symbols.getName(sym), symbols.getNamespace(nsSym));
-        qname.setNameType(type);
-        return qname;
+        return new QName(symbols.getName(sym), symbols.getNamespace(nsSym), type);
     }
 
     private class NativeStructuralStreamListener extends AbstractStreamListener {
@@ -799,17 +824,5 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         public IndexWorker getWorker() {
             return NativeStructuralIndexWorker.this;
         }
-    }
-
-    @Override
-    public void indexCollection(Collection col) {
-    }
-
-    @Override
-    public void indexBinary(BinaryDocument doc) {
-    }
-
-    @Override
-    public void removeBinary(BinaryDocument doc) {
     }
 }

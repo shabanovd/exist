@@ -21,7 +21,8 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.dom.QName;
 import org.exist.xquery.Cardinality;
@@ -42,7 +43,7 @@ import org.exist.xquery.value.Type;
  */
 public class FunCurrentDateTime extends Function {
 
-    protected static final Logger logger = Logger.getLogger(FunCurrentDateTime.class);
+    protected static final Logger logger = LogManager.getLogger(FunCurrentDateTime.class);
 
     public final static FunctionSignature fnCurrentDateTime =
         new FunctionSignature(
@@ -101,7 +102,7 @@ public class FunCurrentDateTime extends Function {
         } else if (isCalledAs("current-time")) {
             result = result.convertTo(Type.TIME);
         } else {
-            throw new Error("Can't handle function " + mySignature.getName().getLocalName());
+            throw new Error("Can't handle function " + mySignature.getName().getLocalPart());
         }
         if (context.getProfiler().isEnabled()) {context.getProfiler().end(this, "", result);}
         return result;

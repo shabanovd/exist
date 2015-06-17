@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -36,7 +36,8 @@ import java.util.TreeMap;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -57,7 +58,7 @@ public class AnalyzerConfig {
 
      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
 
-     <analyzer id="ws" class="org.apache.lucene.analysis.WhitespaceAnalyzer"/>
+     <analyzer id="ws" class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
 
      <analyzer id="stdstops" class="org.apache.lucene.analysis.standard.StandardAnalyzer">
      ..<param name="stopwords" type="java.io.File" value="/tmp/stop.txt"/>
@@ -83,7 +84,7 @@ public class AnalyzerConfig {
      </analyzer>
 
      */
-    private static final Logger LOG = Logger.getLogger(AnalyzerConfig.class);
+    private static final Logger LOG = LogManager.getLogger(AnalyzerConfig.class);
 
     private static final String ID_ATTRIBUTE = "id";
 
@@ -458,8 +459,8 @@ public class AnalyzerConfig {
         for (int i = 0; i < values.getLength(); i++) {
             final Element value = (Element) values.item(i);
 
-            //TODO getNodeValue() on org.exist.dom.ElementImpl should return null according to W3C spec!
-            if (value instanceof org.exist.dom.ElementImpl) {
+            //TODO getNodeValue() on org.exist.dom.persistent.ElementImpl should return null according to W3C spec!
+            if (value instanceof org.exist.dom.persistent.ElementImpl) {
                 set.add(value.getNodeValue());
             } else {
                 set.add(value.getTextContent());

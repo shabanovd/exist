@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -80,10 +80,5 @@ public interface CacheManager {
      */
     long getCurrentSize();
 
-    /**
-     * Returns the default initial size for all caches.
-     *
-     * @return  Default initial size.
-     */
-	int getDefaultInitialSize();
+    int getDefaultInitialSize();
 }

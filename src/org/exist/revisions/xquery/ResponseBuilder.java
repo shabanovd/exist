@@ -21,8 +21,8 @@ package org.exist.revisions.xquery;
 
 import java.nio.file.Path;
 
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.revisions.Handler;
 import org.exist.xmldb.XmldbURI;
 import org.xml.sax.helpers.AttributesImpl;

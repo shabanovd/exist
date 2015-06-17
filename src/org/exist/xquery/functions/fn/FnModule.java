@@ -61,7 +61,8 @@ public class FnModule extends AbstractInternalModule {
         new FunctionDef(FunCurrentDateTime.fnCurrentDate, FunCurrentDateTime.class),
         new FunctionDef(FunCurrentDateTime.fnCurrentDateTime, FunCurrentDateTime.class),
         new FunctionDef(FunCurrentDateTime.fnCurrentTime, FunCurrentDateTime.class),
-        new FunctionDef(FunData.signature, FunData.class),
+        new FunctionDef(FunData.signatures[0], FunData.class),
+        new FunctionDef(FunData.signatures[1], FunData.class),
         new FunctionDef(FunDateTime.signature, FunDateTime.class),
         new FunctionDef(FunDeepEqual.signatures[0], FunDeepEqual.class),
         new FunctionDef(FunDeepEqual.signatures[1], FunDeepEqual.class),
@@ -220,10 +221,17 @@ public class FnModule extends AbstractInternalModule {
         new FunctionDef(FunHigherOrderFun.signatures[2], FunHigherOrderFun.class),
         new FunctionDef(FunHigherOrderFun.signatures[3], FunHigherOrderFun.class),
         new FunctionDef(FunHigherOrderFun.signatures[4], FunHigherOrderFun.class),
+        new FunctionDef(FunHigherOrderFun.signatures[5], FunHigherOrderFun.class),
+        new FunctionDef(FunHigherOrderFun.signatures[6], FunHigherOrderFun.class),
+        new FunctionDef(FunHigherOrderFun.signatures[7], FunHigherOrderFun.class),
         new FunctionDef(FunEnvironment.signature[0], FunEnvironment.class),
         new FunctionDef(FunEnvironment.signature[1], FunEnvironment.class),        
         new FunctionDef(ParsingFunctions.signatures[0], ParsingFunctions.class),
-        new FunctionDef(ParsingFunctions.signatures[1], ParsingFunctions.class)        
+        new FunctionDef(ParsingFunctions.signatures[1], ParsingFunctions.class),
+        new FunctionDef(JSON.signatures[0], JSON.class),
+        new FunctionDef(JSON.signatures[1], JSON.class),
+        new FunctionDef(JSON.signatures[2], JSON.class),
+        new FunctionDef(JSON.signatures[3], JSON.class)
     };
 
     static {

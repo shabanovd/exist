@@ -21,14 +21,14 @@
  */
 package org.exist.http.servlets;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.http.BadRequestException;
 import org.exist.http.Descriptor;
 import org.exist.http.NotFoundException;
 import org.exist.http.RESTServer;
-import org.exist.http.SOAPServer;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.storage.DBBroker;
@@ -52,9 +52,8 @@ import java.io.IOException;
 public class EXistServlet extends AbstractExistHttpServlet {
 
     private static final long serialVersionUID = -3563999345725645647L;
-    private final static Logger LOG = Logger.getLogger(EXistServlet.class);
+    private final static Logger LOG = LogManager.getLogger(EXistServlet.class);
     private RESTServer srvREST;
-    private SOAPServer srvSOAP;
 
     @Override
     public Logger getLog() {
@@ -78,9 +77,6 @@ public class EXistServlet extends AbstractExistHttpServlet {
         // Instantiate REST Server
         srvREST = new RESTServer(getPool(), getFormEncoding(), getContainerEncoding(), useDynamicContentType.equalsIgnoreCase("yes")
                 || useDynamicContentType.equalsIgnoreCase("true"), isInternalOnly());
-
-        // Instantiate SOAP Server
-        srvSOAP = new SOAPServer(getFormEncoding(), getContainerEncoding());
 
         // XML lib checks....
         XmlLibraryChecker.check();
@@ -118,10 +114,8 @@ public class EXistServlet extends AbstractExistHttpServlet {
             return;
         }
 
-        DBBroker broker = null;
-        try {
+        try(final DBBroker broker = getPool().get(user)) {
             final XmldbURI dbpath = XmldbURI.create(path);
-            broker = getPool().get(user);
             final Collection collection = broker.getCollection(dbpath);
             if (collection != null) {
                 response.sendError(400, "A PUT request is not allowed against a plain collection path.");
@@ -151,10 +145,6 @@ public class EXistServlet extends AbstractExistHttpServlet {
         } catch (final Throwable e) {
             LOG.error(e.getMessage(), e);
             throw new ServletException("An unknown error occurred: " + e.getMessage(), e);
-        } finally {
-            if (broker != null) {
-                getPool().release(broker);
-            }
         }
     }
 
@@ -209,18 +199,9 @@ public class EXistServlet extends AbstractExistHttpServlet {
         }
 
         // fourth, process the request
-        DBBroker broker = null;
-        try {
-            broker = getPool().get(user);
+        try(final DBBroker broker = getPool().get(user)) {
 
-            // Route the request
-            if (path.indexOf(SOAPServer.WEBSERVICE_MODULE_EXTENSION) > -1) {
-                // SOAP Server
-                srvSOAP.doGet(broker, request, response, path);
-            } else {
-                // REST Server
-                srvREST.doGet(broker, request, response, path);
-            }
+            srvREST.doGet(broker, request, response, path);
             
         } catch (final BadRequestException e) {
             if (response.isCommitted()) {
@@ -254,8 +235,6 @@ public class EXistServlet extends AbstractExistHttpServlet {
         } catch (final Throwable e) {
             getLog().error(e.getMessage(), e);
             throw new ServletException("An error occurred: " + e.getMessage(), e);
-        } finally {
-            getPool().release(broker);
         }
     }
 
@@ -284,9 +263,7 @@ public class EXistServlet extends AbstractExistHttpServlet {
         }
 
         // fourth, process the request
-        DBBroker broker = null;
-        try {
-            broker = getPool().get(user);
+        try(final DBBroker broker = getPool().get(user)) {
             srvREST.doHead(broker, request, response, path);
         } catch (final BadRequestException e) {
             if (response.isCommitted()) {
@@ -316,8 +293,6 @@ public class EXistServlet extends AbstractExistHttpServlet {
         } catch (final Throwable e) {
             getLog().error(e.getMessage(), e);
             throw new ServletException("An unknown error occurred: " + e.getMessage(), e);
-        } finally {
-            getPool().release(broker);
         }
     }
 
@@ -350,9 +325,7 @@ public class EXistServlet extends AbstractExistHttpServlet {
         }
 
         // fourth, process the request
-        DBBroker broker = null;
-        try {
-            broker = getPool().get(user);
+        try(final DBBroker broker = getPool().get(user)) {
             srvREST.doDelete(broker, path, request, response);
         } catch (final PermissionDeniedException e) {
             // If the current user is the Default User and they do not have permission
@@ -374,8 +347,6 @@ public class EXistServlet extends AbstractExistHttpServlet {
             getLog().error(e.getMessage(), e);
             throw new ServletException("An unknown error occurred: " + e.getMessage(), e);
 
-        } finally {
-            getPool().release(broker);
         }
     }
 
@@ -432,18 +403,8 @@ public class EXistServlet extends AbstractExistHttpServlet {
         }
 
         // fourth, process the request
-        DBBroker broker = null;
-        try {
-            broker = getPool().get(user);
-
-            // Route the request
-            if (path.indexOf(SOAPServer.WEBSERVICE_MODULE_EXTENSION) > -1) {
-                // SOAP Server
-                srvSOAP.doPost(broker, request, response, path);
-            } else {
-                // REST Server
-                srvREST.doPost(broker, request, response, path);
-            }
+        try(final DBBroker broker = getPool().get(user)) {
+            srvREST.doPost(broker, request, response, path);
         } catch (final PermissionDeniedException e) {
             // If the current user is the Default User and they do not have permission
             // then send a challenge request to prompt the client for a username/password.
@@ -471,8 +432,6 @@ public class EXistServlet extends AbstractExistHttpServlet {
         } catch (final Throwable e) {
             getLog().error(e.getMessage(), e);
             throw new ServletException("An unknown error occurred: " + e.getMessage(), e);
-        } finally {
-            getPool().release(broker);
         }
     }
 }

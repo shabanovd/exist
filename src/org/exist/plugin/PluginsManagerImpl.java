@@ -25,7 +25,8 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.util.*;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.LifeCycle;
@@ -35,13 +36,13 @@ import org.exist.backup.RestoreHandler;
 import org.exist.collections.Collection;
 import org.exist.config.*;
 import org.exist.config.annotation.*;
-import org.exist.dom.DocumentAtExist;
 import org.exist.security.Permission;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xmldb.XmldbURI;
+import org.w3c.dom.Document;
 import org.xml.sax.Attributes;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
@@ -59,7 +60,7 @@ import javax.xml.stream.XMLStreamWriter;
 @ConfigurationClass("plugin-manager")
 public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCycle {
 
-	private final static Logger LOG = Logger.getLogger(PluginsManagerImpl.class);
+	private final static Logger LOG = LogManager.getLogger(PluginsManagerImpl.class);
 
 	public final static XmldbURI COLLETION_URI = XmldbURI.SYSTEM.append("plugins");
 	public final static XmldbURI CONFIG_FILE_URI = XmldbURI.create("config.xml");
@@ -304,7 +305,7 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 		}
 
 		@Override
-		public void backup(DocumentAtExist document, AttributesImpl attrs) {
+		public void backup(Document document, AttributesImpl attrs) {
 			for (final Plug plugin : jacks.values()) {
 				if (plugin instanceof BackupHandler) {
 					try {
@@ -317,7 +318,7 @@ public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCyc
 		}
 
 		@Override
-		public void backup(DocumentAtExist document, SAXSerializer serializer) throws SAXException {
+		public void backup(Document document, SAXSerializer serializer) throws SAXException {
 			for (final Plug plugin : jacks.values()) {
 				if (plugin instanceof BackupHandler) {
 					try {

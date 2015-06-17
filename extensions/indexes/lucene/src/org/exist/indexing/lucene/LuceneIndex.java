@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,19 +19,21 @@
  */
 package org.exist.indexing.lucene;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.exist.Database;
 import org.exist.EXistException;
+import org.apache.lucene.util.Version;
 import org.exist.backup.RawDataBackup;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfiguration;
@@ -43,22 +45,19 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.IndexSpec;
 import org.exist.storage.btree.DBException;
 import org.exist.util.DatabaseConfigurationException;
+import org.exist.util.function.Function2E;
+import org.exist.util.function.FunctionE;
+import org.exist.xquery.XPathException;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.apache.lucene.util.Version;
+import java.io.*;
 
 public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
     
     public final static Version LUCENE_VERSION_IN_USE = Version.LUCENE_4_9;
 
-    protected static final Logger LOG = Logger.getLogger(LuceneIndexWorker.class);
+    protected static final Logger LOG = LogManager.getLogger(LuceneIndexWorker.class);
 
     public final static String ID = LuceneIndex.class.getName();
 
@@ -74,18 +73,15 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
     protected double bufferSize = IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB;
 
     protected IndexWriter cachedWriter = null;
-    protected int writerUseCount = 0;
-    protected IndexReader cachedReader = null;
-    protected int readerUseCount = 0;
-    protected IndexSearcher cachedSearcher = null;
-    protected int searcherUseCount = 0;
-    
-    protected boolean singleWriter = false;
+
+    protected SearcherManager searcherManager = null;
+    protected ReaderManager readerManager = null;
 
     //Taxonomy staff
     protected Directory taxonomyDirectory;
 
     protected TaxonomyWriter cachedTaxonomyWriter = null;
+
     protected TaxonomyReader cachedTaxonomyReader = null;
 
     public LuceneIndex() {
@@ -148,8 +144,14 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
             directory = FSDirectory.open(dir);
             taxonomyDirectory = FSDirectory.open(new File(dir, "taxonomy"));
 
-            writer = getWriter();
-            
+            final IndexWriterConfig idxWriterConfig = new IndexWriterConfig(LUCENE_VERSION_IN_USE, defaultAnalyzer);
+            idxWriterConfig.setRAMBufferSizeMB(bufferSize);
+            cachedWriter = new IndexWriter(directory, idxWriterConfig);
+
+            searcherManager = new SearcherManager(cachedWriter, true, null);
+            readerManager = new ReaderManager(cachedWriter, true);
+
+            cachedTaxonomyWriter = new DirectoryTaxonomyWriter(taxonomyDirectory);
         } catch (IOException e) {
             throw new DatabaseConfigurationException("Exception while reading lucene index directory: " + e.getMessage(), e);
         } finally {
@@ -171,6 +173,14 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
     @Override
     public synchronized void close() throws DBException {
         try {
+            if (searcherManager != null) {
+                searcherManager.close();
+                searcherManager = null;
+            }
+            if (readerManager != null) {
+                readerManager.close();
+                readerManager = null;
+            }
             if (cachedWriter != null) {
             	commit();
             	
@@ -228,51 +238,20 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
         return getWriter(false);
     }
 
-    public synchronized IndexWriter getWriter(boolean exclusive) throws IOException {
-        if (singleWriter) {
-            while (writerUseCount > 0) {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                    //Nothing special to do
-                }
-            }
-        }
-        singleWriter = exclusive;
-        if (cachedWriter != null) {
-            writerUseCount++;
-        } else {
-            final IndexWriterConfig idxWriterConfig = new IndexWriterConfig(LUCENE_VERSION_IN_USE, defaultAnalyzer);
-            idxWriterConfig.setRAMBufferSizeMB(bufferSize);
-            
-            /**
-             With Lucene 2.9.4 we had auto-commit = true set on the IndexWriter constructor here,
-             now we have to commit ourselves, this is done manually in releaseWriter()
-             */
-            cachedWriter = new IndexWriter(directory, idxWriterConfig);
-            cachedTaxonomyWriter = new DirectoryTaxonomyWriter(taxonomyDirectory);
-            writerUseCount = 1;
-        }
-        notifyAll();
+    public IndexWriter getWriter(boolean exclusive) throws IOException {
         return cachedWriter;
     }
 
     public synchronized void releaseWriter(IndexWriter writer) {
         if (writer == null)
             return;
-        if (writer != cachedWriter)
-            throw new IllegalStateException("IndexWriter was not obtained from getWriter().");
-
         needsCommit = true;
-        writerUseCount--;
-        notifyAll();
-
-        waitForReadersAndReopen();
     }
 
     protected void commit() {
-    	if (!needsCommit) return;
-
+    	if (!needsCommit) {
+            return;
+        }
         try {
             LOG.debug("Committing lucene index");
 
@@ -283,94 +262,34 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
                 LOG.debug("Commit lucene index");
             }
             needsCommit = false;
-
         } catch(CorruptIndexException cie) {
             LOG.error("Detected corrupt Lucene index on writer release and commit: " + cie.getMessage(), cie);
-
         } catch(IOException ioe) {
             LOG.error("Detected Lucene index issue on writer release and commit: " + ioe.getMessage(), ioe);
         }
     }
-    
-    public synchronized IndexReader getReader() throws IOException {
-    	commit();
-        if (cachedReader != null) {
-            readerUseCount++;
-        } else {
-            cachedReader = DirectoryReader.open(directory);
-            cachedTaxonomyReader = new DirectoryTaxonomyReader(taxonomyDirectory);
-            readerUseCount = 1;
-        }
-        return cachedReader;
-    }
 
-    public synchronized void releaseReader(IndexReader reader) {
-        if (reader == null) return;
-        if (reader != cachedReader)
-            throw new IllegalStateException("IndexReader was not obtained from getReader().");
-
-        readerUseCount--;
-        notifyAll();
-    }
-
-    private void waitForReadersAndReopen() {
-        while (readerUseCount > 0 || searcherUseCount > 0) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                //Nothing special to do
-                return;
-            }
-        }
-        reopenReaders();
-    }
-
-    private void reopenReaders() {
-        if (cachedReader == null)
-            return;
+    public <R> R withReader(FunctionE<IndexReader, R, IOException> fn) throws IOException {
+        readerManager.maybeRefreshBlocking();
+        final DirectoryReader reader = readerManager.acquire();
         try {
-            cachedTaxonomyReader.close();
-        	cachedReader.close();
-
-        	cachedTaxonomyReader = null;
-        	cachedReader = null;
-
-        	//XXX: understand - is it right to comment close out? ... Closed by "cachedReader.close();"?
-//        	if (cachedSearcher != null)
-//        		cachedSearcher.close();
-        	cachedSearcher = null;
-        } catch (IOException e) {
-            LOG.warn("Exception while refreshing lucene index: " + e.getMessage(), e);
+            return fn.apply(reader);
+        } finally {
+            readerManager.release(reader);
         }
     }
 
-    public synchronized IndexSearcher getSearcher() throws IOException {
-    	commit();
-
-        if (cachedSearcher != null) {
-
-            searcherUseCount++;
-
-        } else {
-
-            cachedSearcher = new IndexSearcher(getReader());
-
-            readerUseCount--;
-            searcherUseCount = 1;
+    public <R> R withSearcher(Function2E<IndexSearcher, R, IOException, XPathException> consumer) throws IOException, XPathException {
+        searcherManager.maybeRefreshBlocking();
+        final IndexSearcher searcher = searcherManager.acquire();
+        try {
+            return consumer.apply(searcher);
+        } finally {
+            searcherManager.release(searcher);
         }
-        return cachedSearcher;
     }
 
-    public synchronized void releaseSearcher(IndexSearcher searcher) {
-        if (searcher == null) return;
-        if (searcher != cachedSearcher)
-            throw new IllegalStateException("IndexSearcher was not obtained from getWritingReader().");
-
-        searcherUseCount--;
-        notifyAll();
-    }
-    
-    public synchronized TaxonomyWriter getTaxonomyWriter() {
+    public synchronized TaxonomyWriter getTaxonomyWriter() throws IOException {
         return cachedTaxonomyWriter;
     }
 

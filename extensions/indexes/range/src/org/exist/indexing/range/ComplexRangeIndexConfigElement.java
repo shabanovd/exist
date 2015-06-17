@@ -21,7 +21,8 @@
  */
 package org.exist.indexing.range;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
@@ -37,7 +38,7 @@ public class ComplexRangeIndexConfigElement extends RangeIndexConfigElement {
 
     public final static String FIELD_ELEMENT = "field";
 
-    private static final Logger LOG = Logger.getLogger(ComplexRangeIndexConfigElement.class);
+    private static final Logger LOG = LogManager.getLogger(ComplexRangeIndexConfigElement.class);
 
     private Map<String, RangeIndexConfigField> fields = new HashMap<String, RangeIndexConfigField>();
 
@@ -78,7 +79,7 @@ public class ComplexRangeIndexConfigElement extends RangeIndexConfigElement {
         if (isQNameIndex) {
             final QName qn1 = path.getLastComponent();
             final QName qn2 = other.getLastComponent();
-            return qn1.getNameType() == qn2.getNameType() && qn2.equalsSimple(qn1);
+            return qn1.getNameType() == qn2.getNameType() && qn2.equals(qn1);
         }
         return path.match(other);
     }
@@ -123,6 +124,15 @@ public class ComplexRangeIndexConfigElement extends RangeIndexConfigElement {
         if (field != null) {
             return field.getType();
         }
-        return Type.STRING;
+        return Type.ITEM;
+    }
+
+    @Override
+    public org.exist.indexing.range.conversion.TypeConverter getTypeConverter(String fieldName) {
+        RangeIndexConfigField field = fields.get(fieldName);
+        if (field != null) {
+            return field.getTypeConverter();
+        }
+        return null;
     }
 }

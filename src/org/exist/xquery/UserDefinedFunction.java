@@ -22,7 +22,7 @@
  */
 package org.exist.xquery;
 
-import org.exist.dom.DocumentSet;
+import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.QName;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xquery.value.Item;
@@ -48,7 +48,7 @@ public class UserDefinedFunction extends Function implements Cloneable {
     
     private FunctionCall call;
     
-    private boolean reseted = false;
+    private boolean hasBeenReset = false;
 
     private boolean visited = false;
 
@@ -90,7 +90,7 @@ public class UserDefinedFunction extends Function implements Cloneable {
 	 * @see org.exist.xquery.Function#analyze(org.exist.xquery.AnalyzeContextInfo)
 	 */
 	public void analyze(AnalyzeContextInfo contextInfo) throws XPathException {
-		reseted = false;
+		hasBeenReset = false;
 		
 		if(call != null && !call.isRecursive()) {
 			// Save the local variable stack
@@ -118,11 +118,13 @@ public class UserDefinedFunction extends Function implements Cloneable {
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+	 * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
 	 */
 	public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
 //        context.expressionStart(this);
         context.stackEnter(this);
+        // make sure reset state is called after query has finished
+	    hasBeenReset = false;
         // Save the local variable stack
         final LocalVariable mark = context.markLocalVariables(true);
         if (closureVariables != null)
@@ -207,8 +209,10 @@ public class UserDefinedFunction extends Function implements Cloneable {
 	 * @see org.exist.xquery.PathExpr#resetState()
 	 */
 	public void resetState(boolean postOptimization) {
-		if (reseted) {return;}
-		reseted = true;
+		if (hasBeenReset) {
+            return;
+        }
+		hasBeenReset = true;
 		
 		super.resetState(postOptimization);
         // Question: understand this test. Why not reset even is not in recursion ?

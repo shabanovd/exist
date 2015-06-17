@@ -25,10 +25,11 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Map.Entry;
 import java.util.Properties;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.security.xacml.AccessContext;
@@ -58,7 +59,7 @@ import org.quartz.JobExecutionException;
  */
 public class UserXQueryJob extends UserJob {
     
-    protected final static Logger LOG = Logger.getLogger(UserXQueryJob.class);
+    protected final static Logger LOG = LogManager.getLogger(UserXQueryJob.class);
 
     private final String DEFAULT_JOB_NAME_PREFIX = "XQuery";
 

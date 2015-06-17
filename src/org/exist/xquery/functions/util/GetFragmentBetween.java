@@ -29,12 +29,13 @@ import java.util.regex.Pattern;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
-import org.exist.stax.EmbeddedXMLStreamReader;
+import org.exist.dom.persistent.StoredNode;
+import org.exist.stax.IEmbeddedXMLStreamReader;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.xquery.Cardinality;
@@ -65,7 +66,7 @@ import org.w3c.dom.NodeList;
  */
 public class GetFragmentBetween extends Function {
 	
-	protected static final Logger logger = Logger.getLogger(GetFragmentBetween.class);
+	protected static final Logger logger = LogManager.getLogger(GetFragmentBetween.class);
 
   public final static FunctionSignature signature =
     new FunctionSignature(
@@ -170,7 +171,7 @@ public class GetFragmentBetween extends Function {
     try {
       brokerPool = docImpl.getBrokerPool();
       dbBroker = brokerPool.get(null);
-      EmbeddedXMLStreamReader reader = null;
+      IEmbeddedXMLStreamReader reader = null;
       final NodeList children = docImpl.getChildNodes();
       for (int i = 0; i < children.getLength(); i++) {
         final StoredNode docChildStoredNode = (StoredNode) children.item(i);
@@ -239,7 +240,7 @@ public class GetFragmentBetween extends Function {
     return resultFragment;
   }
 
-  private String getStartElementTag(EmbeddedXMLStreamReader reader) {
+  private String getStartElementTag(XMLStreamReader reader) {
     final String elemName = reader.getLocalName();
     String elemAttrString = "";
     String elemNsString ="";
@@ -273,7 +274,7 @@ public class GetFragmentBetween extends Function {
     return elementString;
   }
 
-  private String getEndElementTag(EmbeddedXMLStreamReader reader) {
+  private String getEndElementTag(XMLStreamReader reader) {
     final String elemName = reader.getLocalName();
     final String elemPrefix = reader.getPrefix();
     String elemPart = "";
@@ -283,23 +284,23 @@ public class GetFragmentBetween extends Function {
     return "</" + elemPart + ">";
   }
   
-  private String getCharacters(EmbeddedXMLStreamReader reader) {
+  private String getCharacters(XMLStreamReader reader) {
     String xmlChars = reader.getText();
     xmlChars = escape(xmlChars);
     return xmlChars;
   }
 
-  private String getCDataTag(EmbeddedXMLStreamReader reader) {
+  private String getCDataTag(XMLStreamReader reader) {
     final char[] chars = reader.getTextCharacters();
     return "<![CDATA[\n" + new String(chars) + "\n]]>";
   }
 
-  private String getCommentTag(EmbeddedXMLStreamReader reader) {
+  private String getCommentTag(XMLStreamReader reader) {
     final char[] chars = reader.getTextCharacters();
     return "<!--" + new String(chars) + "-->";
   }
 
-  private String getPITag(EmbeddedXMLStreamReader reader) {
+  private String getPITag(XMLStreamReader reader) {
     final String piTarget = reader.getPITarget();
     String piData = reader.getPIData();
     if (! (piData == null || piData.length() == 0))

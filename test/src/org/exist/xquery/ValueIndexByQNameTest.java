@@ -2,6 +2,8 @@
 $Id$ */
 package org.exist.xquery;
 
+import org.junit.Test;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.XPathQueryService;
 
 /**
@@ -12,11 +14,7 @@ public class ValueIndexByQNameTest extends ValueIndexTest {
     private String config =
     	"<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" + 
     	"	<index xmlns:x=\"http://www.foo.com\" xmlns:xx=\"http://test.com\">" + 
-    	"		<fulltext default=\"none\">" + 
-    	"			<include path=\"//item/name\"/>" + 
-    	"			<include path=\"//item/mixed\"/>" + 
-    	"		</fulltext>" + 
-    	"		<create qname=\"itemno\" type=\"xs:integer\"/>" + 
+    	"		<create qname=\"itemno\" type=\"xs:integer\"/>" +
 
 //    	"		<create-by-qname qname=\"//item/name\" type=\"xs:string\"/>" + 
     	"		<create qname=\"name\" type=\"xs:string\"/>" + 
@@ -30,7 +28,9 @@ public class ValueIndexByQNameTest extends ValueIndexTest {
     	"	</index>" + 
     	"</collection>";
 
-	public void testStrings() throws Exception {
+	@Test
+	@Override
+	public void strings() throws XMLDBException {
         configureCollection(config);
         XPathQueryService service = storeXMLFileAndGetQueryService("items.xml", "test/src/org/exist/xquery/items.xml");
 
@@ -54,8 +54,4 @@ public class ValueIndexByQNameTest extends ValueIndexTest {
 	protected String getCollectionConfig() {
 		return config;
 	}
-    
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(ValueIndexByQNameTest.class);
-    }
 }

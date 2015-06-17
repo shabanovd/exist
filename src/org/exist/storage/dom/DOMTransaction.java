@@ -21,8 +21,9 @@
  */
 package org.exist.storage.dom;
 
-import org.apache.log4j.Logger;
-import org.exist.dom.DocumentImpl;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.storage.lock.Lock;
 import org.exist.util.LockException;
 import org.exist.util.ReadOnlyException;
@@ -39,7 +40,7 @@ import org.exist.util.ReadOnlyException;
  */
 public abstract class DOMTransaction {
 
-    private final static Logger LOG = Logger.getLogger(DOMTransaction.class);
+    private final static Logger LOG = LogManager.getLogger(DOMTransaction.class);
 
     private Object ownerObject;
     private DOMFile file;
@@ -100,7 +101,7 @@ public abstract class DOMTransaction {
             try {
                 lock.acquire( mode );
             } catch( final LockException e ) {
-                System.out.println("Failed to acquire read lock on " + file.getFile().getName());
+                LOG.error("Failed to acquire read lock on " + file.getFile().getName(), e);
                 return null;
             }
             file.setOwnerObject(ownerObject);

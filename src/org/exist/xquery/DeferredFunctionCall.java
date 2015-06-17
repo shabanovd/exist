@@ -21,11 +21,12 @@
  */
 package org.exist.xquery;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.NodeSet;
-import org.exist.dom.StoredNode;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.NodeHandle;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.numbering.NodeId;
 import org.exist.xquery.value.AtomicValue;
 import org.exist.xquery.value.Item;
@@ -38,7 +39,7 @@ import java.util.Iterator;
 
 public abstract class DeferredFunctionCall implements Sequence {
     
-    private final static Logger LOG = Logger.getLogger(DeferredFunctionCall.class);
+    private final static Logger LOG = LogManager.getLogger(DeferredFunctionCall.class);
     
     private FunctionSignature signature;
     private Sequence sequence = null;
@@ -288,7 +289,8 @@ public abstract class DeferredFunctionCall implements Sequence {
     }
 
 
-    public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
+    @Override
+    public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
         // not applicable
     }
 

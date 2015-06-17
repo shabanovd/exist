@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -23,13 +23,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.backup.RawDataBackup;
-import org.exist.dom.SymbolTable;
+import org.exist.dom.persistent.SymbolTable;
 import org.exist.indexing.AbstractIndex;
 import org.exist.indexing.IndexWorker;
 import org.exist.indexing.RawBackupSupport;
+import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.btree.DBException;
 import org.exist.storage.index.BTreeStore;
@@ -40,9 +42,9 @@ import org.w3c.dom.Element;
 
 public class NativeStructuralIndex extends AbstractIndex implements RawBackupSupport {
 
-    protected static final Logger LOG = Logger.getLogger(NativeStructuralIndex.class);
+    protected static final Logger LOG = LogManager.getLogger(NativeStructuralIndex.class);
 
-    public final static String ID = NativeStructuralIndex.class.getName();
+    public final String ID = NativeStructuralIndex.class.getName();
     public static final String FILE_NAME = "structure.dbx";
 
     public static final String  FILE_KEY_IN_CONFIG = "db-connection.elements";
@@ -61,9 +63,9 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
     public NativeStructuralIndex() {
         //Nothing to do
     }
-    
+
     public String getIndexId() {
-    	return ID;
+        return ID;
     }
 
     @Override
@@ -122,7 +124,7 @@ public class NativeStructuralIndex extends AbstractIndex implements RawBackupSup
 
     @Override
     public boolean checkIndex(DBBroker broker) {
-        return false;
+        return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
 	@Override

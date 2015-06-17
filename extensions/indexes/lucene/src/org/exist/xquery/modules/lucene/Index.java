@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,8 +19,10 @@
  */
 package org.exist.xquery.modules.lucene;
 
-import org.apache.log4j.Logger;
-import org.exist.dom.DocumentImpl;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.indexing.StreamListener;
 import org.exist.indexing.lucene.LuceneIndex;
@@ -42,7 +44,7 @@ import org.exist.xquery.value.Type;
 
 public class Index extends BasicFunction {
 
-    private static final Logger logger = Logger.getLogger(Index.class);
+    private static final Logger logger = LogManager.getLogger(Index.class);
     
     public final static FunctionSignature signatures[] = {
     	new FunctionSignature(

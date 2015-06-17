@@ -21,7 +21,8 @@
  */
 package org.exist.xquery.functions.xmldb;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.dom.QName;
 import org.exist.xquery.Cardinality;
@@ -43,7 +44,7 @@ import org.xmldb.api.base.XMLDBException;
  * @author wolf
  */
 public class XMLDBCreateCollection extends XMLDBAbstractCollectionManipulator {
-    private static final Logger logger = Logger.getLogger(XMLDBCreateCollection.class);
+    private static final Logger logger = LogManager.getLogger(XMLDBCreateCollection.class);
 	public final static FunctionSignature signature = new FunctionSignature(
 			new QName("create-collection", XMLDBModule.NAMESPACE_URI,
 					XMLDBModule.PREFIX),
@@ -66,7 +67,7 @@ public class XMLDBCreateCollection extends XMLDBAbstractCollectionManipulator {
     /*
      * (non-Javadoc)
      * 
-     * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet,
+     * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet,
      *         org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
      */
     public Sequence evalWithCollection(Collection collection, Sequence args[], Sequence contextSequence)

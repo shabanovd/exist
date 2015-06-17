@@ -19,12 +19,15 @@
  */
 package org.exist.indexing.lucene;
 
+import org.apache.commons.collections.MultiMap;
+import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.lucene.analysis.Analyzer;
-import org.exist.dom.AttrImpl;
+import org.exist.dom.persistent.AttrImpl;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
 import org.exist.util.DatabaseConfigurationException;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -59,13 +62,13 @@ public class LuceneConfigText {
     }
     
     public FieldType getFieldType() {
-    	if (type == null) {
-	     	type = new FieldType();
-	    	type.analyzer = config.analyzers.getDefaultAnalyzer();
-    	}
-    	
-    	return type;
-	}
+        if (type == null) {
+            type = new FieldType();
+            type.analyzer = config.analyzers.getDefaultAnalyzer();
+        }
+
+        return type;
+    }
 
 
     // return saved Analyzer for use in LuceneMatchListener
@@ -92,120 +95,128 @@ public class LuceneConfigText {
     public void setQName(QName qname) {
         path = new NodePath(qname);
         isQNameIndex = true;
-	}
-    
+    }
+
     public void setPath(Map<String, String> namespaces, String matchPath) throws DatabaseConfigurationException {
         try {
-        	path = new NodePath(namespaces, matchPath);
-			if (path.length() == 0)
-			    throw new DatabaseConfigurationException("Lucene module: Invalid match path in collection config: " + matchPath);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseConfigurationException("Lucene module: invalid qname in configuration: " + e.getMessage());
-		}
-	}
-    
+            path = new NodePath(namespaces, matchPath);
+            if (path.length() == 0)
+                throw new DatabaseConfigurationException("Lucene module: Invalid match path in collection config: " + matchPath);
+        } catch (IllegalArgumentException e) {
+            throw new DatabaseConfigurationException("Lucene module: invalid qname in configuration: " + e.getMessage());
+        }
+    }
+
     public void setAttrPattern(Map<String, String> namespaces, String pattern) throws DatabaseConfigurationException {
-    	int pos = pattern.indexOf("=");
-    	if (pos > 0) {
-    		attrName = LuceneConfigXML.parseQName(pattern.substring(0, pos), namespaces);
-    		try {
-    			attrValuePattern = Pattern.compile(pattern.substring(pos+1));
-    		} catch (PatternSyntaxException e) {
-    			throw new DatabaseConfigurationException(pattern, e);
-    		}
-    		isAttrPatternIndex = true;
-    	} else {
-			throw new DatabaseConfigurationException("Valid pattern 'attribute-name=pattern', but get '"+pattern+"'");
-    	}
-	}
+        int pos = pattern.indexOf("=");
+        if (pos > 0) {
+            attrName = LuceneConfigXML.parseQName(pattern.substring(0, pos), namespaces);
+            try {
+                attrValuePattern = Pattern.compile(pattern.substring(pos+1));
+            } catch (PatternSyntaxException e) {
+                throw new DatabaseConfigurationException(pattern, e);
+            }
+            isAttrPatternIndex = true;
+        } else {
+            throw new DatabaseConfigurationException("Valid pattern 'attribute-name=pattern', but get '"+pattern+"'");
+        }
+    }
 
     public void setName(String name) {
-		this.name = name;
-	}
+        this.name = name;
+    }
 
-	public String getName() {
-		return name;
-	}
-	
-	public void add(LuceneConfigText config) {
-		if (nextConfig == null)
-			nextConfig = config;
-		else
-			nextConfig.add(config);
-	}
-	
-	public LuceneConfigText getNext() {
-		return nextConfig;
-	}
-	
-	/**
-	 * @return true if this index can be queried by name
-	 */
-	public boolean isNamed() {
-		return name != null;
-	}
-	
-	public void addIgnoreNode(QName qname) {
+    public String getName() {
+        return name;
+    }
+
+    public void add(LuceneConfigText config) {
+        if (nextConfig == null)
+            nextConfig = config;
+        else
+            nextConfig.add(config);
+    }
+
+    public LuceneConfigText getNext() {
+        return nextConfig;
+    }
+
+    /**
+     * @return true if this index can be queried by name
+     */
+    public boolean isNamed() {
+        return name != null;
+    }
+
+    public void addIgnoreNode(QName qname) {
         if (specialNodes == null)
-        	specialNodes = new TreeMap<>();
-        
-        specialNodes.put(qname, LuceneConfigText.N_IGNORE);
-	}
+            specialNodes = new TreeMap<>();
 
-	public boolean isIgnoredNode(QName qname) {
+        specialNodes.put(qname, LuceneConfigText.N_IGNORE);
+    }
+
+    public boolean isIgnoredNode(QName qname) {
         return specialNodes != null && specialNodes.get(qname) == N_IGNORE;
     }
 
-	public void addInlineNode(QName qname) {
+    public void addInlineNode(QName qname) {
         if (specialNodes == null)
-        	specialNodes = new TreeMap<>();
-        
+            specialNodes = new TreeMap<>();
+
         specialNodes.put(qname, LuceneConfigText.N_INLINE);
-	}
-	
+    }
+
     public boolean isInlineNode(QName qname) {
         return specialNodes != null && specialNodes.get(qname) == N_INLINE;
     }
-    
+
     public boolean isAttrPattern() {
-    	return isAttrPatternIndex;
+        return isAttrPatternIndex;
     }
 
     public boolean match(NodePath other) {
         if (isQNameIndex) {
             final QName qn1 = path.getLastComponent();
             final QName qn2 = other.getLastComponent();
-            return qn1.getNameType() == qn2.getNameType() && qn2.equalsSimple(qn1);
+            return qn1.getNameType() == qn2.getNameType() && qn2.equals(qn1);
         }
         return path.match(other);
     }
 
     public boolean match(NodePath other, AttrImpl attrib) {
-		if (isAttrPatternIndex) {
-			if (attrib != null && attrValuePattern != null) { //log error?
-				if ((isQNameIndex && other.getLastComponent().equalsSimple(path.getLastComponent())) || path.match(other)) {
-					
-					if (attrib.getQName().equalsSimple(attrName)) {
-						
-						Matcher m = attrValuePattern.matcher(attrib.getValue());
-						return m.matches();
-					}
-					
-				}
-			}
-		} else {
-	    	if (isQNameIndex) {
-	    		return other.getLastComponent().equalsSimple(path.getLastComponent());
-	    	}
-	        return path.match(other);
-    	}
-		return false;
+        if (isAttrPatternIndex) {
+            if (attrib != null && attrValuePattern != null) { //log error?
+                if ((isQNameIndex && other.getLastComponent().equals(path.getLastComponent())) || path.match(other)) {
+
+                    if (attrib.getQName().equals(attrName)) {
+
+                        Matcher m = attrValuePattern.matcher(attrib.getValue());
+                        return m.matches();
+                    }
+
+                }
+            }
+        } else {
+            if (isQNameIndex) {
+                return other.getLastComponent().equals(path.getLastComponent());
+            }
+            return path.match(other);
+        }
+        return false;
     }
 
 
     @Override
-	public String toString() {
+    public String toString() {
 		return path.toString();
 	}
+
+    boolean shouldReindexOnAttributeChange() {
+        return config.shouldReindexOnAttributeChange();
+    }
+
+    public float getAttrBoost(Collection<AttrImpl> attrs) {
+        return config.getAttrBoost(attrs);
+    }
 }
 

@@ -5,7 +5,8 @@ import java.io.Writer;
 import java.util.Properties;
 import java.util.Stack;
 import javax.xml.transform.TransformerException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.util.serializer.XMLWriter;
@@ -45,7 +46,7 @@ import org.exist.util.serializer.XMLWriter;
  */
 public class JSONWriter extends XMLWriter {
 
-    private final static Logger LOG = Logger.getLogger(JSONWriter.class);
+    private final static Logger LOG = LogManager.getLogger(JSONWriter.class);
     
     private final static String ARRAY = "array";
     private final static String LITERAL = "literal";
@@ -61,7 +62,7 @@ public class JSONWriter extends XMLWriter {
 	
     protected JSONNode root;
 	
-    protected final Stack<JSONObject> stack = new Stack<JSONObject>();
+    protected final Stack<JSONObject> stack = new Stack<>();
 
     protected boolean useNSPrefix = false;
     
@@ -130,12 +131,12 @@ public class JSONWriter extends XMLWriter {
 
     @Override
     public void startElement(final QName qname) throws TransformerException {
-        if(JASON_NS.equals(qname.getNamespaceURI()) && VALUE.equals(qname.getLocalName())) {
+        if(JASON_NS.equals(qname.getNamespaceURI()) && VALUE.equals(qname.getLocalPart())) {
             processStartValue();
         } else if(useNSPrefix) {
-            processStartElement(qname.getPrefix() + '_' + qname.getLocalName(), false);
+            processStartElement(qname.getPrefix() + '_' + qname.getLocalPart(), false);
         } else {
-            processStartElement(qname.getLocalName(), false);
+            processStartElement(qname.getLocalPart(), false);
         }
     }
 
@@ -184,7 +185,7 @@ public class JSONWriter extends XMLWriter {
         if(qname.equals(JSON_ARRAY)) {
             parent.setSerializationType(JSONNode.SerializationType.AS_ARRAY);
         } else if(qname.equals(JSON_LITERAL)) {
-            parent.setSerializationType(JSONNode.SerializationType.AS_LITERAL);
+            parent.setSerializationDataType(JSONNode.SerializationDataType.AS_LITERAL);
         } else if(qname.equals(JSON_NAME)) {
             parent.setName(value);
         } else {
@@ -204,6 +205,7 @@ public class JSONWriter extends XMLWriter {
         final JSONObject parent = stack.peek();
         final JSONNode value = new JSONValue(chars.toString());
         value.setSerializationType(parent.getSerializationType());
+        value.setSerializationDataType(parent.getSerializationDataType());
         parent.addObject(value);
     }
 

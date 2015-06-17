@@ -34,7 +34,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.extensions.exquery.restxq.impl.adapters.SequenceAdapter;
 import org.exist.storage.BrokerPool;
@@ -42,6 +43,8 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
+import org.exist.util.serializer.XQuerySerializer;
+import org.exist.xquery.XPathException;
 import org.exist.xquery.value.BinaryValue;
 import org.exquery.http.HttpResponse;
 import org.exquery.restxq.RestXqServiceException;
@@ -59,7 +62,7 @@ import org.xml.sax.SAXException;
  */
 public class RestXqServiceSerializerImpl extends AbstractRestXqServiceSerializer {
 
-    private final static Logger LOG = Logger.getLogger(RestXqServiceSerializerImpl.class);
+    private final static Logger LOG = LogManager.getLogger(RestXqServiceSerializerImpl.class);
     
     final BrokerPool brokerPool;
     
@@ -106,25 +109,14 @@ public class RestXqServiceSerializerImpl extends AbstractRestXqServiceSerializer
     protected void serializeNodeBody(final Sequence result, final HttpResponse response, final Map<SerializationProperty, String> serializationProperties) throws RestXqServiceException {
         
         DBBroker broker = null;
-        SAXSerializer sax = null;
-        
-        final SerializerPool serializerPool = SerializerPool.getInstance();
+
         try {
             broker = getBrokerPool().get(brokerPool.getSubject());
-            
-            final Serializer serializer = broker.getSerializer();
-            serializer.reset();
-            
-            sax = (SAXSerializer) serializerPool.borrowObject(SAXSerializer.class);
 	        
             final Writer writer = new OutputStreamWriter(response.getOutputStream(), serializationProperties.get(SerializationProperty.ENCODING));
             final Properties outputProperties = serializationPropertiesToProperties(serializationProperties);
-            sax.setOutput(writer, outputProperties);
-	
-            serializer.setProperties(outputProperties);
-            serializer.setSAXHandlers(sax, sax);
-	
-            serializer.toSAX(((SequenceAdapter)result).getExistSequence());
+            final XQuerySerializer xqSerializer = new XQuerySerializer(broker, outputProperties, writer);
+            xqSerializer.serialize(((SequenceAdapter)result).getExistSequence());
 	
             writer.flush();
             writer.close();
@@ -135,10 +127,9 @@ public class RestXqServiceSerializerImpl extends AbstractRestXqServiceSerializer
             throw new RestXqServiceException("Error while serializing xml: " + ee.toString(), ee);
         } catch(SAXException se) {    
             throw new RestXqServiceException("Error while serializing xml: " + se.toString(), se);
+        } catch(XPathException se) {
+            throw new RestXqServiceException("Error while serializing xml: " + se.toString(), se);
         } finally {
-            if(sax != null) {
-                SerializerPool.getInstance().returnObject(sax);
-            }
             if(broker != null) {
                 getBrokerPool().release(broker);
             }

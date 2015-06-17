@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2003-2010 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.backup;
 
@@ -194,8 +192,6 @@ public class RestoreDialog extends JDialog
 
     class UploadProgressObserver implements Observer
     {
-        int mode = 0;
-
         public void update( Observable o, Object arg )
         {
             progress.setIndeterminate( false );
@@ -203,9 +199,9 @@ public class RestoreDialog extends JDialog
             progress.setValue( ind.getPercentage() );
 
             if( o instanceof ElementIndex ) {
-                progress.setString( "Storing elements" );
+                progress.setString( "Storing elements" ); //$NON-NLS-1$
             } else {
-                progress.setString( "Storing nodes" );
+                progress.setString( "Storing nodes" ); //$NON-NLS-1$
             }
         }
 

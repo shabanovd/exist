@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2009-2010 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,12 +16,11 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.util;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.repo.Deployment;
 
@@ -38,7 +37,7 @@ import org.xml.sax.XMLReader;
 
 import org.exist.Indexer;
 import org.exist.indexing.IndexManager;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.protocolhandler.eXistURLStreamHandlerFactory;
 import org.exist.scheduler.JobConfig;
 import org.exist.scheduler.JobException;
@@ -93,7 +92,7 @@ import org.exist.xquery.Module;
 
 public class Configuration implements ErrorHandler
 {
-    private final static Logger       LOG            = Logger.getLogger( Configuration.class ); //Logger
+    private final static Logger       LOG            = LogManager.getLogger( Configuration.class ); //Logger
     protected String                  configFilePath = null;
     protected File                    existHome      = null;
 
@@ -1411,10 +1410,6 @@ public class Configuration implements ErrorHandler
 
     private void configureValidation( String dbHome, Document doc, Element validation ) throws DatabaseConfigurationException
     {
-        // Register custom protocol URL
-        // TODO DWES move to different location?
-        eXistURLStreamHandlerFactory.init();
-
         // Determine validation mode
         final String mode = getConfigAttributeValue( validation, XMLReaderObjectFactory.VALIDATION_MODE_ATTRIBUTE );
 
@@ -1637,9 +1632,10 @@ public class Configuration implements ErrorHandler
      *
      * @see     org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
      */
+    @Override
     public void error( SAXParseException exception ) throws SAXException
     {
-        System.err.println( "error occured while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage() );
+        LOG.error( "error occurred while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage(), exception );
     }
 
 
@@ -1652,9 +1648,10 @@ public class Configuration implements ErrorHandler
      *
      * @see     org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
      */
+    @Override
     public void fatalError( SAXParseException exception ) throws SAXException
     {
-        System.err.println( "error occured while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage() );
+        LOG.error("error occurred while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage(), exception);
     }
 
 
@@ -1667,9 +1664,10 @@ public class Configuration implements ErrorHandler
      *
      * @see     org.xml.sax.ErrorHandler#warning(org.xml.sax.SAXParseException)
      */
+    @Override
     public void warning( SAXParseException exception ) throws SAXException
     {
-        System.err.println( "error occured while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage() );
+        LOG.error( "error occurred while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage(), exception );
     }
     
 

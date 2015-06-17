@@ -47,7 +47,6 @@ public class ProtectedModeTest {
     private final static String COLLECTION_CONFIG =
 		"<collection xmlns=\"http://exist-db.org/collection-config/1.0\">" +
 		"	<index>" +
-		"		<fulltext default=\"all\" attributes=\"false\"/>" +
 		"		<create path=\"//section/@id\" type=\"xs:string\"/>" +
 		"	</index>" +
 		"</collection>";
@@ -152,7 +151,6 @@ public class ProtectedModeTest {
             TestDataGenerator generator = new TestDataGenerator("xdb", DOCUMENT_COUNT);
             for (int i = 0; i < COLLECTION_COUNT; i++) {
                 Collection currentColl = mgmt.createCollection("test" + i);
-                System.out.println("Generating " + DOCUMENT_COUNT + " files...");
                 File[] files = generator.generate(currentColl, generateXQ);
                 for (int j = 0; j < files.length; j++) {
                     XMLResource resource = (XMLResource) currentColl.createResource("xdb" + j + ".xml", "XMLResource");

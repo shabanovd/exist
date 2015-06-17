@@ -27,10 +27,11 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
 
-import org.apache.log4j.Logger;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.NodeProxy;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock;
@@ -57,7 +58,7 @@ import org.exist.xquery.value.Type;
  */
 public class DocumentNameOrId extends BasicFunction {
 	
-	protected static final Logger logger = Logger.getLogger(DocumentNameOrId.class);
+	protected static final Logger logger = LogManager.getLogger(DocumentNameOrId.class);
 
         private final static QName QN_DOCUMENT_NAME = new QName("document-name", UtilModule.NAMESPACE_URI, UtilModule.PREFIX);
         private final static QName QN_DOCUMENT_ID = new QName("document-id", UtilModule.NAMESPACE_URI, UtilModule.PREFIX);
@@ -125,7 +126,7 @@ public class DocumentNameOrId extends BasicFunction {
                 final NodeValue node = (NodeValue) args[0].itemAt(0);
                 if (node.getImplementationType() == NodeValue.PERSISTENT_NODE) {
                     final NodeProxy proxy = (NodeProxy) node;
-                    doc = proxy.getDocument();
+                    doc = proxy.getOwnerDocument();
                     doc.getUpdateLock().acquire(Lock.READ_LOCK);
                 }
             } else if(Type.subTypeOf(args[0].getItemType(), Type.STRING)) {

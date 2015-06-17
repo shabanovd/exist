@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@ package org.exist.storage.statistics;
 
 import org.exist.Namespaces;
 import org.exist.dom.QName;
-import org.exist.dom.SymbolTable;
+import org.exist.dom.persistent.SymbolTable;
 import org.exist.storage.NodePath;
 import org.w3c.dom.Node;
 import org.xml.sax.ContentHandler;
@@ -76,7 +76,7 @@ class NodeStats {
         if (children != null) {
             for (int i = 0; i < children.length; i++) {
                 final NodeStats child = children[i];
-                if (child.qname.equalsSimple(qn)) {
+                if (child.qname.equals(qn)) {
                     return child;
                 }
             }
@@ -127,7 +127,7 @@ class NodeStats {
     }
 
     protected void getMaxParentDepth(QName name, NodeStats max) {
-        if (parent != null && qname != null && qname.equalsSimple(name)) {
+        if (parent != null && qname != null && qname.equals(name)) {
             max.maxDepth = Math.max(parent.maxDepth, max.maxDepth);
         }
         if (children != null) {
@@ -139,7 +139,7 @@ class NodeStats {
 
     protected void write(ByteBuffer buffer, SymbolTable symbols) {
         buffer.putShort(symbols.getNSSymbol(qname.getNamespaceURI()));
-        buffer.putShort(symbols.getSymbol(qname.getLocalName()));
+        buffer.putShort(symbols.getSymbol(qname.getLocalPart()));
         buffer.putInt(nodeCount);
         buffer.putInt(maxDepth);
 
@@ -194,7 +194,7 @@ class NodeStats {
 
     public void toSAX(ContentHandler handler) throws SAXException {
         final AttributesImpl attribs = new AttributesImpl();
-        attribs.addAttribute("", "name", "name", "CDATA", qname.getLocalName());
+        attribs.addAttribute("", "name", "name", "CDATA", qname.getLocalPart());
         attribs.addAttribute("", "namespace", "namespace", "CDATA", qname.getNamespaceURI());
         attribs.addAttribute("", "node-count", "node-count", "CDATA", Integer.toString(nodeCount));
         attribs.addAttribute("", "max-depth", "max-depth", "CDATA", Integer.toString(maxDepth));

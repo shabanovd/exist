@@ -22,10 +22,11 @@
  */
 package org.exist.xquery.functions.util;
 
-import org.apache.log4j.Logger;
-import org.exist.dom.NodeProxy;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -45,7 +46,7 @@ import org.exist.xquery.value.Type;
  */
 public class NodeId extends BasicFunction {
 	
-	protected static final Logger logger = Logger.getLogger(NodeId.class);
+	protected static final Logger logger = LogManager.getLogger(NodeId.class);
 
 	public final static FunctionSignature signature =
 		new FunctionSignature(

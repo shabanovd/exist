@@ -37,8 +37,8 @@ import javax.xml.transform.sax.TransformerHandler;
 
 import junit.framework.Assert;
 
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.w3c.tests.TestCase;
@@ -114,7 +114,7 @@ public class XSLTS_case extends TestCase {
 			
 			Templates templates = factory.newTemplates(
 					new SourceImpl(
-							loadVarFromURI(context, testLocation+XSLTS_folder+"/TestInputs/"+xslURL).getDocument()
+							loadVarFromURI(context, testLocation+XSLTS_folder+"/TestInputs/"+xslURL).getOwnerDocument()
 						)
 					);
 			TransformerHandler handler = factory.newTransformerHandler(templates);
@@ -187,22 +187,22 @@ public class XSLTS_case extends TestCase {
 			tokenCount++;
 			String refToken = refTokenizer.nextToken();
 			if (!resTokenizer.hasMoreTokens()) {
-				System.out.println("expected:");
-				System.out.println(ref);
-				System.out.println("get:");
-				System.out.println(result);
+//				System.out.println("expected:");
+//				System.out.println(ref);
+//				System.out.println("get:");
+//				System.out.println(result);
 				throw new Exception("result should have: "+refToken+", but get EOF (at "+tokenCount+")");
 			}
 			String resToken = resTokenizer.nextToken();
 			if (!refToken.equals(resToken)) {
-				System.out.println(ref);
-				System.out.println(result);
+//				System.out.println(ref);
+//				System.out.println(result);
 				throw new Exception("result should have: "+refToken+", but get "+resToken+" (at "+tokenCount+")");
 			}
 		}
 		if (resTokenizer.hasMoreTokens()) {
 			String resToken = resTokenizer.nextToken();
-			System.out.println(ref);
+//			System.out.println(ref);
 			throw new Exception("result should have nothing, but get "+resToken+" (at "+tokenCount+")");
 		}
 		return true;

@@ -33,7 +33,8 @@ import java.util.Properties;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
@@ -41,7 +42,7 @@ import org.exist.config.Configuration;
 import org.exist.config.Configurator;
 import org.exist.config.ConfigurationException;
 import org.exist.config.annotation.*;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.AuthenticationException;
 import org.exist.security.Group;
 import org.exist.security.PermissionDeniedException;
@@ -89,7 +90,7 @@ public class SecurityManagerImpl implements SecurityManager {
     public static final String PROPERTY_PERMISSIONS_COLLECTIONS = "indexer.permissions.collection";
     public static final String PROPERTY_PERMISSIONS_RESOURCES = "indexer.permissions.resource";	
 
-    public final static Logger LOG = Logger.getLogger(SecurityManager.class);
+    public final static Logger LOG = LogManager.getLogger(SecurityManager.class);
 
     private Database pool;
 
@@ -163,33 +164,27 @@ public class SecurityManagerImpl implements SecurityManager {
     	this.pool = pool;
     	
         final TransactionManager transaction = pool.getTransactionManager();
-        Txn txn = null;
 		
         Collection systemCollection = null;
-        try {
+        try(final Txn txn = transaction.beginTransaction()) {
 	        systemCollection = broker.getCollection(XmldbURI.SYSTEM_COLLECTION_URI);
-                if(systemCollection == null) {
-                    txn = transaction.beginTransaction();
-                    systemCollection = broker.getOrCreateCollection(txn, XmldbURI.SYSTEM_COLLECTION_URI);
-                    if (systemCollection == null)
-                            {return;}
-                    systemCollection.setPermissions(Permission.DEFAULT_SYSTEM_COLLECTION_PERM);
-                    broker.saveCollection(txn, systemCollection);
+            if(systemCollection == null) {
+                systemCollection = broker.getOrCreateCollection(txn, XmldbURI.SYSTEM_COLLECTION_URI);
+                if (systemCollection == null)
+                        {return;}
+                systemCollection.setPermissions(Permission.DEFAULT_SYSTEM_COLLECTION_PERM);
+                broker.saveCollection(txn, systemCollection);
 
-                    transaction.commit(txn);
-                }
+                transaction.commit(txn);
+            }
         } catch (final Exception e) {
-            transaction.abort(txn);
             e.printStackTrace();
             LOG.debug("loading acl failed: " + e.getMessage());
-        } finally {
-            transaction.close(txn);
         }
 
-        try {
+        try(final Txn txn = transaction.beginTransaction()) {
             collection = broker.getCollection(SECURITY_COLLECTION_URI);
             if (collection == null) {
-                txn = transaction.beginTransaction();
                 collection = broker.getOrCreateCollection(txn, SECURITY_COLLECTION_URI);
                 if (collection == null){
                     return;
@@ -203,11 +198,8 @@ public class SecurityManagerImpl implements SecurityManager {
                 transaction.commit(txn);
             } 
         } catch (final Exception e) {
-            transaction.abort(txn);
             e.printStackTrace();
             LOG.debug("loading configuration failed: " + e.getMessage());
-        } finally {
-            transaction.close(txn);
         }
 			
         final Configuration _config_ = Configurator.parse(this, broker, collection, CONFIG_FILE_URI);
@@ -741,7 +733,11 @@ public class SecurityManagerImpl implements SecurityManager {
         public final void execute( JobExecutionContext jec ) throws JobExecutionException {
             final JobDataMap jobDataMap = jec.getJobDetail().getJobDataMap();
 
-            final SecurityManagerImpl sm = ( SecurityManagerImpl )jobDataMap.get( SecurityManagerImpl.class.getName() );
+            final Properties params = (Properties) jobDataMap.get("params");
+            if (params == null) {
+                return;
+            }
+            final SecurityManagerImpl sm = ( SecurityManagerImpl )params.get( SecurityManagerImpl.class.getName() );
 
             if (sm == null)
             	{return;}
@@ -916,7 +912,7 @@ public class SecurityManagerImpl implements SecurityManager {
             //uri = uri.removeLastSegment();
             //String realmId = uri.lastSegment().toString();
             //AbstractRealm realm = (AbstractRealm)findRealmForRealmId(realmId);
-            final Configuration conf = Configurator.parse(document);
+            final Configuration conf = Configurator.parse(broker.getBrokerPool(), document);
 
         	saving.put(document.getURI(), conf.getPropertyInteger("id"));
         }
@@ -943,7 +939,7 @@ public class SecurityManagerImpl implements SecurityManager {
             final String realmId = uri.lastSegment().toString();
 			
             final AbstractRealm realm = (AbstractRealm)findRealmForRealmId(realmId);
-            final Configuration conf = Configurator.parse(document);
+            final Configuration conf = Configurator.parse(broker.getBrokerPool(), document);
 
             Integer id = -1;
             if(isRemoved) {
@@ -1131,4 +1127,18 @@ public class SecurityManagerImpl implements SecurityManager {
 	public Subject getCurrentSubject() {
 		return pool.getSubject();
 	}
+
+    @Override
+    public final synchronized void preAllocateAccountId(final PrincipalIdReceiver receiver) throws PermissionDeniedException, EXistException {
+        final int id = getNextAccountId();
+        save();
+        receiver.allocate(id);
+    }
+
+    @Override
+    public final synchronized void preAllocateGroupId(final PrincipalIdReceiver receiver) throws PermissionDeniedException, EXistException {
+        final int id = getNextGroupId();
+        save();
+        receiver.allocate(id);
+    }
 }

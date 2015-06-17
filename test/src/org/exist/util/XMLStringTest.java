@@ -6,69 +6,63 @@
 package org.exist.util;
 
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class XMLStringTest extends TestCase {
+import static org.junit.Assert.assertEquals;
 
-	public XMLStringTest(String arg0) {
-		super(arg0);
-	}
-
-	public static void main(String[] args) {
-		junit.textui.TestRunner.run(XMLStringTest.class);
-	}
+public class XMLStringTest {
 
 	/*
 	 * Test for XMLString append(char[], int, int)
 	 */
-	public void testAppendcharArrayintint() {
+	@Test
+	public void appendcharArrayintint() {
 		XMLString s = new XMLString();
 		char ch[] = "Hello".toCharArray();
 		s.append(ch, 0, 5);
 		assertEquals(s.toString(), "Hello");
 	}
 
-	public void testNormalize() {
+	@Test
+	public void normalize() {
 		XMLString s = new XMLString();
 		char ch[] = "\n	Hello World\r\n".toCharArray();
 		s.append(ch, 0, ch.length);
 		s = s.normalize(XMLString.SUPPRESS_BOTH);
 		String r = s.toString();
-		System.out.println('"' + r + '"');
 		assertEquals(r, "Hello World");
 	}
 
-    public void testCollapse() {
+	@Test
+    public void collapse() {
         XMLString s = new XMLString();
         char ch[] = "\n	Hello   World\r\n".toCharArray();
         s.append(ch, 0, ch.length);
         s = s.normalize(XMLString.NORMALIZE);
         String r = s.toString();
-        System.out.println('"' + r + '"');
         assertEquals(r, "Hello World");
     }
 
-	public void testSubstring() {
+	@Test
+	public void substring() {
 		XMLString s = new XMLString();
 		char ch[] = "\n	Hello World\r\n".toCharArray();
 		s.append(ch, 0, ch.length);
 		s = s.normalize(XMLString.SUPPRESS_BOTH);
 		String r = s.substring(6, 5);
-		System.out.println('"' + r + '"');
 		assertEquals(r, "World");
 	}
 
-	public void testInsert() {
+	@Test
+	public void insert() {
 		XMLString s = new XMLString();
 		char ch[] = "Hello World".toCharArray();
 		s.append(ch, 0, ch.length);
 		s.insert(5, " happy");
 		String r = s.toString();
-		System.out.println('"' + r + '"');
 		assertEquals(r, "Hello happy World");
 		s = s.delete(5, 6);
 		r = s.toString();
-		System.out.println('"' + r + '"');
 		assertEquals(r, "Hello World");
 	}
 }

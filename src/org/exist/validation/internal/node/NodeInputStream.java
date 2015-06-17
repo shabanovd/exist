@@ -24,8 +24,8 @@ package org.exist.validation.internal.node;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.storage.io.BlockingInputStream;
 import org.exist.storage.io.BlockingOutputStream;
 import org.exist.storage.serializers.Serializer;
@@ -36,21 +36,19 @@ import org.exist.xquery.value.NodeValue;
  */
 public class NodeInputStream extends InputStream{
     
-    private final static Logger logger = Logger.getLogger(NodeInputStream.class);
+    private final static Logger logger = LogManager.getLogger(NodeInputStream.class);
     
-    private BlockingInputStream  bis;
-    private BlockingOutputStream bos;
-    private NodeSerializerThread rt;
-    
-    
+    private final BlockingInputStream  bis;
+
+
     /** Creates a new instance of NodeInputStream */
     public NodeInputStream(Serializer serializer, NodeValue node) {
         logger.debug("Initializing NodeInputStream");
         
         bis = new BlockingInputStream();
-        bos = bis.getOutputStream();
-        
-        rt = new NodeSerializerThread(serializer, node , bos);
+        BlockingOutputStream bos = bis.getOutputStream();
+
+        NodeSerializerThread rt = new NodeSerializerThread(serializer, node, bos);
         
         rt.start();
         

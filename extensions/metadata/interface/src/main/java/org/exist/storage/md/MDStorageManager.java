@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -25,7 +25,8 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.Resource;
@@ -33,8 +34,7 @@ import org.exist.backup.BackupHandler;
 import org.exist.backup.RestoreHandler;
 import org.exist.collections.Collection;
 import org.exist.config.Configuration;
-import org.exist.dom.DocumentAtExist;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.plugin.Plug;
 import org.exist.plugin.PluginsManager;
 import org.exist.security.PermissionDeniedException;
@@ -59,7 +59,7 @@ import static org.exist.storage.md.MetaData.*;
  */
 public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	
-    protected final static Logger LOG = Logger.getLogger(MDStorageManager.class);
+    protected final static Logger LOG = LogManager.getLogger(MDStorageManager.class);
 
     public final static String LUCENE_ID = "org.exist.indexing.lucene.LuceneIndex";
 

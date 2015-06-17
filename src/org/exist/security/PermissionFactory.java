@@ -22,10 +22,11 @@
 package org.exist.security;
 
 import java.io.IOException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.TriggerException;
-import org.exist.dom.DocumentImpl;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.TransactionException;
@@ -41,7 +42,7 @@ import org.exist.xquery.XPathException;
  */
 public class PermissionFactory {
 
-    private final static Logger LOG = Logger.getLogger(PermissionFactory.class);
+    private final static Logger LOG = LogManager.getLogger(PermissionFactory.class);
 
     public static SecurityManager sm = null;        //TODO The way this gets set is nasty AR
 
@@ -113,12 +114,10 @@ public class PermissionFactory {
     }
 
     public static void updatePermissions(DBBroker broker, XmldbURI pathUri, PermissionModifier permissionModifier) throws PermissionDeniedException {
-        Collection collection = null;
         DocumentImpl doc = null;
         final TransactionManager transact = broker.getBrokerPool().getTransactionManager();
-        final Txn transaction = transact.beginTransaction();
-        try {
-            collection = broker.openCollection(pathUri, Lock.WRITE_LOCK);
+        try(final Txn transaction = transact.beginTransaction()) {
+            final Collection collection = broker.openCollection(pathUri, Lock.WRITE_LOCK);
             if (collection == null) {
                 doc = broker.getXMLResource(pathUri, Lock.WRITE_LOCK);
                 if(doc == null) {
@@ -143,23 +142,9 @@ public class PermissionFactory {
                 transact.commit(transaction);
                 broker.flush();
             }
-        } catch(final XPathException xpe) {
-            transact.abort(transaction);
-            throw new PermissionDeniedException("Permission to modify permissions is denied for user '" + broker.getSubject().getName() + "' on '" + pathUri.toString() + "': " + xpe.getMessage(), xpe);
-        } catch (final PermissionDeniedException pde) {
-            transact.abort(transaction);
-            throw new PermissionDeniedException("Permission to modify permissions is denied for user '" + broker.getSubject().getName() + "' on '" + pathUri.toString() + "': " + pde.getMessage(), pde);
-        } catch (final IOException ioe) {
-            transact.abort(transaction);
-            throw new PermissionDeniedException("Permission to modify permissions is denied for user '" + broker.getSubject().getName() + "' on '" + pathUri.toString() + "': " + ioe.getMessage(), ioe);
-        } catch (final TriggerException te) {
-            transact.abort(transaction);
-            throw new PermissionDeniedException("Permission to modify permissions is denied for user '" + broker.getSubject().getName() + "' on '" + pathUri.toString() + "': " + te.getMessage(), te);
-        } catch(final TransactionException te) {
-            transact.abort(transaction);
-            throw new PermissionDeniedException("Permission to modify permissions is denied for user '" + broker.getSubject().getName() + "' on '" + pathUri.toString() + "': " + te.getMessage(), te);
+        } catch(final XPathException | PermissionDeniedException | IOException | TriggerException | TransactionException e) {
+            throw new PermissionDeniedException("Permission to modify permissions is denied for user '" + broker.getSubject().getName() + "' on '" + pathUri.toString() + "': " + e.getMessage(), e);
         } finally {
-            transact.close(transaction);
             if(doc != null) {
                 doc.getUpdateLock().release(Lock.WRITE_LOCK);
             }

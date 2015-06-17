@@ -21,7 +21,7 @@
  */
 package org.exist.xquery;
 
-import org.exist.dom.DocumentSet;
+import org.exist.dom.persistent.DocumentSet;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
@@ -64,7 +64,7 @@ public class ExtensionExpression extends AbstractExpression {
      */
     public Sequence eval(Sequence contextSequence, Item contextItem)
             throws XPathException {
-        callBefore();
+        callBefore(contextSequence);
         Sequence result = null;
         for (final Pragma pragma : pragmas) {
             Sequence temp = pragma.eval(contextSequence, contextItem);
@@ -85,9 +85,9 @@ public class ExtensionExpression extends AbstractExpression {
         }
     }
 
-    private void callBefore() throws XPathException {
+    private void callBefore(Sequence contextSequence) throws XPathException {
         for (final Pragma pragma : pragmas) {
-            pragma.before(context, innerExpression);
+            pragma.before(context, innerExpression, contextSequence);
         }
     }
 

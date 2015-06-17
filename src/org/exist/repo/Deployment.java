@@ -21,16 +21,23 @@
  */
 package org.exist.repo;
 
+import org.exist.SystemProperties;
+import org.exist.dom.memtree.DocumentBuilderReceiver;
+import org.exist.dom.memtree.InMemoryNodeSet;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.ElementImpl;
+import org.exist.dom.memtree.NodeImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.config.ConfigurationException;
-import org.exist.dom.BinaryDocument;
+import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.QName;
-import org.exist.memtree.*;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.internal.aider.GroupAider;
@@ -61,7 +68,6 @@ import org.w3c.dom.Element;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.helpers.AttributesImpl;
 
 import java.io.*;
 import java.util.Date;
@@ -77,7 +83,9 @@ public class Deployment {
 
     public final static String PROPERTY_APP_ROOT = "repo.root-collection";
 
-    private final static Logger LOG = Logger.getLogger(Deployment.class);
+    private final static Logger LOG = LogManager.getLogger(Deployment.class);
+
+    public final static String PROCESSOR_NAME = "http://exist-db.org";
 
     private final static String REPO_NAMESPACE = "http://exist-db.org/xquery/repo";
     private final static String PKG_NAMESPACE = "http://expath.org/ns/pkg";
@@ -176,6 +184,7 @@ public class Deployment {
             for (final SequenceIterator i = deps.iterate(); i.hasNext(); ) {
                 final Element dependency = (Element) i.nextItem();
                 final String pkgName = dependency.getAttribute("package");
+                final String processor = dependency.getAttribute("processor");
                 final String versionStr = dependency.getAttribute("version");
                 final String semVer = dependency.getAttribute("semver");
                 final String semVerMin = dependency.getAttribute("semver-min");
@@ -188,7 +197,10 @@ public class Deployment {
                 } else if (pkgVersion != null) {
                     version = new PackageLoader.Version(versionStr, false);
                 }
-                if (pkgName != null) {
+
+                if (processor != null && processor.equals(PROCESSOR_NAME) && version != null) {
+                    checkProcessorVersion(version);
+                } else if (pkgName != null) {
                     LOG.info("Package " + name + " depends on " + pkgName);
                     boolean isInstalled = false;
                     if (repo.getParentRepo().getPackages(pkgName) != null) {
@@ -251,6 +263,15 @@ public class Deployment {
 
         LOG.info("Deploying package " + pkgName);
         return deploy(pkgName, repo, null);
+    }
+
+    private void checkProcessorVersion(PackageLoader.Version version) throws PackageException {
+        final String procVersion = SystemProperties.getInstance().getSystemProperty("product-semver", "1.0");
+        final DependencyVersion depVersion = version.getDependencyVersion();
+        if (!depVersion.isCompatible(procVersion)) {
+            throw new PackageException("Package requires eXistdb version " + version.toString() + ". " +
+                "Installed version is " + procVersion);
+        }
     }
 
     public String undeploy(String pkgName, ExistRepository repo) throws PackageException {
@@ -456,8 +477,7 @@ public class Deployment {
             }
         }
         final TransactionManager mgr = broker.getBrokerPool().getTransactionManager();
-        final Txn txn = mgr.beginTransaction();
-        try {
+        try(final Txn txn = mgr.beginTransaction()) {
             Collection collection = broker.getOrCreateCollection(txn, targetCollection);
             if (collection != null)
                 {broker.removeCollection(txn, collection);}
@@ -470,9 +490,6 @@ public class Deployment {
             mgr.commit(txn);
         } catch (final Exception e) {
             LOG.error("Exception occurred while removing package.", e);
-            mgr.abort(txn);
-        } finally {
-            mgr.close(txn);
         }
     }
 
@@ -499,8 +516,7 @@ public class Deployment {
         final DocumentImpl updatedXML = builder.getDocument();
 
         final TransactionManager mgr = broker.getBrokerPool().getTransactionManager();
-        final Txn txn = mgr.beginTransaction();
-        try {
+        try(final Txn txn = mgr.beginTransaction()) {
             final Collection collection = broker.getOrCreateCollection(txn, targetCollection);
             final XmldbURI name = XmldbURI.createInternal("repo.xml");
             final IndexInfo info = collection.validateXMLResource(txn, broker, name, updatedXML);
@@ -511,9 +527,7 @@ public class Deployment {
 
             mgr.commit(txn);
         } catch (final Exception e) {
-            mgr.abort(txn);
-        } finally {
-            mgr.close(txn);
+            LOG.warn(e);
         }
     }
 
@@ -581,17 +595,14 @@ public class Deployment {
      */
     private void scanDirectory(File directory, XmldbURI target, boolean inRootDir) {
         final TransactionManager mgr = broker.getBrokerPool().getTransactionManager();
-        final Txn txn = mgr.beginTransaction();
         Collection collection = null;
-        try {
+        try(final Txn txn = mgr.beginTransaction()) {
             collection = broker.getOrCreateCollection(txn, target);
             setPermissions(true, null, collection.getPermissionsNoLock());
             broker.saveCollection(txn, collection);
             mgr.commit(txn);
         } catch (final Exception e) {
-            mgr.abort(txn);
-        } finally {
-            mgr.close(txn);
+            LOG.warn(e);
         }
 
         try {
@@ -633,8 +644,7 @@ public class Deployment {
                     {mime = MimeType.BINARY_TYPE;}
                 final XmldbURI name = XmldbURI.create(file.getName());
 
-                final Txn txn = mgr.beginTransaction();
-                try {
+                try(final Txn txn = mgr.beginTransaction()) {
                     if (mime.isXMLType()) {
                         final InputSource is = new InputSource(file.toURI().toASCIIString());
                         final IndexInfo info = targetCollection.validateXMLResource(txn, broker, name, is);
@@ -645,22 +655,19 @@ public class Deployment {
                         targetCollection.store(txn, broker, info, is, false);
                     } else {
                         final long size = file.length();
-                        final FileInputStream is = new FileInputStream(file);
-                        final BinaryDocument doc =
-                                targetCollection.addBinaryResource(txn, broker, name, is, mime.getName(), size);
-                        is.close();
+                        try(final FileInputStream is = new FileInputStream(file)) {
+                            final BinaryDocument doc =
+                                    targetCollection.addBinaryResource(txn, broker, name, is, mime.getName(), size);
 
-                        final Permission permission = doc.getPermissions();
-                        setPermissions(false, mime, permission);
-                        doc.getMetadata().setMimeType(mime.getName());
-                        broker.storeXMLResource(txn, doc);
+                            final Permission permission = doc.getPermissions();
+                            setPermissions(false, mime, permission);
+                            doc.getMetadata().setMimeType(mime.getName());
+                            broker.storeXMLResource(txn, doc);
+                        }
                     }
                     mgr.commit(txn);
                 } catch (final Exception e) {
-                    mgr.abort(txn);
                     e.printStackTrace();
-                } finally {
-                    mgr.close(txn);
                 }
             }
         }
@@ -768,18 +775,18 @@ public class Deployment {
 
         @Override
         public void startElement(QName qname, AttrList attribs) {
-            stack.push(qname.getLocalName());
+            stack.push(qname.getLocalPart());
             AttrList newAttrs = attribs;
-            if (attribs != null && "permissions".equals(qname.getLocalName())) {
+            if (attribs != null && "permissions".equals(qname.getLocalPart())) {
                 newAttrs = new AttrList();
                 for (int i = 0; i < attribs.getLength(); i++) {
-                    if (!"password". equals(attribs.getQName(i).getLocalName())) {
+                    if (!"password". equals(attribs.getQName(i).getLocalPart())) {
                         newAttrs.addAttribute(attribs.getQName(i), attribs.getValue(i), attribs.getType(i));
                     }
                 }
             }
 
-            if (!"deployed".equals(qname.getLocalName())) {
+            if (!"deployed".equals(qname.getLocalPart())) {
                 super.startElement(qname, newAttrs);
             }
         }
@@ -795,10 +802,10 @@ public class Deployment {
         @Override
         public void endElement(QName qname) throws SAXException {
             stack.pop();
-            if ("meta".equals(qname.getLocalName())) {
+            if ("meta".equals(qname.getLocalPart())) {
                 addDeployTime();
             }
-            if (!"deployed".equals(qname.getLocalName())) {
+            if (!"deployed".equals(qname.getLocalPart())) {
                 super.endElement(qname);
             }
         }
@@ -818,7 +825,7 @@ public class Deployment {
         @Override
         public void attribute(QName qname, String value) throws SAXException {
             final String current = stack.peek();
-            if (!("permissions".equals(current) && "password".equals(qname.getLocalName()))) {
+            if (!("permissions".equals(current) && "password".equals(qname.getLocalPart()))) {
                 super.attribute(qname, value);
             }
         }

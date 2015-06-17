@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,24 +19,22 @@
  */
 package org.exist.indexing.lucene;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.collections.MultiMap;
+import org.apache.commons.collections.map.MultiValueMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.exist.dom.QName;
+import org.exist.dom.persistent.AttrImpl;
 import org.exist.storage.NodePath;
+import org.w3c.dom.Attr;
 
 public class LuceneConfig {
 
-	protected final static Logger LOG = Logger.getLogger(LuceneConfig.class);
+	final static Logger LOG = LogManager.getLogger(LuceneConfig.class);
 	
 	private Map<QName, LuceneConfigText> paths = new TreeMap<QName, LuceneConfigText>();
 	private List<LuceneConfigText> wildcardPaths = new ArrayList<LuceneConfigText>();
@@ -54,6 +52,10 @@ public class LuceneConfig {
     protected AnalyzerConfig analyzers = new AnalyzerConfig();
 
     protected String queryParser = null;
+
+    // This is for the @attr match boosting
+    // and the intention is to do a proper predicate check instead in the future. /ljo
+    private MultiMap matchAttrs;
 
     public LuceneConfig() {
     }
@@ -231,6 +233,55 @@ public class LuceneConfig {
     public float getBoost() {
         return boost;
     }
+
+    public synchronized void addMatchAttr(String qname, String value, float boost, boolean onSibling) {
+        if (matchAttrs == null)
+            matchAttrs = new MultiValueMap();
+
+        matchAttrs.put(qname, new MatchAttrData(qname, value, boost, onSibling));
+    }
+
+    public boolean shouldReindexOnAttributeChange() {
+        return matchAttrs != null;
+    }
+
+    /**
+     * Get boost by matching the config with given attributes
+     * (e.g. sibling or child atributes)
+     * if no match, the value from getBoost() is returned
+     */
+    public float getAttrBoost(Collection<AttrImpl> attributes) {
+        float boost = 0;
+        boolean hasBoost = false;
+
+        for (Attr attr : attributes) {
+            Collection<MatchAttrData> matchAttrData
+                = (Collection<MatchAttrData>) matchAttrs.get(attr.getName());
+
+            if (matchAttrData == null) {
+                continue;
+            }
+            for (MatchAttrData matchAttrDatum : matchAttrData) {
+                // if matchAttr value is null we don't care about the value
+                if (matchAttrDatum.value == null
+                    || matchAttrDatum.value.equals(attr.getValue())) {
+                    hasBoost = true;
+                    boost += matchAttrDatum.boost;
+                    // we matched the attribute already, but since we allow
+                    // further boost on the attribute, e g
+                    // both from "has-attribute" and "match-attribute"
+                    // there is no break here
+                }
+            }
+        }
+
+        if (hasBoost) {
+            return boost;
+        } else {
+            return getBoost();
+        }
+    }
+
     
     public void addFieldType(FieldType type) {
     	fieldTypes.put(type.getId(), type);
@@ -279,6 +330,20 @@ public class LuceneConfig {
         public void remove() {
             //Nothing to do
         }
+    }
 
+    public static class MatchAttrData {
+
+        final String qname;
+        final String value;
+        final float boost;
+        final boolean onSibling;
+
+        MatchAttrData(String qname, String value, float boost, boolean onSibling) {
+            this.qname = qname;
+            this.value = value;
+            this.boost = boost;
+            this.onSibling = onSibling;
+        }
     }
 }

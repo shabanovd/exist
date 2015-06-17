@@ -31,7 +31,8 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;;
 
@@ -41,11 +42,16 @@ import org.apache.commons.io.output.ByteArrayOutputStream;;
  * 
  * @author jmfernandez
  *
+ * @deprecated Using this class should be avoided as it publishes an API that
+ * makes using it correctly without leaking resources very difficult. It is very
+ * likely that most uses of this class do not correctly cleanup the resources
+ * they obtain. It needs to be rewritten...
  */
+@Deprecated
 public class VirtualTempFile
 	extends OutputStream
 {
-    private final static Logger LOG = Logger.getLogger(VirtualTempFile.class);
+    private final static Logger LOG = LogManager.getLogger(VirtualTempFile.class);
     
     private final static int DEFAULT_MAX_CHUNK_SIZE = 0x40000;
     private final static String DEFAULT_TEMP_PREFIX = "eXistRPCV";

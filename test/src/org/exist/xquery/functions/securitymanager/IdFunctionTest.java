@@ -32,7 +32,7 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 
-import org.exist.memtree.DocumentImpl;
+import org.exist.dom.memtree.DocumentImpl;
 import org.exist.security.Subject;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
@@ -92,11 +92,11 @@ public class IdFunctionTest {
 
         final NodeList nlRealUsername = xpathEngine.getMatchingNodes("/sm:id/sm:real/sm:username", resultDoc);
         assertEquals(1, nlRealUsername.getLength());
-        assertEquals(realUsername, nlRealUsername.item(0).getNodeValue());
+        assertEquals(realUsername, nlRealUsername.item(0).getTextContent());
 
         final NodeList nlEffectiveUsername = xpathEngine.getMatchingNodes("/sm:id/sm:effective/sm:username", resultDoc);
         assertEquals(1, nlEffectiveUsername.getLength());
-        assertEquals(effectiveUsername, nlEffectiveUsername.item(0).getNodeValue());
+        assertEquals(effectiveUsername, nlEffectiveUsername.item(0).getTextContent());
 
         verify(mckEffectiveUser, mckRealUser, mckContext);
     }
@@ -138,7 +138,7 @@ public class IdFunctionTest {
 
         final NodeList nlRealUsername = xpathEngine.getMatchingNodes("/sm:id/sm:real/sm:username", resultDoc);
         assertEquals(1, nlRealUsername.getLength());
-        assertEquals(username, nlRealUsername.item(0).getNodeValue());
+        assertEquals(username, nlRealUsername.item(0).getTextContent());
 
         final NodeList nlEffectiveUsername = xpathEngine.getMatchingNodes("/sm:id/sm:effective/sm:username", resultDoc);
         assertEquals(0, nlEffectiveUsername.getLength());

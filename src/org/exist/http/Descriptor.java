@@ -35,8 +35,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.log4j.Logger;
-import org.exist.memtree.SAXAdapter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.util.ConfigurationHelper;
 import org.exist.util.SingleInstanceConfiguration;
 import org.w3c.dom.Document;
@@ -67,7 +68,7 @@ public class Descriptor implements ErrorHandler
 	private static final String SYSTEM_LINE_SEPARATOR = System.getProperty("line.separator");
 	//References
 	private static Descriptor singletonRef;
-	private final static Logger LOG = Logger.getLogger(Descriptor.class);		//Logger
+	private final static Logger LOG = LogManager.getLogger(Descriptor.class);		//Logger
 	/** descriptor file (descriptor.xml) */
 	private final static String file = "descriptor.xml";							
 
@@ -424,25 +425,28 @@ public class Descriptor implements ErrorHandler
     /**
      * @see org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
      */
+    @Override
     public void error(SAXParseException exception) throws SAXException
     {
-        System.err.println("Error occured while reading descriptor file [line: " + exception.getLineNumber() + "]:" + exception.getMessage());
+        LOG.error("Error occurred while reading descriptor file [line: " + exception.getLineNumber() + "]:" + exception.getMessage(), exception);
     }
     
     /**
      * @see org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
      */
+    @Override
     public void fatalError(SAXParseException exception) throws SAXException
 	{
-        System.err.println("Error occured while reading descriptor file [line: " + exception.getLineNumber() + "]:" + exception.getMessage());
+        LOG.error("Error occurred while reading descriptor file [line: " + exception.getLineNumber() + "]:" + exception.getMessage(), exception);
     }
     
     /** 
      * @see org.xml.sax.ErrorHandler#warning(org.xml.sax.SAXParseException)
      */
+    @Override
     public void warning(SAXParseException exception) throws SAXException
     {
-        System.err.println("error occured while reading descriptor file [line: " + exception.getLineNumber() + "]:" + exception.getMessage());
+        LOG.error("error occurred while reading descriptor file [line: " + exception.getLineNumber() + "]:" + exception.getMessage(), exception);
     }
 		
 }

@@ -41,13 +41,13 @@ import javax.xml.parsers.SAXParserFactory;
 import org.exist.EXistException;
 
 import org.exist.Namespaces;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.QName;
-import org.exist.memtree.NodeImpl;
-import org.exist.memtree.ReferenceNode;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.memtree.NodeImpl;
+import org.exist.dom.memtree.ReferenceNode;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.security.UUIDGenerator;
@@ -313,7 +313,8 @@ public class Eval extends BasicFunction {
 
         final LocalVariable mark = evalContext.markLocalVariables(false);
 
-        final DocumentSet oldDocs = evalContext.getStaticallyKnownDocuments();
+        // save the static document set of the current context, so it can be restored later
+        final DocumentSet oldDocs = evalContext.getStaticDocs();
         if(exprContext != null) {
             evalContext.setStaticallyKnownDocuments(exprContext.getDocumentSet());
         }
@@ -323,8 +324,6 @@ public class Eval extends BasicFunction {
         }
 
         // fixme! - hook for debugger here /ljo
-
-        final Sequence sequence = null;
 
         final XQuery xqueryService = evalContext.getBroker().getXQueryService();
         final XQueryContext innerContext;
@@ -396,7 +395,7 @@ public class Eval extends BasicFunction {
                 result = execute(evalContext.getBroker(), xqueryService, querySource, innerContext, exprContext, cache);
                 return result;
             } finally {
-                cleanup(evalContext, innerContext, oldDocs, mark, expr, sequence, result);
+                cleanup(evalContext, innerContext, oldDocs, mark, expr, result);
             }
         } catch(final XPathException e) {
             try {
@@ -409,8 +408,7 @@ public class Eval extends BasicFunction {
         }
     }
 
-    private void cleanup(XQueryContext evalContext, XQueryContext innerContext, DocumentSet oldDocs, LocalVariable mark, Item expr,
-                         Sequence sequence, Sequence resultSequence) {
+    private void cleanup(XQueryContext evalContext, XQueryContext innerContext, DocumentSet oldDocs, LocalVariable mark, Item expr, Sequence resultSequence) {
         if(innerContext != evalContext) {
            innerContext.reset();
         }
@@ -423,7 +421,7 @@ public class Eval extends BasicFunction {
         evalContext.popNamespaceContext();
 
         if(evalContext.isProfilingEnabled(2)) {
-            evalContext.getProfiler().end(this, "eval: " + expr, sequence);
+            evalContext.getProfiler().end(this, "eval: " + expr, resultSequence);
         }
     }
 
@@ -599,7 +597,7 @@ public class Eval extends BasicFunction {
 				//TODO : cleanly seperate the statically know docollection and documents
 				pathes[0] = XmldbURI.create(value.getStringValue());
 				innerContext.setStaticallyKnownDocuments(pathes);
-			} /*else if (child.getNodeType() == Node.ELEMENT_NODE &&	"mapModule".equals(child.getLocalName())) {
+			} /*else if (child.getNodeType() == Node.ELEMENT_NODE &&	"mapModule".equals(child.getLocalPart())) {
 				Element elem = (Element) child;
 				//TODO : error check
 				if (elem.getAttribute("namespace") != null && elem.getAttribute("uri") != null) {

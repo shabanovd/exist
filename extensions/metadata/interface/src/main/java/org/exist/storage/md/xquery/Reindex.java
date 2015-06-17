@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,7 +19,14 @@
  */
 package org.exist.storage.md.xquery;
 
-import org.exist.dom.DocumentImpl;
+import java.io.IOException;
+import java.util.Iterator;
+
+import org.exist.collections.Collection;
+import org.exist.collections.triggers.TriggerException;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.MutableDocumentSet;
 import org.exist.dom.QName;
 import org.exist.storage.DBBroker;
 import org.exist.storage.btree.DBException;

@@ -21,17 +21,18 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.ExtArrayNodeSet;
-import org.exist.dom.MutableDocumentSet;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.ExtArrayNodeSet;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.util.XMLChar;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.Constants;
@@ -66,7 +67,7 @@ import org.exist.xquery.ErrorCodes;
  *
  */
 public class FunId extends Function {
-	protected static final Logger logger = Logger.getLogger(FunId.class);
+	protected static final Logger logger = LogManager.getLogger(FunId.class);
 	public final static FunctionSignature signature[] = {
 			new FunctionSignature(
 				new QName("id", Function.BUILTIN_FUNCTION_NS),
@@ -146,7 +147,7 @@ public class FunId extends Function {
                     {processInMem = true;}
                 else {
                     MutableDocumentSet ndocs = new DefaultDocumentSet();
-                    ndocs.add(((NodeProxy)node).getDocument());
+                    ndocs.add(((NodeProxy)node).getOwnerDocument());
                     docs = ndocs;
                 }
                 contextSequence = node;
@@ -208,7 +209,7 @@ public class FunId extends Function {
 		final NodeSet attribs = context.getBroker().getValueIndex().find(context.getWatchDog(), Constants.EQ, docs, null, -1, null, new StringValue(id, Type.ID));
 		NodeProxy p;
 		for (final NodeProxy n : attribs) {
-			p = new NodeProxy(n.getDocument(), n.getNodeId().getParentId(), Node.ELEMENT_NODE);
+			p = new NodeProxy(n.getOwnerDocument(), n.getNodeId().getParentId(), Node.ELEMENT_NODE);
 			result.add(p);
 		}
 	}
@@ -217,7 +218,7 @@ public class FunId extends Function {
         final Set<DocumentImpl> visitedDocs = new TreeSet<DocumentImpl>();
         for (final SequenceIterator i = seq.iterate(); i.hasNext();) {
             final NodeImpl v = (NodeImpl) i.nextItem();
-            final DocumentImpl doc = v.getDocument();
+            final DocumentImpl doc = v.getOwnerDocument();
             if (!visitedDocs.contains(doc)) {
                 final NodeImpl elem = doc.selectById(id);
                 if (elem != null)

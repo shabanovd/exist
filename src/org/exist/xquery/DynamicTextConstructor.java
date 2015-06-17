@@ -22,7 +22,7 @@
  */
 package org.exist.xquery;
 
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xquery.value.Item;
 import org.exist.xquery.value.Sequence;
@@ -44,7 +44,7 @@ public class DynamicTextConstructor extends NodeConstructor {
      */
     public DynamicTextConstructor(XQueryContext context, Expression contentExpr) {
         super(context);
-        this.content = new Atomize(context, contentExpr);
+        this.content = contentExpr;
     }
 
     public Expression getContent() {
@@ -86,7 +86,7 @@ public class DynamicTextConstructor extends NodeConstructor {
                 final MemTreeBuilder builder = context.getDocumentBuilder();
                 context.proceed(this, builder);
                 final StringBuilder buf = new StringBuilder();
-                for(final SequenceIterator i = contentSeq.iterate(); i.hasNext(); ) {
+                for(final SequenceIterator i = Atomize.atomize(contentSeq).iterate(); i.hasNext(); ) {
                     context.proceed(this, builder);
                     final Item next = i.nextItem();
                     if(buf.length() > 0)

@@ -27,7 +27,8 @@ import org.exist.xquery.AbstractInternalModule;
 import org.exist.xquery.FunctionDef;
 import org.exist.xquery.XQueryContext;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -59,7 +60,7 @@ import org.exist.xquery.modules.ModuleUtils.ContextMapModifier;
  */
 public class MailModule extends AbstractInternalModule { 
     
-    private final static Logger LOG = Logger.getLogger( MailModule.class );
+    private final static Logger LOG = LogManager.getLogger( MailModule.class );
 	
     public final static String NAMESPACE_URI = "http://exist-db.org/xquery/mail";
 	
@@ -79,6 +80,7 @@ public class MailModule extends AbstractInternalModule {
         new FunctionDef(MessageListFunctions.signatures[1], MessageListFunctions.class),
         new FunctionDef(MessageListFunctions.signatures[2], MessageListFunctions.class),
         new FunctionDef(MessageListFunctions.signatures[3], MessageListFunctions.class),
+        new FunctionDef(MessageFunctions.signatures[0], MessageFunctions.class),
 
         new FunctionDef(SendEmailFunction.signatures[0], SendEmailFunction.class),
 

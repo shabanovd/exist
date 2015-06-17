@@ -1,23 +1,21 @@
 /*
- *  eXist SecurityManager Module Extension
- *  Copyright (C) 2010 Adam Retter <adam.rettter@googlemail.com>
- *  www.adamretter.co.uk
+ * eXist Open Source Native XML Database
+ * Copyright (C) 2015 The eXist Project
+ * http://exist-db.org
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 package org.exist.xquery.functions.securitymanager;
 
@@ -89,12 +87,12 @@ public class SetPrincipalMetadataFunction extends BasicFunction {
         final String value = args[2].getStringValue();
             
         final Principal principal;
-        if(isCalledAs(qnSetAccountMetadata.getLocalName())) {
+        if(isCalledAs(qnSetAccountMetadata.getLocalPart())) {
             if(!currentUser.hasDbaRole() && !currentUser.getUsername().equals(strPrincipal)) {
                 throw new XPathException(this, new PermissionDeniedException("You must have suitable access rights to modify the users metadata."));
             }
             principal = securityManager.getAccount(strPrincipal);
-        } else if(isCalledAs(qnSetGroupMetadata.getLocalName())) {
+        } else if(isCalledAs(qnSetGroupMetadata.getLocalPart())) {
             
             //check for a valid group metadata key
             boolean valid = false;

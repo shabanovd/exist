@@ -22,10 +22,12 @@
 package org.exist.xquery.pragmas;
 
 import org.exist.xquery.*;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
 import org.exist.xquery.util.ExpressionDumper;
+import org.exist.xquery.value.Sequence;
 
 public class TimerPragma extends Pragma {
 
@@ -48,12 +50,12 @@ public class TimerPragma extends Pragma {
                 if ("verbose".equals(param[0])) {
                     verbose = "yes".equals(param[1]);
                 } else if ("logger".equals(param[0])) {
-                    log = Logger.getLogger(param[1]);
+                    log = LogManager.getLogger(param[1]);
                 }
             }
         }
         if (log == null)
-            {log = Logger.getLogger(TimerPragma.class);}
+            {log = LogManager.getLogger(TimerPragma.class);}
     }
 
     public void after(XQueryContext context, Expression expression) throws XPathException {
@@ -66,7 +68,7 @@ public class TimerPragma extends Pragma {
         }
     }
 
-    public void before(XQueryContext context, Expression expression) throws XPathException {
+    public void before(XQueryContext context, Expression expression, Sequence contextSequence) throws XPathException {
         start = System.currentTimeMillis();
     }
 }

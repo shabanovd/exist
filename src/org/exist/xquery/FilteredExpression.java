@@ -25,8 +25,8 @@ package org.exist.xquery;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.exist.dom.NodeSet;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.persistent.NodeSet;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.xquery.util.ExpressionDumper;
 import org.exist.xquery.value.*;
 
@@ -49,7 +49,7 @@ public class FilteredExpression extends AbstractExpression {
      */
     public FilteredExpression(XQueryContext context, Expression expr) {
         super(context);
-        this.expression = expr;
+        this.expression = expr.simplify();
     }
 
     public void addPredicate(Predicate pred) {
@@ -77,6 +77,7 @@ public class FilteredExpression extends AbstractExpression {
             final AnalyzeContextInfo newContext = new AnalyzeContextInfo(contextInfo);
             newContext.setParent(this);
             newContext.setContextStep(this);
+            newContext.setStaticType(expression.returnsType());
             for (final Predicate pred : predicates) {
                 pred.analyze(newContext);
             }
@@ -84,7 +85,7 @@ public class FilteredExpression extends AbstractExpression {
     }
 
     /* (non-Javadoc)
-     * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+     * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
      */
     public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
         if (context.getProfiler().isEnabled()) {

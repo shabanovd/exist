@@ -23,14 +23,19 @@ package org.exist.xupdate;
 
 import java.util.Random;
 
-import junit.framework.TestCase;
-import junit.textui.TestRunner;
+import org.exist.TestUtils;
 
 import org.exist.xmldb.XmldbURI;
 import org.exist.xmldb.concurrent.DBUtils;
+import org.junit.After;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import org.junit.Before;
+import org.junit.Test;
 import org.xmldb.api.base.Collection;
 import org.xmldb.api.base.Resource;
 import org.xmldb.api.base.ResourceSet;
+import org.xmldb.api.base.XMLDBException;
 import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 import org.xmldb.api.modules.XPathQueryService;
@@ -40,11 +45,7 @@ import org.xmldb.api.modules.XUpdateQueryService;
  * @author wolf
  *
  */
-public class StressTest extends TestCase {
-
-    public static void main(String[] args) {
-        TestRunner.run(StressTest.class);
-    }
+public class StressTest {
     
     private final static String XML = "<root><a/><b/><c/></root>";
     
@@ -54,21 +55,18 @@ public class StressTest extends TestCase {
     
     private Collection rootCol;
     private Collection testCol;
-    private Random rand = new Random();
+    private final Random rand = new Random();
     
     private String[] tags;
     
-    public void test() throws Exception {
-        try {
-            insertTags();
-            removeTags();
-            fetchDb();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    @Test
+    public void stressTest() throws XMLDBException {
+        insertTags();
+        removeTags();
+        fetchDb();
     }
     
-    private void insertTags() throws Exception {
+    private void insertTags() throws XMLDBException {
         XUpdateQueryService service = (XUpdateQueryService)
             testCol.getService("XUpdateQueryService", "1.0");
         XPathQueryService xquery = (XPathQueryService)
@@ -89,23 +87,19 @@ public class StressTest extends TestCase {
                 "</xupdate:modifications>";
             
             long mods = service.updateResource("test.xml", xupdate);
-            System.out.println("Inserted " + tag + ": " + mods + " ; parent = " + parent);
             assertEquals(mods, 1);
             
             tagsWritten[i] = tag;
             String query = "//" + tagsWritten[rand.nextInt(i + 1)];
             ResourceSet result = xquery.query(query);
             assertEquals(result.getSize(), 1);
-            
-            System.out.println(result.getResource(0).getContent());
         }
         
         XMLResource res = (XMLResource) testCol.getResource("test.xml");
         assertNotNull(res);
-        System.out.println(res.getContent());
     }
     
-    private void removeTags() throws Exception {
+    private void removeTags() throws XMLDBException {
         XUpdateQueryService service = (XUpdateQueryService)
             testCol.getService("XUpdateQueryService", "1.0");
         int start = rand.nextInt(RUNS / 4);
@@ -116,13 +110,12 @@ public class StressTest extends TestCase {
             
             @SuppressWarnings("unused")
 			long mods = service.updateResource("test.xml", xupdate);
-            System.out.println("Removed: " + tags[i]);
             
             i += rand.nextInt(3);
         }
     }
     
-    private void fetchDb() throws Exception {
+    private void fetchDb() throws XMLDBException {
         XPathQueryService xquery = (XPathQueryService)
             testCol.getService("XPathQueryService", "1.0");
         ResourceSet result = xquery.query("for $n in collection('" + XmldbURI.ROOT_COLLECTION + "/test')//* return local-name($n)");
@@ -130,19 +123,16 @@ public class StressTest extends TestCase {
         for (int i = 0; i < result.getSize(); i++) {
             Resource r = result.getResource(i);
             String tag = r.getContent().toString();
-            System.out.println("Retrieving " + tag);
             
             ResourceSet result2 = xquery.query("//" + tag);
             assertEquals(result2.getSize(), 1);
-            
-            System.out.println(result2.getResource(0).getContent());
         }
     }
     
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         rootCol = DBUtils.setupDB(URI);
         
-
         testCol = rootCol.getChildCollection(XmldbURI.ROOT_COLLECTION + "/test");
         if(testCol != null) {
             CollectionManagementService mgr = DBUtils.getCollectionManagementService(rootCol);
@@ -151,8 +141,6 @@ public class StressTest extends TestCase {
         
         testCol = DBUtils.addCollection(rootCol, "test");
         assertNotNull(testCol);
-        
-        System.out.println("Generating " + RUNS + " tags ...");
         
         tags = new String[RUNS];
         for (int i = 0; i < RUNS; i++) {
@@ -163,7 +151,9 @@ public class StressTest extends TestCase {
         DBUtils.addXMLResource(testCol, "test.xml", XML);
     }
     
-    protected void tearDown() throws Exception {
-//        DBUtils.shutdownDB(URI);
+    @After
+    public void tearDown() throws XMLDBException {
+        TestUtils.cleanupDB();
+        DBUtils.shutdownDB(URI);
     }
 }

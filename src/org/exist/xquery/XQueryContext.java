@@ -47,26 +47,27 @@ import javax.xml.datatype.Duration;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.stream.XMLStreamException;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.collections.Collection;
 import org.exist.debuggee.Debuggee;
 import org.exist.debuggee.DebuggeeJoint;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.MutableDocumentSet;
-import org.exist.dom.NodeProxy;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.dom.persistent.NodeHandle;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
 import org.exist.http.servlets.RequestWrapper;
 import org.exist.interpreter.Context;
-import org.exist.memtree.InMemoryXMLStreamReader;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.memtree.InMemoryXMLStreamReader;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.numbering.NodeId;
 import org.exist.repo.ExistRepository;
 import org.exist.security.AuthenticationException;
@@ -129,7 +130,7 @@ public class XQueryContext implements BinaryValueManager, Context
     public static final String                        JAVA_URI_START                                   = "java:";
     //private static final String XMLDB_URI_START = "xmldb:exist://";
 
-    protected final static Logger                      LOG                                              = Logger.getLogger( XQueryContext.class );
+    protected final static Logger                      LOG                                              = LogManager.getLogger( XQueryContext.class );
 
     private static final String                        TEMP_STORE_ERROR                                 = "Error occurred while storing temporary data";
     public static final String                         XQUERY_CONTEXTVAR_XQUERY_UPDATE_ERROR            = "_eXist_xquery_update_error";
@@ -310,7 +311,7 @@ public class XQueryContext implements BinaryValueManager, Context
 
     private DebuggeeJoint                              debuggeeJoint                 = null;
 
-    private int                                        xqueryVersion                 = 10;
+    private int                                        xqueryVersion                 = 31;
     
     protected Database db;
 
@@ -1202,6 +1203,9 @@ public class XQueryContext implements BinaryValueManager, Context
         return( staticDocuments );
     }
 
+    public DocumentSet getStaticDocs() {
+        return staticDocuments;
+    }
 
     public ExtendedXMLStreamReader getXMLStreamReader( NodeValue nv ) throws XMLStreamException, IOException
     {
@@ -1209,10 +1213,10 @@ public class XQueryContext implements BinaryValueManager, Context
 
         if( nv.getImplementationType() == NodeValue.IN_MEMORY_NODE ) {
             final NodeImpl node = (NodeImpl)nv;
-            reader = new InMemoryXMLStreamReader( node.getDocument(), node.getDocument() );
+            reader = new InMemoryXMLStreamReader( node.getOwnerDocument(), node.getOwnerDocument() );
         } else {
             final NodeProxy proxy = (NodeProxy)nv;
-            reader = getBroker().newXMLStreamReader( new NodeProxy( proxy.getDocument(), NodeId.DOCUMENT_NODE, proxy.getDocument().getFirstChildAddress() ), false );
+            reader = getBroker().newXMLStreamReader( new NodeProxy( proxy.getOwnerDocument(), NodeId.DOCUMENT_NODE, proxy.getOwnerDocument().getFirstChildAddress() ), false );
         }
         return( reader );
     }
@@ -2825,20 +2829,8 @@ public class XQueryContext implements BinaryValueManager, Context
 
     private ExternalModule compileOrBorrowModule( String prefix, String namespaceURI, String location, Source source ) throws XPathException
     {
-        ExternalModule module = getBroker().getBrokerPool().getXQueryPool().borrowModule( getBroker(), source, this );
+        final ExternalModule module = compileModule( prefix, namespaceURI, location, source );
 
-        if( module == null ) {
-            module = compileModule( prefix, namespaceURI, location, source );
-        } else {
-
-            for( final Iterator<Module> it = module.getContext().getAllModules(); it.hasNext(); ) {
-                final Module importedModule = it.next();
-
-                if( ( importedModule != null ) && !allModules.containsKey( importedModule.getNamespaceURI() ) ) {
-                    setRootModule( importedModule.getNamespaceURI(), importedModule );
-                }
-            }
-        }
         setModule( module.getNamespaceURI(), module );
         declareModuleVars( module );
         return( module );
@@ -3032,7 +3024,7 @@ public class XQueryContext implements BinaryValueManager, Context
         return realUser;
     }
     
-    public void setRealUser(final Subject realUser) {
+    protected void setRealUser(final Subject realUser) {
         this.realUser = realUser;
     }
 
@@ -3218,23 +3210,23 @@ public class XQueryContext implements BinaryValueManager, Context
         } else if( Namespaces.EXIST_NS.equals( qname.getNamespaceURI() ) ) {
             contents = StringValue.trimWhitespace( contents );
 
-            if( TimerPragma.TIMER_PRAGMA.equalsSimple( qname ) ) {
+            if( TimerPragma.TIMER_PRAGMA.equals(qname) ) {
                 return( new TimerPragma( qname, contents ) );
             }
 
-            if( Optimize.OPTIMIZE_PRAGMA.equalsSimple( qname ) ) {
+            if( Optimize.OPTIMIZE_PRAGMA.equals(qname) ) {
                 return( new Optimize( this, qname, contents, true ) );
             }
 
-            if( ForceIndexUse.EXCEPTION_IF_INDEX_NOT_USED_PRAGMA.equalsSimple( qname ) ) {
+            if( ForceIndexUse.EXCEPTION_IF_INDEX_NOT_USED_PRAGMA.equals(qname) ) {
                 return( new ForceIndexUse( qname, contents ) );
             }
 
-            if( ProfilePragma.PROFILING_PRAGMA.equalsSimple( qname ) ) {
+            if( ProfilePragma.PROFILING_PRAGMA.equals(qname) ) {
                 return( new ProfilePragma( qname, contents ) );
             }
 
-            if( NoIndexPragma.NO_INDEX_PRAGMA.equalsSimple( qname ) ) {
+            if( NoIndexPragma.NO_INDEX_PRAGMA.equals(qname) ) {
                 return( new NoIndexPragma( qname, contents ) );
             }
         }
@@ -3251,7 +3243,7 @@ public class XQueryContext implements BinaryValueManager, Context
      *
      * @throws  XPathException
      */
-    public DocumentImpl storeTemporaryDoc( org.exist.memtree.DocumentImpl doc ) throws XPathException
+    public DocumentImpl storeTemporaryDoc( org.exist.dom.memtree.DocumentImpl doc ) throws XPathException
     {
         try {
             final DocumentImpl targetDoc = getBroker().storeTempResource( doc );
@@ -3447,7 +3439,7 @@ public class XQueryContext implements BinaryValueManager, Context
         if(dynamicOptions != null) {
             for(final Option option : dynamicOptions) {
                 if (Namespaces.XSLT_XQUERY_SERIALIZATION_NS.equals(option.getQName().getNamespaceURI())) {
-                    properties.put(option.getQName().getLocalName(), option.getContents());
+                    properties.put(option.getQName().getLocalPart(), option.getContents());
                 }
             }
         }
@@ -3455,8 +3447,8 @@ public class XQueryContext implements BinaryValueManager, Context
         if( staticOptions != null ) {
             for(final Option option : staticOptions) {
                 if (Namespaces.XSLT_XQUERY_SERIALIZATION_NS.equals(option.getQName().getNamespaceURI())) {
-                    if (!properties.containsKey(option.getQName().getLocalName()))
-                        {properties.put(option.getQName().getLocalName(), option.getContents());}
+                    if (!properties.containsKey(option.getQName().getLocalPart()))
+                        {properties.put(option.getQName().getLocalPart(), option.getContents());}
                 }
             }
         }
@@ -3619,17 +3611,12 @@ public class XQueryContext implements BinaryValueManager, Context
         }
 
 
-        public void nodeMoved( NodeId oldNodeId, StoredNode newNode )
-        {
-            for( int i = 0; i < listeners.size(); i++ ) {
-                final UpdateListener listener = (UpdateListener)listeners.get( i );
-
-                if( listener != null ) {
-                    listener.nodeMoved( oldNodeId, newNode );
-                }
+        @Override
+        public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
+            for(final UpdateListener listener : listeners) {
+                listener.nodeMoved(oldNodeId, newNode);
             }
         }
-
 
         public void debug() {
             

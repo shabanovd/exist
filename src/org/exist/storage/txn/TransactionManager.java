@@ -21,7 +21,8 @@
  */
 package org.exist.storage.txn;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsAttribute;
@@ -40,6 +41,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -70,11 +72,12 @@ public class TransactionManager {
     /**
      * Logger for this class
      */
-    private static final Logger LOG = Logger.getLogger(TransactionManager.class);
+    private static final Logger LOG = LogManager.getLogger(TransactionManager.class);
 
     private long nextTxnId = 0;
 
-    private Journal journal;
+    private final BrokerPool pool;
+    private final Journal journal;
     
     @ConfigurationFieldAsAttribute("enabled")
     private boolean enabled;
@@ -85,43 +88,45 @@ public class TransactionManager {
     @ConfigurationFieldAsAttribute("force-restart")
     private boolean forceRestart = false;
 
-    private Map<Long, TxnCounter> transactions = new HashMap<Long, TxnCounter>();
-
-    private Lock lock = new ReentrantLock();
-
-    private BrokerPool pool;
-    
-    /**
-     * Manages all system tasks
-     */
     private SystemTaskManager taskManager;
+
+    private final Map<Long, TxnCounter> transactions = new HashMap<>();
+
+    private final Lock lock = new ReentrantLock();
 
     /**
      * Initialize the transaction manager using the specified data directory.
      * 
+     * @param pool
      * @param dataDir
+     * @param transactionsEnabled
      * @throws EXistException
      */
-    public TransactionManager(BrokerPool pool, File dataDir, boolean transactionsEnabled) throws EXistException {
-    	this.pool = pool;
-        enabled = transactionsEnabled;
-        if (enabled)
-            {journal = new Journal(pool, dataDir);}
-        final Boolean groupOpt = (Boolean) pool.getConfiguration().getProperty(PROPERTY_RECOVERY_GROUP_COMMIT);
-        if (groupOpt != null) {
-            groupCommit = groupOpt.booleanValue();
-            if (LOG.isDebugEnabled())
-                {LOG.debug("GroupCommits = " + groupCommit);}
-        }
-        final Boolean restartOpt = (Boolean) pool.getConfiguration().getProperty(PROPERTY_RECOVERY_FORCE_RESTART);
-        if (restartOpt != null) {
-            forceRestart = restartOpt.booleanValue();
-            if (LOG.isDebugEnabled())
-                {LOG.debug("ForceRestart = " + forceRestart);}
-        }
-        taskManager = new SystemTaskManager(pool);
+    public TransactionManager(final BrokerPool pool, final File dataDir, final boolean transactionsEnabled) throws EXistException {
+    	this(
+            pool,
+            transactionsEnabled,
+            transactionsEnabled ? new Journal(pool, dataDir) : null,
+            Optional.ofNullable((boolean)pool.getConfiguration().getProperty(PROPERTY_RECOVERY_GROUP_COMMIT)).orElse(false),
+            Optional.ofNullable((boolean)pool.getConfiguration().getProperty(PROPERTY_RECOVERY_FORCE_RESTART)).orElse(false),
+            new SystemTaskManager(pool)
+        );
     }
-    
+
+    TransactionManager(final BrokerPool pool, final boolean transactionsEnabled, final Journal journal, final boolean groupCommit, final boolean forceRestart, final SystemTaskManager taskManager) {
+        this.pool = pool;
+        this.enabled = transactionsEnabled;
+        this.journal = journal;
+        this.groupCommit = groupCommit;
+        this.forceRestart = forceRestart;
+        this.taskManager = taskManager;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("GroupCommits = " + groupCommit);
+            LOG.debug("ForceRestart = " + forceRestart);
+        }
+    }
+
     public void initialize() throws EXistException, ReadOnlyException {
         if (enabled)
             {journal.initialize();}
@@ -177,6 +182,8 @@ public class TransactionManager {
      * @throws TransactionException
      */
     public void commit(final Txn txn) throws TransactionException {
+
+        //we can only commit something which is in the STARTED state
         if (!enabled || txn.getState() != Txn.State.STARTED) {
             return;
         }
@@ -203,6 +210,8 @@ public class TransactionManager {
     }
 	
     public void abort(final Txn txn) {
+
+        //we can only abort something which is in the STARTED state
         if (!enabled || txn == null || txn.getState() != Txn.State.STARTED) {
             return;
         }
@@ -231,12 +240,22 @@ public class TransactionManager {
      * @param txn
      */
     public void close(final Txn txn) {
-        if (!enabled || txn == null) {
+
+        //if the transaction is already closed, do nothing
+        if (!enabled || txn == null || txn.getState() == Txn.State.CLOSED) {
             return;
         }
-        if (txn.getState() == Txn.State.STARTED) {
-            //LOG.warn("Transaction was not committed or aborted!", new Throwable());
-            abort(txn);
+
+        try {
+            //if the transaction is started, then we should auto-abort the uncommitted transaction
+            if (txn.getState() == Txn.State.STARTED) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Transaction was not committed or aborted, auto aborting!");
+                }
+                abort(txn);
+            }
+        } finally {
+            txn.setState(Txn.State.CLOSED); //transaction is now closed!
         }
     }
 
@@ -268,18 +287,23 @@ public class TransactionManager {
      * 
      * @throws TransactionException
      */
-	public void checkpoint(boolean switchFiles) throws TransactionException {
-        if (!enabled)
-            {return;}
+    public void checkpoint(boolean switchFiles) throws TransactionException {
+        if (!enabled) {
+            return;
+        }
         
-		final long txnId = nextTxnId++;
-		journal.checkpoint(txnId, switchFiles);
-	}
+	final long txnId = nextTxnId++;
+	journal.checkpoint(txnId, switchFiles);
+    }
 	
-	public Journal getJournal() {
-		return journal;
-	}
-    
+    public Journal getJournal() {
+	return journal;
+    }
+
+    /**
+     * @Deprecated This mixes concerns and should not be here.
+     */
+    @Deprecated
     public void reindex(DBBroker broker) {
     	final Subject currentUser = broker.getSubject();
     	
@@ -388,7 +412,7 @@ public class TransactionManager {
      * This is used to determine if there are any uncommitted transactions
      * during shutdown.
      */
-    private final static class TxnCounter {
+    protected final static class TxnCounter {
         int counter = 0;
 
         public void increment() {

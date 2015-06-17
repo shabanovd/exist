@@ -21,16 +21,17 @@
  */
 package org.exist.xquery.functions.xmldb;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.ExtArrayNodeSet;
-import org.exist.dom.MutableDocumentSet;
-import org.exist.dom.NodeProxy;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.ExtArrayNodeSet;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.dom.persistent.NodeHandle;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
 import org.exist.numbering.NodeId;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
@@ -63,7 +64,7 @@ import java.util.List;
  * @author wolf
  */
 public class XMLDBDocument extends Function {
-    private static final Logger logger = Logger.getLogger(XMLDBDocument.class);
+    private static final Logger logger = LogManager.getLogger(XMLDBDocument.class);
  
 
 	public final static FunctionSignature signature =
@@ -99,7 +100,7 @@ public class XMLDBDocument extends Function {
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+	 * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
 	 */
     public Sequence eval(Sequence contextSequence, Item contextItem)
 	throws XPathException {
@@ -228,6 +229,7 @@ public class XMLDBDocument extends Function {
     protected void registerUpdateListener() {
         if (listener == null) {
             listener = new UpdateListener() {
+                @Override
                 public void documentUpdated(DocumentImpl document, int event) {
                     // clear all
                     cachedArgs = null;
@@ -235,14 +237,16 @@ public class XMLDBDocument extends Function {
                     cachedDocs = null;
                 }
 
+                @Override
                 public void unsubscribe() {
                     XMLDBDocument.this.listener = null;
                 }
 
-                public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
+                public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
                     // not relevant
                 }
 
+                @Override
                 public void debug() {
 		    logger.debug("UpdateListener: Line: " + getLine() + ": " + XMLDBDocument.this.toString());
                 }

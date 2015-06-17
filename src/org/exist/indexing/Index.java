@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.exist.indexing;
 
 import org.exist.Database;
+import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.DBException;
@@ -47,9 +48,9 @@ public interface Index {
     String getIndexName();
 
     /**
-     * Returns the {@link org.exist.Database} on with this Index operates.
+     * Returns the {@link org.exist.storage.BrokerPool} on with this Index operates.
      * 
-     * @return the database
+     * @return the broker pool
      */
     Database getDatabase();
 
@@ -64,7 +65,7 @@ public interface Index {
      * @param config the module element which configures this index, as found in conf.xml
      * @throws DatabaseConfigurationException
      */
-    void configure(Database pool, String dataDir, Element config) throws DatabaseConfigurationException;
+    void configure(Database db, String dataDir, Element config) throws DatabaseConfigurationException;
 
     /**
      * Opens the index for writing and reading. Will be called during initialization, but also

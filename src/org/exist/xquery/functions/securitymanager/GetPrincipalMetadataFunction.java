@@ -1,23 +1,21 @@
 /*
- *  eXist SecurityManager Module Extension
- *  Copyright (C) 2010 Adam Retter <adam@existsolutions.com>
- *  www.adamretter.co.uk
+ * eXist Open Source Native XML Database
+ * Copyright (C) 2015 The eXist Project
+ * http://exist-db.org
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 package org.exist.xquery.functions.securitymanager;
 
@@ -30,6 +28,7 @@ import org.exist.security.SchemaType;
 import org.exist.security.SecurityManager;
 import org.exist.security.Subject;
 import org.exist.storage.DBBroker;
+import org.exist.util.SelectorUtils;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -128,9 +127,9 @@ public class GetPrincipalMetadataFunction extends BasicFunction {
         final Subject currentUser = broker.getSubject();
 
         if(args.length == 0) {
-            if(isCalledAs(qnGetAccountMetadataKeys.getLocalName())) {
+            if(isCalledAs(qnGetAccountMetadataKeys.getLocalPart())) {
                 result = getAllAccountMetadataKeys();
-            } else if(isCalledAs(qnGetGroupMetadataKeys.getLocalName())) {
+            } else if(isCalledAs(qnGetGroupMetadataKeys.getLocalPart())) {
                 result = getAllGroupMetadataKeys();
             } else {
                 throw new XPathException("Unknown function");
@@ -139,12 +138,12 @@ public class GetPrincipalMetadataFunction extends BasicFunction {
             final SecurityManager securityManager = broker.getBrokerPool().getSecurityManager();
             final String strPrincipal = args[0].getStringValue();
             final Principal principal;
-            if(isCalledAs(qnGetAccountMetadataKeys.getLocalName()) || isCalledAs(qnGetAccountMetadata.getLocalName())) {
+            if(isCalledAs(qnGetAccountMetadataKeys.getLocalPart()) || isCalledAs(qnGetAccountMetadata.getLocalPart())) {
                 if(!currentUser.hasDbaRole() && !currentUser.getUsername().equals(strPrincipal)) {
                     throw new XPathException("You must be a DBA to retrieve metadata about other users, otherwise you may only retrieve metadata about yourself.");
                 }
                 principal = securityManager.getAccount(strPrincipal);
-            } else if(isCalledAs(qnGetGroupMetadataKeys.getLocalName()) || isCalledAs(qnGetGroupMetadata.getLocalName())) {
+            } else if(isCalledAs(qnGetGroupMetadataKeys.getLocalPart()) || isCalledAs(qnGetGroupMetadata.getLocalPart())) {
                 if(!currentUser.hasDbaRole() && !currentUser.hasGroup(strPrincipal)) {
                     throw new XPathException("You must be a DBA to retrieve metadata about other groups, otherwise you may only retrieve metadata about groups you are a member of.");
                 }
@@ -152,14 +151,18 @@ public class GetPrincipalMetadataFunction extends BasicFunction {
             } else {
                 throw new XPathException("Unknown function");
             }
-            
-            if(isCalledAs(qnGetAccountMetadataKeys.getLocalName()) || isCalledAs(qnGetGroupMetadataKeys.getLocalName())) {
-                result = getPrincipalMetadataKeys(principal);
-            } else if(isCalledAs(qnGetAccountMetadata.getLocalName()) || isCalledAs(qnGetGroupMetadata.getLocalName())) {
-                final String metadataAttributeNamespace = args[1].getStringValue();
-                result = getPrincipalMetadata(principal, metadataAttributeNamespace);
+
+            if(principal == null) {
+                result = Sequence.EMPTY_SEQUENCE;
             } else {
-                throw new XPathException("Unknown function");
+                if (isCalledAs(qnGetAccountMetadataKeys.getLocalPart()) || isCalledAs(qnGetGroupMetadataKeys.getLocalPart())) {
+                    result = getPrincipalMetadataKeys(principal);
+                } else if (isCalledAs(qnGetAccountMetadata.getLocalPart()) || isCalledAs(qnGetGroupMetadata.getLocalPart())) {
+                    final String metadataAttributeNamespace = args[1].getStringValue();
+                    result = getPrincipalMetadata(principal, metadataAttributeNamespace);
+                } else {
+                    throw new XPathException("Unknown function");
+                }
             }
         }
         

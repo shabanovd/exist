@@ -19,6 +19,7 @@
  */
 package org.exist.xquery.modules.lucene;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.exist.Database;
@@ -78,7 +79,12 @@ public class GetIndexFields extends BasicFunction {
         LuceneIndexWorker indexWorker =
                 (LuceneIndexWorker) indexController.getWorkerByIndexId(LuceneIndex.ID);
 
-        List<QName> qnames = indexWorker.getDefinedIndexes(null);
+        List<QName> qnames;
+        try {
+            qnames = indexWorker.getDefinedIndexes(null);
+        } catch (IOException e) {
+            throw new XPathException(this, e);
+        }
 
         if (getSignature().getName().equals(GET_INDEX_FIELD)) {
 
@@ -96,7 +102,9 @@ public class GetIndexFields extends BasicFunction {
                     qname = QName.parse(getContext(), next.getStringValue());
 
                     //workaround
-                    if (qname.getPrefix() == null) qname.setPrefix("");
+                    if (qname.getPrefix() == null) {
+                        qname = new QName(qname.getLocalPart(), qname.getNamespaceURI(), "", qname.getNameType());
+                    }
                 }
 
                 if (qnames.contains(qname)) {

@@ -1,10 +1,11 @@
 package org.exist.xquery.modules.expathrepo;
 
-import org.apache.log4j.Logger;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.QName;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.repo.Deployment;
 import org.exist.repo.PackageLoader;
 import org.exist.security.PermissionDeniedException;
@@ -24,7 +25,7 @@ import java.net.*;
 
 public class Deploy extends BasicFunction {
 
-	protected static final Logger logger = Logger.getLogger(Deploy.class);
+	protected static final Logger logger = LogManager.getLogger(Deploy.class);
 	
 	public final static FunctionSignature signatures[] = {
 		new FunctionSignature(

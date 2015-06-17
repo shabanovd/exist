@@ -23,7 +23,8 @@ package org.exist.xquery.value;
 
 import java.util.HashSet;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.dom.QName;
 import org.exist.util.hashtable.Int2ObjectHashMap;
@@ -37,7 +38,7 @@ import org.exist.xquery.XPathException;
  */
 public class Type {
 
-    private final static Logger LOG = Logger.getLogger(Type.class);
+    private final static Logger LOG = LogManager.getLogger(Type.class);
 
     public static final int NODE = -1;
 
@@ -111,6 +112,7 @@ public class Type {
     public final static int JAVA_OBJECT = 100;
     public final static int FUNCTION_REFERENCE = 101;
     public final static int MAP = 102;
+    public final static int ARRAY = 103;
 
     /**
      * Special type constant to indicate that an item has been
@@ -143,7 +145,6 @@ public class Type {
         defineSubType(ATOMIC, NUMBER);
         defineSubType(ATOMIC, UNTYPED_ATOMIC);
         defineSubType(ATOMIC, JAVA_OBJECT);
-        defineSubType(ATOMIC, FUNCTION_REFERENCE);
         defineSubType(ATOMIC, DATE_TIME);
         defineSubType(ATOMIC, DATE);
         defineSubType(ATOMIC, TIME);
@@ -192,7 +193,9 @@ public class Type {
         defineSubType(NCNAME, IDREF);
         defineSubType(NCNAME, ENTITY);
 
+        defineSubType(ITEM, FUNCTION_REFERENCE);
         defineSubType(FUNCTION_REFERENCE, MAP);
+        defineSubType(FUNCTION_REFERENCE, ARRAY);
     }
 
     private final static Int2ObjectHashMap<String[]> typeNames = new Int2ObjectHashMap<String[]>(100);
@@ -218,6 +221,7 @@ public class Type {
         defineBuiltInType(JAVA_OBJECT, "object");
         defineBuiltInType(FUNCTION_REFERENCE, "function");
         defineBuiltInType(MAP, "map");
+        defineBuiltInType(ARRAY, "array");
         defineBuiltInType(NUMBER, "numeric");
         
         defineBuiltInType(ANY_TYPE, "xs:anyType");
@@ -340,11 +344,11 @@ public class Type {
 	public static int getType(QName qname) throws XPathException {
 		final String uri = qname.getNamespaceURI();
 		if (uri.equals(Namespaces.SCHEMA_NS))
-			{return getType("xs:" + qname.getLocalName());}
+			{return getType("xs:" + qname.getLocalPart());}
 		else if (uri.equals(Namespaces.XPATH_DATATYPES_NS))
-			{return getType("xdt:" + qname.getLocalName());}
+			{return getType("xdt:" + qname.getLocalPart());}
 		else
-			{return getType(qname.getLocalName());}
+			{return getType(qname.getLocalPart());}
 	}
 
 	/**

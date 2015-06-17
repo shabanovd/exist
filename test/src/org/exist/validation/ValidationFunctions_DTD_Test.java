@@ -31,10 +31,8 @@ import org.junit.*;
 
 import static org.junit.Assert.*;
 
-import org.apache.log4j.BasicConfigurator;
 import org.exist.collections.IndexInfo;
 
-import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.TransactionManager;
@@ -163,7 +161,6 @@ public class ValidationFunctions_DTD_Test {
 
     @BeforeClass
     public static void startup() throws Exception {
-        BasicConfigurator.configure();
         config = new Configuration();
         config.setProperty(XMLReaderObjectFactory.PROPERTY_VALIDATION_MODE, "auto");
 
@@ -197,17 +194,11 @@ public class ValidationFunctions_DTD_Test {
 
     private static void createTestCollections() throws Exception {
 
-        BrokerPool pool = BrokerPool.getInstance();
-        DBBroker broker = null;
-        TransactionManager transact = null;
-        Txn txn = null;
-        try {
-            Subject admin = pool.getSecurityManager().authenticate(ADMIN_UID, ADMIN_PWD);
+        final BrokerPool pool = BrokerPool.getInstance();
+        final TransactionManager transact = pool.getTransactionManager();
 
-            broker = pool.get(admin);
-
-            transact = pool.getTransactionManager();
-            txn = transact.beginTransaction();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().authenticate(ADMIN_UID, ADMIN_PWD));
+            final Txn txn = transact.beginTransaction()) {
 
             /** create nessecary collections if they dont exist */
             org.exist.collections.Collection testCollection = broker.getOrCreateCollection(txn, XmldbURI.create(VALIDATION_HOME_COLLECTION_URI));
@@ -227,31 +218,16 @@ public class ValidationFunctions_DTD_Test {
             broker.saveCollection(txn, col);
 
             transact.commit(txn);
-
-        } catch (Exception e) {
-            if(transact != null && txn != null) {
-                transact.abort(txn);
-            }
-            throw e;
-        } finally {
-            if(broker != null) {
-                pool.release(broker);
-            }
         }
     }
 
     private static void createTestDocuments() throws Exception {
 
-        BrokerPool pool = BrokerPool.getInstance();
-        DBBroker broker = null;
-        TransactionManager transact = null;
-        Txn txn = null;
-        try {
+        final BrokerPool pool = BrokerPool.getInstance();
+        final TransactionManager transact = pool.getTransactionManager();
 
-            broker = pool.get(pool.getSecurityManager().getGuestSubject());
-
-            transact = pool.getTransactionManager();
-            txn = transact.beginTransaction();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getGuestSubject());
+            final Txn txn = transact.beginTransaction()) {
 
             /** create necessary documents  */
 
@@ -279,15 +255,6 @@ public class ValidationFunctions_DTD_Test {
             config.setProperty(XMLReaderObjectFactory.PROPERTY_VALIDATION_MODE, "yes");
 
             transact.commit(txn);
-        } catch (Exception e) {
-            if(transact != null && txn != null) {
-                transact.abort(txn);
-            }
-            throw e;
-        } finally {
-            if(broker != null) {
-                pool.release(broker);
-            }
         }
     }
 
@@ -304,31 +271,16 @@ public class ValidationFunctions_DTD_Test {
 
     private static void removeTestCollections() throws Exception {
 
-        BrokerPool pool = BrokerPool.getInstance();
-        DBBroker broker = null;
-        TransactionManager transact = null;
-        Txn txn = null;
-        try {
-            Subject admin = pool.getSecurityManager().authenticate(ADMIN_UID, ADMIN_PWD);
+        final BrokerPool pool = BrokerPool.getInstance();
+        final TransactionManager transact = pool.getTransactionManager();
 
-            broker = pool.get(admin);
-
-            transact = pool.getTransactionManager();
-            txn = transact.beginTransaction();
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().authenticate(ADMIN_UID, ADMIN_PWD));
+            final Txn txn = transact.beginTransaction()) {
 
             org.exist.collections.Collection testCollection = broker.getOrCreateCollection(txn, XmldbURI.create(VALIDATION_HOME_COLLECTION_URI));
             broker.removeCollection(txn, testCollection);
 
             transact.commit(txn);
-        } catch (Exception e) {
-            if(transact != null && txn != null) {
-                transact.abort(txn);
-            }
-            throw e;
-        } finally {
-            if(broker != null) {
-                pool.release(broker);
-            }
         }
     }
     /*

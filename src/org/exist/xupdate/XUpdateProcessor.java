@@ -30,11 +30,12 @@ package org.exist.xupdate;
 import antlr.RecognitionException;
 import antlr.TokenStreamException;
 import antlr.collections.AST;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
-import org.exist.dom.DocumentSet;
+import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.NodeListImpl;
-import org.exist.dom.NodeSetHelper;
+import org.exist.dom.persistent.NodeSetHelper;
 import org.exist.security.xacml.AccessContext;
 import org.exist.security.xacml.NullAccessContextException;
 import org.exist.storage.DBBroker;
@@ -116,7 +117,7 @@ public class XUpdateProcessor implements ContentHandler, LexicalHandler {
 	
 	public final static String XUPDATE_NS = "http://www.xmldb.org/xupdate";
 
-	private final static Logger LOG = Logger.getLogger(XUpdateProcessor.class);
+	private final static Logger LOG = LogManager.getLogger(XUpdateProcessor.class);
 
     /**
      * NodeList to keep track of created document fragments within

@@ -21,15 +21,17 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.text.Collator;
+import java.util.Map;
 
 import org.exist.Namespaces;
-import org.exist.dom.NodeProxy;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
-import org.exist.memtree.NodeImpl;
-import org.exist.memtree.ReferenceNode;
+import org.exist.dom.memtree.NodeImpl;
+import org.exist.dom.memtree.ReferenceNode;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.Constants;
 import org.exist.xquery.Dependency;
@@ -39,6 +41,8 @@ import org.exist.xquery.Profiler;
 import org.exist.xquery.ValueComparison;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
+import org.exist.xquery.functions.array.ArrayType;
+import org.exist.xquery.functions.map.MapType;
 import org.exist.xquery.value.AtomicValue;
 import org.exist.xquery.value.BooleanValue;
 import org.exist.xquery.value.FunctionReturnSequenceType;
@@ -59,7 +63,7 @@ import org.w3c.dom.Node;
  */
 public class FunDeepEqual extends CollatingFunction {
 
-    protected static final Logger logger = Logger.getLogger(FunDeepEqual.class);
+    protected static final Logger logger = LogManager.getLogger(FunDeepEqual.class);
 
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
@@ -117,28 +121,65 @@ public class FunDeepEqual extends CollatingFunction {
                 {context.getProfiler().message(this, Profiler.START_SEQUENCES,
                     "CONTEXT ITEM", contextItem.toSequence());}
         }
-        Sequence result;
         final Sequence[] args = getArguments(contextSequence, contextItem);
         final Collator collator = getCollator(contextSequence, contextItem, 3);
-        final int length = args[0].getItemCount();
-        if (length != args[1].getItemCount()) {
-            result = BooleanValue.FALSE;
-        } else {
-            result = BooleanValue.TRUE;
-            for (int i = 0; i < length; i++) {
-                if (!deepEquals(args[0].itemAt(i), args[1].itemAt(i), collator)) {
-                    result = BooleanValue.FALSE;
-                    break;
-                }
-            }
-        }
+        final Sequence result = BooleanValue.valueOf(deepEqualsSeq(args[0], args[1], collator));
         if (context.getProfiler().isEnabled()) 
             {context.getProfiler().end(this, "", result);} 
         return result;
     }
 
+    public static boolean deepEqualsSeq(Sequence sa, Sequence sb, Collator collator) {
+        final int length = sa.getItemCount();
+        if (length != sb.getItemCount()) {
+            return false;
+        } else {
+            for (int i = 0; i < length; i++) {
+                if (!deepEquals(sa.itemAt(i), sb.itemAt(i), collator)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
     public static boolean deepEquals(Item a, Item b, Collator collator) {
         try {
+            if (a.getType() == Type.ARRAY || b.getType() == Type.ARRAY) {
+                if (a.getType() != b.getType()) {
+                    return false;
+                }
+                final ArrayType ar = (ArrayType) a;
+                final ArrayType br = (ArrayType) b;
+                if (ar.getSize() != br.getSize()) {
+                    return false;
+                }
+                for (int i = 0; i < ar.getSize(); i++) {
+                    if (!deepEqualsSeq(ar.get(i), br.get(i), collator)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            if (a.getType() == Type.MAP || b.getType() == Type.MAP) {
+                if (a.getType() != b.getType()) {
+                    return false;
+                }
+                final MapType amap = (MapType) a;
+                final MapType bmap = (MapType) b;
+                if (amap.size() != bmap.size()) {
+                    return false;
+                }
+                for (Map.Entry<AtomicValue, Sequence> aentry: amap) {
+                    if (!bmap.contains(aentry.getKey())) {
+                        return false;
+                    }
+                    if (!deepEqualsSeq(aentry.getValue(), bmap.get(aentry.getKey()), collator)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
             final boolean aAtomic = Type.subTypeOf(a.getType(), Type.ATOMIC);
             final boolean bAtomic = Type.subTypeOf(b.getType(), Type.ATOMIC);
             if (aAtomic || bAtomic) {
@@ -176,8 +217,8 @@ public class FunDeepEqual extends CollatingFunction {
             switch(a.getType()) {
             case Type.DOCUMENT:
                 // NodeValue.getNode() doesn't seem to work for document nodes
-                na = nva instanceof Node ? (Node) nva : ((NodeProxy) nva).getDocument();
-                nb = nvb instanceof Node ? (Node) nvb : ((NodeProxy) nvb).getDocument();
+                na = nva instanceof Node ? (Node) nva : ((NodeProxy) nva).getOwnerDocument();
+                nb = nvb instanceof Node ? (Node) nvb : ((NodeProxy) nvb).getOwnerDocument();
                 return compareContents(na, nb);
             case Type.ELEMENT:
                 na = nva.getNode();

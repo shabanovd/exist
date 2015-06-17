@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -20,12 +20,7 @@
 package org.exist.indexing;
 
 import org.exist.collections.Collection;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
-import org.exist.dom.StoredNode;
+import org.exist.dom.persistent.*;
 import org.exist.storage.DBBroker;
 import org.exist.storage.NodePath;
 import org.exist.util.DatabaseConfigurationException;
@@ -35,7 +30,6 @@ import org.exist.xquery.XQueryContext;
 import org.w3c.dom.NodeList;
 
 import java.util.Map;
-
 import org.exist.security.PermissionDeniedException;
 
 /**
@@ -138,7 +132,7 @@ public interface IndexWorker {
      * @param includeSelf if set to true, the current node itself will be included in the check
      * @return the top-most root node to be reindexed
      */
-    StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf);
+    <T extends IStoredNode> IStoredNode getReindexRoot(IStoredNode<T> node, NodePath path, boolean insert, boolean includeSelf);
 
     /**
      * Return a stream listener to index the current document in the current mode.
@@ -204,7 +198,7 @@ public interface IndexWorker {
      * <li>the list of the documents in which the index entry is</li>
      * </ol> 
      */
-    Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map<?,?> hints);
+    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet contextSet, Map<?,?> hints);
 
     /**
      * Returns a {@link QueryRewriter} to be called by the query optimizer.
@@ -213,13 +207,12 @@ public interface IndexWorker {
      * @return the query rewriter or null if the index does no rewriting
      */
     QueryRewriter getQueryRewriter(XQueryContext context);
-    
+
+    //TODO : a scanIndex() method that would return an unaggregated list of index entries ?
+
     void indexCollection(Collection col);
 
     void indexBinary(BinaryDocument doc);
 
     void removeBinary(BinaryDocument doc);
-
-    //TODO : a scanIndex() method that would return an unaggregated list of index entries ?
-
 }

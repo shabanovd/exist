@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -44,11 +44,12 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PriorityQueue;
 import org.exist.Database;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
 import org.exist.dom.QName;
 import org.exist.storage.DBBroker;
 import org.exist.xquery.TerminatedException;
+import org.exist.xquery.XPathException;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -59,15 +60,13 @@ public class QueryDocuments {
     public static Facets query(
     		LuceneIndexWorker worker, DocumentSet docs,
             Query query, FacetsConfig facetsConfig,
-            SearchCallback<DocumentImpl> callback, int maxHits, Sort sort) 
-                    throws IOException, ParseException, TerminatedException {
+            SearchCallback<DocumentImpl> callback, int maxHits, Sort sort)
+        throws IOException, ParseException, XPathException {
 
         final LuceneIndex index = worker.index;
-        
-        IndexSearcher searcher = null;
-        try {
-            searcher = index.getSearcher();
-            
+
+        return index.withSearcher(searcher -> {
+
             FieldValueHitQueue<MyEntry> queue = FieldValueHitQueue.create(sort.getSort(), maxHits);
 
             ComparatorCollector collector = new ComparatorCollector(queue, maxHits, docs, callback);
@@ -82,10 +81,7 @@ public class QueryDocuments {
             collector.finish();
 
             return collector.facets(index.getTaxonomyReader(), facetsConfig);
-
-        } finally {
-            index.releaseSearcher(searcher);
-        }
+        });
     }
 
     public static Facets query(
@@ -94,7 +90,7 @@ public class QueryDocuments {
             Query query,
             FacetsConfig facetsConfig,
             SearchCallback<DocumentImpl> callback
-    ) throws IOException, ParseException, TerminatedException {
+    ) throws IOException, ParseException, XPathException {
         
         return query(worker, docs, query, facetsConfig, callback, -1);
     }
@@ -106,41 +102,35 @@ public class QueryDocuments {
             FacetsConfig facetsConfig,
             SearchCallback<DocumentImpl> callback,
             int maxHits
-    ) throws IOException, ParseException, TerminatedException {
+    ) throws IOException, ParseException, XPathException {
 
         final LuceneIndex index = worker.index;
 
-        IndexSearcher searcher = null;
-        try {
-            searcher = index.getSearcher();
+        return index.withSearcher(searcher -> {
 
             DocumentHitCollector collector = new DocumentHitCollector(maxHits, docs, callback);
 
             searcher.search(query, collector);
             
             return collector.facets(index.getTaxonomyReader(), facetsConfig);
-
-        } finally {
-            index.releaseSearcher(searcher);
-        }
+        });
     }
 
     public static Facets query(LuceneIndexWorker worker, DocumentSet docs,
-            List<QName> qnames, String queryStr, FacetsConfig facetsConfig, Properties options,
-            SearchCallback<DocumentImpl> callback) throws IOException, ParseException,
-            TerminatedException {
+            List<QName> names, String queryStr, FacetsConfig facetsConfig, Properties options,
+            SearchCallback<DocumentImpl> callback)
+        throws IOException, ParseException, XPathException
+    {
 
-        qnames = worker.getDefinedIndexes(qnames);
+        List<QName> qnames = worker.getDefinedIndexes(names);
 
         final LuceneIndex index = worker.index;
 
         final Database db = index.getDatabase();
         
         DBBroker broker = db.getActiveBroker();
-        
-        IndexSearcher searcher = null;
-        try {
-            searcher = index.getSearcher();
+
+        return index.withSearcher(searcher -> {
 
             DocumentHitCollector collector = new DocumentHitCollector(-1, docs, callback);
 
@@ -152,18 +142,20 @@ public class QueryDocuments {
 
                 QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, field, analyzer);
 
-                worker.setOptions(options, parser);
+                Query query;
+                try {
+                    worker.setOptions(options, parser);
 
-                Query query = parser.parse(queryStr);
+                    query = parser.parse(queryStr);
+                } catch (ParseException e) {
+                    throw new XPathException(e);
+                }
 
                 searcher.search(query, collector);
             }
             
             return collector.facets(index.getTaxonomyReader(), facetsConfig);
-
-        } finally {
-            index.releaseSearcher(searcher);
-        }
+        });
     }
     
     private static class DocumentHitCollector extends QueryFacetCollector {

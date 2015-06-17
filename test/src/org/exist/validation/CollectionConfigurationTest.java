@@ -21,13 +21,8 @@
  */
 package org.exist.validation;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.exist.xmldb.DatabaseInstanceManager;
 import org.exist.xmldb.XmldbURI;
 import org.xmldb.api.DatabaseManager;
@@ -53,7 +48,7 @@ import static org.junit.Assert.*;
 public class CollectionConfigurationTest {
 
     String invalidConfig = "<invalid/>";
-    private static final Logger LOG = Logger.getLogger(CollectionConfigurationValidationModeTest.class);
+    private static final Logger LOG = LogManager.getLogger(CollectionConfigurationValidationModeTest.class);
     private static XPathQueryService xpqservice;
     private static Collection root = null;
     private static Database database = null;
@@ -62,15 +57,8 @@ public class CollectionConfigurationTest {
     public CollectionConfigurationTest() {
     }
 
-    public static void initLog4J() {
-        Layout layout = new PatternLayout("%d [%t] %-5p (%F [%M]:%L) - %m %n");
-        Appender appender = new ConsoleAppender(layout);
-        BasicConfigurator.configure(appender);
-    }
-
     @BeforeClass
     public static void setUpClass() throws Exception {
-        initLog4J();
         startDatabase();
     }
 
@@ -82,8 +70,6 @@ public class CollectionConfigurationTest {
                 "DatabaseInstanceManager", "1.0");
         dim.shutdown();
         database = null;
-
-        System.out.println("tearDown PASSED");
     }
 
 
@@ -101,7 +87,6 @@ public class CollectionConfigurationTest {
     }
 
     private void createCollection(String collection) throws XMLDBException {
-        System.out.println("createCollection=" + collection);
         Collection testCollection = cmservice.createCollection(collection);
         assertNotNull(testCollection);
 
@@ -110,7 +95,6 @@ public class CollectionConfigurationTest {
     }
 
     private void storeCollectionXconf(String collection, String document) throws XMLDBException {
-        System.out.println("storeCollectionXconf=" + collection);
         ResourceSet result = xpqservice.query("xmldb:store(\"" + collection + "\", \"collection.xconf\", " + document + ")");
         String r = (String) result.getResource(0).getContent();
         assertEquals("Store xconf", collection + "/collection.xconf", r);
@@ -118,7 +102,6 @@ public class CollectionConfigurationTest {
 
     @SuppressWarnings("unused")
 	private void storeDocument(String collection, String name, String document) throws XMLDBException {
-        System.out.println("storeDocument=" + collection + " " + name);
         ResourceSet result = xpqservice.query("xmldb:store(\"" + collection + "\", \"" + name + "\", " + document + ")");
         String r = (String) result.getResource(0).getContent();
         assertEquals("Store doc", collection + "/" + name, r);

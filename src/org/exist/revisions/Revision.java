@@ -24,9 +24,9 @@ import java.io.InputStream;
 import java.nio.file.Path;
 
 import org.exist.Database;
-import org.exist.memtree.DocumentBuilderReceiver;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.DocumentBuilderReceiver;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.storage.DBBroker;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;

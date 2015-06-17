@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@ package org.exist.storage;
 import org.exist.Namespaces;
 import org.exist.collections.CollectionConfiguration;
 import org.exist.dom.QName;
+import org.exist.dom.TypedQNameComparator;
 import org.exist.indexing.Index;
 import org.exist.util.DatabaseConfigurationException;
 import org.w3c.dom.Attr;
@@ -59,7 +60,7 @@ public class IndexSpec {
     private static final String QNAME_ATTRIB = "qname";
 
     private GeneralRangeIndexSpec specs[] = null;
-    private Map<QName, QNameRangeIndexSpec> qnameSpecs = new TreeMap<QName, QNameRangeIndexSpec>();
+    private Map<QName, QNameRangeIndexSpec> qnameSpecs = new TreeMap<QName, QNameRangeIndexSpec>(new TypedQNameComparator());
 
     private Map<String, Object> customIndexSpecs = null;
 

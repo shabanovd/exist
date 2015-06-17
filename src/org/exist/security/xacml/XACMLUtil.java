@@ -47,19 +47,20 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.collections.triggers.TriggerException;
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.MutableDocumentSet;
-import org.exist.dom.NodeSet;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.dom.persistent.NodeHandle;
+import org.exist.dom.persistent.NodeSet;
 import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
 import org.exist.numbering.NodeId;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
@@ -89,7 +90,7 @@ import org.w3c.dom.Element;
  */
 public class XACMLUtil implements UpdateListener
 {
-	private static final Logger LOG = Logger.getLogger(ExistPolicyModule.class);
+	private static final Logger LOG = LogManager.getLogger(ExistPolicyModule.class);
 	private static final Map<String, AbstractPolicy> POLICY_CACHE = Collections.synchronizedMap(new HashMap<String, AbstractPolicy>(8));
 	private static final XmldbURI[] samplePolicyDocs = { XmldbURI.create("policies/main_modules_policy.xml"),
 		XmldbURI.create("policies/builtin_policy.xml"), XmldbURI.create("policies/external_modules_policy.xml"),
@@ -148,13 +149,14 @@ public class XACMLUtil implements UpdateListener
 	}
 
 
-    public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
-        // not relevant
-    }
+        @Override
+        public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
+            // not relevant
+        }
 
-    public void unsubscribe() {
-        // not relevant
-    }
+        public void unsubscribe() {
+            // not relevant
+        }
 
     /**
 	 * Returns true if the specified document is in the policy collection.
@@ -238,35 +240,15 @@ public class XACMLUtil implements UpdateListener
 		if(policyCollection == null)
 		{
 			final TransactionManager transact = broker.getBrokerPool().getTransactionManager();
-			final Txn txn = transact.beginTransaction();
-			try
-			{
+			try(final Txn txn = transact.beginTransaction()) {
 				policyCollection = broker.getOrCreateCollection(txn, XACMLConstants.POLICY_COLLECTION_URI);
 				broker.saveCollection(txn, policyCollection);
 				transact.commit(txn);
 			}
-			catch (final IOException e) {
-				transact.abort(txn);
+			catch (final IOException | EXistException | PermissionDeniedException | TriggerException e) {
 				LOG.error("Error creating policy collection", e);
 				return null;
-			
-			} catch (final EXistException e) {
-				transact.abort(txn);
-				LOG.error("Error creating policy collection", e);
-				return null;
-			
-			} catch (final PermissionDeniedException e) {
-				transact.abort(txn);
-				LOG.error("Error creating policy collection", e);
-				return null;
-			
-			} catch (final TriggerException e) {
-				transact.abort(txn);
-				LOG.error("Error creating policy collection", e);
-				return null;
-			} finally {
-                transact.close(txn);
-            }
+			}
         }
 		
 		return policyCollection;
@@ -299,13 +281,13 @@ public class XACMLUtil implements UpdateListener
 		final int documentCount = (documentSet == null) ? 0 : documentSet.getDocumentCount();
 		if(documentCount == 0)
 		{
-			LOG.warn("Could not find " + attributeQName.getLocalName() + " '" +  attributeValue + "'", null);
+			LOG.warn("Could not find " + attributeQName.getLocalPart() + " '" +  attributeValue + "'");
 			return null;
 		}
 
 		if(documentCount > 1)
 		{
-			throw new ProcessingException("Too many applicable policies for " + attributeQName.getLocalName() + " '" +  attributeValue + "'");
+			throw new ProcessingException("Too many applicable policies for " + attributeQName.getLocalPart() + " '" +  attributeValue + "'");
 		}
 
 		return (DocumentImpl)documentSet.getDocumentIterator().next();
@@ -603,23 +585,16 @@ public class XACMLUtil implements UpdateListener
 			{return;}
 		
 		final TransactionManager transact = broker.getBrokerPool().getTransactionManager();
-		final Txn txn = transact.beginTransaction();
-		try
-		{
+		try(final Txn txn = transact.beginTransaction()) {
 			final IndexInfo info = collection.validateXMLResource(txn, broker, docName, content);
 			//TODO : unlock the collection here ?
 			collection.store(txn, broker, info, content, false);
 			transact.commit(txn);
-		}
-		catch(final Exception e)
-		{
-			transact.abort(txn);
+		} catch(final Exception e) {
 			if(e instanceof EXistException)
 				{throw (EXistException)e;}
 			throw new EXistException("Error storing policy '" + docPath + "'", e);
-		} finally {
-            transact.close(txn);
-        }
+		}
     }
 
 	/** Reads an <code>InputStream</code> into a string.

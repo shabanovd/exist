@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentAtExist;
+import org.exist.dom.persistent.DocumentImpl;
 import org.exist.xmldb.XmldbURI;
 
 import com.eaio.uuid.UUID;
@@ -51,9 +51,9 @@ public class MetasImpl implements Metas {
 	@SuppressWarnings("unused")
 	private MetasImpl() {}
 
-	protected MetasImpl(DocumentAtExist doc) {
+	protected MetasImpl(DocumentImpl doc) {
 		setURL(doc.getURI().toString());
-		
+
 		if (doc.getUUID() == null)
 			uuid = (new UUID()).toString();
 		else
@@ -104,7 +104,7 @@ public class MetasImpl implements Metas {
 
     public void delete(String key) {
         MetaDataImpl.instance.delMetaByKey(uuid, key);
-    }
+	}
 
     protected void setURL(String url) {
 		this.uri = url;

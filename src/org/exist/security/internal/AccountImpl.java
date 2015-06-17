@@ -1,40 +1,46 @@
 /*
- *  eXist Open Source Native XML Database
- *  Copyright (C) 2003-2013 The eXist Project
- *  http://exist-db.org
- *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * eXist Open Source Native XML Database
+ * Copyright (C) 2015 The eXist Project
+ * http://exist-db.org
  *
- *  $Id$
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 package org.exist.security.internal;
 
-import org.exist.security.*;
-import org.apache.log4j.Logger;
+import org.exist.security.AbstractRealm;
+import org.exist.security.AbstractAccount;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.config.Configuration;
 import org.exist.config.ConfigurationException;
 import org.exist.config.Configurator;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsElement;
+import org.exist.security.Group;
+import org.exist.security.PermissionDeniedException;
+import org.exist.security.SchemaType;
 import org.exist.security.SecurityManager;
+import org.exist.security.Account;
 import org.exist.security.internal.aider.UserAider;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.Properties;
+import org.exist.security.Credential;
 
 import org.exist.storage.DBBroker;
 
@@ -48,7 +54,7 @@ import org.exist.storage.DBBroker;
 @ConfigurationClass("account")
 public class AccountImpl extends AbstractAccount {
 
-    private final static Logger LOG = Logger.getLogger(AccountImpl.class);
+    private final static Logger LOG = LogManager.getLogger(AccountImpl.class);
     public static boolean CHECK_PASSWORDS = true;
 
     private final static SecurityProperties securityProperties = new SecurityProperties();
@@ -98,23 +104,24 @@ public class AccountImpl extends AbstractAccount {
      * Create a new user with name and password
      *
      * @param realm
+     * @param id
      * @param name
      * @param password
      * @throws ConfigurationException
      */
-    public AccountImpl(AbstractRealm realm, int id, String name, String password) throws ConfigurationException {
+    public AccountImpl(final AbstractRealm realm, final int id, final String name,final  String password) throws ConfigurationException {
         super(realm, id, name);
         setPassword(password);
     }
 
-    public AccountImpl(AbstractRealm realm, int id, String name, String password, Group group, boolean hasDbaRole) throws ConfigurationException {
+    public AccountImpl(final AbstractRealm realm, final int id, final String name, final String password, final Group group, final boolean hasDbaRole) throws ConfigurationException {
         super(realm, id, name);
         setPassword(password);
         this.groups.add(group);
         this.hasDbaRole = hasDbaRole;
     }
 
-    public AccountImpl(AbstractRealm realm, int id, String name, String password, Group group) throws ConfigurationException {
+    public AccountImpl(final AbstractRealm realm, final int id, final String name, final String password, final Group group) throws ConfigurationException {
         super(realm, id, name);
         setPassword(password);
         this.groups.add(group);
@@ -123,11 +130,12 @@ public class AccountImpl extends AbstractAccount {
     /**
      * Create a new user with name
      *
+     * @param realm
      * @param name
      *            The account name
      * @throws ConfigurationException
      */
-    public AccountImpl(AbstractRealm realm, String name) throws ConfigurationException {
+    public AccountImpl(final AbstractRealm realm, final String name) throws ConfigurationException {
         super(realm, Account.UNDEFINED_ID, name);
     }
 
@@ -144,17 +152,17 @@ public class AccountImpl extends AbstractAccount {
 //		this(realm, id, name, password);
 //		addGroup(primaryGroup);
 //	}
-    public AccountImpl(AbstractRealm realm, int id, Account from_user) throws ConfigurationException, PermissionDeniedException {
+    public AccountImpl(final AbstractRealm realm, final int id, final Account from_user) throws ConfigurationException, PermissionDeniedException {
         super(realm, id, from_user.getName());
         instantiate(from_user);
     }
     
-    public AccountImpl(DBBroker broker, AbstractRealm realm, int id, Account from_user) throws ConfigurationException, PermissionDeniedException {
+    public AccountImpl(final DBBroker broker, final AbstractRealm realm, final int id, final Account from_user) throws ConfigurationException, PermissionDeniedException {
         super(broker, realm, id, from_user.getName());
         instantiate(from_user);
     }
     
-    private void instantiate(Account from_user) throws PermissionDeniedException {
+    private void instantiate(final Account from_user) throws PermissionDeniedException {
 
         //copy metadata
         for(final SchemaType metadataKey : from_user.getMetadataKeys()) {
@@ -168,7 +176,7 @@ public class AccountImpl extends AbstractAccount {
         if(from_user instanceof AccountImpl) {
             final AccountImpl user = (AccountImpl) from_user;
 
-            groups = new ArrayList<Group>(user.groups);
+            groups = new ArrayList<>(user.groups);
 
             password = user.password;
             digestPassword = user.digestPassword;
@@ -179,9 +187,9 @@ public class AccountImpl extends AbstractAccount {
         } else if(from_user instanceof UserAider) {
             final UserAider user = (UserAider) from_user;
 
-            final String[] gl = user.getGroups();
-            for(int i = 0; i < gl.length; i++) {
-                addGroup(gl[i]);
+            final String[] groups = user.getGroups();
+            for (final String group : groups) {
+                addGroup(group);
             }
 
             setPassword(user.getPassword());
@@ -192,7 +200,7 @@ public class AccountImpl extends AbstractAccount {
         }
     }
 
-    public AccountImpl(AbstractRealm realm, AccountImpl from_user) throws ConfigurationException {
+    public AccountImpl(final AbstractRealm realm, final AccountImpl from_user) throws ConfigurationException {
         super(realm, from_user.id, from_user.name);
 
         //copy metadata
@@ -213,17 +221,17 @@ public class AccountImpl extends AbstractAccount {
         //this.realm = realm;   //set via super()
     }
 
-    public AccountImpl(AbstractRealm realm, Configuration configuration) throws ConfigurationException {
+    public AccountImpl(final AbstractRealm realm, final Configuration configuration) throws ConfigurationException {
         super(realm, configuration);
 
-        //it require, because class's fields initializing after super constructor
+        //this is required because the classes fields are initialized after the super constructor
         if(this.configuration != null) {
             this.configuration = Configurator.configure(this, this.configuration);
         }
         this.hasDbaRole = this.hasGroup(SecurityManager.DBA_GROUP);
     }
 
-    public AccountImpl(AbstractRealm realm, Configuration configuration, boolean removed) throws ConfigurationException {
+    public AccountImpl(final AbstractRealm realm, final Configuration configuration, final boolean removed) throws ConfigurationException {
         this(realm, configuration);
         this.removed = removed;
     }
@@ -234,22 +242,18 @@ public class AccountImpl extends AbstractAccount {
      * @return Description of the Return Value
      * @deprecated
      */
+    @Override
     public final String getPassword() {
         return password;
     }
 
-    @Deprecated
+    @Override
     public final String getDigestPassword() {
         return digestPassword;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.exist.security.User#setPassword(java.lang.String)
-     */
     @Override
-    public final void setPassword(String passwd) {
+    public final void setPassword(final String passwd) {
         _cred = new Password(this, passwd);
 
         if(passwd == null) {
@@ -286,33 +290,56 @@ public class AccountImpl extends AbstractAccount {
                     checkPasswords = property.equalsIgnoreCase("yes") || property.equalsIgnoreCase("true");
                 }
             }
-            return checkPasswords.booleanValue();
+            return checkPasswords;
         }
 
-        public synchronized void enableCheckPasswords(boolean enable) {
+        public synchronized void enableCheckPasswords(final boolean enable) {
             this.checkPasswords = enable;
         }
 
-        private synchronized String getProperty(String propertyName) {
+        private synchronized String getProperty(final String propertyName) {
             if(loadedSecurityProperties == null) {
                 loadedSecurityProperties = new Properties();
 
-                InputStream is = null;
-                try {
-                    is = AccountImpl.class.getResourceAsStream("security.properties");
+                try(final InputStream is = AccountImpl.class.getResourceAsStream("security.properties")) {
+                    
                     if(is != null) {
                         loadedSecurityProperties.load(is);
                     }
                 } catch(final IOException ioe) {
                     LOG.error("Unable to load security.properties, using defaults. " + ioe.getMessage(), ioe);
-                } finally {
-                    if(is != null) {
-                        try { is.close(); } catch(final IOException ioe) { };
-                    }
                 }
             }
             return loadedSecurityProperties.getProperty(propertyName);
         }
     }
-   
+
+    //this method is used by Configurator
+    public final Group insertGroup(final int index, final String name) throws PermissionDeniedException {
+        //if we cant find the group in our own realm, try other realms
+        final Group group = Optional.ofNullable(getRealm().getGroup(name))
+                .orElse(getRealm().getSecurityManager().getGroup(name));
+
+        return insertGroup(index, group);
+    }
+
+    private Group insertGroup(final int index, final Group group) throws PermissionDeniedException {
+
+        if(group == null){
+            return null;
+        }
+
+        final Account user = getDatabase().getSubject();
+        group.assertCanModifyGroup(user);
+
+        if(!groups.contains(group)) {
+            groups.add(index, group);
+
+            if(SecurityManager.DBA_GROUP.equals(group.getName())) {
+                hasDbaRole = true;
+            }
+        }
+
+        return group;
+    }
 }

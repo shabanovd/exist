@@ -31,14 +31,15 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.input.CloseShieldInputStream;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.extensions.exquery.xdm.type.impl.BinaryTypedValue;
 import org.exist.extensions.exquery.xdm.type.impl.DocumentTypedValue;
 import org.exist.extensions.exquery.xdm.type.impl.StringTypedValue;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.exist.memtree.DocumentBuilderReceiver;
-import org.exist.memtree.DocumentImpl;
-import org.exist.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.DocumentBuilderReceiver;
+import org.exist.dom.memtree.DocumentImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.storage.BrokerPool;
 import org.exist.util.Configuration;
 import org.exist.util.MimeTable;
@@ -74,7 +75,7 @@ import org.xml.sax.XMLReader;
  */
 public class RestXqServiceImpl extends AbstractRestXqService {
     
-    private final static Logger LOG = Logger.getLogger(RestXqServiceImpl.class);
+    private final static Logger LOG = LogManager.getLogger(RestXqServiceImpl.class);
     
     private final BrokerPool brokerPool;
     private final BinaryValueManager binaryValueManager;
@@ -250,8 +251,12 @@ public class RestXqServiceImpl extends AbstractRestXqService {
                 }
             }
         }
-        
-        return result;
+
+        if(result != null) {
+            return result;
+        } else {
+            return Sequence.EMPTY_SEQUENCE;
+        }
     }
     
     private DocumentImpl parseAsXml(final InputStream is) {

@@ -19,11 +19,12 @@
  */
 package org.exist.collections;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
-import org.exist.dom.DocumentImpl;
-import org.exist.memtree.SAXAdapter;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.memtree.SAXAdapter;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -58,7 +59,7 @@ import java.util.concurrent.Callable;
  */
 public class CollectionConfigurationManager {
 
-    private static final Logger LOG = Logger.getLogger(CollectionConfigurationManager.class);
+    private static final Logger LOG = LogManager.getLogger(CollectionConfigurationManager.class);
 
     public final static String CONFIG_COLLECTION = XmldbURI.SYSTEM_COLLECTION + "/config";
 
@@ -288,8 +289,7 @@ public class CollectionConfigurationManager {
                     } catch (final CollectionConfigurationException e) {
                         final String message = "Failed to read configuration document " + confDoc.getFileURI() + " in " + configCollection.getURI() + ". "
                                 + e.getMessage();
-                        LOG.error(message, e);
-                        //System.out.println(message);
+                        LOG.error(message);
                     }
                     
                     latch.write(new Callable<Void>() {
@@ -461,8 +461,7 @@ public class CollectionConfigurationManager {
         + "</collection>";
 
         final TransactionManager transact = broker.getDatabase().getTransactionManager();
-        final Txn txn = transact.beginTransaction();
-        try {
+        try(final Txn txn = transact.beginTransaction()) {
             Collection collection = null;
             try {
                 collection = broker.openCollection(XmldbURI.ROOT_COLLECTION_URI, Lock.READ_LOCK);
@@ -489,10 +488,7 @@ public class CollectionConfigurationManager {
             transact.commit(txn);
             LOG.info("Configured '" + collection.getURI() + "'");
         } catch (final CollectionConfigurationException e) {
-            transact.abort(txn);
             throw new EXistException(e.getMessage());
-        } finally {
-            transact.close(txn);
         }
     }
 

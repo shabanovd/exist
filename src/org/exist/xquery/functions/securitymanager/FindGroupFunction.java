@@ -1,23 +1,21 @@
 /*
- *  eXist SecurityManager Extension
- *  Copyright (C) 2010 Adam Retter <adam@existsolutions.com>
- *  www.adamretter.co.uk
+ * eXist Open Source Native XML Database
+* Copyright (C) 2015 The eXist Project
+ * http://exist-db.org
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 package org.exist.xquery.functions.securitymanager;
 
@@ -123,7 +121,7 @@ public class FindGroupFunction extends BasicFunction {
         final DBBroker broker = getContext().getBroker();
         final Subject currentUser = broker.getSubject();
         
-        if(!isCalledAs(qnGetUserGroups.getLocalName()) && currentUser.getName().equals(SecurityManager.GUEST_USER)) {
+        if(!isCalledAs(qnGetUserGroups.getLocalPart()) && currentUser.getName().equals(SecurityManager.GUEST_USER)) {
             throw new XPathException("You must be an authenticated user");
         }
 
@@ -132,23 +130,23 @@ public class FindGroupFunction extends BasicFunction {
 
         final Sequence result;
         
-        if(isCalledAs(qnGetUserPrimaryGroup.getLocalName())) {
+        if(isCalledAs(qnGetUserPrimaryGroup.getLocalPart())) {
             final String username = args[0].getStringValue();
             result = new StringValue(securityManager.getAccount(username).getPrimaryGroup());
-        } else if(isCalledAs(qnGroupExists.getLocalName())) {
+        } else if(isCalledAs(qnGroupExists.getLocalPart())) {
             final String groupName = args[0].getStringValue();
             result = BooleanValue.valueOf(securityManager.hasGroup(groupName));
         } else {
             final List<String> groupNames;
-            if(isCalledAs(qnListGroups.getLocalName()) || isCalledAs(qnGetGroups.getLocalName())) {
+            if(isCalledAs(qnListGroups.getLocalPart()) || isCalledAs(qnGetGroups.getLocalPart())) {
                 groupNames = securityManager.findAllGroupNames();
-            } else if(isCalledAs(qnFindGroupsByGroupname.getLocalName())) {
+            } else if(isCalledAs(qnFindGroupsByGroupname.getLocalPart())) {
                 final String startsWith = args[0].getStringValue();
                 groupNames = securityManager.findGroupnamesWhereGroupnameStarts(startsWith);
-            } else if(isCalledAs(qnFindGroupsWhereGroupnameContains.getLocalName())) {
+            } else if(isCalledAs(qnFindGroupsWhereGroupnameContains.getLocalPart())) {
                 final String fragment = args[0].getStringValue();
                 groupNames = securityManager.findGroupnamesWhereGroupnameContains(fragment);
-            } else if(isCalledAs(qnGetUserGroups.getLocalName())) {
+            } else if(isCalledAs(qnGetUserGroups.getLocalPart())) {
                 final String username = args[0].getStringValue();
 
                 if(!currentUser.hasDbaRole() && !currentUser.getName().equals(username)) {

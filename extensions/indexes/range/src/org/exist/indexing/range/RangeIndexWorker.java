@@ -21,7 +21,11 @@
  */
 package org.exist.indexing.range;
 
-import org.apache.log4j.Logger;
+import org.apache.lucene.util.FixedBitSet;
+import org.exist.dom.persistent.*;
+import org.exist.dom.QName;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -33,7 +37,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.exist.Resource;
 import org.exist.collections.Collection;
-import org.exist.dom.*;
 import org.exist.indexing.*;
 import org.exist.indexing.lucene.BinaryTokenStream;
 import org.exist.indexing.lucene.LuceneIndexWorker;
@@ -66,7 +69,7 @@ import java.util.*;
  */
 public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
-    private static final Logger LOG = Logger.getLogger(RangeIndexWorker.class);
+    private static final Logger LOG = LogManager.getLogger(RangeIndexWorker.class);
 
     public static final String FIELD_NODE_ID = "nodeId";
     public static final String FIELD_DOC_ID = "docId";
@@ -111,6 +114,14 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             switch (operator) {
                 case EQ:
                     return new TermQuery(new Term(field, key));
+                case NE:
+                    final BooleanQuery qnot = new BooleanQuery();
+                    bytes = new BytesRef("*");
+                    query = new WildcardQuery(new Term(field, bytes));
+                    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+                    qnot.add(query, BooleanClause.Occur.MUST);
+                    qnot.add(new TermQuery(new Term(field, key)), BooleanClause.Occur.MUST_NOT);
+                    return qnot;
                 case STARTS_WITH:
                     return new PrefixQuery(new Term(field, key));
                 case ENDS_WITH:
@@ -134,6 +145,12 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
         if (operator == RangeIndex.Operator.EQ) {
             return new TermQuery(new Term(field, RangeIndexConfigElement.convertToBytes(content)));
+        }
+        if (operator == RangeIndex.Operator.NE) {
+            final BooleanQuery nq = new BooleanQuery();
+            nq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+            nq.add(new TermQuery(new Term(field, RangeIndexConfigElement.convertToBytes(content))), BooleanClause.Occur.MUST_NOT);
+            return nq;
         }
         final boolean includeUpper = operator == RangeIndex.Operator.LE;
         final boolean includeLower = operator == RangeIndex.Operator.GE;
@@ -255,7 +272,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     @Override
-    public StoredNode getReindexRoot(StoredNode node, NodePath path, boolean insert, boolean includeSelf) {
+    public <T extends IStoredNode> IStoredNode getReindexRoot(IStoredNode<T> node, NodePath path, boolean insert, boolean includeSelf) {
 //        if (node.getNodeType() == Node.ATTRIBUTE_NODE)
 //            return null;
         if (config == null)
@@ -273,8 +290,8 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
         if (reindexRequired) {
             p = new NodePath(path);
-            StoredNode topMost = null;
-            StoredNode currentNode = node;
+            IStoredNode topMost = null;
+            IStoredNode currentNode = node;
             if (currentNode.getNodeType() != Node.ELEMENT_NODE)
                 currentNode = currentNode.getParentStoredNode();
             while (currentNode != null) {
@@ -404,9 +421,9 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    protected void indexText(NodeId nodeId, QName qname, long address, NodePath path, RangeIndexConfigElement config, TextCollector collector) {
-        RangeIndexDoc pending = new RangeIndexDoc(nodeId, qname, path, collector, config);
-        pending.setAddress(address);
+    protected void indexText(NodeHandle nodeHandle, QName qname, NodePath path, RangeIndexConfigElement config, TextCollector collector) {
+        RangeIndexDoc pending = new RangeIndexDoc(nodeHandle.getNodeId(), qname, path, collector, config);
+        pending.setAddress(nodeHandle.getInternalAddress());
         nodesToWrite.add(pending);
         cachedNodesSize += collector.length();
         if (cachedNodesSize > maxCachedNodesSize)
@@ -483,17 +500,15 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     }
 
     public NodeSet query(int contextId, DocumentSet docs, NodeSet contextSet, List<QName> qnames, AtomicValue[] keys, RangeIndex.Operator operator, int axis) throws IOException, XPathException {
-        qnames = getDefinedIndexes(qnames);
-        NodeSet resultSet = NodeSet.EMPTY_SET;
-        IndexSearcher searcher = null;
-        try {
-            searcher = index.getSearcher();
-            for (QName qname : qnames) {
+        return index.withSearcher(searcher -> {
+            List<QName> definedIndexes = getDefinedIndexes(qnames);
+            NodeSet resultSet = NodeSet.EMPTY_SET;
+            for (QName qname : definedIndexes) {
                 Query query;
                 String field = LuceneUtil.encodeQName(qname, index.getDatabase().getSymbols());
                 if (keys.length > 1) {
                     BooleanQuery bool = new BooleanQuery();
-                    for (AtomicValue key: keys) {
+                    for (AtomicValue key : keys) {
                         bool.add(toQuery(field, qname, key, operator, docs), BooleanClause.Occur.SHOULD);
                     }
                     query = bool;
@@ -510,17 +525,12 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     resultSet = doQuery(contextId, docs, contextSet, axis, searcher, null, query, null);
                 }
             }
-        } finally {
-            index.releaseSearcher(searcher);
-        }
-        return resultSet;
+            return resultSet;
+        });
     }
 
     public NodeSet queryField(int contextId, DocumentSet docs, NodeSet contextSet, Sequence fields, Sequence[] keys, RangeIndex.Operator[] operators, int axis) throws IOException, XPathException {
-        NodeSet resultSet = NodeSet.EMPTY_SET;
-        IndexSearcher searcher = null;
-        try {
-            searcher = index.getSearcher();
+        return index.withSearcher(searcher -> {
             BooleanQuery query = new BooleanQuery();
             int j = 0;
             for (SequenceIterator i = fields.iterate(); i.hasNext(); j++) {
@@ -544,6 +554,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             if (clauses.length == 1) {
                 qu = clauses[0].getQuery();
             }
+            NodeSet resultSet = NodeSet.EMPTY_SET;
             if (contextSet != null && contextSet.hasOne() && contextSet.getItemType() != Type.DOCUMENT) {
                 NodesFilter filter = new NodesFilter(contextSet);
                 filter.init(searcher.getIndexReader());
@@ -552,10 +563,8 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             } else {
                 resultSet = doQuery(contextId, docs, contextSet, axis, searcher, null, qu, null);
             }
-        } finally {
-            index.releaseSearcher(searcher);
-        }
-        return resultSet;
+            return resultSet;
+        });
     }
 
 //    private OpenBitSet getDocs(DocumentSet docs, IndexSearcher searcher) throws IOException {
@@ -655,7 +664,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             }
         }
 
-        private void getAddress(int doc, NodeProxy storedNode) {
+        private void getAddress(int doc, NodeHandle storedNode) {
             if (addressValues != null) {
                 //BytesRef ref = new BytesRef(buf);
                 BytesRef ref = addressValues.get(doc); //, ref);
@@ -686,11 +695,11 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
      *
      * @return List of QName objects on which indexes are defined
      */
-    private List<QName> getDefinedIndexes(List<QName> qnames) {
+    private List<QName> getDefinedIndexes(List<QName> qnames) throws IOException {
         List<QName> indexes = new ArrayList<QName>(20);
         if (qnames != null && !qnames.isEmpty()) {
             for (QName qname : qnames) {
-                if (qname.getLocalName() == null || qname.getNamespaceURI() == null)
+                if (qname.getLocalPart() == null || qname.getNamespaceURI() == null)
                     getDefinedIndexesFor(qname, indexes);
                 else
                     indexes.add(qname);
@@ -700,10 +709,8 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         return getDefinedIndexesFor(null, indexes);
     }
 
-    private List<QName> getDefinedIndexesFor(QName qname, List<QName> indexes) {
-        IndexReader reader = null;
-        try {
-            reader = index.getReader();
+    private List<QName> getDefinedIndexesFor(QName qname, final List<QName> indexes) throws IOException {
+        return index.withReader(reader -> {
             for (FieldInfo info: MultiFields.getMergedFieldInfos(reader)) {
                 if (!FIELD_DOC_ID.equals(info.name)) {
                     QName name = LuceneUtil.decodeQName(info.name, index.getDatabase().getSymbols());
@@ -711,12 +718,8 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         indexes.add(name);
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            index.releaseReader(reader);
-        }
-        return indexes;
+            return indexes;
+        });
     }
 
     protected BytesRef analyzeContent(String field, QName qname, String data, DocumentSet docs) throws XPathException {
@@ -787,8 +790,8 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
     private static boolean matchQName(QName qname, QName candidate) {
         boolean match = true;
-        if (qname.getLocalName() != null)
-            match = qname.getLocalName().equals(candidate.getLocalName());
+        if (qname.getLocalPart() != null)
+            match = qname.getLocalPart().equals(candidate.getLocalPart());
         if (match && qname.getNamespaceURI() != null && qname.getNamespaceURI().length() > 0)
             match = qname.getNamespaceURI().equals(candidate.getNamespaceURI());
         return match;
@@ -839,7 +842,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                         RangeIndexConfigElement configuration = configIter.next();
                         if (configuration.match(path)) {
                             SimpleTextCollector collector = new SimpleTextCollector(attrib.getValue());
-                            indexText(attrib.getNodeId(), attrib.getQName(), attrib.getInternalAddress(), path, configuration, collector);
+                            indexText(attrib, attrib.getQName(), path, configuration, collector);
                         }
                     }
                 }
@@ -865,7 +868,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                             RangeIndexConfigElement configuration = configIter.next();
                             if (configuration.match(path)) {
                                 TextCollector collector = contentStack.pop();
-                                indexText(element.getNodeId(), element.getQName(), element.getInternalAddress(), path, configuration, collector);
+                                indexText(element, element.getQName(), path, configuration, collector);
                             }
                         }
                     }
@@ -875,7 +878,7 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
         }
 
         @Override
-        public void characters(Txn transaction, CharacterDataImpl text, NodePath path) {
+        public void characters(Txn transaction, AbstractCharacterData text, NodePath path) {
             if (contentStack != null && !contentStack.isEmpty()) {
                 for (TextCollector collector : contentStack) {
                     collector.characters(text, path);
@@ -924,54 +927,53 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 //    }
 
     @Override
-    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet nodes, Map<?,?> hints) {
-        List<QName> qnames = hints == null ? null : (List<QName>)hints.get(QNAMES_KEY);
-        qnames = getDefinedIndexes(qnames);
-        //Expects a StringValue
-        String start = null, end = null;
-        long max = Long.MAX_VALUE;
-        if (hints != null) {
-            Object vstart = hints.get(START_VALUE);
-            Object vend = hints.get(END_VALUE);
-            start = vstart == null ? null : vstart.toString();
-            end = vend == null ? null : vend.toString();
-            IntegerValue vmax = (IntegerValue) hints.get(VALUE_COUNT);
-            max = vmax == null ? Long.MAX_VALUE : vmax.getValue();
+    public Occurrences[] scanIndex(XQueryContext context, DocumentSet docs, NodeSet nodes, Map hints) {
+        try {
+            List<QName> qnames = hints == null ? null : (List<QName>)hints.get(QNAMES_KEY);
+            qnames = getDefinedIndexes(qnames);
+            //Expects a StringValue
+            String start = null, end = null;
+            long max = Long.MAX_VALUE;
+            if (hints != null) {
+                Object vstart = hints.get(START_VALUE);
+                Object vend = hints.get(END_VALUE);
+                start = vstart == null ? null : vstart.toString();
+                end = vend == null ? null : vend.toString();
+                IntegerValue vmax = (IntegerValue) hints.get(VALUE_COUNT);
+                max = vmax == null ? Long.MAX_VALUE : vmax.getValue();
+            }
+            return scanIndexByQName(qnames, docs, nodes, start, end, max);
+        } catch (IOException e) {
+            LOG.warn("Failed to scan index: " + e.getMessage(), e);
+            return new Occurrences[0];
         }
-        return scanIndexByQName(qnames, docs, nodes, start, end, max);
     }
 
     public Occurrences[] scanIndexByField(String field, DocumentSet docs, String start, long max) {
-        TreeMap<String, Occurrences> map = new TreeMap<String, Occurrences>();
-        IndexReader reader = null;
         try {
-            reader = index.getReader();
-            scan(docs, null, start, null, max, map, reader, field);
+            return index.withReader(reader -> {
+                TreeMap<String, Occurrences> map = new TreeMap<String, Occurrences>();
+                scan(docs, null, start, null, max, map, reader, field);
+
+                Occurrences[] occur = new Occurrences[map.size()];
+                return map.values().toArray(occur);
+            });
         } catch (IOException e) {
-            LOG.warn("Error while scanning lucene index entries: " + e.getMessage(), e);
-        } finally {
-            index.releaseReader(reader);
+            LOG.warn("Failed to scan index: " + e.getMessage(), e);
+            return new Occurrences[0];
         }
-        Occurrences[] occur = new Occurrences[map.size()];
-        return map.values().toArray(occur);
     }
 
-    private Occurrences[] scanIndexByQName(List<QName> qnames, DocumentSet docs, NodeSet nodes, String start, String end, long max) {
-        TreeMap<String, Occurrences> map = new TreeMap<String, Occurrences>();
-        IndexReader reader = null;
-        try {
-            reader = index.getReader();
+    private Occurrences[] scanIndexByQName(List<QName> qnames, DocumentSet docs, NodeSet nodes, String start, String end, long max) throws IOException {
+        return index.withReader(reader -> {
+            TreeMap<String, Occurrences> map = new TreeMap<String, Occurrences>();
             for (QName qname : qnames) {
                 String field = LuceneUtil.encodeQName(qname, index.getDatabase().getSymbols());
                 scan(docs, nodes, start, end, max, map, reader, field);
             }
-        } catch (IOException e) {
-            LOG.warn("Error while scanning lucene index entries: " + e.getMessage(), e);
-        } finally {
-            index.releaseReader(reader);
-        }
-        Occurrences[] occur = new Occurrences[map.size()];
-        return map.values().toArray(occur);
+            Occurrences[] occur = new Occurrences[map.size()];
+            return map.values().toArray(occur);
+        });
     }
 
     private void scan(DocumentSet docs, NodeSet nodes, String start, String end, long max, TreeMap<String, Occurrences> map, IndexReader reader, String field) throws IOException {

@@ -15,9 +15,10 @@
 					<!-- Lucene index is configured below -->
 					<lucene>
 						<analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-						<analyzer id="stop" class="org.apache.lucene.analysis.StopAnalyzer"/>
-						<analyzer id="keyword" class="org.apache.lucene.analysis.KeywordAnalyzer"/>
+						<analyzer id="stop" class="org.apache.lucene.analysis.core.StopAnalyzer"/>
+						<analyzer id="keyword" class="org.apache.lucene.analysis.core.KeywordAnalyzer"/>
 						<text qname="p"/>
+						<text qname="tei:p"/>
 						<text qname="id" field="id" analyzer="keyword"/>
 						<text qname="para" analyzer="stop"/>
 						<text qname="b"/>
@@ -48,6 +49,7 @@
 					<y>Nested <z>nodes</z></y>
 				</x>
 				<id>A11</id>
+				<p xmlns="http://www.tei-c.org/ns/1.0">erste aus haus maus zaus yaus raus qaus leisten</p>
 			</test>
 		</store>
 		<store collection="/db/lucene" name="text2.xml">
@@ -210,7 +212,7 @@
 		</expected>
 	</test>
 	<test output="xml">
-		<task>XML query test 11: near, first</task>
+		<task>XML query test 12: near, first</task>
 		<code><![CDATA[
 			let $qu := 
 				<query>
@@ -228,7 +230,7 @@
 		</expected>
 	</test>
 	<test output="xml">
-		<task>XML query test 12: wildcard</task>
+		<task>XML query test 13: wildcard</task>
 		<code><![CDATA[
 			let $qu := <query><term>eins</term><wildcard>sech*</wildcard></query>
 			for $hit in doc("/db/lucene/text1.xml")//p[ft:query(., $qu)]
@@ -240,7 +242,7 @@
 		</expected>
 	</test>
 	<test output="xml">
-		<task>XML query test 13: regex</task>
+		<task>XML query test 14: regex</task>
 		<code><![CDATA[
 			let $qu := <query><term>eins</term><regex>sech.*</regex></query>
 			for $hit in doc("/db/lucene/text1.xml")//p[ft:query(., $qu)]
@@ -252,30 +254,42 @@
 		</expected>
 	</test>
 	<test output="xml">
-		<task>XML query test 14: wildcard context</task>
+		<task>XML query test 15: near with regex</task>
+		<code><![CDATA[
+			let $qu := <query><near slop="5"><regex>[ei][ei]ns</regex><regex>s.ch.</regex></near></query>
+			for $hit in doc("/db/test/test1.xml")//p[ft:query(., $qu)]
+			return
+			$hit
+		]]></code>
+		<expected>
+			<p>Eins zwei drei vier zwei fünf sechs.</p>
+		</expected>
+	</test>
+	<test output="xml">
+		<task>Query test: wildcard context</task>
 		<code> doc("/db/lucene/text1.xml")/test[ft:query(*, "acht")] </code>
 		<xpath>$output/p</xpath>
 	</test>
 
 	<test output="xml">
-		<task>XML query test 15: wildcard context</task>
+		<task>Query test: wildcard context</task>
 		<code> doc("/db/lucene/text1.xml")/test[ft:query(*, "should")] </code>
 		<xpath>$output/p</xpath>
 	</test>
 	<test output="xml">
-		<task>XML query test 16: wildcard context</task>
+		<task>Query test: wildcard context</task>
 		<code> doc("/db/lucene/text1.xml")/test/p[ft:query(*, "neun")] </code>
 		<expected>
 			<p>Sieben acht <b>neun</b> zehn acht.</p>
 		</expected>
 	</test>
 	<test output="xml">
-		<task>XML query test 17: wildcard context, no match</task>
+		<task>Query test: wildcard context, no match</task>
 		<code> doc("/db/lucene/text1.xml")/test/p[ft:query(*, "acht")] </code>
 		<expected/>
 	</test>
 	<test output="xml">
-		<task>XML query test: wildcard context, no match in nested</task>
+		<task>Query test: wildcard context, no match in nested</task>
 		<code> doc("/db/lucene/text1.xml")/test/x[ft:query(*, "nodes")] </code>
 		<expected/>
 	</test>
@@ -287,29 +301,29 @@
 		</expected>
 	</test>
 	<test output="xml">
-		<task>XML query test: wildcard context, match on descendant</task>
+		<task>Query test: wildcard context, match on descendant</task>
 		<code> doc("/db/lucene/text1.xml")/test[ft:query(.//*, "neun")] </code>
 		<xpath>$output/p</xpath>
 	</test>
 	<test output="xml">
-		<task>XML query test: wildcard context, match on self/child</task>
+		<task>Query test: wildcard context, match on self/child</task>
 		<code> doc("/db/lucene/text1.xml")//p[ft:query(./*, "neun")] </code>
 		<expected>
 			<p>Sieben acht <b>neun</b> zehn acht.</p>
 		</expected>
 	</test>
 	<test output="xml">
-		<task>XML query test: wildcard context, match descendant</task>
+		<task>Query test: wildcard context, match descendant</task>
 		<code> doc("/db/lucene/text1.xml")/x[ft:query(.//*, "nodes")] </code>
 		<expected/>
 	</test>
 	<test output="xml">
-		<task>XML query test: wildcard context, long path</task>
+		<task>Query test: wildcard context, long path</task>
 		<code> doc("/db/lucene/text1.xml")/x[ft:query(./y/*, "nodes")] </code>
 		<expected/>
 	</test>
 	<test output="xml">
-		<task>XML query test: wildcard context, no match in child</task>
+		<task>Query test: wildcard context, no match in child</task>
 		<code> doc("/db/lucene/text1.xml")/x[ft:query(./*, "nodes")] </code>
 		<expected/>
 	</test>
@@ -450,6 +464,25 @@
 				<exist:match xmlns:exist="http://exist.sourceforge.net/NS/exist">neun</exist:match>
 			</b>
 		</expected>
+	</test>
+		<test output="xml">
+		<task>Match highlighting: wildcard query TEI NS MultiTermQueryRewriteMetod no silent fail due to limits/cutoffs but return all results</task>
+		<code><![CDATA[
+            declare namespace tei="http://www.tei-c.org/ns/1.0";
+            declare namespace exist="http://exist.sourceforge.net/NS/exist";
+            for $expr in
+	     ("aus",  "haus",  "maus",  "zaus",  "yaus",  "raus",  "qaus",
+              "a*",   "h*",    "m*",    "z*",    "y*",    "r*",    "q*",
+              "au*",  "ha*",   "ma*",   "za*",   "ya*",   "ra*",   "qa*",
+              "aus*", "hau*",  "mau*",  "zau*",  "yau*",  "rau*",  "qau*",
+              "a*s",  "h*s",   "m*s",   "z*s",   "y*s",   "r*s",   "q*s",
+              "au*s", "ha*s",  "ma*s",  "za*s",  "ya*s",  "ra*s",  "qa*s")
+	    let $query := <query><wildcard>{$expr}</wildcard></query>
+            return for $hit in doc("/db/lucene/text1.xml")//tei:p[ft:query(., $query)]
+            return
+                util:expand($hit)//exist:match
+	]]></code>
+		<xpath>count($output) eq 42</xpath>
 	</test>
 	<test output="xml">
 		<task>Match highlighting: regex query</task>

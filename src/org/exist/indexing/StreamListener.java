@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -19,9 +19,9 @@
  */
 package org.exist.indexing;
 
-import org.exist.dom.AttrImpl;
-import org.exist.dom.ElementImpl;
-import org.exist.dom.CharacterDataImpl;
+import org.exist.dom.persistent.AttrImpl;
+import org.exist.dom.persistent.ElementImpl;
+import org.exist.dom.persistent.AbstractCharacterData;
 import org.exist.storage.NodePath;
 import org.exist.storage.txn.Txn;
 
@@ -100,7 +100,7 @@ public interface StreamListener {
      * @param text the text node which has been stored to the db.
      * @param path the current node path
      */
-    void characters(Txn transaction, CharacterDataImpl text, NodePath path);
+    void characters(Txn transaction, AbstractCharacterData text, NodePath path);
 
     /**
      * Processed the closing tag of an element.

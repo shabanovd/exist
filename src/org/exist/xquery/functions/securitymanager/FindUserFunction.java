@@ -1,23 +1,21 @@
 /*
- *  eXist SecurityManager Extension
- *  Copyright (C) 2010 Adam Retter <adam@existsolutions.com>
- *  www.adamretter.co.uk
+ * eXist Open Source Native XML Database
+ * Copyright (C) 2015 The eXist Project
+ * http://exist-db.org
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  *  
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public License
- *  as published by the Free Software Foundation; either version 2
- *  of the License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 package org.exist.xquery.functions.securitymanager;
 
@@ -112,7 +110,7 @@ public class FindUserFunction extends BasicFunction {
         
         final Sequence result;
         
-        if(isCalledAs(qnListUsers.getLocalName())) {
+        if(isCalledAs(qnListUsers.getLocalPart())) {
             result = new ValueSequence();
             if(currentUser.getName().equals(SecurityManager.GUEST_USER)) {
                 result.add(new StringValue(SecurityManager.GUEST_USER));
@@ -125,7 +123,7 @@ public class FindUserFunction extends BasicFunction {
                 throw new XPathException("You must be an authenticated user");
             }
             
-            if(isCalledAs(qnUserExists.getLocalName())) {
+            if(isCalledAs(qnUserExists.getLocalPart())) {
                  final String username = args[0].getStringValue();
                  result = BooleanValue.valueOf(securityManager.hasAccount(username));
             } else {
@@ -133,11 +131,11 @@ public class FindUserFunction extends BasicFunction {
                 final String startsWith = args[0].getStringValue();
 
                 final List<String> usernames;
-                if(isCalledAs(qnFindUsersByUsername.getLocalName())) {
+                if(isCalledAs(qnFindUsersByUsername.getLocalPart())) {
                     usernames = securityManager.findUsernamesWhereUsernameStarts(startsWith);
-                } else if(isCalledAs(qnFindUsersByName.getLocalName())) {
+                } else if(isCalledAs(qnFindUsersByName.getLocalPart())) {
                     usernames = securityManager.findUsernamesWhereNameStarts(startsWith);
-                } else if(isCalledAs(qnFindUsersByNamePart.getLocalName())) {
+                } else if(isCalledAs(qnFindUsersByNamePart.getLocalPart())) {
                     usernames = securityManager.findUsernamesWhereNamePartStarts(startsWith);
                 } else {
                     throw new XPathException("Unknown function");

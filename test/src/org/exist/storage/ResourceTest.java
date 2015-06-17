@@ -22,15 +22,21 @@
 
 package org.exist.storage;
 
+import java.io.IOException;
 import java.io.InputStream;
 
+import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.dom.BinaryDocument;
+import org.exist.collections.triggers.TriggerException;
+import org.exist.dom.persistent.BinaryDocument;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
 import org.exist.util.Configuration;
+import org.exist.util.DatabaseConfigurationException;
+import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.junit.After;
 import org.junit.Test;
@@ -46,18 +52,13 @@ import static org.junit.Assert.assertEquals;
  */
 public class ResourceTest {
     
-    private static String EMPTY_BINARY_FILE="";
-    private static XmldbURI DOCUMENT_NAME_URI = XmldbURI.create("empty.txt");
+    private final static String EMPTY_BINARY_FILE="";
+    private final static XmldbURI DOCUMENT_NAME_URI = XmldbURI.create("empty.txt");
 
-    protected BrokerPool startDB() {
-        try {
-            Configuration config = new Configuration();
-            BrokerPool.configure(1, 5, config);
-            return BrokerPool.getInstance();
-        } catch (Exception e) {
-            fail(e.getMessage());
-        }
-        return null;
+    protected BrokerPool startDB() throws DatabaseConfigurationException, EXistException {
+        final Configuration config = new Configuration();
+        BrokerPool.configure(1, 5, config);
+        return BrokerPool.getInstance();
     }
 
     @After
@@ -66,148 +67,120 @@ public class ResourceTest {
     }
 
     @Test
-    public void storeAndRead() {
+    public void storeAndRead() throws TriggerException, PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, EXistException {
         store();
         tearDown();
         read();
     }
 
-    private void store() {
+    private void store() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, IOException, TriggerException, LockException {
         BrokerPool.FORCE_CORRUPTION = true;
-        BrokerPool pool = startDB();
-        DBBroker broker = null;
-        try {
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            TransactionManager transact = pool.getTransactionManager();
-            
-            Txn transaction = transact.beginTransaction();
-            System.out.println("Transaction started ...");
-            
-            Collection collection = broker
+        final BrokerPool pool = startDB();
+        final TransactionManager transact = pool.getTransactionManager();
+
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                final Txn transaction = transact.beginTransaction()) {
+
+            final Collection collection = broker
                     .getOrCreateCollection(transaction, TestConstants.TEST_COLLECTION_URI);
             
             broker.saveCollection(transaction, collection);
             
             @SuppressWarnings("unused")
-			BinaryDocument doc =
+			final BinaryDocument doc =
                     collection.addBinaryResource(transaction, broker,
                     DOCUMENT_NAME_URI , EMPTY_BINARY_FILE.getBytes(), "text/text");
             
             transact.commit(transaction);
-            System.out.println("Transaction commited ...");
-        } catch (Exception e) {
-            fail(e.getMessage());
-            
-        } finally {
-            pool.release(broker);
         }
     }
 
-    private void read() {
+    private void read() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, IOException, LockException, TriggerException {
+
         BrokerPool.FORCE_CORRUPTION = false;
-        BrokerPool pool = startDB();
-        
-        System.out.println("testRead() ...\n");
-        
-        DBBroker broker = null;
-        
+        final BrokerPool pool = startDB();
+        final TransactionManager transact = pool.getTransactionManager();
         
         byte[] data = null;
         
-        try {
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                final Txn transaction = transact.beginTransaction();) {
+
+
+            final XmldbURI docPath = TestConstants.TEST_COLLECTION_URI.append(DOCUMENT_NAME_URI);
             
-            TransactionManager transact = pool.getTransactionManager();            
-            Txn transaction = transact.beginTransaction();
-            System.out.println("Transaction started ...");
-            
-            XmldbURI docPath = TestConstants.TEST_COLLECTION_URI.append(DOCUMENT_NAME_URI);
-            
-            BinaryDocument binDoc = (BinaryDocument) broker
-                    .getXMLResource(docPath, Lock.READ_LOCK);
-            
-            // if document is not present, null is returned
-            if(binDoc == null){
-                fail("Binary document '" + docPath + " does not exist.");
-            } else {
-               InputStream is = broker.getBinaryResource(binDoc);
-               data = new byte[(int)broker.getBinaryResourceSize(binDoc)];
-               is.read(data);
-               is.close();
-                binDoc.getUpdateLock().release(Lock.READ_LOCK);
+            BinaryDocument binDoc = null;
+            try {
+                binDoc = (BinaryDocument) broker.getXMLResource(docPath, Lock.READ_LOCK);
+
+                // if document is not present, null is returned
+                if(binDoc == null) {
+                    fail("Binary document '" + docPath + " does not exist.");
+                } else {
+                    try(final InputStream is = broker.getBinaryResource(binDoc)) {
+                        data = new byte[(int) broker.getBinaryResourceSize(binDoc)];
+                        is.read(data);
+                    }
+                }
+            } finally {
+                if(binDoc != null) {
+                    binDoc.getUpdateLock().release(Lock.READ_LOCK);
+                }
             }
             
-            Collection collection = broker.getCollection(TestConstants.TEST_COLLECTION_URI);
+            final Collection collection = broker.getCollection(TestConstants.TEST_COLLECTION_URI);
             collection.removeBinaryResource(transaction, broker, binDoc);
             
             broker.saveCollection(transaction, collection);
             
             transact.commit(transaction);
-            System.out.println("Transaction commited ...");
-        } catch (Exception ex){
-            fail("Error opening document" + ex);
-            
-        } finally {
-            if(pool!=null){
-                pool.release(broker);
-            }
         }
         
         assertEquals(0, data.length);
     }
 
     @Test
-    public void store2() {
+    public void store2() throws TriggerException, PermissionDeniedException, DatabaseConfigurationException, IOException, LockException, EXistException {
     	store();
     }
 
     @Test
-    public void removeCollection() {
-    	BrokerPool.FORCE_CORRUPTION = false;
-        BrokerPool pool = startDB();
-        
-        System.out.println("testRemoveCollection() ...\n");
-        
-        DBBroker broker = null;
-        
-        
+    public void removeCollection() throws EXistException, DatabaseConfigurationException, PermissionDeniedException, IOException, TriggerException {
+
+        BrokerPool.FORCE_CORRUPTION = false;
+        final BrokerPool pool = startDB();
+        final TransactionManager transact = pool.getTransactionManager();
+
         byte[] data = null;
         
-        try {
-            broker = pool.get(pool.getSecurityManager().getSystemSubject());
+        try(final DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject());
+                final Txn transaction = transact.beginTransaction()) {
+
+            final XmldbURI docPath = TestConstants.TEST_COLLECTION_URI.append(DOCUMENT_NAME_URI);
             
-            TransactionManager transact = pool.getTransactionManager();            
-            Txn transaction = transact.beginTransaction();
-            System.out.println("Transaction started ...");
-            
-            XmldbURI docPath = TestConstants.TEST_COLLECTION_URI.append(DOCUMENT_NAME_URI);
-            
-            BinaryDocument binDoc = (BinaryDocument) broker
-                    .getXMLResource(docPath, Lock.READ_LOCK);
-            
-            // if document is not present, null is returned
-            if(binDoc == null){
-                fail("Binary document '" + docPath + " does not exist.");
-            } else {
-               InputStream is = broker.getBinaryResource(binDoc);
-               data = new byte[(int)broker.getBinaryResourceSize(binDoc)];
-               is.read(data);
-               is.close();
-                binDoc.getUpdateLock().release(Lock.READ_LOCK);
+            BinaryDocument binDoc = null;
+            try {
+                binDoc = (BinaryDocument) broker.getXMLResource(docPath, Lock.READ_LOCK);
+
+                // if document is not present, null is returned
+                if(binDoc == null) {
+                    fail("Binary document '" + docPath + " does not exist.");
+                } else {
+                    try(final InputStream is = broker.getBinaryResource(binDoc)) {
+                        data = new byte[(int) broker.getBinaryResourceSize(binDoc)];
+                        is.read(data);
+                    }
+                }
+            } finally {
+                if(binDoc != null) {
+                    binDoc.getUpdateLock().release(Lock.READ_LOCK);
+                }
             }
             
-            Collection collection = broker.getCollection(TestConstants.TEST_COLLECTION_URI);
+            final Collection collection = broker.getCollection(TestConstants.TEST_COLLECTION_URI);
             broker.removeCollection(transaction, collection);
             
             transact.commit(transaction);
-            System.out.println("Transaction commited ...");
-        } catch (Exception ex){
-            fail("Error opening document" + ex);
-            
-        } finally {
-            if(pool!=null){
-                pool.release(broker);
-            }
         }
         
         assertEquals(0, data.length);

@@ -21,7 +21,8 @@
  */
 package org.exist.xquery.functions.fn;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.dom.QName;
 
@@ -42,7 +43,7 @@ import org.exist.xquery.value.Type;
 
 public class FunError extends BasicFunction {
 
-    protected static final Logger logger = Logger.getLogger(FunError.class);
+    protected static final Logger logger = LogManager.getLogger(FunError.class);
 
     public final static FunctionSignature signature[] = {
         new FunctionSignature(
@@ -121,12 +122,12 @@ public class FunError extends BasicFunction {
             // If first argument is not empty, get qname from argument
             // and construct error code
             if (!args[0].isEmpty()) {
-                final QName errorQName = ((QNameValue) args[0].itemAt(0)).getQName();
+                QName errorQName = ((QNameValue) args[0].itemAt(0)).getQName();
                 String prefix = errorQName.getPrefix();
                 if (prefix==null){
                     final String ns = errorQName.getNamespaceURI();
                     prefix = getContext().getPrefixForURI(ns);
-                    errorQName.setPrefix(prefix);
+                    errorQName = new QName(errorQName.getLocalPart(), errorQName.getNamespaceURI(), prefix);
                 }
                 errorCode = new ErrorCode(errorQName, errorDesc);
             }

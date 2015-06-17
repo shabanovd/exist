@@ -30,6 +30,10 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.exist.collections.Collection;
 import org.exist.dom.*;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.util.Configuration;
@@ -104,7 +108,7 @@ public class SearchTestOrder extends FacetAbstract {
         }
 
         @Override
-        public void found(AtomicReader atomicReader, int i, org.exist.dom.DocumentImpl nodes, float v) {
+        public void found(AtomicReader atomicReader, int i, DocumentImpl nodes, float v) {
             System.out.println("Found! uri : " + nodes.getURI().toASCIIString() + " " + v);
         }
     }
@@ -120,7 +124,7 @@ public class SearchTestOrder extends FacetAbstract {
 
         @Override
         public void found(AtomicReader atomicReader, int i, NodeProxy node, float v) {
-            System.out.println("Found! uri : " + node.getDocument().getURI().toASCIIString() + " " + v);
+            System.out.println("Found! uri : " + node.getOwnerDocument().getURI().toASCIIString() + " " + v);
 
             hits.add(node);
         }
@@ -200,7 +204,7 @@ public class SearchTestOrder extends FacetAbstract {
 
             i = 0;
             for (NodeProxy node : cb.hits) {
-                assertEquals(expected[i++], node.getDocument().getDocumentURI());
+                assertEquals(expected[i++], node.getOwnerDocument().getDocumentURI());
             }
 
             System.out.println("HERE DONE");
@@ -224,7 +228,7 @@ public class SearchTestOrder extends FacetAbstract {
 
             i = 0;
             for (NodeProxy node : cb.hits) {
-                assertEquals(expected[i++], node.getDocument().getDocumentURI());
+                assertEquals(expected[i++], node.getOwnerDocument().getDocumentURI());
             }
 
         } catch (Exception e) {

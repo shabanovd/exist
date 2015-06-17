@@ -19,6 +19,7 @@
  */
 package org.exist.xquery.modules.lucene;
 
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
 
@@ -34,6 +35,7 @@ import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -41,10 +43,10 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.exist.Database;
 import org.exist.collections.Collection;
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.MutableDocumentSet;
-import org.exist.dom.NodeProxy;
+import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.DocumentImpl;
+import org.exist.dom.persistent.MutableDocumentSet;
+import org.exist.dom.persistent.NodeProxy;
 import org.exist.dom.QName;
 import org.exist.indexing.IndexController;
 import org.exist.indexing.lucene.LuceneIndex;
@@ -54,8 +56,8 @@ import org.exist.indexing.lucene.LuceneUtil;
 import org.exist.indexing.lucene.QueryDocuments;
 import org.exist.indexing.lucene.QueryNodes;
 import org.exist.indexing.lucene.SearchCallback;
-import org.exist.memtree.MemTreeBuilder;
-import org.exist.memtree.NodeImpl;
+import org.exist.dom.memtree.MemTreeBuilder;
+import org.exist.dom.memtree.NodeImpl;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.serializer.SAXSerializer;
@@ -167,7 +169,7 @@ public class FacetSearch extends BasicFunction {
                 Item item = i.nextItem();
                 if (Type.subTypeOf(item.getType(), Type.NODE)) {
                 	if (((NodeValue)item).isPersistentSet()) {
-                		path = ((NodeProxy)item).getDocument().getURI().toString();
+                		path = ((NodeProxy)item).getOwnerDocument().getURI().toString();
                 	} else {
                 		path = item.getStringValue();
                 	}
@@ -197,6 +199,9 @@ public class FacetSearch extends BasicFunction {
             // Log and rethrow
             LOG.error(ex.getMessage(), ex);
             throw ex;
+        } catch (IOException e) {
+            LOG.error(e.getMessage(), e);
+            throw new XPathException(e);
         }
 
         // Return list of matching files.
@@ -210,7 +215,7 @@ public class FacetSearch extends BasicFunction {
     private NodeImpl search(
             List<String> toBeMatchedURIs, String queryText, int maxHits, boolean highlight,
             FacetsConfig facetsConfig, Map<String, Number> facetsList,
-            Sort sortCriteria) throws XPathException {
+            Sort sortCriteria) throws XPathException, IOException {
         
     	final DBBroker broker = context.getBroker();
 
@@ -244,13 +249,8 @@ public class FacetSearch extends BasicFunction {
         
         final LuceneIndex index = indexWorker.index;
 
-        NodeImpl report = null;
-        
-        IndexSearcher searcher = null;
-        try {
-            // Get index searcher
-            searcher = index.getSearcher();
-            
+        return index.withSearcher(searcher -> {
+
             // Get analyzer : to be retrieved from configuration
             final Analyzer searchAnalyzer = new StandardAnalyzer(LuceneIndex.LUCENE_VERSION_IN_USE);
 
@@ -258,8 +258,13 @@ public class FacetSearch extends BasicFunction {
             
             final QueryParser parser = new QueryParser(LuceneIndex.LUCENE_VERSION_IN_USE, "", searchAnalyzer);
 
-            final Query query = parser.parse(queryText);
-                       
+            final Query query;
+            try {
+                query = parser.parse(queryText);
+            } catch (ParseException e) {
+                throw new XPathException(e);
+            }
+
             final MemTreeBuilder builder = new MemTreeBuilder();
             builder.startDocument();
             
@@ -299,13 +304,13 @@ public class FacetSearch extends BasicFunction {
 					public void found(AtomicReader reader, int docNum, NodeProxy element, float score) {
 						if (LuceneIndex.DEBUG)
 							try {
-								System.out.println("\n"+element.getDocument().getURI());
+								System.out.println("\n"+element.getOwnerDocument().getURI());
 								System.out.println( queryResult2String(broker, element, 5, LuceneMatchChunkListener.DO_NOT_CHUNK_NODE) );
 							} catch (Throwable e) {
 								e.printStackTrace();
 							}
 						
-						String fDocUri = element.getDocument().getURI().toString();
+						String fDocUri = element.getOwnerDocument().getURI().toString();
 						
 	                    // setup attributes
 	                    AttributesImpl attribs = new AttributesImpl();
@@ -323,11 +328,15 @@ public class FacetSearch extends BasicFunction {
 				};
 				
 	            // Perform actual search
-		        if (sortCriteria == null) {
-                    results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetsConfig, cb, maxHits);
-		        } else {
-	                results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetsConfig, cb, maxHits, sortCriteria);
-		        }
+                try {
+                    if (sortCriteria == null) {
+                        results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetsConfig, cb, maxHits);
+                    } else {
+                        results = QueryNodes.query(indexWorker, bq, getContextId(), docs, query, facetsConfig, cb, maxHits, sortCriteria);
+                    }
+                } catch (ParseException e) {
+                    throw new XPathException(e);
+                }
             } else {
 	            SearchCallback<DocumentImpl> cb = new SearchCallback<DocumentImpl>() {
 	            	
@@ -356,13 +365,18 @@ public class FacetSearch extends BasicFunction {
 	                    attribs.clear();
 					}
 				};
-				
-	            // Perform actual search
-		        if (sortCriteria == null) {
-                    results = QueryDocuments.query(indexWorker, docs, query, facetsConfig, cb, maxHits);
-		        } else {
-	                results = QueryDocuments.query(indexWorker, docs, query, facetsConfig, cb, maxHits, sortCriteria);
-		        }
+
+                try {
+                    // Perform actual search
+                    if (sortCriteria == null) {
+                        results = QueryDocuments.query(indexWorker, docs, query, facetsConfig, cb, maxHits);
+                    } else {
+                        results = QueryDocuments.query(indexWorker, docs, query, facetsConfig, cb, maxHits, sortCriteria);
+                    }
+                } catch (ParseException e) {
+                    throw new XPathException(e);
+                }
+
             }
             
             if (results != null) {
@@ -404,19 +418,8 @@ public class FacetSearch extends BasicFunction {
             
             //System.out.println(builder.getDocument().toString());
             
-            report = builder.getDocument().getNode(nodeNr);
-
-        } catch (Exception ex){
-            //ex.printStackTrace();
-            LuceneIndexWorker.LOG.error(ex.getMessage(), ex);
-            throw new XPathException(this, ex);
-        
-        } finally {
-            index.releaseSearcher(searcher);
-        }
-        
-        
-        return report;
+            return builder.getDocument().getNode(nodeNr);
+        });
     }
     
     protected FacetsConfig parseFacetRequests(Sequence optSeq, Map<String, Number> list) throws XPathException {
