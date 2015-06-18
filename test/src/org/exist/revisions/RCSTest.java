@@ -29,20 +29,22 @@ import org.exist.collections.IndexInfo;
 import org.exist.dom.*;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.MetaStorage;
+import org.exist.storage.md.Meta;
 import org.exist.storage.md.MetaData;
 import org.exist.storage.md.Metas;
+import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.junit.*;
+import org.xml.sax.SAXException;
 
+import javax.xml.transform.OutputKeys;
 import java.io.File;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -116,14 +118,14 @@ public class RCSTest {
 
         configureAndStore(null,
             new Resource[] {
-                    new Resource("test1.xml", XML1, null),
-                    new Resource("test2.xml", XML2, null),
-                    new Resource("test3.xml", XML3, null),
-                    new Resource("test4.xml", XML4, null),
-                    new Resource("test5.xml", XML5, null),
-                    new Resource("test6.xml", XML6, null),
-                    new Resource("test7.xml", XML7, null),
-                    new Resource("test8.xml", XML8, null),
+                    new Resource("test1.xml", XML1),
+                    new Resource("test2.xml", XML2),
+                    new Resource("test3.xml", XML3),
+                    new Resource("test4.xml", XML4),
+                    new Resource("test5.xml", XML5),
+                    new Resource("test6.xml", XML6),
+                    new Resource("test7.xml", XML7),
+                    new Resource("test8.xml", XML8),
             });
 
         try (DBBroker broker = pool.authenticate("admin", "")) {
@@ -152,14 +154,14 @@ public class RCSTest {
 
         configureAndStore(null,
                 new Resource[] {
-                        new Resource("test1.xml", XML1, null),
-                        new Resource("test2.xml", XML2, null),
-                        new Resource("test3.xml", XML3, null),
-                        new Resource("test4.xml", XML4, null),
-                        new Resource("test5.xml", XML5, null),
-                        new Resource("test6.xml", XML6, null),
-                        new Resource("test7.xml", XML7, null),
-                        new Resource("test8.xml", XML8, null),
+                        new Resource("test1.xml", XML1),
+                        new Resource("test2.xml", XML2),
+                        new Resource("test3.xml", XML3),
+                        new Resource("test4.xml", XML4),
+                        new Resource("test5.xml", XML5),
+                        new Resource("test6.xml", XML6),
+                        new Resource("test7.xml", XML7),
+                        new Resource("test8.xml", XML8),
                 });
 
         try (DBBroker broker = pool.authenticate("admin", "")) {
@@ -223,6 +225,128 @@ public class RCSTest {
             e.printStackTrace();
             fail(e.getMessage());
         }
+    }
+
+    @Test
+    public void testRestore() {
+        System.out.println("Test ...");
+
+        String MT1 = "text/html";
+        String MT2 = "application/xml";
+
+        XmldbURI R1 = XmldbURI.create("test1.xml");
+
+        String N1 = "test";
+        String V1 = "t1";
+        String V2 = "t2";
+
+        Map<String, String> map1 = new HashMap<>();
+        map1.put(N1, V1);
+
+        Map<String, String> map2 = new HashMap<>();
+        map2.put(N1, V2);
+
+        configureAndStore(null,
+            new Resource[]{
+                (new Resource(R1, XML1, map1)).mimeType(MT1),
+            });
+
+        try (DBBroker broker = pool.authenticate("admin", "")) {
+            assertNotNull(broker);
+
+            DocumentImpl d1 = root.getDocument(broker, R1);
+            assertEquals(MT1, d1.getMetadata().getMimeType());
+
+            Handler h = new TestHandler();
+
+            RCSManager manager = RCSManager.get();
+
+            RCSHolder holder = manager.getOrCreateHolder("test");
+
+            XmldbURI colURL = root.getURI();
+
+            try (CommitWriter commit = holder.commit(h)) {
+                commit
+                    .create(colURL.append(R1))
+                    .done();
+            }
+
+            MetaData md = MetaData.get();
+
+            Metas metas = md.getMetas(colURL.append(R1));
+            assertNotNull(metas);
+
+            String doc1uuid = metas.getUUID();
+            assertNotNull(doc1uuid);
+
+            Meta mt = metas.get(N1);
+            assertNotNull(mt);
+            assertEquals(V1, mt.getValue());
+
+            RCSResource resource = holder.resource(doc1uuid);
+            assertNotNull(resource);
+
+            Revision rev = resource.lastRevision();
+            assertNotNull(rev);
+
+            assertTrue(rev.isXML());
+            assertFalse(rev.isBinary());
+            assertFalse(rev.isCollection());
+            assertFalse(rev.isDeleted());
+
+            StringWriter writer = new StringWriter();
+
+            try (InputStream is = rev.getData()) {
+                IOUtils.copy(is, writer);
+            }
+            assertEquals(XML1, writer.toString());
+
+            configureAndStore(null,
+                new Resource[]{
+                    (new Resource(R1, XML2, map2)).mimeType(MT2),
+                });
+
+            metas = md.getMetas(colURL.append(R1));
+            assertNotNull(metas);
+
+            assertEquals(doc1uuid, metas.getUUID());
+
+            mt = metas.get(N1);
+            assertNotNull(mt);
+            assertEquals(V2, mt.getValue());
+
+            d1 = root.getDocument(broker, R1);
+            assertEquals(MT2, d1.getMetadata().getMimeType());
+
+            //restore revision
+            rev.restore(broker, null);
+
+            d1 = root.getDocument(broker, R1);
+            assertEquals(MT1, d1.getMetadata().getMimeType());
+
+            assertEquals(XML1, read(broker, d1));
+
+            metas = md.getMetas(colURL.append(R1));
+            assertEquals(doc1uuid, metas.getUUID());
+
+            mt = metas.get(N1);
+            assertNotNull(mt);
+            assertEquals(V1, mt.getValue());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }
+    }
+
+    private String read(DBBroker broker, DocumentImpl document) throws SAXException {
+        HashMap<String, Object> props = new HashMap<>();
+        props.put(OutputKeys.OMIT_XML_DECLARATION, "no");
+
+        final Serializer serializer = broker.getSerializer();
+        //serializer.setUser(user);
+        serializer.setProperties(props);
+        return serializer.serialize(document);
     }
 
     class TestHandler implements Handler {
@@ -292,8 +416,11 @@ public class RCSTest {
 
                     if ("XML".equals(resource.type)) {
 
-                        IndexInfo info = root.validateXMLResource(txn, broker, XmldbURI.create(resource.docName), resource.data);
+                        IndexInfo info = root.validateXMLResource(txn, broker, resource.docName, resource.data);
                         assertNotNull(info);
+
+                        if (resource.mimeType != null)
+                            info.getDocument().getMetadata().setMimeType(resource.mimeType);
 
                         root.store(txn, broker, info, resource.data, false);
 
@@ -308,11 +435,9 @@ public class RCSTest {
 
                         InputStream is = new StringInputStream(resource.data);
 
-                        XmldbURI name = XmldbURI.create(resource.docName);
+                        BinaryDocument binary = root.validateBinaryResource(txn, broker, resource.docName, is, mimeType.toString(), (long) -1, (Date) null, (Date) null);
 
-                        BinaryDocument binary = root.validateBinaryResource(txn, broker, name, is, mimeType.toString(), (long) -1, (Date) null, (Date) null);
-
-                        binary = root.addBinaryResource(txn, broker, name, is, mimeType.getName(), -1, (Date) null, (Date) null);
+                        binary = root.addBinaryResource(txn, broker, resource.docName, is, mimeType.getName(), -1, (Date) null, (Date) null);
 
                         docs.add(binary);
                     }
@@ -330,12 +455,20 @@ public class RCSTest {
     }
 
     protected class Resource {
-        final String docName;
+        final XmldbURI docName;
         final String data;
         final Map<String, String> metas;
         final String type;
+        String mimeType = null;
 
-        Resource(String docName, String data, Map<String, String> metas) {
+        Resource(String docName, String data) {
+            this.docName = XmldbURI.create(docName);
+            this.data = data;
+            metas = null;
+            type = "XML";
+        }
+
+        Resource(XmldbURI docName, String data, Map<String, String> metas) {
             this.docName = docName;
             this.data = data;
             this.metas = metas;
@@ -343,11 +476,16 @@ public class RCSTest {
             type = "XML";
         }
 
-        Resource(String type, String docName, String data, Map<String, String> metas) {
-            this.type = type;
+        Resource(XmldbURI docName, String data, Map<String, String> metas, String type) {
             this.docName = docName;
             this.data = data;
             this.metas = metas;
+            this.type = type;
+        }
+
+        public Resource mimeType(String mimeType) {
+            this.mimeType = mimeType;
+            return this;
         }
     }
 
