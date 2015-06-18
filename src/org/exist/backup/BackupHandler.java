@@ -35,11 +35,11 @@ import java.io.IOException;
  */
 public interface BackupHandler {
 
-    public void backup(Resource resource, XMLStreamWriter writer) throws IOException;
+    void backup(Resource resource, XMLStreamWriter writer) throws IOException;
 
-	public void backup(Collection colection, AttributesImpl attrs);
-	public void backup(Collection colection, SAXSerializer serializer) throws SAXException;
+    void backup(Collection colection, AttributesImpl attrs);
+    void backup(Collection colection, SAXSerializer serializer) throws SAXException;
 
-	public void backup(DocumentAtExist document, AttributesImpl attrs);
-	public void backup(DocumentAtExist document, SAXSerializer serializer) throws SAXException;
+    void backup(DocumentAtExist document, AttributesImpl attrs);
+    void backup(DocumentAtExist document, SAXSerializer serializer) throws SAXException;
 }

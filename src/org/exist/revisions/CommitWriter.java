@@ -26,24 +26,24 @@ import org.exist.xmldb.XmldbURI;
  */
 public interface CommitWriter extends AutoCloseable {
 
-    public CommitWriter author(String author);
+    CommitWriter author(String author);
 
-    public CommitWriter message(String message);
+    CommitWriter message(String message);
 
-    public CommitWriter create(String id);
-    public CommitWriter create(XmldbURI uri);
+    CommitWriter create(String id);
+    CommitWriter create(XmldbURI uri);
 
-    public CommitWriter update(String id);
-    public CommitWriter update(XmldbURI uri);
+    CommitWriter update(String id);
+    CommitWriter update(XmldbURI uri);
 
-    public CommitWriter move(String id);
-    public CommitWriter move(XmldbURI uri);
+    CommitWriter move(String id);
+    CommitWriter move(XmldbURI uri);
 
-    public CommitWriter rename(String id);
-    public CommitWriter rename(XmldbURI uri);
+    CommitWriter rename(String id);
+    CommitWriter rename(XmldbURI uri);
 
-    public CommitWriter delete(String id);
-    public CommitWriter delete(String id, XmldbURI uri);
+    CommitWriter delete(String id);
+    CommitWriter delete(String id, XmldbURI uri);
 
-    public void done();
+    void done();
 }

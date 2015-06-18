@@ -44,7 +44,7 @@ public class Utils {
 
             if (ch.read(bb) != TAG_RESOURCE_TYPE_LENGTH) return null;
 
-            System.out.println(new String(bb.array()));
+            //System.out.println(new String(bb.array()));
 
             bb.rewind();
 

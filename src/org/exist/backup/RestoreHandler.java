@@ -29,9 +29,9 @@ import org.xml.sax.ContentHandler;
  */
 public interface RestoreHandler extends ContentHandler {
 
-    public void startRestore(Resource resource, Attributes atts);
+    void startRestore(Resource resource, Attributes atts);
 
-    public void startRestore(Resource resource, String uuid);
-    public void endRestore(Resource resource);
+    void startRestore(Resource resource, String uuid);
+    void endRestore(Resource resource);
 
 }
