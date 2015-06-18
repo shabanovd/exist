@@ -197,18 +197,20 @@ public class MetaDataImpl extends MetaData {
 	}
 
     public Metas replaceMetas(XmldbURI uri, String uuid) {
-    	Metas metas = getMetas(uri, false);
-    	if (metas != null)
-    		delMetas(metas);
-    	
-		MetasImpl d = new MetasImpl(uri.toString(), uuid);
-		docByUUID.put(d);
-		
-		if (LOG.isDebugEnabled())
-			LOG.debug("addMetas "+uuid+" "+uri);
+        Metas metas = getMetas(uri, false);
+        if (metas != null) {
+            if (metas.getUUID().equals(uuid)) return metas;
+            delMetas(metas);
+        }
 
-		return d;
-	}
+        MetasImpl d = new MetasImpl(uri.toString(), uuid);
+        docByUUID.put(d);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("addMetas "+uuid+" "+uri);
+
+        return d;
+    }
 
 	public Metas addMetas(XmldbURI uri) {
 		Metas _d = getMetas(uri, false);
