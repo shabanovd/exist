@@ -29,48 +29,48 @@ import java.util.TimeZone;
  */
 public interface Constants {
 
-    final static Charset ENCODING = StandardCharsets.UTF_8;
-    final static TimeZone GMT = TimeZone.getTimeZone("GMT+0:00");
+    Charset ENCODING = StandardCharsets.UTF_8;
+    TimeZone GMT = TimeZone.getTimeZone("GMT+0:00");
 
-    final static String XML = "xml";
-    final static String BIN = "bin";
-    final static String COL = "col";
-    final static String DEL = "del";
+    String XML = "xml";
+    String BIN = "bin";
+    String COL = "col";
+    String DEL = "del";
     
-    final static String NONE = "NONE";
+    String NONE = "NONE";
 
-    final static String EL_LOG_PATH = "log";
-    final static String EL_DATA_HASH = "hash";
-    final static String EL_RESOURCE_TYPE = "type";
+    String EL_LOG_PATH = "log";
+    String EL_DATA_HASH = "hash";
+    String EL_RESOURCE_TYPE = "type";
     
-    final static String PARENT_UUID = "parent-uuid";
+    String PARENT_UUID = "parent-uuid";
     
-    final static String EL_FILE_NAME = "file-name";
-    final static String EL_FILE_PATH = "file-path";
+    String EL_FILE_NAME = "file-name";
+    String EL_FILE_PATH = "file-path";
 
-    final static String EL_META_TYPE = "meta-type";
+    String EL_META_TYPE = "meta-type";
 
-    final static String EL_CREATED = "created";
-    final static String EL_LAST_MODIFIED = "lastModified";
+    String EL_CREATED = "created";
+    String EL_LAST_MODIFIED = "lastModified";
     
-    final static String EL_PERMISSION = "permission";
+    String EL_PERMISSION = "permission";
     
-    final static String AT_OWNER = "owner";
-    final static String AT_GROUP = "group";
-    final static String AT_MODE = "mode";
+    String AT_OWNER = "owner";
+    String AT_GROUP = "group";
+    String AT_MODE = "mode";
 
-    final static String EL_ACL = "acl";
+    String EL_ACL = "acl";
     
-    final static String AT_VERSION = "version";
+    String AT_VERSION = "version";
 
-    final static String EL_ACE = "ace";
+    String EL_ACE = "ace";
         
-    final static String AT_INDEX = "index";
-    final static String AT_TARGET = "target";
-    final static String AT_WHO = "who";
-    final static String AT_ACCESS_TYPE = "access_type";
+    String AT_INDEX = "index";
+    String AT_TARGET = "target";
+    String AT_WHO = "who";
+    String AT_ACCESS_TYPE = "access_type";
     
-    final static String EL_METASTORAGE = "metastorage";
-    final static String EL_UUID = "uuid";
+    String EL_METASTORAGE = "metastorage";
+    String EL_UUID = "uuid";
     
 }

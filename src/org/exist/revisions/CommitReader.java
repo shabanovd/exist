@@ -24,12 +24,12 @@ package org.exist.revisions;
  */
 public interface CommitReader {
 
-    public String id();
+    String id();
 
-    public String author();
+    String author();
 
-    public String message();
+    String message();
 
-    public Iterable<Change> changes();
+    Iterable<Change> changes();
 
 }
