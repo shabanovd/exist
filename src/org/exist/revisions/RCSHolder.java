@@ -101,6 +101,7 @@ public class RCSHolder implements Constants {
     public RCSHolder(RCSManager manager, Path path) throws IOException {
         this.manager = manager;
 
+        //TODO: no needs, because it under RCS already ... or do not make it on top?
         rcFolder = path.resolve("RCS");
 
         uuidFolder          = folder("uuids");
@@ -981,31 +982,23 @@ public class RCSHolder implements Constants {
 
                 if (doc != null) {
                     Lock lock = doc.getUpdateLock();
-
                     lock.acquire(READ_LOCK);
-
                     try {
                         switch (checkHash(broker, rev, doc)) {
                             case EQ:
                                 restoreMetas(broker, doc, rev, dh);
 
                                 broker.reindexXMLResource(tx, doc);
-                                return;
-                            case UNKNOWN:
-                                restoreMetas(broker, doc, rev, dh);
+                                break;
 
-                                broker.reindexXMLResource(tx, doc);
-                                return;
+                            default:
+                                break;
                         }
                     } finally {
                         lock.release(READ_LOCK);
                     }
-
-                    //delete
-                    remove(broker, tx, parent, doc); //TODO: KEEP OLD UUID!!!
                 }
-
-                createDocument(broker, tx, url, parent, rev, dh);
+                uploadDocument(broker, tx, url, parent, rev, dh);
             }
 
             tx.success();
@@ -1031,7 +1024,7 @@ public class RCSHolder implements Constants {
         rh.endRestore(collection);
     }
 
-    private void createDocument(DBBroker broker, Txn tx, XmldbURI url, Collection parent, Path rev, MetasHandler dh) throws Exception {
+    private void uploadDocument(DBBroker broker, Txn tx, XmldbURI url, Collection parent, Path rev, MetasHandler dh) throws Exception {
 
 //        listener.setCurrentResource(name);
 //        if(currentCollection instanceof Observable) {
@@ -1050,10 +1043,6 @@ public class RCSHolder implements Constants {
             IndexInfo info = parent.validateXMLResource(tx, broker, url.lastSegment(), is );
 
             resource = info.getDocument();
-            DocumentMetadata meta = resource.getMetadata();
-            meta.setMimeType(dh.mimeType);
-            meta.setCreated(dh.createdTime);
-            meta.setLastModified(dh.lastModified);
 
 //            if((publicid != null) || (systemid != null)) {
 //                final DocumentType docType = new DocumentTypeImpl(namedoctype, publicid, systemid);
@@ -1063,6 +1052,11 @@ public class RCSHolder implements Constants {
             rh.startRestore(resource, dh.uuid);
 
             restoreMetas(broker, resource, rev, dh);
+
+            DocumentMetadata meta = resource.getMetadata();
+            if (dh.mimeType != null) meta.setMimeType(dh.mimeType);
+            if (dh.createdTime != null) meta.setCreated(dh.createdTime);
+            if (dh.lastModified != null) meta.setLastModified(dh.lastModified);
 
             parent.store(tx, broker, info, is, false);
 
@@ -1077,6 +1071,11 @@ public class RCSHolder implements Constants {
 
             restoreMetas(broker, resource, rev, dh);
 
+            DocumentMetadata meta = resource.getMetadata();
+            if (dh.mimeType != null) meta.setMimeType(dh.mimeType);
+            if (dh.createdTime != null) meta.setCreated(dh.createdTime);
+            if (dh.lastModified != null) meta.setLastModified(dh.lastModified);
+
             resource = parent.addBinaryResource(tx, broker, (BinaryDocument)resource, is.getByteStream(), dh.mimeType, is.getByteStreamLength(), new Date(dh.createdTime), new Date(dh.lastModified));
         }
 
@@ -1084,7 +1083,7 @@ public class RCSHolder implements Constants {
     }
 
     private void remove(DBBroker broker, Txn tx, Collection docCol, DocumentImpl doc) throws TriggerException, PermissionDeniedException, LockException, TransactionException, IOException {
-        if (doc == null) return;
+        if (docCol == null || doc == null) return;
 
         docCol.removeResource(tx, broker, doc);
     }
@@ -1095,7 +1094,7 @@ public class RCSHolder implements Constants {
         SAXParser parser = parserFactor.newSAXParser();
 
         try (InputStream metaStream = Files.newInputStream(rev)) {
-            parser.parse(metaStream, new MetasRestore(broker, resource, dh.uuid));
+            parser.parse(metaStream, new MetasRestore(broker, resource, dh));
         }
     }
 
@@ -1121,6 +1120,7 @@ public class RCSHolder implements Constants {
     class MetasRestore extends DefaultHandler {
 
         DBBroker broker;
+        MetasHandler dh;
         RestoreHandler rh;
 
         Resource resource;
@@ -1128,10 +1128,11 @@ public class RCSHolder implements Constants {
 
         String content = null;
 
-        MetasRestore(DBBroker broker, Resource resource, String uuid) {
+        MetasRestore(DBBroker broker, Resource resource, MetasHandler dh) {
             this.broker = broker;
             this.resource = resource;
-            this.uuid = uuid;
+            this.dh = dh;
+            uuid = dh.uuid;
 
             //MetaData.PREFIX, EL_METASTORAGE, MetaData.NAMESPACE_URI
 
@@ -1161,13 +1162,12 @@ public class RCSHolder implements Constants {
         public void endElement(String uri, String localName, String qName) throws SAXException {
             super.endElement(uri, localName, qName);
 
-            if (content == null) return;
-
             if (MetaData.NAMESPACE_URI.equals(uri)) {
 
                 rh.endElement(uri, localName, qName);
 
             } else {
+                if (content == null) return;
 
                 switch (qName) {
                     case EL_FILE_NAME:
@@ -1185,7 +1185,7 @@ public class RCSHolder implements Constants {
                         //content;
                         break;
                     case EL_META_TYPE:
-                        //content
+                        dh.mimeType = content;
                         break;
                     case EL_CREATED:
                         //DatatypeConverter.parseDateTime(content).getTimeInMillis();
@@ -1195,7 +1195,6 @@ public class RCSHolder implements Constants {
                         break;
                 }
             }
-
             content = null;
         }
 
