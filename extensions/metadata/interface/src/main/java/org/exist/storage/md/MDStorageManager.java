@@ -180,7 +180,7 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
             List<Meta> sub = ms.metas();
             for (Meta m : sub) {
 
-                writer.writeStartElement(PREFIX, m.getKey(), MetaData.NAMESPACE_URI);
+                writer.writeStartElement(PREFIX, META, MetaData.NAMESPACE_URI);
 
                 writer.writeAttribute(PREFIX, NAMESPACE_URI, UUID, m.getUUID());
                 writer.writeAttribute(PREFIX, NAMESPACE_URI, KEY, m.getKey());
@@ -284,23 +284,31 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	@Override
 	public void endPrefixMapping(String prefix) throws SAXException {}
 
-	@Override
-	public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
-		if (META.equals(localName) && NAMESPACE_URI.equals(uri)) {
-			String uuid = atts.getValue(NAMESPACE_URI, UUID);
-			String key = atts.getValue(NAMESPACE_URI, KEY);
-			String value = atts.getValue(NAMESPACE_URI, VALUE);
-			
-			if (currentMetas != null) {
-				md._addMeta(currentMetas, uuid, key, value);
-			} else if (collectionMetas != null) {
-				md._addMeta(collectionMetas, uuid, key, value);
-			}
-		}
-	}
+    @Override
+    public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
+        if ((qName != null && qName.equals(PREFIX_META)) || (META.equals(localName) && NAMESPACE_URI.equals(uri))) {
+            String uuid = atts.getValue(NAMESPACE_URI, UUID);
+            if (uuid == null) uuid = atts.getValue(PREFIX_UUID);
+            if (uuid == null) return;
+
+            String key = atts.getValue(NAMESPACE_URI, KEY);
+            if (key == null) key = atts.getValue(PREFIX_KEY);
+            if (key == null) return;
+
+            String value = atts.getValue(NAMESPACE_URI, VALUE);
+            if (value == null) value = atts.getValue(PREFIX_VALUE);
+            if (value == null) return;
+
+            if (currentMetas != null) {
+                md._addMeta(currentMetas, uuid, key, value);
+            } else if (collectionMetas != null) {
+                md._addMeta(collectionMetas, uuid, key, value);
+            }
+        }
+    }
 
 	@Override
-	public void endElement(String uri, String localName, String qName) throws SAXException {
+	public void endElement(String uri, String localName, String qName) {
 		if (localName.equals("collection")) {
 			collectionMetas = null;
 			currentMetas = null;
@@ -352,7 +360,11 @@ public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 
     @Override
     public void endRestore(Resource resource) {
-        //if (!resource.isFolder()) currentMetas = null;
+        String type;
+        if (resource.isFolder()) type = "collection";
+        else type = "resource";
+
+        endElement(null, type, null);
     }
 
 	@Override
