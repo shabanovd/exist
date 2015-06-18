@@ -139,7 +139,7 @@ public class RCSTest {
 
             holder.snapshot(root, h);
 
-            holder.restore(broker.getDataFolder().toPath().resolve("RCS"), h);
+            holder.restore(holder.rcFolder, h);
 
             System.out.println("Test PASSED.");
         } catch (Exception e) {
