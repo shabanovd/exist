@@ -311,13 +311,17 @@ public class RCSHolder implements Constants {
 
                 log.writeAttribute("id", commitId);
 
-                log.writeStartElement("author");
-                log.writeCData(commitLog.author());
-                log.writeEndElement();
+                if (commitLog.author() != null) {
+                    log.writeStartElement("author");
+                    log.writeCData(commitLog.author());
+                    log.writeEndElement();
+                }
 
-                log.writeStartElement("message");
-                log.writeCData(commitLog.message());
-                log.writeEndElement();
+                if (commitLog.message() != null) {
+                    log.writeStartElement("message");
+                    log.writeCData(commitLog.message());
+                    log.writeEndElement();
+                }
 
                 for (Change action : commitLog.acts) {
 
@@ -1181,7 +1185,7 @@ public class RCSHolder implements Constants {
                         //content;
                         break;
                     case EL_META_TYPE:
-                        resource.getMetadata().setMimeType(content);
+                        //content
                         break;
                     case EL_CREATED:
                         //DatatypeConverter.parseDateTime(content).getTimeInMillis();
