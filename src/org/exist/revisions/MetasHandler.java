@@ -39,8 +39,8 @@ class MetasHandler extends DefaultHandler {
     String name;
     String mimeType;
 
-    long createdTime;
-    long lastModified;
+    Long createdTime;
+    Long lastModified;
 
     //Permission perm;
 
