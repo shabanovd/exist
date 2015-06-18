@@ -238,7 +238,8 @@ public class SystemImportHandler extends DefaultHandler {
                 deferredPermission = new CollectionDeferredPermission(listener, currentCollection, owner, group, m);
             }
 
-            rh.endRestore(currentCollection);
+            //called by rh.endElement
+            //rh.endRestore(currentCollection);
             
             return deferredPermission;
             
@@ -430,8 +431,9 @@ public class SystemImportHandler extends DefaultHandler {
                 } else {
                     deferredPermission = new ResourceDeferredPermission(listener, resource, owner, group, mode);
                 }
-                
-                rh.endRestore(resource);
+
+                //called by rh.endElement
+                //rh.endRestore(resource);
 
                 listener.restored(name);
                 
