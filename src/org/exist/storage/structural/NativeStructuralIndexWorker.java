@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -53,7 +53,10 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     private NativeStructuralIndex index;
     private int mode = 0;
     private DocumentImpl document;
-    private Map<QName, List<NodeProxy>> pending = new TreeMap<QName, List<NodeProxy>>();
+
+    //TODO throw away this Comparator or use a different data struct here when we have moved
+    //nameType out of QName
+    private Map<QName, List<NodeProxy>> pending = new TreeMap<>(new TypedQNameComparator());
 
     public NativeStructuralIndexWorker(NativeStructuralIndex index) {
         this.index = index;
@@ -87,8 +90,8 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     public NodeSet findElementsByTagName(byte type, DocumentSet docs, QName qname, NodeSelector selector, Expression parent) {
         final Lock lock = index.btree.getLock();
-        final NewArrayNodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 256);
-        final FindElementsCallback callback = new FindElementsCallback(type, result, docs, selector, parent);
+        final NewArrayNodeSet result = new NewArrayNodeSet();
+        final FindElementsCallback callback = new FindElementsCallback(type, qname, result, docs, selector, parent);
 
         // for each document id range, scan the index to find matches
         for (final Range range : getDocIdRanges(docs)) {
@@ -140,7 +143,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     /**
      * Internal helper class used by
-     * {@link NativeStructuralIndexWorker#findElementsByTagName(byte, org.exist.dom.DocumentSet, org.exist.dom.QName, org.exist.xquery.NodeSelector)}.
+     * {@link NativeStructuralIndexWorker#findElementsByTagName(byte, org.exist.dom.persistent.DocumentSet, org.exist.dom.QName, org.exist.xquery.NodeSelector)}.
      */
     static class Range {
         int start = -1;
@@ -165,8 +168,8 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     public NodeSet findDescendantsByTagName(byte type, QName qname, int axis, DocumentSet docs, NodeSet contextSet, int contextId, Expression parent) {
         final Lock lock = index.btree.getLock();
-        final NewArrayNodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 256);
-        final FindDescendantsCallback callback = new FindDescendantsCallback(type, axis, contextId, result, parent);
+        final NewArrayNodeSet result = new NewArrayNodeSet();
+        final FindDescendantsCallback callback = new FindDescendantsCallback(type, axis, qname, contextId, result, parent);
         try {
             lock.acquire(Lock.READ_LOCK);
             for (final NodeProxy ancestor : contextSet) {
@@ -200,7 +203,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     public NodeSet findAncestorsByTagName(byte type, QName qname, int axis, DocumentSet docs, NodeSet contextSet,
                                           int contextId) {
         final Lock lock = index.btree.getLock();
-        final NewArrayNodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 256);
+        final NewArrayNodeSet result = new NewArrayNodeSet();
         try {
             lock.acquire(Lock.READ_LOCK);
             for (final NodeProxy descendant : contextSet) {
@@ -245,8 +248,8 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     public NodeSet scanByType(byte type, int axis, NodeTest test, boolean useSelfAsContext, DocumentSet docs, 
     		NodeSet contextSet, int contextId) {
         final Lock lock = index.btree.getLock();
-        final NewArrayNodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 256);
-        final FindDescendantsCallback callback = new FindDescendantsCallback(type, axis, contextId, useSelfAsContext, result, null);
+        final NewArrayNodeSet result = new NewArrayNodeSet();
+        final FindDescendantsCallback callback = new FindDescendantsCallback(type, axis, null, contextId, useSelfAsContext, result, null);
         for (final NodeProxy ancestor : contextSet) {
             final DocumentImpl doc = ancestor.getDocument();
             final NodeId ancestorId = ancestor.getNodeId();
@@ -284,17 +287,23 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     
     private class FindElementsCallback implements BTreeCallback {
         byte type;
+        QName qname;
         DocumentSet docs;
         NewArrayNodeSet result;
         NodeSelector selector;
         Expression parent;
 
-        FindElementsCallback(byte type, NewArrayNodeSet result, DocumentSet docs, NodeSelector selector, Expression parent) {
+        FindElementsCallback(byte type, QName qname, NewArrayNodeSet result, DocumentSet docs, NodeSelector selector, Expression parent) {
             this.type = type;
             this.result = result;
             this.docs = docs;
             this.selector = selector;
             this.parent = parent;
+            if (qname != null && qname.getNameType() != type) {
+                this.qname = new QName(qname.getLocalPart(), qname.getNamespaceURI(), qname.getPrefix(), type);
+            } else {
+                this.qname = qname;
+            }
         }
 
         public boolean indexInfo(Value value, long pointer) throws TerminatedException {
@@ -308,12 +317,18 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
                 if (selector == null) {
                     final NodeProxy storedNode = new NodeProxy(doc, nodeId,
                         type == ElementValue.ATTRIBUTE ? Node.ATTRIBUTE_NODE : Node.ELEMENT_NODE, pointer);
+                    if (qname != null) {
+                        storedNode.setQName(qname);
+                    }
                     result.add(storedNode);
                 } else {
                     final NodeProxy storedNode = selector.match(doc, nodeId);
                     if (storedNode != null) {
                         storedNode.setNodeType(type == ElementValue.ATTRIBUTE ? Node.ATTRIBUTE_NODE : Node.ELEMENT_NODE);
                         storedNode.setInternalAddress(pointer);
+                        if (qname != null) {
+                            storedNode.setQName(qname);
+                        }
                         result.add(storedNode);
                     }
                 }
@@ -325,6 +340,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
     private class FindDescendantsCallback implements BTreeCallback {
         int axis;
         byte type;
+        QName qname;
         NodeProxy ancestor;
         DocumentImpl doc;
         int contextId;
@@ -332,17 +348,22 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         boolean selfAsContext = false;
         Expression parent;
 
-        FindDescendantsCallback(byte type, int axis, int contextId, NewArrayNodeSet result, Expression parent) {
-        	this(type, axis, contextId, false, result, parent);
-        };
+        FindDescendantsCallback(byte type, int axis, QName qname, int contextId, NewArrayNodeSet result, Expression parent) {
+        	this(type, axis, qname, contextId, false, result, parent);
+        }
         
-        FindDescendantsCallback(byte type, int axis, int contextId, boolean selfAsContext, NewArrayNodeSet result, Expression parent) {
+        FindDescendantsCallback(byte type, int axis, QName qname, int contextId, boolean selfAsContext, NewArrayNodeSet result, Expression parent) {
             this.type = type;
             this.axis = axis;
             this.contextId = contextId;
             this.result = result;
             this.selfAsContext = selfAsContext;
             this.parent = parent;
+            if (qname != null && qname.getNameType() != type) {
+                this.qname = new QName(qname.getLocalPart(), qname.getNamespaceURI(), qname.getPrefix(), type);
+            } else {
+                this.qname = qname;
+            }
         }
 
         void setAncestor(DocumentImpl doc, NodeProxy ancestor) {
@@ -365,6 +386,9 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             if (match) {
                 final NodeProxy storedNode =
                     new NodeProxy(doc, nodeId, type == ElementValue.ATTRIBUTE ? Node.ATTRIBUTE_NODE : Node.ELEMENT_NODE, pointer);
+                if (qname != null) {
+                    storedNode.setQName(qname);
+                }
                 result.add(storedNode);
                 if (Expression.NO_CONTEXT_ID != contextId) {
                 	if (selfAsContext)
@@ -763,9 +787,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         final byte type = key[5];
         final short sym = ByteConversion.byteToShortH(key, 6);
         final short nsSym = ByteConversion.byteToShortH(key, 8);
-        final QName qname = new QName(symbols.getName(sym), symbols.getNamespace(nsSym));
-        qname.setNameType(type);
-        return qname;
+        return new QName(symbols.getName(sym), symbols.getNamespace(nsSym), type);
     }
 
     private class NativeStructuralStreamListener extends AbstractStreamListener {
