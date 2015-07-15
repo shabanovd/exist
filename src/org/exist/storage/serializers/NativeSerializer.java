@@ -147,7 +147,7 @@ public class NativeSerializer extends Serializer {
 	        if (ns.length() > 0 && (!namespaces.contains(ns)))
 	        	{receiver.startPrefixMapping(node.getPrefix(), ns);}
         	final AttrList attribs = new AttrList();
-        	if ((first && showId == EXIST_ID_ELEMENT) || showId == EXIST_ID_ALL) {
+        	if ((first && showId == EXIST_ID_ELEMENT) || showId >= EXIST_ID_ALL) {
                 attribs.addAttribute(ID_ATTRIB, node.getNodeId().toString());
             /* 
              * This is a proposed fix-up that the serializer could do
@@ -222,7 +222,7 @@ public class NativeSerializer extends Serializer {
             node.release();
             break;
         case Node.TEXT_NODE:
-        	if (first && createContainerElements) {
+            if (showId == EXIST_ID_WRAP_TEXT || (first && createContainerElements)) {
                 final AttrList tattribs = new AttrList();
                 if (showId > 0) {
                     tattribs.addAttribute(ID_ATTRIB, node.getNodeId().toString());
@@ -232,7 +232,7 @@ public class NativeSerializer extends Serializer {
             }
             receiver.setCurrentNode(node);
             receiver.characters(((TextImpl) node).getXMLString());
-            if (first && createContainerElements)
+            if (showId == EXIST_ID_WRAP_TEXT || (first && createContainerElements))
                 {receiver.endElement(TEXT_ELEMENT);}
             node.release();
             break;

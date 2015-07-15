@@ -144,6 +144,7 @@ public abstract class Serializer implements XMLReader {
     public final static int EXIST_ID_NONE = 0;
     public final static int EXIST_ID_ELEMENT = 1;
     public final static int EXIST_ID_ALL = 2;
+    public final static int EXIST_ID_WRAP_TEXT = 3;
 
     protected int showId = EXIST_ID_NONE;
 
@@ -305,12 +306,15 @@ public abstract class Serializer implements XMLReader {
 		if (prop.equals(Namespaces.SAX_LEXICAL_HANDLER)) {
 			lexicalHandler = (LexicalHandler) value;
         } else if (EXistOutputKeys.ADD_EXIST_ID.equals(prop)) {
-            if ("element".equals(value))
-                {showId = EXIST_ID_ELEMENT;}
-            else if ("all".equals(value))
-                {showId = EXIST_ID_ALL;}
-            else
-                {showId = EXIST_ID_NONE;}
+            if ("element".equals(value)) {
+                showId = EXIST_ID_ELEMENT;
+            } else if ("all".equals(value)) {
+                showId = EXIST_ID_ALL;
+            } else if ("wrap_text".equals(value)) {
+                showId = EXIST_ID_WRAP_TEXT;
+            } else {
+                showId = EXIST_ID_NONE;
+            }
         } else {
 			outputProperties.put(prop, value);
 		}
@@ -841,6 +845,9 @@ public abstract class Serializer implements XMLReader {
                 } catch (final TransformerConfigurationException e) {
                     throw new SAXException(e.getMessage(), e);
                 }
+        }
+        if ("all".equals(outputProperties.getProperty(EXistOutputKeys.ADD_EXIST_ID, "no"))) {
+
         }
         try {
             setStylesheetFromProperties(doc);
