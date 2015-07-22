@@ -22,6 +22,7 @@ package org.exist.revisions;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Map;
 
 import org.exist.Database;
 import org.exist.memtree.DocumentBuilderReceiver;
@@ -137,10 +138,18 @@ public class Revision implements Comparable<Revision> {
     }
 
     public void restore(DBBroker broker, Handler h) throws Exception {
-        resource.holder.restoreRevision(broker, null, location, h);
+        resource.holder.restoreRevision(broker, null, Constants.EMPTY_MAP, location, h);
+    }
+
+    public void restore(DBBroker broker, Map<String, String> params, Handler h) throws Exception {
+        resource.holder.restoreRevision(broker, null, params, location, h);
     }
 
     public void restore(DBBroker broker, XmldbURI newUrl, Handler h) throws Exception {
-        resource.holder.restoreRevision(broker, newUrl, location, h);
+        resource.holder.restoreRevision(broker, newUrl, Constants.EMPTY_MAP, location, h);
+    }
+
+    public void restore(DBBroker broker, XmldbURI newUrl, Map<String, String> params, Handler h) throws Exception {
+        resource.holder.restoreRevision(broker, newUrl, params, location, h);
     }
 }

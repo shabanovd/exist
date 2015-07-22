@@ -21,6 +21,8 @@ package org.exist.revisions;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -72,5 +74,12 @@ public interface Constants {
     
     String EL_METASTORAGE = "metastorage";
     String EL_UUID = "uuid";
-    
+
+    String RESTORE_UUID = "RESTORE_UUID";
+    String RESTORE_DOCTYPE = "RESTORE_DOCTYPE";
+
+    String YES = "YES";
+    String NO = "NO";
+
+    Map<String, String> EMPTY_MAP = new HashMap<>();
 }

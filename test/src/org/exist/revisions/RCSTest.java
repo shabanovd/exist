@@ -75,6 +75,16 @@ public class RCSTest {
             "        <span>ed</span> content are <span>danger</span>ous.</p>\n" +
             "</section>";
 
+    private static String XML1_2 =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<!DOCTYPE topic PUBLIC \"-//OASIS//DTD DITA Topic//EN\" \"topic.dtd\">\n" +
+            "<section>\n" +
+            "    <head>The title in big letters</head>\n" +
+            "    <p rend=\"center\">A simple paragraph with <hi>just</hi> text in it.</p>\n" +
+            "    <p rend=\"right\">paragraphs with <span>mix</span>\n" +
+            "        <span>ed</span> content are <span>danger</span>ous.</p>\n" +
+            "</section>";
+
     private static String XML2 =
             "<test>" +
             "   <item id='1' attr='attribute'><description>Chair</description></item>" +
@@ -432,6 +442,93 @@ public class RCSTest {
             assertEquals("http://www.w3.org/TR/html4/strict.dtd", docType.getSystemId());
 
             assertEquals(XML1, read(broker, d1));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testRestoreDoNotOverwriteDoctype() {
+        System.out.println("Test ...");
+
+        XmldbURI R1 = XmldbURI.create("test1.xml");
+
+        configureAndStore(null,
+            new Resource[]{
+                (new Resource(R1, XML1)),
+            });
+
+        try (DBBroker broker = pool.authenticate("admin", "")) {
+            assertNotNull(broker);
+
+            DocumentImpl d1 = root.getDocument(broker, R1);
+            DocumentType docType  = d1.getDoctype();
+
+            assertEquals("HTML", docType.getName());
+            assertEquals("-//W3C//DTD HTML 4.01//EN", docType.getPublicId());
+            assertEquals("http://www.w3.org/TR/html4/strict.dtd", docType.getSystemId());
+
+            Handler h = new TestHandler();
+
+            RCSManager manager = RCSManager.get();
+
+            RCSHolder holder = manager.getOrCreateHolder("test");
+
+            XmldbURI colURL = root.getURI();
+
+            try (CommitWriter commit = holder.commit(h)) {
+                commit
+                    .create(colURL.append(R1))
+                    .done();
+            }
+
+            MetaData md = MetaData.get();
+
+            Metas metas = md.getMetas(colURL.append(R1));
+            assertNotNull(metas);
+
+            String doc1uuid = metas.getUUID();
+            assertNotNull(doc1uuid);
+
+            RCSResource resource = holder.resource(doc1uuid);
+            assertNotNull(resource);
+
+            Revision rev = resource.lastRevision();
+            assertNotNull(rev);
+
+            StringWriter writer = new StringWriter();
+            try (InputStream is = rev.getData()) {
+                IOUtils.copy(is, writer);
+            }
+            assertEquals(XML1, writer.toString());
+
+            configureAndStore(null,
+                new Resource[]{
+                    (new Resource(R1, XML1_1)),
+                });
+
+            d1 = root.getDocument(broker, R1);
+            docType  = d1.getDoctype();
+
+            assertEquals("topic", docType.getName());
+            assertEquals("-//OASIS//DTD DITA Topic//EN", docType.getPublicId());
+            assertEquals("topic.dtd", docType.getSystemId());
+
+            Map<String, String> params = new HashMap<>();
+            params.put(Constants.RESTORE_DOCTYPE, Constants.NO);
+            //restore revision
+            rev.restore(broker, params, null);
+
+            d1 = root.getDocument(broker, R1);
+            docType  = d1.getDoctype();
+
+            assertEquals("topic", docType.getName());
+            assertEquals("-//OASIS//DTD DITA Topic//EN", docType.getPublicId());
+            assertEquals("topic.dtd", docType.getSystemId());
+
+            assertEquals(XML1_2, read(broker, d1));
 
         } catch (Exception e) {
             e.printStackTrace();

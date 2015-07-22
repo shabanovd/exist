@@ -34,6 +34,7 @@ import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.BinaryDocument;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentMetadata;
+import org.exist.dom.DocumentTypeImpl;
 import org.exist.security.ACLPermission;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
@@ -44,11 +45,11 @@ import org.exist.storage.md.Metas;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.Txn;
-import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.EXistInputSource;
 import org.exist.util.FileInputSource;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
+import org.w3c.dom.DocumentType;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -931,7 +932,7 @@ public class RCSHolder implements Constants {
         Path rev = lastRev(location);
         if (rev != null) {
             try {
-                restoreRevision(broker, null, rev, h);
+                restoreRevision(broker, null, EMPTY_MAP, rev, h);
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {
@@ -941,7 +942,7 @@ public class RCSHolder implements Constants {
         //if (h != null) h.error(location, "no revisions");
     }
 
-    protected void restoreRevision(DBBroker broker, XmldbURI newUrl, Path rev, Handler h) throws Exception {
+    protected void restoreRevision(DBBroker broker, XmldbURI newUrl, Map<String, String> params, Path rev, Handler h) throws Exception {
 
         MetasHandler dh = metadata(rev);
 
@@ -998,7 +999,7 @@ public class RCSHolder implements Constants {
                         lock.release(READ_LOCK);
                     }
                 }
-                uploadDocument(broker, tx, url, parent, rev, dh);
+                uploadDocument(broker, tx, url, parent, rev, params, dh);
             }
 
             tx.success();
@@ -1024,7 +1025,7 @@ public class RCSHolder implements Constants {
         rh.endRestore(collection);
     }
 
-    private void uploadDocument(DBBroker broker, Txn tx, XmldbURI url, Collection parent, Path rev, MetasHandler dh) throws Exception {
+    private void uploadDocument(DBBroker broker, Txn tx, XmldbURI url, Collection parent, Path rev, Map<String, String> params, MetasHandler dh) throws Exception {
 
 //        listener.setCurrentResource(name);
 //        if(currentCollection instanceof Observable) {
@@ -1038,9 +1039,18 @@ public class RCSHolder implements Constants {
         if (XML.equals(dh.type)) {
             // store as xml resource
 
+            XmldbURI name = url.lastSegment();
+
+            DocumentType docType = null;
+            if (NO.equals(params.getOrDefault(RESTORE_DOCTYPE, YES))) {
+                DocumentImpl doc = parent.getDocument(broker, name);
+
+                docType = doc.getDoctype();
+            }
+
             EXistInputSource is = new FileInputSource( data_path(readHash(rev)).toFile() );
 
-            IndexInfo info = parent.validateXMLResource(tx, broker, url.lastSegment(), is );
+            IndexInfo info = parent.validateXMLResource(tx, broker, name, is );
 
             resource = info.getDocument();
 
@@ -1059,6 +1069,13 @@ public class RCSHolder implements Constants {
             if (dh.lastModified != null) meta.setLastModified(dh.lastModified);
 
             parent.store(tx, broker, info, is, false);
+
+            if (docType != null) {
+                docType = new DocumentTypeImpl(docType.getName(), docType.getPublicId(), docType.getSystemId());
+                resource.setDocumentType(docType);
+
+                broker.storeXMLResource(tx, resource);
+            }
 
         } else {
             // store as binary resource
