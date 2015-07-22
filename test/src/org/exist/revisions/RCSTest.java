@@ -32,12 +32,14 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.md.Meta;
 import org.exist.storage.md.MetaData;
 import org.exist.storage.md.Metas;
+import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
 import org.exist.util.*;
 import org.exist.xmldb.XmldbURI;
 import org.junit.*;
+import org.w3c.dom.DocumentType;
 import org.xml.sax.SAXException;
 
 import javax.xml.transform.OutputKeys;
@@ -53,8 +55,21 @@ public class RCSTest {
 
     private static String XML1 =
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n" +
             "<section>\n" +
             "    <head>The title in big letters</head>\n" +
+            "    <p rend=\"center\">A simple paragraph with <hi>just</hi> text in it.</p>\n" +
+            "    <p rend=\"right\">paragraphs with <span>mix</span>\n" +
+            "        <span>ed</span> content are <span>danger</span>ous.</p>\n" +
+            "</section>";
+
+    private static String XML1_1 =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<!DOCTYPE topic PUBLIC \"-//OASIS//DTD DITA Topic//EN\"\n" +
+            "\"topic.dtd\">" +
+            "<section>\n" +
+            "    <head>The title in big letters</head>\n" +
+            "    <p rend=\"center\">A simple paragraph with <hi>just</hi> text in it.</p>\n" +
             "    <p rend=\"center\">A simple paragraph with <hi>just</hi> text in it.</p>\n" +
             "    <p rend=\"right\">paragraphs with <span>mix</span>\n" +
             "        <span>ed</span> content are <span>danger</span>ous.</p>\n" +
@@ -228,7 +243,7 @@ public class RCSTest {
     }
 
     @Test
-    public void testRestore() {
+    public void testRestoreMimeType() {
         System.out.println("Test ...");
 
         String MT1 = "text/html";
@@ -339,9 +354,95 @@ public class RCSTest {
         }
     }
 
+    @Test
+    public void testRestoreDoctype() {
+        System.out.println("Test ...");
+
+        XmldbURI R1 = XmldbURI.create("test1.xml");
+
+        configureAndStore(null,
+            new Resource[]{
+                (new Resource(R1, XML1)),
+            });
+
+        try (DBBroker broker = pool.authenticate("admin", "")) {
+            assertNotNull(broker);
+
+            DocumentImpl d1 = root.getDocument(broker, R1);
+            DocumentType docType  = d1.getDoctype();
+
+            assertEquals("HTML", docType.getName());
+            assertEquals("-//W3C//DTD HTML 4.01//EN", docType.getPublicId());
+            assertEquals("http://www.w3.org/TR/html4/strict.dtd", docType.getSystemId());
+
+            Handler h = new TestHandler();
+
+            RCSManager manager = RCSManager.get();
+
+            RCSHolder holder = manager.getOrCreateHolder("test");
+
+            XmldbURI colURL = root.getURI();
+
+            try (CommitWriter commit = holder.commit(h)) {
+                commit
+                    .create(colURL.append(R1))
+                    .done();
+            }
+
+            MetaData md = MetaData.get();
+
+            Metas metas = md.getMetas(colURL.append(R1));
+            assertNotNull(metas);
+
+            String doc1uuid = metas.getUUID();
+            assertNotNull(doc1uuid);
+
+            RCSResource resource = holder.resource(doc1uuid);
+            assertNotNull(resource);
+
+            Revision rev = resource.lastRevision();
+            assertNotNull(rev);
+
+            StringWriter writer = new StringWriter();
+            try (InputStream is = rev.getData()) {
+                IOUtils.copy(is, writer);
+            }
+            assertEquals(XML1, writer.toString());
+
+            configureAndStore(null,
+                new Resource[]{
+                    (new Resource(R1, XML1_1)),
+                });
+
+            d1 = root.getDocument(broker, R1);
+            docType  = d1.getDoctype();
+
+            assertEquals("topic", docType.getName());
+            assertEquals("-//OASIS//DTD DITA Topic//EN", docType.getPublicId());
+            assertEquals("topic.dtd", docType.getSystemId());
+
+            //restore revision
+            rev.restore(broker, null);
+
+            d1 = root.getDocument(broker, R1);
+            docType  = d1.getDoctype();
+
+            assertEquals("HTML", docType.getName());
+            assertEquals("-//W3C//DTD HTML 4.01//EN", docType.getPublicId());
+            assertEquals("http://www.w3.org/TR/html4/strict.dtd", docType.getSystemId());
+
+            assertEquals(XML1, read(broker, d1));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }
+    }
+
     private String read(DBBroker broker, DocumentImpl document) throws SAXException {
         HashMap<String, Object> props = new HashMap<>();
         props.put(OutputKeys.OMIT_XML_DECLARATION, "no");
+        props.put(EXistOutputKeys.OUTPUT_DOCTYPE, "yes");
 
         final Serializer serializer = broker.getSerializer();
         //serializer.setUser(user);
@@ -462,7 +563,11 @@ public class RCSTest {
         String mimeType = null;
 
         Resource(String docName, String data) {
-            this.docName = XmldbURI.create(docName);
+            this(XmldbURI.create(docName), data);
+        }
+
+        Resource(XmldbURI docName, String data) {
+            this.docName = docName;
             this.data = data;
             metas = null;
             type = "XML";
