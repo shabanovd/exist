@@ -118,4 +118,15 @@ public class DocumentTypeImpl extends StoredNode implements DocumentType {
         }
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder buf = new StringBuilder();
+        buf.append("doctype ");
+        buf.append(name);
+        buf.append('\t');
+        buf.append(systemId);
+        buf.append('\t');
+        buf.append(publicId);
+        return buf.toString();
+    }
 }
