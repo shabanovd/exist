@@ -30,9 +30,10 @@ import org.exist.plugin.PluginsManager;
 import org.exist.security.*;
 import org.exist.storage.DBBroker;
 import org.exist.storage.md.MetaData;
+import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 
-//import com.sun.xml.internal.txw2.output.IndentingXMLStreamWriter;
+import javax.xml.transform.OutputKeys;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -152,7 +153,9 @@ public class RCSManager {
         Serializer serializer = broker.getSerializer();
         serializer.setUser(broker.getSubject());
         try {
-            serializer.setProperty("omit-xml-declaration", "no");
+            serializer.setProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            serializer.setProperty(EXistOutputKeys.OUTPUT_DOCTYPE, "yes");
+
         } catch (Exception e) {}
         
         return serializer;
