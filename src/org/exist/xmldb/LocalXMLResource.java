@@ -502,8 +502,8 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 	public void setLexicalHandler(LexicalHandler handler) {
 		lexicalHandler = handler;
 	}
-	
-	protected void setProperties(Properties properties) {
+
+	public void setProperties(Properties properties) {
 		this.outputProperties = properties;
 	}
 	
