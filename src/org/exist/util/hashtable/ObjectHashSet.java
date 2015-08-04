@@ -264,12 +264,11 @@ public class ObjectHashSet<K> extends AbstractHashSet<K> {
 		 * @see java.util.Iterator#hasNext()
 		 */
 		public boolean hasNext() {
-			if (idx == tabSize)
-				{return false;}
+			if (idx >= mKeys.length) return false;
+
 			while (mKeys[idx] == null || mKeys[idx] == REMOVED) {
 				++idx;
-				if (idx == tabSize)
-					{return false;}
+				if (idx >= mKeys.length) return false;
 			}
 			return true;
 		}
@@ -278,12 +277,11 @@ public class ObjectHashSet<K> extends AbstractHashSet<K> {
 		 * @see java.util.Iterator#next()
 		 */
 		public K next() {
-			if (idx == tabSize)
-				{return null;}
+			if (idx >= mKeys.length) return null;
+
 			while (mKeys[idx] == null || mKeys[idx] == REMOVED) {
 				++idx;
-				if (idx == tabSize)
-					{return null;}
+				if (idx >= mKeys.length) return null;
 			}
 			return mKeys[idx++];
 		}
