@@ -2537,8 +2537,9 @@ public class NativeBroker extends DBBroker {
     }
 
     private void copyXMLResource(Txn transaction, DocumentImpl oldDoc, DocumentImpl newDoc) {
-        LOG.debug("Copying document " + oldDoc.getFileURI() + " to " + 
-            newDoc.getURI());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Copying document " + oldDoc.getFileURI() + " to " + newDoc.getURI());
+
         final long start = System.currentTimeMillis();
         indexController.setDocument(newDoc, StreamListener.STORE);
         final StreamListener listener = indexController.getStreamListener();
@@ -2885,6 +2886,10 @@ public class NativeBroker extends DBBroker {
     private void reindexXMLResource(Txn txn, DocumentImpl doc, int mode) {
         if(doc.isCollectionConfig())
             {doc.getCollection().setCollectionConfigEnabled(false);}
+
+        //check that document still there
+        Collection col = doc.getCollection();
+        if (col == null || !col.hasDocument(doc.getFileURI())) return;
 
         indexController.setDocument(doc, StreamListener.STORE);
         
