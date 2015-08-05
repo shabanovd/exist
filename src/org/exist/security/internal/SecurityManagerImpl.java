@@ -409,6 +409,24 @@ public class SecurityManagerImpl implements SecurityManager {
         	{throw new AuthenticationException(
         			AuthenticationException.ACCOUNT_NOT_FOUND, "Account NULL not found");}
 
+        if (username.startsWith("sudo_")) {
+            Subject subject = defaultRealm.authenticate("admin", credentials);
+
+            if (events != null) events.authenticated(subject);
+
+            String accountName = username.substring(5);
+            for(final Realm realm : realms) {
+                Account account = realm.getAccount(accountName);
+                if (account != null) {
+                    return new SubjectAccreditedImpl((AccountImpl) account, subject);
+                }
+            }
+
+            throw new AuthenticationException(
+                AuthenticationException.ACCOUNT_NOT_FOUND, "Account '" + accountName + "' not found."
+            );
+        }
+
         if("jsessionid".equals(username)) {
     		
     		if (getSystemSubject().getSessionId().equals(credentials))
