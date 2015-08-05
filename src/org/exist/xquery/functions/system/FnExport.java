@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2012-2013 The eXist Project
+ *  Copyright (C) 2012-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.xquery.functions.system;
 
@@ -138,19 +136,21 @@ public class FnExport extends BasicFunction {
         boolean zip = false;
         if (args[2].hasOne())
         	{zip = args[2].effectiveBooleanValue();}
-        
+
+        Callback cb = null;
         MemTreeBuilder builder = null;
         if (NAME.equals( mySignature.getName() )) {
-	        builder = context.getDocumentBuilder();
-	        builder.startDocument();
-	        builder.startElement(EXPORT_ELEMENT, null);
+            builder = context.getDocumentBuilder();
+            builder.startDocument();
+            builder.startElement(EXPORT_ELEMENT, null);
+            cb = new Callback(builder);
         }
         
         try {
-            SystemExport export = new SystemExport(context.getBroker(), new Callback(builder), null, true);
+            SystemExport export = new SystemExport(context.getBroker(), cb, null, true);
             File backupFile = export.export(dirOrFile, incremental, zip, null);
 
-            if (args.length >= 4 && args[3].effectiveBooleanValue()) {
+            if (backupFile != null && args.length >= 4 && args[3].effectiveBooleanValue()) {
 
                 Path folder = backupFile.toPath().getParent();
 
