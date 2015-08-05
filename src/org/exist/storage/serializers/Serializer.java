@@ -846,9 +846,6 @@ public abstract class Serializer implements XMLReader {
                     throw new SAXException(e.getMessage(), e);
                 }
         }
-        if ("all".equals(outputProperties.getProperty(EXistOutputKeys.ADD_EXIST_ID, "no"))) {
-
-        }
         try {
             setStylesheetFromProperties(doc);
         } catch (final TransformerConfigurationException e) {
