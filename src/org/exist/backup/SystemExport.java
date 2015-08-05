@@ -313,11 +313,13 @@ public class SystemExport
                 long interval = System.currentTimeMillis() - startTs;
 
                 try (BufferedWriter w = Files.newBufferedWriter(backupFolder.resolve("info.txt"), StandardCharsets.UTF_8)) {
-                    w.write("backup took ");
+                    w.write("backup started at ");
+                    w.write((new Date(startTs)).toString());
+                    w.write(". It took ");
                     w.write(Long.toString(interval));
-                    w.write(" [");
+                    w.write(" ms [");
                     w.write(DurationFormatUtils.formatDurationWords(interval, true, true));
-                    w.write("]");
+                    w.write("] to finish.");
                     w.newLine();
 
                     if (exception != null) {
