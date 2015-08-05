@@ -39,6 +39,11 @@ import org.exist.xquery.value.Type;
 
 import org.exist.backup.SystemExport;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+
 public class FnExport extends BasicFunction {
 
 	protected final static Logger logger = Logger.getLogger(FnExport.class);
@@ -61,7 +66,11 @@ public class FnExport extends BasicFunction {
 		new FunctionParameterSequenceType("zip", Type.BOOLEAN, Cardinality.ZERO_OR_ONE,
 		"Flag to do export to zip file.");
 
-	protected final static  FunctionReturnSequenceType RESULT = 
+    protected final static FunctionParameterSequenceType LAST_BACKUP =
+        new FunctionParameterSequenceType("last-backup", Type.BOOLEAN, Cardinality.ZERO_OR_ONE,
+            "Flag to do 'last-backup'.");
+
+	protected final static  FunctionReturnSequenceType RESULT =
 		new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results");
 
 	public final static FunctionSignature signatures[] = {
@@ -75,6 +84,17 @@ public class FnExport extends BasicFunction {
 			},
 			new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results")
 		),
+        new FunctionSignature(
+            NAME,
+            DESCRIPTION,
+            new SequenceType[] {
+                DIRorFILE,
+                INCREMENTAL,
+                ZIP,
+                LAST_BACKUP
+            },
+            new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results")
+        ),
 		new FunctionSignature(
 			new QName("export-silently", SystemModule.NAMESPACE_URI, SystemModule.PREFIX),
 			DESCRIPTION +
@@ -85,7 +105,19 @@ public class FnExport extends BasicFunction {
 				ZIP
 			}, 
 			new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
-		)
+		),
+        new FunctionSignature(
+            new QName("export-silently", SystemModule.NAMESPACE_URI, SystemModule.PREFIX),
+            DESCRIPTION +
+                " Messagers from exporter reroute to logs.",
+            new SequenceType[] {
+                DIRorFILE,
+                INCREMENTAL,
+                ZIP,
+                LAST_BACKUP
+            },
+            new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
+        )
 	};
 
 	public final static QName EXPORT_ELEMENT = new QName("export", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
@@ -115,8 +147,28 @@ public class FnExport extends BasicFunction {
         }
         
         try {
-        	final SystemExport export = new SystemExport(context.getBroker(), new Callback(builder), null, true);
-            export.export(dirOrFile, incremental, zip, null);
+            SystemExport export = new SystemExport(context.getBroker(), new Callback(builder), null, true);
+            File backupFile = export.export(dirOrFile, incremental, zip, null);
+
+            if (args.length >= 4 && args[3].effectiveBooleanValue()) {
+
+                Path folder = backupFile.toPath().getParent();
+
+                Path lastBackup = folder.resolve("last-backup");
+                Path prevBackup = folder.resolve("prev-backup");
+
+                delete(prevBackup);
+
+                if (Files.exists(lastBackup)) {
+                    Files.move(lastBackup, prevBackup);
+                }
+
+                delete(lastBackup);
+
+                Files.move(backupFile.toPath(), lastBackup);
+            }
+
+
         } catch (final Exception e) {
             throw new XPathException(this, "restore failed with exception: " + e.getMessage(), e);
         }
@@ -175,5 +227,23 @@ public class FnExport extends BasicFunction {
 	            builder.endElement();
 			}
 		}
+    }
+
+    private static void delete(Path folder) throws IOException {
+        if (Files.notExists(folder)) return;
+
+        Files.walkFileTree(folder, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.deleteIfExists(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.deleteIfExists(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 }
