@@ -927,6 +927,11 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         return documents.containsKey(uri.getRawCollectionPath());
     }
 
+    //for internal use only
+    public boolean hasDocument(final XmldbURI uri) {
+        return documents.containsKey(uri.getRawCollectionPath());
+    }
+
     /**
      * Check if the collection has a sub-collection.
      *
