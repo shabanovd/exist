@@ -21,6 +21,8 @@
  */
 package org.exist.backup;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.collections.Collection;
@@ -66,6 +68,9 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.OutputKeys;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 
@@ -87,7 +92,7 @@ public class SystemExport
 {
     public final static Logger     LOG                     = Logger.getLogger( SystemExport.class );
 
-    private static final XmldbURI   TEMP_COLLECTION         = XmldbURI.createInternal( XmldbURI.TEMP_COLLECTION );
+    private static final XmldbURI   TEMP_COLLECTION         = XmldbURI.createInternal(XmldbURI.TEMP_COLLECTION);
     private static final XmldbURI   CONTENTS_URI            = XmldbURI.createInternal( "__contents__.xml" );
     private static final XmldbURI   LOST_URI                = XmldbURI.createInternal( "__lost_and_found__" );
 
@@ -101,6 +106,7 @@ public class SystemExport
 
     private DBBroker                broker;
     private StatusCallback          callback                = null;
+    private StatusCallback          extCallback             = null;
     private boolean                 directAccess            = false;
     private ProcessMonitor.Monitor  monitor                 = null;
     private BackupHandler bh = null;
@@ -120,7 +126,7 @@ public class SystemExport
     public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct )
     {
         this.broker       = broker;
-        this.callback     = callback;
+        this.extCallback  = callback;
         this.monitor      = monitor;
         this.directAccess = direct;
         
@@ -149,91 +155,187 @@ public class SystemExport
     public File export( String targetDir, boolean incremental, int maxInc, boolean zip, List<ErrorReport> errorList )
     {
         File backupFile = null;
+        Path backupFolder = null;
+        Throwable exception = null;
+
+        long startTs = System.currentTimeMillis();
+
+        File tmp;
+        try {
+            tmp = File.createTempFile("export", "log", new File(targetDir));
+        } catch (IOException e) {
+            reportError("A write error occurred while exporting data: '" + e.getMessage() + "'. Aborting export.", e);
+            return null;
+        }
 
         try {
-            final BackupDirectory  directory  = new BackupDirectory( targetDir );
-            BackupDescriptor prevBackup = null;
+            try (BufferedWriter log = Files.newBufferedWriter(tmp.toPath(), StandardCharsets.UTF_8)) {
 
-            if( incremental ) {
-                prevBackup = directory.lastBackupFile();
-                LOG.info( "Creating incremental backup. Prev backup: " + ( ( prevBackup == null ) ? "none" : prevBackup.getSymbolicPath() ) );
-            }
-
-            final Properties properties = new Properties();
-            int        seqNr      = 1;
-
-            if( incremental ) {
-                properties.setProperty( BackupDescriptor.PREVIOUS_PROP_NAME, ( prevBackup == null ) ? "" : prevBackup.getName() );
-
-                if( prevBackup != null ) {
-                    final Properties prevProp = prevBackup.getProperties();
-
-                    if( prevProp != null ) {
-                        final String seqNrStr = prevProp.getProperty( BackupDescriptor.NUMBER_IN_SEQUENCE_PROP_NAME, "1" );
-
+                callback = new StatusCallback() {
+                    String collectionPath = null;
+                    @Override
+                    public void startCollection(String path) throws TerminatedException {
                         try {
-                            seqNr = Integer.parseInt( seqNrStr );
-
-                            if( seqNr == maxInc ) {
-                                seqNr       = 1;
-                                incremental = false;
-                                prevBackup  = null;
-                            } else {
-                                ++seqNr;
-                            }
+                            log.write("col ");
+                            log.write(path);
+                            log.newLine();
+                        } catch (IOException e) {
+                            //ignore
                         }
-                        catch( final NumberFormatException e ) {
-                            LOG.warn( "Bad sequence number in backup descriptor: " + prevBackup.getName() );
+                        if (extCallback != null) extCallback.startCollection(path);
+
+                        collectionPath = path;
+                    }
+
+                    @Override
+                    public void startDocument(String name, int current, int count) throws TerminatedException {
+                        try {
+                            log.write("doc ");
+                            if (collectionPath != null) {
+                                log.write(collectionPath);
+                                log.write("/");
+                            }
+                            log.write(name);
+                            log.write(" ");
+                            log.write(Integer.toString(current));
+                            log.write("/");
+                            log.write(Integer.toString(count));
+                            log.newLine();
+                        } catch (IOException e) {
+                            //ignore
+                        }
+
+                        if (extCallback != null) extCallback.startDocument(name, current, count);
+                    }
+
+                    @Override
+                    public void error(String message, Throwable exception) {
+                        try {
+                            log.write("error: ");
+                            log.write(message);
+                            log.newLine();
+                        } catch (IOException e) {
+                            //ignore
+                        }
+
+                        if (extCallback != null) extCallback.error(message, exception);
+                    }
+                };
+
+                final BackupDirectory directory = new BackupDirectory(targetDir);
+                BackupDescriptor prevBackup = null;
+
+                if (incremental) {
+                    prevBackup = directory.lastBackupFile();
+                    LOG.info("Creating incremental backup. Prev backup: " + ((prevBackup == null) ? "none" : prevBackup.getSymbolicPath()));
+                }
+
+                final Properties properties = new Properties();
+                int seqNr = 1;
+
+                if (incremental) {
+                    properties.setProperty(BackupDescriptor.PREVIOUS_PROP_NAME, (prevBackup == null) ? "" : prevBackup.getName());
+
+                    if (prevBackup != null) {
+                        final Properties prevProp = prevBackup.getProperties();
+
+                        if (prevProp != null) {
+                            final String seqNrStr = prevProp.getProperty(BackupDescriptor.NUMBER_IN_SEQUENCE_PROP_NAME, "1");
+
+                            try {
+                                seqNr = Integer.parseInt(seqNrStr);
+
+                                if (seqNr == maxInc) {
+                                    seqNr = 1;
+                                    incremental = false;
+                                    prevBackup = null;
+                                } else {
+                                    ++seqNr;
+                                }
+                            } catch (final NumberFormatException e) {
+                                LOG.warn("Bad sequence number in backup descriptor: " + prevBackup.getName());
+                            }
                         }
                     }
                 }
-            }
-            properties.setProperty( BackupDescriptor.NUMBER_IN_SEQUENCE_PROP_NAME, Integer.toString( seqNr ) );
-            properties.setProperty( BackupDescriptor.INCREMENTAL_PROP_NAME, incremental ? "yes" : "no" );
+                properties.setProperty(BackupDescriptor.NUMBER_IN_SEQUENCE_PROP_NAME, Integer.toString(seqNr));
+                properties.setProperty(BackupDescriptor.INCREMENTAL_PROP_NAME, incremental ? "yes" : "no");
 
-            try {
-                properties.setProperty( BackupDescriptor.DATE_PROP_NAME, new DateTimeValue( new Date() ).getStringValue() );
-            }
-            catch( final XPathException e ) {
-            }
+                try {
+                    properties.setProperty(BackupDescriptor.DATE_PROP_NAME, new DateTimeValue(new Date()).getStringValue());
+                } catch (final XPathException e) {
+                }
 
-            backupFile = directory.createBackup( incremental && ( prevBackup != null ), zip );
-            BackupWriter output;
+                backupFile = directory.createBackup(incremental && (prevBackup != null), zip);
+                backupFolder = directory.backupFolder(backupFile, zip).toPath();
+                BackupWriter output;
 
-            if( zip ) {
-                output = new ZipWriter( backupFile, XmldbURI.ROOT_COLLECTION );
-            } else {
-                output = new FileSystemWriter( backupFile );
-            }
-            output.setProperties( properties );
+                if (zip) {
+                    output = new ZipWriter(backupFile, XmldbURI.ROOT_COLLECTION);
+                } else {
+                    output = new FileSystemWriter(backupFile);
+                }
+                output.setProperties(properties);
 
 //            File repoBackup = RepoBackup.backup(broker);
 //            output.addToRoot(RepoBackup.REPO_ARCHIVE, repoBackup);
 //
 //
 //            FileUtils.forceDelete(repoBackup);
-            
-            broker.sync(Sync.MAJOR_SYNC);
 
-            final Date date = ( prevBackup == null ) ? null : prevBackup.getDate();
-            final CollectionCallback cb   = new CollectionCallback( output, date, prevBackup, errorList, true );
-            broker.getCollectionsFailsafe( cb );
+                broker.sync(Sync.MAJOR_SYNC);
 
-            exportOrphans( output, cb.getDocs(), errorList );
+                final Date date = (prevBackup == null) ? null : prevBackup.getDate();
+                final CollectionCallback cb = new CollectionCallback(output, date, prevBackup, errorList, true);
+                broker.getCollectionsFailsafe(cb);
 
-            output.close();
-            return( backupFile );
-        }
-        catch( final IOException e ) {
+                exportOrphans(output, cb.getDocs(), errorList);
+
+                output.close();
+                return backupFile;
+            }
+        } catch( final IOException e ) {
+            exception = e;
             reportError( "A write error occurred while exporting data: '" + e.getMessage() + "'. Aborting export.", e );
-            return( null );
+            return null;
         }
         catch( final TerminatedException e ) {
-
-            if( backupFile != null ) {
+            exception = e;
+            if (backupFile != null) {
                 backupFile.delete();
             }
-            return( null );
+            return null;
+        } catch (Throwable e) {
+            exception = e;
+            return null;
+        } finally {
+            if (backupFolder != null) {
+                long interval = System.currentTimeMillis() - startTs;
+
+                try (BufferedWriter w = Files.newBufferedWriter(backupFolder.resolve("info.txt"), StandardCharsets.UTF_8)) {
+                    w.write("backup took ");
+                    w.write(Long.toString(interval));
+                    w.write(" [");
+                    w.write(DurationFormatUtils.formatDurationWords(interval, true, true));
+                    w.write("]");
+                    w.newLine();
+
+                    if (exception != null) {
+                        w.write(exception.getMessage());
+                        w.newLine();
+                        w.write(ExceptionUtils.getStackTrace(exception));
+                        w.newLine();
+                    }
+                } catch (Exception e) {
+                    LOG.error(e.getMessage());
+                }
+
+                try {
+                    Files.move(tmp.toPath(), backupFolder.resolve("log.txt"));
+                } catch (IOException e) {
+                    LOG.error(e.getMessage());
+                }
+            }
         }
     }
 
@@ -334,8 +436,6 @@ public class SystemExport
             output.closeContents();
         }
         catch( final Exception e ) {
-            e.printStackTrace();
-
             if( callback != null ) {
                 callback.error( e.getMessage(), e );
             }
@@ -594,95 +694,83 @@ public class SystemExport
      * @param  doc       the document to serialize
      * @param  receiver  the output handler
      */
-    private void writeXML( DocumentImpl doc, Receiver receiver )
-    {
-        try {
-            EmbeddedXMLStreamReader   reader;
-            char[]                    ch;
-            int                       nsdecls;
-            final NamespaceSupport          nsSupport = new NamespaceSupport();
-            final NodeList                  children  = doc.getChildNodes();
-            
-			final DocumentType docType = doc.getDoctype();
-            if (docType != null)
-    			{receiver.documentType(docType.getName(), docType.getPublicId(), docType.getSystemId());}
+    private void writeXML( DocumentImpl doc, Receiver receiver ) throws SAXException, IOException, XMLStreamException {
+        EmbeddedXMLStreamReader   reader;
+        char[]                    ch;
+        int                       nsdecls;
+        final NamespaceSupport          nsSupport = new NamespaceSupport();
+        final NodeList                  children  = doc.getChildNodes();
 
-            for( int i = 0; i < children.getLength(); i++ ) {
-                final StoredNode child = (StoredNode)children.item( i );
-                reader = broker.getXMLStreamReader( child, false );
+        final DocumentType docType = doc.getDoctype();
+        if (docType != null)
+            {receiver.documentType(docType.getName(), docType.getPublicId(), docType.getSystemId());}
 
-                while( reader.hasNext() ) {
-                    final int status = reader.next();
+        for( int i = 0; i < children.getLength(); i++ ) {
+            final StoredNode child = (StoredNode)children.item( i );
+            reader = broker.getXMLStreamReader( child, false );
 
-                    switch( status ) {
+            while( reader.hasNext() ) {
+                final int status = reader.next();
 
-                        case XMLStreamReader.START_DOCUMENT:
-                        case XMLStreamReader.END_DOCUMENT: {
-                            break;
-                        }
+                switch( status ) {
 
-                        case XMLStreamReader.START_ELEMENT: {
-                            nsdecls = reader.getNamespaceCount();
-                            for( int ni = 0; ni < nsdecls; ni++ ) {
-                                receiver.startPrefixMapping( reader.getNamespacePrefix( ni ), reader.getNamespaceURI( ni ) );
-                            }
-
-                            final AttrList attribs = new AttrList();
-                            for( int j = 0; j < reader.getAttributeCount(); j++ ) {
-                                final QName qn = new QName( reader.getAttributeLocalName( j ), reader.getAttributeNamespace( j ), reader.getAttributePrefix( j ) );
-                                attribs.addAttribute( qn, reader.getAttributeValue( j ) );
-                            }
-                            receiver.startElement( new QName( reader.getLocalName(), reader.getNamespaceURI(), reader.getPrefix() ), attribs );
-                            break;
-                        }
-
-                        case XMLStreamReader.END_ELEMENT: {
-                            receiver.endElement( new QName( reader.getLocalName(), reader.getNamespaceURI(), reader.getPrefix() ) );
-                            nsdecls = reader.getNamespaceCount();
-                            for( int ni = 0; ni < nsdecls; ni++ ) {
-                                receiver.endPrefixMapping( reader.getNamespacePrefix( ni ) );
-                            }
-                            break;
-                        }
-
-                        case XMLStreamReader.CHARACTERS: {
-                            receiver.characters( reader.getText() );
-                            break;
-                        }
-
-                        case XMLStreamReader.CDATA: {
-                            ch = reader.getTextCharacters();
-                            receiver.cdataSection( ch, 0, ch.length );
-                            break;
-                        }
-
-                        case XMLStreamReader.COMMENT: {
-                            ch = reader.getTextCharacters();
-                            receiver.comment( ch, 0, ch.length );
-                            break;
-                        }
-
-                        case XMLStreamReader.PROCESSING_INSTRUCTION: {
-                            receiver.processingInstruction( reader.getPITarget(), reader.getPIData() );
-                            break;
-                        }
+                    case XMLStreamReader.START_DOCUMENT:
+                    case XMLStreamReader.END_DOCUMENT: {
+                        break;
                     }
 
-                    if( ( child.getNodeType() == Node.COMMENT_NODE ) || ( child.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE ) ) {
+                    case XMLStreamReader.START_ELEMENT: {
+                        nsdecls = reader.getNamespaceCount();
+                        for( int ni = 0; ni < nsdecls; ni++ ) {
+                            receiver.startPrefixMapping( reader.getNamespacePrefix( ni ), reader.getNamespaceURI( ni ) );
+                        }
+
+                        final AttrList attribs = new AttrList();
+                        for( int j = 0; j < reader.getAttributeCount(); j++ ) {
+                            final QName qn = new QName( reader.getAttributeLocalName( j ), reader.getAttributeNamespace( j ), reader.getAttributePrefix( j ) );
+                            attribs.addAttribute( qn, reader.getAttributeValue( j ) );
+                        }
+                        receiver.startElement( new QName( reader.getLocalName(), reader.getNamespaceURI(), reader.getPrefix() ), attribs );
+                        break;
+                    }
+
+                    case XMLStreamReader.END_ELEMENT: {
+                        receiver.endElement( new QName( reader.getLocalName(), reader.getNamespaceURI(), reader.getPrefix() ) );
+                        nsdecls = reader.getNamespaceCount();
+                        for( int ni = 0; ni < nsdecls; ni++ ) {
+                            receiver.endPrefixMapping( reader.getNamespacePrefix( ni ) );
+                        }
+                        break;
+                    }
+
+                    case XMLStreamReader.CHARACTERS: {
+                        receiver.characters( reader.getText() );
+                        break;
+                    }
+
+                    case XMLStreamReader.CDATA: {
+                        ch = reader.getTextCharacters();
+                        receiver.cdataSection( ch, 0, ch.length );
+                        break;
+                    }
+
+                    case XMLStreamReader.COMMENT: {
+                        ch = reader.getTextCharacters();
+                        receiver.comment( ch, 0, ch.length );
+                        break;
+                    }
+
+                    case XMLStreamReader.PROCESSING_INSTRUCTION: {
+                        receiver.processingInstruction( reader.getPITarget(), reader.getPIData() );
                         break;
                     }
                 }
-                nsSupport.reset();
+
+                if( ( child.getNodeType() == Node.COMMENT_NODE ) || ( child.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE ) ) {
+                    break;
+                }
             }
-        }
-        catch( final IOException e ) {
-            e.printStackTrace();
-        }
-        catch( final XMLStreamException e ) {
-            e.printStackTrace();
-        }
-        catch( final SAXException e ) {
-            e.printStackTrace();
+            nsSupport.reset();
         }
     }
 
@@ -717,7 +805,7 @@ public class SystemExport
         return( collectionCount );
     }
 
-    public static interface StatusCallback
+    public interface StatusCallback
     {
         void startCollection( String path ) throws TerminatedException;
 
@@ -822,7 +910,7 @@ public class SystemExport
             this.prevBackup   = prevBackup;
 
             if( checkNames ) {
-                writtenDocs = new TreeSet<String>();
+                writtenDocs = new TreeSet<>();
             }
         }
 
