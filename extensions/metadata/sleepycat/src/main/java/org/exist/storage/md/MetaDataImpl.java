@@ -632,6 +632,23 @@ public class MetaDataImpl extends MetaData {
 		}
 	}
 
+	public void copyMetas(XmldbURI oldURI, XmldbURI newURI) {
+		MetasImpl ms = (MetasImpl)getMetas(oldURI);
+
+		MetasImpl newMs = (MetasImpl) addMetas(newURI);
+
+		if (ms != null) {
+			EntityCursor<MetaImpl> sub = metadata.subIndex(ms.getUUID()).entities();
+			try {
+				for (MetaImpl m : sub)
+					newMs.put(m.getKey(), m.getValue());
+
+			} finally {
+				sub.close();
+			}
+		}
+	}
+
 	public void copyMetas(XmldbURI oldDoc, Collection newCol) {
 		MetasImpl ms = (MetasImpl)getMetas(oldDoc);
 		

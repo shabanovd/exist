@@ -91,6 +91,8 @@ public abstract class MetaData implements MetaStorage {
 
     public abstract Metas getMetas(XmldbURI uri);
 
+    public abstract void copyMetas(XmldbURI oldURI, XmldbURI newURI);
+
     public abstract void copyMetas(XmldbURI oldDoc, DocumentImpl newDoc);
 
     public abstract void copyMetas(XmldbURI oldDoc, Collection newCol);
