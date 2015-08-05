@@ -24,7 +24,6 @@ package org.exist.backup;
 import org.apache.log4j.Logger;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 
 import java.text.DateFormat;
@@ -86,6 +85,15 @@ public class BackupDirectory
             file = new File( dir, buf.toString() );
         } while( file.exists() );
         return( file );
+    }
+
+    public File backupFolder( File backupFile, boolean zip )
+    {
+        if( zip ) {
+            return null;
+        } else {
+            return backupFile;
+        }
     }
 
 
