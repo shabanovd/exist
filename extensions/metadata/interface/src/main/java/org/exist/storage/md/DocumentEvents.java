@@ -84,16 +84,16 @@ public class DocumentEvents extends SAXTrigger {
 
     @Override
     public void beforeMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException {
+        // System.out.println("afterMoveDocument "+oldUri+" to "+document.getURI());
+        try {
+            MDStorageManager.get().md.moveMetas(document.getURI(), newUri);
+        } catch (Throwable e) {
+            MDStorageManager.LOG.fatal(e,e);
+        }
     }
 
     @Override
     public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException {
-        // System.out.println("afterMoveDocument "+oldUri+" to "+document.getURI());
-        try {
-            MDStorageManager.get().md.moveMetas(oldUri, document.getURI());
-        } catch (Throwable e) {
-            MDStorageManager.LOG.fatal(e,e);
-        }
     }
 
     @Override
