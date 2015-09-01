@@ -34,6 +34,7 @@ import org.exist.xquery.QueryRewriter;
 import org.exist.xquery.XQueryContext;
 import org.w3c.dom.NodeList;
 
+import java.util.List;
 import java.util.Map;
 
 import org.exist.security.PermissionDeniedException;
@@ -219,6 +220,8 @@ public interface IndexWorker {
     void indexBinary(BinaryDocument doc);
 
     void removeBinary(BinaryDocument doc);
+
+    StreamListener checkStreamListener(DocumentImpl doc, List<String> errors);
 
     //TODO : a scanIndex() method that would return an unaggregated list of index entries ?
 

@@ -1042,4 +1042,9 @@ public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
     @Override
     public void removeBinary(BinaryDocument doc) {
     }
+
+    @Override
+    public StreamListener checkStreamListener(DocumentImpl doc, List<String> errors) {
+        return null;
+    }
 }

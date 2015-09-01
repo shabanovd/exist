@@ -1787,5 +1787,10 @@ public class LuceneIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             mode = StreamListener.STORE;
         }
     }
+
+    @Override
+    public StreamListener checkStreamListener(DocumentImpl doc, List<String> errors) {
+        return null;
+    }
 }
 

@@ -53,6 +53,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -256,5 +257,10 @@ public class IndexStatisticsWorker implements IndexWorker {
 
     @Override
     public void removeBinary(BinaryDocument doc) {
+    }
+
+    @Override
+    public StreamListener checkStreamListener(DocumentImpl doc, List<String> errors) {
+        return null;
     }
 }

@@ -693,10 +693,12 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
 			Collection destination, XmldbURI newName)
 			throws PermissionDeniedException, LockException, EXistException;
 
+    public abstract void checkIndex(DocumentImpl doc, List<String> errors);
+
 	/**
 	 * Defragment pages of this document. This will minimize the number of split
 	 * pages.
-	 * 
+	 *
 	 * @param doc
 	 *            to defrag
 	 */

@@ -2911,6 +2911,26 @@ public class NativeBroker extends DBBroker {
             {doc.getCollection().setCollectionConfigEnabled(true);}
     }
 
+    public void checkIndex(DocumentImpl doc, List<String> errors) {
+
+        //check that document still there
+        Collection col = doc.getCollection();
+        if (col == null || !col.hasDocument(doc.getFileURI())) return;
+
+        if (doc instanceof BinaryDocument) {
+            //code checker
+        } else {
+            final StreamListener listener = indexController.checkStreamListener(doc, errors);
+            final NodeList nodes = doc.getChildNodes();
+            for (int i = 0; i < nodes.getLength(); i++) {
+                final StoredNode node = (StoredNode) nodes.item(i);
+                final Iterator<StoredNode> iterator = getNodeIterator(node);
+                iterator.next();
+                scanNodes(null, iterator, node, new NodePath(), NodeProcessor.MODE_REPAIR, listener);
+            }
+        }
+    }
+
     @Override
     public void defragXMLResource(final Txn txn, final DocumentImpl doc) {
         //TODO : use dedicated function in XmldbURI

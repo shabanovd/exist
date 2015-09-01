@@ -38,10 +38,7 @@ import org.exist.dom.NodeProxy;
 import org.exist.dom.NodeSet;
 import org.exist.dom.QName;
 import org.exist.dom.StoredNode;
-import org.exist.indexing.AbstractStreamListener;
-import org.exist.indexing.IndexController;
-import org.exist.indexing.IndexWorker;
-import org.exist.indexing.MatchListener;
+import org.exist.indexing.*;
 import org.exist.numbering.NodeId;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
@@ -339,4 +336,9 @@ public class ExtractorWorker implements IndexWorker {
     @Override
     public void removeBinary(BinaryDocument doc) {
     }
+
+	@Override
+	public org.exist.indexing.StreamListener checkStreamListener(DocumentImpl doc, List<String> errors) {
+		return null;
+	}
 }

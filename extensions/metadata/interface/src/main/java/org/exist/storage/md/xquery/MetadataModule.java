@@ -62,6 +62,7 @@ public class MetadataModule extends AbstractInternalModule {
 		new FunctionDef( UUID.signatures[1], UUID.class ),
 
         new FunctionDef( Reindex.signatures[0], Reindex.class ),
+		new FunctionDef( CheckIndex.signatures[0], CheckIndex.class ),
 
 		new FunctionDef( RestoreFromBackup.signatures[0], RestoreFromBackup.class )
 	};

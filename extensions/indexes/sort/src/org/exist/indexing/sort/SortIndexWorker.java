@@ -358,4 +358,9 @@ public class SortIndexWorker implements IndexWorker {
     @Override
     public void removeBinary(BinaryDocument doc) {
     }
+
+    @Override
+    public StreamListener checkStreamListener(DocumentImpl doc, List<String> errors) {
+        return null;
+    }
 }

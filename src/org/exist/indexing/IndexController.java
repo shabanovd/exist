@@ -300,6 +300,21 @@ public class IndexController {
         return listener;
     }
 
+    public StreamListener checkStreamListener(DocumentImpl doc, List<String> errors) {
+        StreamListener first = null;
+        StreamListener current, previous = null;
+        for (final IndexWorker worker : indexWorkers.values()) {
+            current = worker.checkStreamListener(doc, errors);
+            if (first == null) {
+                first = current;
+            } else {
+                if (current != null) previous.setNextInChain(current);
+            }
+            if (current != null) previous = current;
+        }
+        return first;
+    }
+
     /**
      * Helper method: index a single node which has been added during an XUpdate or XQuery update expression.
      *

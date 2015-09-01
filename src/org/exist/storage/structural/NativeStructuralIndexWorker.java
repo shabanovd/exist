@@ -143,7 +143,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     /**
      * Internal helper class used by
-     * {@link NativeStructuralIndexWorker#findElementsByTagName(byte, org.exist.dom.persistent.DocumentSet, org.exist.dom.QName, org.exist.xquery.NodeSelector)}.
+     * {@link NativeStructuralIndexWorker#findElementsByTagName(byte, org.exist.dom.DocumentSet, org.exist.dom.QName, org.exist.xquery.NodeSelector)}.
      */
     static class Range {
         int start = -1;
@@ -844,5 +844,59 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
     @Override
     public void removeBinary(BinaryDocument doc) {
+    }
+
+    public AbstractStreamListener checkStreamListener(DocumentImpl doc, List<String> errors) {
+        return new AbstractStreamListener() {
+
+            @Override
+            public void startElement(Txn transaction, ElementImpl element, NodePath path) {
+                super.startElement(transaction, element, path);
+
+                short indexType = RangeIndexSpec.NO_INDEX;
+                if (element.getIndexType() != RangeIndexSpec.NO_INDEX) indexType = (short) element.getIndexType();
+
+                NodeProxy proxy = new NodeProxy(document, element.getNodeId(), Node.ELEMENT_NODE, element.getInternalAddress());
+                proxy.setIndexType(indexType);
+
+                check(element.getQName(), proxy, path);
+            }
+
+            @Override
+            public void attribute(Txn transaction, AttrImpl attrib, NodePath path) {
+                super.attribute(transaction, attrib, path);
+
+                short indexType = RangeIndexSpec.NO_INDEX;
+                if (attrib.getIndexType() != RangeIndexSpec.NO_INDEX) indexType = (short) attrib.getIndexType();
+
+                NodeProxy proxy = new NodeProxy(doc, attrib.getNodeId(), Node.ATTRIBUTE_NODE, attrib.getInternalAddress());
+                proxy.setIndexType(indexType);
+
+                check(attrib.getQName(), proxy, path);
+            }
+
+            private void check(QName qname, NodeProxy proxy, NodePath path) {
+
+                try {
+                    NodeId nodeId = proxy.getNodeId();
+                    byte[] key = computeKey(qname.getNameType(), qname, doc.getDocId(), nodeId);
+                    if (index.btree.findValue(new Value(key)) != computeValue(proxy)) {
+                        errors.add("wrong 'type+qName+docId+nodeId' key "+path.toString());
+                    }
+
+                    Value docKey = new Value(computeDocKey(qname.getNameType(), doc.getDocId(), qname));
+                    if (index.btree.findValue(docKey) != 0) {
+                        errors.add("wrong 'docId+qName' key "+path.toString());
+                    }
+                } catch (Exception e) {
+                    errors.add("Exception: "+e.getMessage());
+                }
+            }
+
+            @Override
+            public IndexWorker getWorker() {
+                return NativeStructuralIndexWorker.this;
+            }
+        };
     }
 }
