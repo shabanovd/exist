@@ -1430,22 +1430,22 @@ public class BTree extends Paged implements Lockable {
                         if (transaction != null && isTransactional) {
                             final InsertValueLoggable loggable = new InsertValueLoggable(transaction, 
                                 fileId, page.getPageNum(), idx, value, idx, pointer);
-                                writeToLog(loggable, this);
+                            writeToLog(loggable, this);
+                        }
+                        insertKey(value, idx);
+                        insertPointer(pointer, idx);
+                        adjustDataLen(idx);
+                        if (mustSplit()) {
+                            // we normally split a node at its median value.
+                            // however, if the inserted key is in the upper or lower
+                            // section of the node, we split directly at the key. this
+                            // has advantages if keys are inserted in ascending order
+                            if (splitFactor > 0 && idx > (nKeys * splitFactor) && value.getLength() < fileHeader.getWorkSize() / 4) {
+                                split(transaction, idx == 0 ? 1 : idx);
+                            } else {
+                                split(transaction);
                             }
-                            insertKey(value, idx);
-                            insertPointer(pointer, idx);
-                            adjustDataLen(idx);
-                            if (mustSplit()) {
-                                // we normally split a node at its median value.
-                                // however, if the inserted key is in the upper or lower
-                                // section of the node, we split directly at the key. this
-                                // has advantages if keys are inserted in ascending order
-                                if (splitFactor > 0 && idx > (nKeys * splitFactor) && value.getLength() < fileHeader.getWorkSize() / 4) {
-                                    split(transaction, idx == 0 ? 1 : idx);
-                                } else {
-                                    split(transaction);
-                                }
-                            }
+                        }
                     }
                 } finally {
                     allowUnload = true;
@@ -2476,8 +2476,10 @@ public class BTree extends Paged implements Lockable {
                     {low = mid + 1;}
                 else if (cmp > 0)
                     {high = mid - 1;}
-                else
-                    {return mid;} // key found
+                else {
+                    // key found
+                    return mid;
+                }
             }
             return -(low + 1); // key not found.
         }
