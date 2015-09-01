@@ -674,7 +674,7 @@ public abstract class AbstractNodeSet extends AbstractSequence implements NodeSe
     }
 
     @Override
-    public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
+    public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
         final NodeProxy p = get((DocumentImpl)newNode.getOwnerDocument(), oldNodeId);
         if (p != null)
             {p.nodeMoved(oldNodeId, newNode);}

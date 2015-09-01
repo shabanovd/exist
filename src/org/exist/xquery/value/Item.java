@@ -22,7 +22,7 @@ package org.exist.xquery.value;
 
 import java.util.Properties;
 
-import org.exist.dom.StoredNode;
+import org.exist.dom.NodeHandle;
 import org.exist.memtree.DocumentBuilderReceiver;
 import org.exist.numbering.NodeId;
 import org.exist.storage.DBBroker;
@@ -94,5 +94,5 @@ public interface Item {
      * @param oldNodeId
      * @param newNode
      */
-    void nodeMoved(NodeId oldNodeId, StoredNode newNode);
+    void nodeMoved(NodeId oldNodeId, NodeHandle newNode);
 }

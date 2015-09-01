@@ -22,8 +22,8 @@ package org.exist.xquery.value;
 
 import org.exist.collections.Collection;
 import org.exist.dom.DocumentSet;
+import org.exist.dom.NodeHandle;
 import org.exist.dom.NodeSet;
-import org.exist.dom.StoredNode;
 import org.exist.numbering.NodeId;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
@@ -266,7 +266,7 @@ public interface Sequence {
      * @param oldNodeId
      * @param newNode
      */
-    void nodeMoved(NodeId oldNodeId, StoredNode newNode);
+    void nodeMoved(NodeId oldNodeId, NodeHandle newNode);
 
     public boolean isCacheable();
     

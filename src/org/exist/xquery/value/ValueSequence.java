@@ -22,13 +22,7 @@ package org.exist.xquery.value;
 
 import org.apache.log4j.Logger;
 import org.exist.collections.Collection;
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.MutableDocumentSet;
-import org.exist.dom.NewArrayNodeSet;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.NodeSet;
-import org.exist.dom.StoredNode;
+import org.exist.dom.*;
 import org.exist.memtree.DocumentImpl;
 import org.exist.memtree.NodeImpl;
 import org.exist.numbering.NodeId;
@@ -452,7 +446,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
     }
 
 
-    public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
+    public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
         for (int i = 0; i <= size; i++) {
             values[i].nodeMoved(oldNodeId, newNode);
         }

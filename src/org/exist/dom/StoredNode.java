@@ -78,6 +78,12 @@ public class StoredNode extends NodeImpl implements Visitable, NodeHandle {
         this.nodeId = nodeId;
     }
 
+    protected StoredNode(final short nodeType, final NodeId nodeId, final DocumentImpl ownerDocument, long internalAddress) {
+        this(nodeType, nodeId);
+        this.ownerDocument = ownerDocument;
+        this.internalAddress = internalAddress;
+    }
+
     /**
      * Copy constructor: creates a copy of the other node.
      *

@@ -22,6 +22,7 @@
  */
 package org.exist.memtree;
 
+import org.exist.dom.*;
 import org.exist.xquery.*;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -36,13 +37,6 @@ import org.xml.sax.ext.LexicalHandler;
 
 import org.exist.EXistException;
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentAtExist;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.EmptyNodeSet;
-import org.exist.dom.NodeAtExist;
-import org.exist.dom.NodeSet;
-import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
 import org.exist.numbering.NodeId;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
@@ -1221,7 +1215,7 @@ public abstract class NodeImpl implements NodeAtExist, NodeValue {
         return( false );
     }
 
-    public void nodeMoved( NodeId oldNodeId, StoredNode newNode ) {
+    public void nodeMoved( NodeId oldNodeId, NodeHandle newNode ) {
         // can not be applied to in-memory nodes
     }
 
