@@ -1,8 +1,8 @@
 package org.exist.storage.structural;
 
 import org.easymock.EasyMock;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.DocumentSet;
+import org.exist.dom.DocumentImpl;
+import org.exist.dom.DocumentSet;
 import org.junit.Test;
 
 import java.util.Arrays;

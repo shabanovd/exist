@@ -28,6 +28,8 @@ import org.exist.xquery.Constants;
 import org.exist.xquery.ErrorCodes;
 import org.exist.xquery.XPathException;
 
+import javax.xml.XMLConstants;
+
 /**
  * Represents a QName, consisting of a local name, a namespace URI and a prefix.
  * 
@@ -47,37 +49,54 @@ public class QName implements Comparable<QName> {
     //TODO : use ElementValue.UNKNOWN and type explicitly ?
     private byte nameType_ = ElementValue.ELEMENT;
 
+    public QName(final String localPart, final String namespaceURI, final String prefix, final byte nameType) {
+        this.localName_ = localPart;
+        if(namespaceURI == null) {
+            this.namespaceURI_ = XMLConstants.NULL_NS_URI;
+        } else {
+            this.namespaceURI_ = namespaceURI;
+        }
+        this.prefix_ = prefix;
+        this.nameType_ = nameType;
+    }
     /**
-     * Construct a QName. The prefix might be null for the default namespace or if no prefix 
-     * has been defined for the QName. The namespace URI should be set to the empty 
+     * Construct a QName. The prefix might be null for the default namespace or if no prefix
+     * has been defined for the QName. The namespace URI should be set to the empty
      * string, if no namespace URI is defined.
-     * 
-     * @param localName
+     *
+     * @param localPart
      * @param namespaceURI
      * @param prefix
      */
-    public QName(String localName, String namespaceURI, String prefix) {
-        localName_ = localName;
-        if(namespaceURI == null)
-            {namespaceURI_ = "";}
-        else
-            {namespaceURI_ = namespaceURI;}
-        prefix_ = prefix;
+    public QName(final String localPart, final String namespaceURI, final String prefix) {
+        this(localPart, namespaceURI, prefix, ElementValue.ELEMENT);
     }
 
-    public QName(String localName, String namespaceURI) {
-        this(localName, namespaceURI, null);
+    public QName(final String localPart, final String namespaceURI, final byte nameType) {
+        this(localPart, namespaceURI, null, nameType);
     }
 
-    public QName(QName other) {
-        this(other.localName_, other.namespaceURI_, other.prefix_);
-        nameType_ = other.nameType_;
+    public QName(final String localPart, final String namespaceURI) {
+        this(localPart, namespaceURI, null);
     }
 
-    public QName(String name) {
-        this(extractLocalName(name), null, extractPrefix(name));
+    public QName(final QName other, final byte nameType) {
+        this(other.localName_, other.namespaceURI_, other.prefix_, nameType);
     }
 
+    public QName(final QName other) {
+        this(other.localName_, other.namespaceURI_, other.prefix_, other.nameType_);
+    }
+
+    public QName(final String name) {
+        this(extractLocalName(name), XMLConstants.NULL_NS_URI, extractPrefix(name));
+    }
+
+    public String getLocalPart() {
+        return localName_;
+    }
+
+    @Deprecated
     public String getLocalName() {
         return localName_;
     }
