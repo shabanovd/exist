@@ -527,7 +527,7 @@ public class DOMFile extends BTree implements Lockable {
         // locate the node to insert after
         RecordPos rec = findRecord(address);
         if (rec == null) {
-            SanityCheck.TRACE("Page not found");
+            SanityCheck.TRACE("Page not found; document = " + (doc != null ? doc.getURI() : "NULL"));
             return KEY_NOT_FOUND;
         }
         final short vlen = ByteConversion.byteToShort(rec.getPage().data, rec.offset);
@@ -888,7 +888,8 @@ public class DOMFile extends BTree implements Lockable {
             } catch (final ArrayIndexOutOfBoundsException e) {
                 SanityCheck.TRACE("pos = " + pos + "; len = " + nextSplitPage.len +
                     "; currentLen = " + realLen + "; tupleID = " + tupleID +
-                    "; page = " + rec.getPage().getPageNum());
+                    "; page = " + rec.getPage().getPageNum() +
+                    "; document = " + (doc != null ? doc.getURI(): "NULL"));
                 throw e;
             }
             nextSplitPage.len += realLen;
@@ -1261,12 +1262,12 @@ public class DOMFile extends BTree implements Lockable {
                 nodeID = nodeID.getParentId();
                 if (nodeID == null) {
                     SanityCheck.TRACE("Node " + node.getDocument().getDocId() + ":" +
-                        nodeID + " not found.");
+                        nodeID + " not found; Document " + node.getDocument().getURI());
                     throw new BTreeException("Node " + nodeID + " not found.");
                 }
                 if (nodeID == NodeId.DOCUMENT_NODE) {
                     SanityCheck.TRACE("Node " + node.getDocument().getDocId() + ":" +
-                            nodeID + " not found.");
+                            nodeID + " not found; Document " + node.getDocument().getURI());
                     throw new BTreeException("Node " + nodeID + " not found.");
                 }
                 final NativeBroker.NodeRef parentRef = new NativeBroker.NodeRef(doc.getDocId(), nodeID);
@@ -1292,7 +1293,7 @@ public class DOMFile extends BTree implements Lockable {
                     {LOG.debug("Node " + node.getNodeId() + " could not be found. Giving up. This is usually not an error.");}
                 return KEY_NOT_FOUND;
             } catch (final XMLStreamException e) {
-                SanityCheck.TRACE("Node " + node.getDocument().getDocId() + ":" + node.getNodeId() + " not found.");
+                SanityCheck.TRACE("Node " + node.getDocument().getDocId() + ":" + node.getNodeId() + " not found; Document "+node.getDocument().getURI());
                 throw new BTreeException("Node " + node.getNodeId() + " not found.");
             }
         } else {
@@ -1945,9 +1946,10 @@ public class DOMFile extends BTree implements Lockable {
                 final long nextPage = pageHeader.getNextDataPage();
                 if (nextPage == Page.NO_PAGE) {
                     SanityCheck.TRACE("Bad link to next page! " +
-                        "Offset: " + rec.offset + 
+                        "Offset: " + rec.offset +
                         ", Len: " + pageHeader.getDataLength() +
-                        ", Page info : " + rec.getPage().page.getPageInfo());
+                        ", Page info : " + rec.getPage().page.getPageInfo() +
+                        ", Document: " + (doc != null ? doc.getURI() : "NULL"));
                     //TODO : throw exception ? -pb
                     return;
                 }

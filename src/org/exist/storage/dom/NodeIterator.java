@@ -124,7 +124,7 @@ public final class NodeIterator implements Iterator<StoredNode> {
                         if (nextPageNum == Page.NO_PAGE) {
                             SanityCheck.TRACE("bad link to next " + page.page.getPageInfo() +
                                 "; previous: " + pageHeader.getPreviousDataPage() +
-                                "; offset = " + offset + "; lastTupleID = " + lastTupleID);
+                                "; offset = " + offset + "; lastTupleID = " + lastTupleID + "; document = " + doc.getURI());
                             System.out.println(db.debugPageContents(page));
                             //TODO : throw exception here ? -pb
                             return null;
