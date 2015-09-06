@@ -75,5 +75,12 @@ public abstract class AbstractStreamListener implements StreamListener {
     }
 
     @Override
+    public void metadata(Txn tx, String key, String value) {
+        if (next != null) {
+            next.metadata(tx, key, value);
+        }
+    }
+
+    @Override
     public abstract IndexWorker getWorker();
 }

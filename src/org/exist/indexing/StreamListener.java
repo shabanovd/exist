@@ -110,4 +110,6 @@ public interface StreamListener {
      * @param path the current node path
      */
     void endElement(Txn transaction, ElementImpl element, NodePath path);
+
+    void metadata(Txn tx, String key, String value);
 }
