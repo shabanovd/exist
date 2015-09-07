@@ -785,4 +785,9 @@ public class Indexer extends Observable implements ContentHandler,
         }
         prevNode = previous;
     }
+
+    public void metadata(String key, String value) {
+        if (indexListener != null)
+            indexListener.metadata(transaction, key, value);
+    }
 }

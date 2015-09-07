@@ -208,4 +208,10 @@ public abstract class SAXTrigger implements DocumentTrigger, ContentHandler, Lex
         nextLexicalHandler = indexer;
         nextErrorHandler = indexer;
     }
+
+    public void metadata(String key, String value) {
+        if (nextContentHandler instanceof Indexer) {
+            ((Indexer)nextContentHandler).metadata(key, value);
+        }
+    }
 }
