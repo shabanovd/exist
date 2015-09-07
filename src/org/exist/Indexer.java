@@ -323,6 +323,9 @@ public class Indexer extends Observable implements ContentHandler,
 
     public void endDocument() {
         if (!validate) {
+            if (indexListener != null)
+                indexListener.endProcessing(transaction);
+
             progress.finish();
             setChanged();
             notifyObservers(progress);
@@ -514,6 +517,9 @@ public class Indexer extends Observable implements ContentHandler,
             progress = new ProgressIndicator(currentLine, 100);
             document.setChildCount(0);
             elementCnt = 0;
+
+            if (indexListener != null)
+                indexListener.startProcessing(transaction);
         }
         docSize = 0;
 

@@ -112,4 +112,8 @@ public interface StreamListener {
     void endElement(Txn transaction, ElementImpl element, NodePath path);
 
     void metadata(Txn tx, String key, String value);
+
+    void startProcessing(Txn tx);
+
+    void endProcessing(Txn tx);
 }

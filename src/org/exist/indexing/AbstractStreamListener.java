@@ -82,5 +82,19 @@ public abstract class AbstractStreamListener implements StreamListener {
     }
 
     @Override
+    public void startProcessing(Txn tx) {
+        if (next != null) {
+            next.startProcessing(tx);
+        }
+    }
+
+    @Override
+    public void endProcessing(Txn tx) {
+        if (next != null) {
+            next.endProcessing(tx);
+        }
+    }
+
+    @Override
     public abstract IndexWorker getWorker();
 }
