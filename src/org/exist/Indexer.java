@@ -26,9 +26,6 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.Stack;
 
-//import javax.xml.parsers.ParserConfigurationException;
-//import javax.xml.parsers.SAXParserFactory;
-
 import org.apache.log4j.Logger;
 import org.exist.collections.CollectionConfiguration;
 import org.exist.dom.AttrImpl;
@@ -46,6 +43,8 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.IndexSpec;
 import org.exist.storage.NodePath;
 import org.exist.storage.RangeIndexSpec;
+import org.exist.storage.md.MetaData;
+import org.exist.storage.md.Metas;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
 import org.exist.util.ProgressIndicator;
@@ -62,8 +61,6 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
-//import org.xml.sax.SAXNotRecognizedException;
-//import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.ext.LexicalHandler;
 
@@ -793,6 +790,17 @@ public class Indexer extends Observable implements ContentHandler,
     }
 
     public void metadata(String key, String value) {
+
+        if (document != null) {
+            MetaData md = MetaData.get();
+            if (md != null) {
+                Metas metas = md.getMetas(document.getURI());
+                if (metas != null) {
+                    metas.put(key, value);
+                }
+            }
+        }
+
         if (indexListener != null)
             indexListener.metadata(transaction, key, value);
     }
