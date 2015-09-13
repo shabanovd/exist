@@ -245,6 +245,8 @@ public class RealmImpl extends AbstractRealm {
                 final Subject subject = broker.getSubject();
                 
                 ((Group)remove_group).assertCanModifyGroup(subject);
+
+                SecurityManagerImpl.LOG.info("remove group "+remove_group, new EXistException());
 		
                 remove_group.setRemoved(true);
                 remove_group.setCollection(broker, collectionRemovedGroups, XmldbURI.create(UUIDGenerator.getUUID() + ".xml"));
