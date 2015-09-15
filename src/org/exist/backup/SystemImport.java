@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Properties;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -56,6 +57,11 @@ public class SystemImport {
     
     public final static Logger LOG = Logger.getLogger( SystemImport.class );
 
+    private static AtomicInteger processing = new AtomicInteger();
+    public static boolean isRunning() {
+        return processing.get() == 0;
+    }
+
     private Database db;
     
     public SystemImport(Database db) {
@@ -66,6 +72,7 @@ public class SystemImport {
         
         //login
         final DBBroker broker = db.authenticate(username, credentials);
+        processing.incrementAndGet();
         try {
             //set the new password
             setAdminCredentials(broker, newCredentials);
@@ -101,6 +108,7 @@ public class SystemImport {
                 broker.enableTriggers();
             }                
         } finally {
+            processing.decrementAndGet();
             db.release(broker);
         }
     }
