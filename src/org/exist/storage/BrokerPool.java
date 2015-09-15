@@ -1945,6 +1945,8 @@ public class BrokerPool implements Database {
 
         status = SHUTDOWN;
 
+        securityManager.shutdown();
+
         processMonitor.stopRunningJobs();
         final java.util.concurrent.locks.Lock lock = transactionManager.getLock();
         try {
@@ -2031,7 +2033,7 @@ public class BrokerPool implements Database {
                 if (broker != null) {
                 	broker.flush();
                 }
-                
+
                 LOG.debug("Calling shutdown ...");
                 
             	if (pluginManager != null)

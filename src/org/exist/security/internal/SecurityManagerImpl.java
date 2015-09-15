@@ -91,7 +91,7 @@ public class SecurityManagerImpl implements SecurityManager {
 
     public final static Logger LOG = Logger.getLogger(SecurityManager.class);
 
-    private Database pool;
+    Database pool;
 
     protected PrincipalDbById<Group> groupsById = new PrincipalDbById<Group>();
     protected PrincipalDbById<Account> usersById = new PrincipalDbById<Account>();
@@ -123,11 +123,13 @@ public class SecurityManagerImpl implements SecurityManager {
     
     @ConfigurationFieldAsElement("realm")
     @ConfigurationFieldClassMask("org.exist.security.realm.%1$s.%2$sRealm")
-    private List<Realm> realms = new ArrayList<Realm>();
+    List<Realm> realms = new ArrayList<Realm>();
     
     @ConfigurationFieldAsElement("events")
     //@ConfigurationFieldClassMask("org.exist.security.internal.SMEvents")
     private SMEvents events = null;
+
+    TokensManager tokensManager = null;
     
     private Collection collection = null;
     
@@ -213,6 +215,14 @@ public class SecurityManagerImpl implements SecurityManager {
         final Configuration _config_ = Configurator.parse(this, broker, collection, CONFIG_FILE_URI);
         configuration = Configurator.configure(this, _config_);
 
+        try {
+            tokensManager = new TokensManager(this);
+            final Configuration tokensCfg = Configurator.parse(tokensManager, broker, collection, TOKENS_FILE_URI);
+            tokensManager.configuration = Configurator.configure(tokensManager, tokensCfg);
+        } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
+            tokensManager = null;
+        }
 
         for (final Realm realm : realms) {
             realm.start(broker);
@@ -408,6 +418,15 @@ public class SecurityManagerImpl implements SecurityManager {
         if (username == null)
         	{throw new AuthenticationException(
         			AuthenticationException.ACCOUNT_NOT_FOUND, "Account NULL not found");}
+
+        if (tokensManager != null && username.equals("token")) {
+            Subject subject = tokensManager.authenticate(username, credentials);
+
+            if (subject != null) {
+                if (events != null) events.authenticated(subject);
+                return subject;
+            }
+        }
 
         if (username.startsWith("sudo_")) {
             Subject subject = defaultRealm.authenticate("admin", credentials);
@@ -736,9 +755,7 @@ public class SecurityManagerImpl implements SecurityManager {
     public final static long TIMEOUT_CHECK_PERIOD = 20000; //20 sec
 
     public static class SessionsCheck implements JobDescription, org.quartz.Job {
-    	
-    	boolean firstRun = true;
-    	
+
     	public SessionsCheck() {
 		}
 
@@ -759,10 +776,12 @@ public class SecurityManagerImpl implements SecurityManager {
         public final void execute( JobExecutionContext jec ) throws JobExecutionException {
             final JobDataMap jobDataMap = jec.getJobDetail().getJobDataMap();
 
-            final SecurityManagerImpl sm = ( SecurityManagerImpl )jobDataMap.get( SecurityManagerImpl.class.getName() );
+            Map params = (Map)jobDataMap.get("params");
+            if (params == null) return;
 
-            if (sm == null)
-            	{return;}
+            final SecurityManagerImpl sm = ( SecurityManagerImpl )params.get( SecurityManagerImpl.class.getName() );
+
+            if (sm == null) return;
             
             sm.sessions.modify(new SessionDbModify(){
 	            @Override
@@ -1149,4 +1168,12 @@ public class SecurityManagerImpl implements SecurityManager {
 	public Subject getCurrentSubject() {
 		return pool.getSubject();
 	}
+
+    public TokensManager tokenManager() {
+        return tokensManager;
+    }
+
+    public void shutdown() {
+        if (tokensManager != null) tokensManager.shutdown();
+    }
 }

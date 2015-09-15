@@ -111,6 +111,10 @@ public class SecurityManagerModule extends AbstractInternalModule {
         new FunctionDef(PermissionsFunction.FNS_MODE_TO_OCTAL, PermissionsFunction.class),
         new FunctionDef(PermissionsFunction.FNS_OCTAL_TO_MODE, PermissionsFunction.class),
 
+        new FunctionDef(TokenFunctions.FN_CREATE, TokenFunctions.class),
+        new FunctionDef(TokenFunctions.FN_LIST, TokenFunctions.class),
+        new FunctionDef(TokenFunctions.FN_INVALIDATE, TokenFunctions.class),
+
         //<editor-fold desc="Functions on the broker/context current user">
         new FunctionDef(PermissionsFunction.FNS_HAS_ACCESS, PermissionsFunction.class),
         new FunctionDef(IsAuthenticatedFunction.FNS_IS_AUTHENTICATED, IsAuthenticatedFunction.class),

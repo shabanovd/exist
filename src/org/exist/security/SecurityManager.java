@@ -27,6 +27,7 @@ import org.exist.EXistException;
 import org.exist.config.Configurable;
 import org.exist.config.ConfigurationException;
 import org.exist.dom.DocumentImpl;
+import org.exist.security.internal.TokensManager;
 import org.exist.security.xacml.ExistPDP;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
@@ -43,7 +44,8 @@ public interface SecurityManager extends Configurable {
 
    public final static XmldbURI SECURITY_COLLECTION_URI = XmldbURI.SYSTEM_COLLECTION_URI.append("security");
    public final static XmldbURI CONFIG_FILE_URI = XmldbURI.create("config.xml");
-   
+   public final static XmldbURI TOKENS_FILE_URI = XmldbURI.create("tokens.xml");
+
    public final static XmldbURI ACCOUNTS_COLLECTION_URI = XmldbURI.create("accounts");
    public final static XmldbURI GROUPS_COLLECTION_URI = XmldbURI.create("groups");
    public final static XmldbURI REMOVED_COLLECTION_URI = XmldbURI.create("removed");
@@ -172,4 +174,8 @@ public interface SecurityManager extends Configurable {
    public List<String> findUsernamesWhereNamePartStarts(String startsWith);
 
    Subject getCurrentSubject();
+
+   TokensManager tokenManager();
+
+   void shutdown();
 }
