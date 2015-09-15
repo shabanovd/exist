@@ -155,7 +155,7 @@ public interface Configuration {
      * @throws PermissionDeniedException
      * @throws ConfigurationException
      */
-    public void save() throws PermissionDeniedException, ConfigurationException;
+    public void save() throws ConfigurationException;
 
     /**
      * Save configuration.

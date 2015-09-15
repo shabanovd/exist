@@ -411,7 +411,7 @@ public class ConfigurationImpl extends ProxyElement<ElementAtExist> implements C
     }
 
     @Override
-    public void save() throws PermissionDeniedException, ConfigurationException {
+    public void save() throws ConfigurationException {
         //ignore in-memory nodes
         if (getProxyObject().getClass().getPackage().getName().startsWith("org.exist.memtree"))
             {return;} 
