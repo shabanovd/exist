@@ -40,6 +40,7 @@ import org.exist.security.internal.SecurityManagerImpl;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.DBBroker;
+import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLException;
 
 /**
@@ -78,8 +79,11 @@ public class SAMLRealm extends AbstractRealm {
         configuration = Configurator.configure(this, config);
 
         try {
-            OpenSamlBootstrap.init();
+            //OpenSamlBootstrap.init();
+            DefaultBootstrap.bootstrap();
+            //generator = new SecureRandomIdentifierGenerator();
         } catch (Throwable e) {
+            LOG.error(e.getMessage(), e);
             e.printStackTrace();
         }
     }
@@ -106,8 +110,6 @@ public class SAMLRealm extends AbstractRealm {
 
                 } catch (PermissionDeniedException e) {
                     throw e;
-                } catch (ConfigurationException e) {
-                    throw new PermissionDeniedException(e);
                 } catch (EXistException e) {
                     throw new PermissionDeniedException(e);
                 }
