@@ -449,11 +449,11 @@ public abstract class AbstractRealm implements Realm, Configurable {
                 updatingAccount.setMetadataValue(key, account.getMetadataValue(key));
             }
         }
-        
 
-        ((AbstractPrincipal)updatingAccount).save();
-
-        return true;
+        return executeAsSystemUser(broker -> {
+            updatingAccount.save();
+            return true;
+        });
     }
 
     @Override
@@ -489,11 +489,12 @@ public abstract class AbstractRealm implements Realm, Configurable {
             for(final SchemaType key : group.getMetadataKeys()) {
                 updatingGroup.setMetadataValue(key, group.getMetadataValue(key));
             }
-        }    
+        }
 
-        updatingGroup.save();
-
-        return true;
+        return executeAsSystemUser(broker -> {
+            updatingGroup.save();
+            return true;
+        });
     }
 
     @Override
