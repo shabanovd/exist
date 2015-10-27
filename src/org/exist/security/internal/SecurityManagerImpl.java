@@ -422,6 +422,11 @@ public class SecurityManagerImpl implements SecurityManager {
         if (tokensManager != null && username.equals("token")) {
             Subject subject = authenticateByToken(null, credentials);
             if (subject != null) return subject;
+
+            slowDown();
+            throw new AuthenticationException(
+                AuthenticationException.ACCOUNT_NOT_FOUND,
+                "Token not found");
         }
 
         if (username.startsWith("sudo_")) {
@@ -503,6 +508,8 @@ public class SecurityManagerImpl implements SecurityManager {
         if (LOG.isDebugEnabled())
             LOG.debug("Account '"+username+"' not found, throw error");
 
+        slowDown();
+
         throw new AuthenticationException(
             AuthenticationException.ACCOUNT_NOT_FOUND,
             "Account [" + username + "] not found");
@@ -526,7 +533,16 @@ public class SecurityManagerImpl implements SecurityManager {
         }
         return null;
     }
-    
+
+    private void slowDown() {
+        //slow down a bit
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            //ignore
+        }
+    }
+
     protected Subject systemSubject = null;
     protected Subject guestSubject = null;
 

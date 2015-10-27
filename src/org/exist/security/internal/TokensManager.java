@@ -165,10 +165,7 @@ public class TokensManager implements Configurable {
             }
         }
 
-        slowDown();
-        throw new AuthenticationException(
-            AuthenticationException.ACCOUNT_NOT_FOUND,
-            "Token not found");
+        return null;
     }
 
     private void slowDown() {
