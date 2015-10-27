@@ -21,6 +21,8 @@ package org.exist.security.internal;
 
 import gnu.crypto.hash.RipeMD160;
 import org.apache.commons.codec.binary.Base64;
+import org.exist.Database;
+import org.exist.EXistException;
 import org.exist.config.Configurable;
 import org.exist.config.Configuration;
 import org.exist.config.annotation.ConfigurationClass;
@@ -29,6 +31,7 @@ import org.exist.config.annotation.ConfigurationFieldClassMask;
 import org.exist.scheduler.JobDescription;
 import org.exist.security.*;
 import org.exist.security.realm.Realm;
+import org.exist.storage.DBBroker;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -36,6 +39,7 @@ import org.quartz.SimpleTrigger;
 
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -179,11 +183,17 @@ public class TokensManager implements Configurable {
 
         dirty = false;
         try {
-            configuration.save();
+            executeAsSystemUser(sm.getDatabase(), broker -> {
+                try {
+                    configuration.save();
+                } catch (Exception e) {
+                    dirty = true;
+                    SecurityManagerImpl.LOG.error(e.getMessage(), e);
+                    e.printStackTrace();
+                }
+            });
         } catch (Exception e) {
-            dirty = true;
             SecurityManagerImpl.LOG.error(e.getMessage(), e);
-            e.printStackTrace();
         }
     }
 
@@ -241,4 +251,21 @@ public class TokensManager implements Configurable {
         public void setName(String name) {
         }
     }
+
+    public void executeAsSystemUser(Database db, Consumer<DBBroker> unit) throws EXistException, PermissionDeniedException {
+        DBBroker broker = null;
+        final Subject currentSubject = db.getSubject();
+        try {
+            //elevate to system privs
+            broker = db.get(db.getSecurityManager().getSystemSubject());
+
+            unit.accept(broker);
+        } finally {
+            if(broker != null) {
+                broker.setSubject(currentSubject);
+                db.release(broker);
+            }
+        }
+    }
+
 }
