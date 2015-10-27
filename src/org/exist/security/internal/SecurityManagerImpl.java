@@ -420,12 +420,8 @@ public class SecurityManagerImpl implements SecurityManager {
         			AuthenticationException.ACCOUNT_NOT_FOUND, "Account NULL not found");}
 
         if (tokensManager != null && username.equals("token")) {
-            Subject subject = tokensManager.authenticate(username, credentials);
-
-            if (subject != null) {
-                if (events != null) events.authenticated(subject);
-                return subject;
-            }
+            Subject subject = authenticateByToken(null, credentials);
+            if (subject != null) return subject;
         }
 
         if (username.startsWith("sudo_")) {
@@ -469,10 +465,9 @@ public class SecurityManagerImpl implements SecurityManager {
             });
 
             if(subject == null)
-                {throw new AuthenticationException(AuthenticationException.SESSION_NOT_FOUND, "Session [" + credentials + "] not found");}
+                throw new AuthenticationException(AuthenticationException.SESSION_NOT_FOUND, "Session [" + credentials + "] not found");
 
-            if (events != null)
-            	{events.authenticated(subject);}
+            if (events != null) events.authenticated(subject);
             
             //TODO: validate session
             return subject;
@@ -483,40 +478,63 @@ public class SecurityManagerImpl implements SecurityManager {
             	final Subject subject = realm.authenticate(username, credentials);
             	
                 if (LOG.isDebugEnabled())
-                	{LOG.debug("Authenticated by '"+realm.getId()+"' as '"+subject+"'.");}
+                    LOG.debug("Authenticated by '"+realm.getId()+"' as '"+subject+"'.");
                 
-                if (events != null)
-                	{events.authenticated(subject);}
+                if (events != null) events.authenticated(subject);
 
                 return subject;
             } catch(final AuthenticationException e) {
                 if(e.getType() != AuthenticationException.ACCOUNT_NOT_FOUND) {
-                    if (LOG.isDebugEnabled()) {
+
+                    Subject subject = authenticateByToken(username, credentials);
+                    if (subject != null) return subject;
+
+                    if (LOG.isDebugEnabled())
                         LOG.debug("Realm '"+realm.getId()+"' threw exception for account '"+username+"'. ["+e.getMessage()+"]");
-                    }
 
                     throw e;
                 }
             }
         }
 
-        if (LOG.isDebugEnabled()) {
+        Subject subject = authenticateByToken(username, credentials);
+        if (subject != null) return subject;
+
+        if (LOG.isDebugEnabled())
             LOG.debug("Account '"+username+"' not found, throw error");
-        }
 
         throw new AuthenticationException(
-    		AuthenticationException.ACCOUNT_NOT_FOUND, 
-    		"Account [" + username + "] not found");
+            AuthenticationException.ACCOUNT_NOT_FOUND,
+            "Account [" + username + "] not found");
+    }
+
+    private Subject authenticateByToken(final String username, final Object credentials) throws AuthenticationException {
+        if (tokensManager != null) {
+            try {
+                Subject subject = tokensManager.authenticate(username, credentials);
+
+                if (subject != null) {
+                    if (events != null) events.authenticated(subject);
+                    return subject;
+                }
+            } catch (AuthenticationException e) {
+                if (LOG.isDebugEnabled())
+                    LOG.debug(e.getMessage());
+
+                throw e;
+            }
+        }
+        return null;
     }
     
     protected Subject systemSubject = null;
     protected Subject guestSubject = null;
-	
+
     @Override
     public Subject getSystemSubject() {
     	if (systemSubject == null)
     		{systemSubject = new SubjectAccreditedImpl((AccountImpl) defaultRealm.ACCOUNT_SYSTEM, this);}
-    	
+
         return systemSubject; 
     }
 

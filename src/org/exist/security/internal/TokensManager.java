@@ -146,6 +146,14 @@ public class TokensManager implements Configurable {
 
                     Account account = realm.getAccount(record.account);
                     if (account != null) {
+                        if (username != null && !username.equals(account.getUsername())) {
+                            slowDown();
+                            throw new AuthenticationException(
+                                AuthenticationException.ACCOUNT_NOT_FOUND,
+                                "Token reference to account '" + account.getUsername() + "' " +
+                                "that miss match provided username '" + username + "'"
+                            );
+                        }
                         return new SubjectAccreditedImpl((AccountImpl) account, token);
                     }
                 }
