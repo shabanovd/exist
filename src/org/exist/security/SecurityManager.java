@@ -22,6 +22,8 @@
 package org.exist.security;
 
 import java.util.List;
+import java.util.function.Consumer;
+
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.config.Configurable;
@@ -178,4 +180,6 @@ public interface SecurityManager extends Configurable {
    TokensManager tokenManager();
 
    void shutdown();
+
+   void forEachAccount(Consumer<Account> consumer);
 }

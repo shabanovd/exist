@@ -33,6 +33,8 @@ import java.util.Properties;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
+import java.util.function.Consumer;
+
 import org.apache.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
@@ -617,7 +619,11 @@ public class SecurityManagerImpl implements SecurityManager {
         return defaultRealm.getAccounts();
     }
 
-    @Deprecated //use realm's getGroups 
+    public void forEachAccount(Consumer<Account> consumer) {
+        realms.forEach(realm -> realm.getAccounts().forEach(consumer));
+    }
+
+    @Deprecated //use realm's getGroups
     @Override
     public java.util.Collection<Group> getGroups() {
         return defaultRealm.getGroups();
