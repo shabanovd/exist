@@ -182,4 +182,6 @@ public interface SecurityManager extends Configurable {
    void shutdown();
 
    void forEachAccount(Consumer<Account> consumer);
+
+   void forEachGroup(Consumer<Group> consumer);
 }

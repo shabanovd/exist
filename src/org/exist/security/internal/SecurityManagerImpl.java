@@ -623,6 +623,10 @@ public class SecurityManagerImpl implements SecurityManager {
         realms.forEach(realm -> realm.getAccounts().forEach(consumer));
     }
 
+    public void forEachGroup(Consumer<Group> consumer) {
+        realms.forEach(realm -> realm.getGroups().forEach(consumer));
+    }
+
     @Deprecated //use realm's getGroups
     @Override
     public java.util.Collection<Group> getGroups() {
