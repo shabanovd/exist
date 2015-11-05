@@ -137,7 +137,7 @@ public class TokensManager implements Configurable {
 
         String token;
         if(credentials instanceof char[]) {
-            token = String.valueOf((char[]) credentials);
+            token = hash(String.valueOf((char[]) credentials));
         } else {
             token = hash(credentials.toString());
         }
