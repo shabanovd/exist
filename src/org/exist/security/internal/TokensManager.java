@@ -135,7 +135,13 @@ public class TokensManager implements Configurable {
 
         if (credentials == null) return null;
 
-        String token = hash(credentials.toString());
+        String token;
+        if(credentials instanceof char[]) {
+            token = String.valueOf((char[]) credentials);
+        } else {
+            token = hash(credentials.toString());
+        }
+
         for (TokenRecord record : tokens) {
             if (token.equals(record.token)) {
                 record.lastUse = System.currentTimeMillis();
