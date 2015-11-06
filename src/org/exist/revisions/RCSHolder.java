@@ -102,8 +102,11 @@ public class RCSHolder implements Constants {
     public RCSHolder(RCSManager manager, Path path) throws IOException {
         this.manager = manager;
 
-        //TODO: no needs, because it under RCS already ... or do not make it on top?
-        rcFolder = path.resolve("RCS");
+        if (manager.ver == 2) {
+            rcFolder = path;
+        } else {
+            rcFolder = path.resolve("RCS");
+        }
 
         uuidFolder          = folder("uuids");
         hashesFolder        = folder("hashes");

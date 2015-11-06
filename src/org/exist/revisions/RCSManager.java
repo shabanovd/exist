@@ -60,6 +60,8 @@ public class RCSManager {
 
     boolean noDots = false;
 
+    int ver = 2;
+
     List<EventListener<CommitLog>> commitsListener = new ArrayList<>();
 
     Map<Thread, CommitWriter> activeCommits = new HashMap<>();
@@ -86,19 +88,39 @@ public class RCSManager {
     }
 
     private void open() throws IOException {
-        data_folder = getDataDir().resolve(DIR_NAME);
+        data_folder = getDataDir().resolve(INDEX_DIR_NAME);
+
+        if (Files.notExists(data_folder)) {
+            ver = 1;
+            data_folder = getDataDir().resolve(DIR_NAME);
+
+            if (Files.notExists(data_folder)) {
+                ver = 2;
+                data_folder = getDataDir().resolve(INDEX_DIR_NAME);
+            }
+        }
 
         Files.createDirectories(data_folder);
 
-        for (Path orgPath : Files.newDirectoryStream(data_folder)) {
-            if (!Files.isDirectory(orgPath)) continue;
+        if (ver == 2) {
+            for (Path orgPath : Files.newDirectoryStream(data_folder)) {
+                if (!Files.isDirectory(orgPath)) continue;
 
-            String org_folder = orgPath.getFileName().toString();
+                String org_folder = orgPath.getFileName().toString();
 
-            Path indexPath = orgPath.resolve(INDEX_DIR_NAME);
-            if (Files.notExists(indexPath)) continue;
+                holders.put(org_folder, new RCSHolder(this, orgPath));
+            }
+        } else {
+            for (Path orgPath : Files.newDirectoryStream(data_folder)) {
+                if (!Files.isDirectory(orgPath)) continue;
 
-            holders.put(org_folder, new RCSHolder(this, indexPath));
+                String org_folder = orgPath.getFileName().toString();
+
+                Path indexPath = orgPath.resolve(INDEX_DIR_NAME);
+                if (Files.notExists(indexPath)) continue;
+
+                holders.put(org_folder, new RCSHolder(this, indexPath));
+            }
         }
     }
 
@@ -115,8 +137,13 @@ public class RCSManager {
         RCSHolder holder = holders.get(oid);
 
         if (holder == null) {
-            Path path = data_folder.resolve(oid).resolve(INDEX_DIR_NAME);
+            Path path;
+            if (ver == 2) {
+                path = data_folder.resolve(oid);
 
+            } else {
+                path = data_folder.resolve(oid).resolve(INDEX_DIR_NAME);
+            }
             Files.createDirectories(path);
 
             holder = new RCSHolder(this, path);
