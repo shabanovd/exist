@@ -160,6 +160,12 @@ public class TokensManager implements Configurable {
                                 "that miss match provided username '" + username + "'"
                             );
                         }
+
+                        if(!account.isEnabled()) {
+                            slowDown();
+                            throw new AuthenticationException(AuthenticationException.ACCOUNT_LOCKED, "Account is disabled.");
+                        }
+
                         return new SubjectAccreditedImpl((AccountImpl) account, token);
                     }
                 }
