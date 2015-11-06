@@ -94,6 +94,10 @@ public class Converter implements Constants {
             XmldbURI organization_uri = organizations_uri.append(organization_name).append("metadata").append("versions");
 
             Collection resources = broker.getCollection(organization_uri);
+            if (resources == null) {
+                System.out.println("SKIP: "+organization_uri);
+                continue;
+            }
 
             Iterator<XmldbURI> it_rs = resources.collectionIteratorNoLock(broker);
             while (it_rs.hasNext()) {
