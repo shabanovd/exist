@@ -50,7 +50,7 @@ public class FnConvert extends BasicFunction {
         try {
             converter.run();
         } catch (Exception e) {
-            throw new XPathException(e);
+            throw new XPathException(this, e);
         }
 
         return BooleanValue.TRUE;
