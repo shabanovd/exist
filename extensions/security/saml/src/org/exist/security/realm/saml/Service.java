@@ -81,6 +81,9 @@ public class Service implements Configurable {
     @ConfigurationFieldAsAttribute("set-group")
     String set_group;
 
+    @ConfigurationFieldAsAttribute("force-lowercase")
+    boolean forceLowercase = false;
+
     @ConfigurationFieldAsAttribute("name")
     String name;
     
@@ -153,7 +156,7 @@ public class Service implements Configurable {
         
         Map<String, String> responseAttributes = getAttributesMap(getSAMLAttributes(assertions));
         
-        String accountName = nameValue; //XXX: service name? + "@google.com";
+        String accountName = forceLowercase ? nameValue.toLowerCase() : nameValue;
 
         Account found = SAMLRealm.get().getAccount(accountName);
         
