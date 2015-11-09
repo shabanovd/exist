@@ -119,7 +119,17 @@ public class SAMLRealm extends AbstractRealm {
 
     @Override
     public Subject authenticate(final String accountName, Object credentials) throws AuthenticationException {
-        return null;
+        final Account account = getAccount(accountName);
+
+        if(account == null) {
+            throw new AuthenticationException(AuthenticationException.ACCOUNT_NOT_FOUND, "Account '" + accountName + "' not found.");
+        }
+
+        if(!account.isEnabled()) {
+            throw new AuthenticationException(AuthenticationException.ACCOUNT_LOCKED, "Account '" + accountName + "' is disabled.");
+        }
+
+        throw new AuthenticationException(AuthenticationException.WRONG_PASSWORD, "Password base authentication can't be done for account [" + accountName + "] ");
     }
 
     @Override
