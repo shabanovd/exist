@@ -5,7 +5,7 @@ import org.exist.storage.CacheManager;
 import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.DBException;
 import org.exist.storage.lock.Lock;
-import org.exist.storage.lock.ReentrantReadWriteLock;
+import org.exist.storage.lock.MultiReadReentrantLock;
 
 import java.io.File;
 
@@ -17,7 +17,7 @@ public class BTreeStore extends BTree {
 
     public BTreeStore(Database db, byte fileId, boolean transactional, File file, CacheManager cacheManager, double growthThreshold) throws DBException {
         super(db, fileId, transactional, cacheManager, file, growthThreshold);
-        lock = new ReentrantReadWriteLock(file.getName());
+        lock = new MultiReadReentrantLock(file.getName());
 
         if(exists()) {
             open(FILE_FORMAT_VERSION_ID);
