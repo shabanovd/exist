@@ -50,7 +50,10 @@ public class Accounting {
     
     /** max. entries to keep in the table of replaced pages */
     private int maxEntries = 5000;
-    
+
+    /** max. entries removed from the tracking */
+    private int maxOverflow = maxEntries * checkPeriod / 1000;
+
     /** total cache hits during the lifetime of the cache*/
     private int hits = 0;
     
@@ -59,7 +62,10 @@ public class Accounting {
     
     /** the current size of the cache */
     private int totalSize = 0;
-    
+
+    /** the number of pages removed from the tracking during the check period */
+    private int overflow = 0;
+
     /** the number of pages replaced and reloaded during the check period */
     private int thrashing = 0;
     
@@ -126,13 +132,12 @@ public class Accounting {
      */
     public void replacedPage(Cacheable cacheable) {
         if (System.currentTimeMillis() - checkPeriodStart > checkPeriod) {
-            map.clear();
-            thrashing = 0;
-            checkPeriodStart = System.currentTimeMillis();
+            reset();
         }
     
         if (map.size() == maxEntries) {
             map.removeFirst();
+            ++overflow;
         }
         
         if (map.get(cacheable.getKey()) != null) {
@@ -158,20 +163,23 @@ public class Accounting {
      */
     public boolean resizeNeeded() {
         if (thrashingFactor == 0)
-            {return thrashing > 0;}
+            return thrashing > 0 || overflow > maxOverflow;
+
         return thrashing > totalSize * thrashingFactor;
     }
     
     public void reset() {
         map.clear();
+        overflow = 0;
         thrashing = 0;
         checkPeriodStart = System.currentTimeMillis();
     }
     
     public void stats() {
         LOG.debug("hits: " + hits 
-                + "; misses: " + misses 
-                + "; thrashing: " + getThrashing() 
-                + "; thrashing period: " + checkPeriod);
+            + "; misses: " + misses
+            + "; overflow: " + overflow
+            + "; thrashing: " + getThrashing()
+            + "; thrashing period: " + checkPeriod);
     }
 }
