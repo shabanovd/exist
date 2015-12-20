@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2011 The eXist Project
+ *  Copyright (C) 2011-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,8 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.security.realm.saml;
 
@@ -49,7 +47,6 @@ import org.exist.config.annotation.ConfigurationFieldAsElement;
 import org.exist.security.*;
 import org.exist.security.internal.HttpSessionAuthentication;
 import org.exist.security.internal.SubjectAccreditedImpl;
-import org.exist.storage.DBBroker;
 import org.opensaml.common.SAMLException;
 import org.opensaml.common.SAMLObject;
 import org.opensaml.common.binding.SAMLMessageContext;
@@ -136,7 +133,7 @@ public class Service implements Configurable {
 
     public void verify(SAMLMessageContext<Response, SAMLObject, NameID> samlMessageContext) throws PermissionDeniedException {
         SignatureValidator validator = new SignatureValidator(certSigning.getCredential());
-        
+
         try {
             SAMLResponseVerifier.verify(validator, samlMessageContext);
         } catch (SAMLException | ValidationException e) {
@@ -146,10 +143,10 @@ public class Service implements Configurable {
     
     public void createSAMLSession(HttpSession session, SAMLMessageContext<Response, SAMLObject, NameID> samlMessageContext) throws AuthenticationException {
         List<Assertion> assertions = samlMessageContext.getInboundSAMLMessage().getAssertions();
-        
+
         NameID nameId = (assertions.size() != 0 && assertions.get(0).getSubject() != null) ? assertions.get(0).getSubject().getNameID() : null;
         String nameValue = nameId == null ? null : nameId.getValue();
-        
+
         if (nameValue == null) {
             throw new AuthenticationException(AuthenticationException.UNNOWN_EXCEPTION, "can't get id at SAML response");
         }
@@ -161,7 +158,7 @@ public class Service implements Configurable {
         Account found = SAMLRealm.get().getAccount(accountName);
         
         if (found == null) {
-            Map<SchemaType, String> metadata = new HashMap<SchemaType, String>();
+            Map<SchemaType, String> metadata = new HashMap<>();
 //            addMetadata(responseAttributes, metadata, AXSchemaType.ID, "id");
             addMetadata(responseAttributes, metadata, AXSchemaType.FIRSTNAME, "FirstName");
             addMetadata(responseAttributes, metadata, AXSchemaType.LASTNAME, "LastName");
@@ -182,15 +179,12 @@ public class Service implements Configurable {
             final Account account = found;
 
             try {
-                realm.executeAsSystemUser(new AbstractRealm.Unit<Account>() {
-                    @Override
-                    public Account execute(DBBroker broker) throws EXistException, PermissionDeniedException {
-                        account.addGroup(set_group);
+                realm.executeAsSystemUser(broker -> {
+                    account.addGroup(set_group);
 
-                        account.save();
+                    account.save();
 
-                        return account;
-                    }
+                    return account;
                 });
             } catch (EXistException | PermissionDeniedException e) {
                 throw new AuthenticationException(
@@ -232,7 +226,7 @@ public class Service implements Configurable {
     }
 
     public List<Attribute> getSAMLAttributes(List<Assertion> assertions) {
-        List<Attribute> attributes = new ArrayList<Attribute>();
+        List<Attribute> attributes = new ArrayList<>();
         if (assertions != null) {
             for (Assertion assertion : assertions) {
                 for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
@@ -259,7 +253,7 @@ public class Service implements Configurable {
     }
 
     public Map<String, String> getAttributesMap(List<Attribute> attributes) {
-        Map<String, String> result = new HashMap<String, String>();
+        Map<String, String> result = new HashMap<>();
         for (Attribute attribute : attributes) {
             result.put(attribute.getName(), attribute.getDOM().getTextContent());
         }
