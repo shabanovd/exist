@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -27,6 +27,7 @@ import org.opensaml.common.SAMLException;
 import org.opensaml.common.SAMLObject;
 import org.opensaml.common.binding.SAMLMessageContext;
 import org.opensaml.saml2.core.*;
+import org.opensaml.xml.signature.Signature;
 import org.opensaml.xml.signature.SignatureValidator;
 import org.opensaml.xml.validation.ValidationException;
 
@@ -47,7 +48,9 @@ public class SAMLResponseVerifier {
         //LOG.debug("SAML Response message : " + SAMLServlet.SAMLObjectToString(samlResponse));
         //System.out.println(SAMLServlet.XMLToString(samlResponse.getDOM()));
 
-        validator.validate(samlResponse.getSignature());
+        Signature signature = samlResponse.getSignature();
+        if (signature != null)
+            validator.validate(signature);
 
         Status status = samlResponse.getStatus();
         StatusCode statusCode = status.getStatusCode();
@@ -62,6 +65,14 @@ public class SAMLResponseVerifier {
         }
 
         Assertion assertion = samlResponse.getAssertions().get(0);
+
+        signature = assertion.getSignature();
+        if (signature == null) {
+            LOG.error("The assertion have no signature");
+            throw new SAMLException("The assertion have no signature");
+        }
+        validator.validate(signature);
+
         NameID nameId = assertion.getSubject().getNameID();
         if (nameId == null) {
             LOG.error("Name ID not present in subject");
