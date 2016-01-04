@@ -38,6 +38,7 @@ import org.exist.xquery.value.BinaryValueFromInputStream;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
 
 import static org.exist.revisions.Utils.*;
 
@@ -134,7 +135,11 @@ public class Revision implements Comparable<Revision> {
     }
 
     public MetasHandler metadata() throws IOException {
-        return resource.holder.metadata(location);
+        return resource.holder.metadata(location, new MetasHandler());
+    }
+
+    public <T extends DefaultHandler> T metadata(T dh) throws IOException {
+        return resource.holder.metadata(location, dh);
     }
 
     public void restore(DBBroker broker, Handler h) throws Exception {

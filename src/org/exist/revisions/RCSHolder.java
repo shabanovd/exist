@@ -836,13 +836,11 @@ public class RCSHolder implements Constants {
         return resourceFolder(hash, hashesFolder);
     }
 
-    protected MetasHandler metadata(Path rev) throws IOException {
+    protected <T extends DefaultHandler> T metadata(Path rev, T dh) throws IOException {
 
         try {
             SAXParserFactory parserFactor = SAXParserFactory.newInstance();
             SAXParser parser = parserFactor.newSAXParser();
-
-            MetasHandler dh = new MetasHandler();
 
             try (InputStream metaStream = Files.newInputStream(rev)) {
                 parser.parse(metaStream, dh);
@@ -947,7 +945,7 @@ public class RCSHolder implements Constants {
 
     protected void restoreRevision(DBBroker broker, XmldbURI newUrl, Map<String, String> params, Path rev, Handler h) throws Exception {
 
-        MetasHandler dh = metadata(rev);
+        MetasHandler dh = metadata(rev, new MetasHandler());
 
         XmldbURI url = newUrl != null ? newUrl : dh.uri;
 
