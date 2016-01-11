@@ -3641,24 +3641,27 @@ public class XQueryContext implements BinaryValueManager, Context
 
     }
     
-    private List<CleanupTask> cleanupTasks = new ArrayList<CleanupTask>();
+    private List<CleanupTask> cleanupTasks = new ArrayList<>();
     
     public void registerCleanupTask(final CleanupTask cleanupTask) {
         cleanupTasks.add(cleanupTask);
     }
     
     public interface CleanupTask {
-        public void cleanup(final XQueryContext context);
+        void cleanup(final XQueryContext context);
     }
     
     @Override
     public void runCleanupTasks() {
-        for(final CleanupTask cleanupTask : cleanupTasks) {
+        Iterator<CleanupTask> it = cleanupTasks.iterator();
+        while (it.hasNext()) {
+            CleanupTask cleanupTask = it.next();
             try {
                 cleanupTask.cleanup(this);
             } catch(final Throwable t) {
                 LOG.error("Cleaning up XQueryContext: Ignoring: " + t.getMessage(), t);
             }
+            it.remove();
         }
     }
 }
