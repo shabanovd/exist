@@ -21,6 +21,7 @@ package org.exist.indexing;
 
 import org.apache.log4j.Logger;
 import org.exist.dom.AttrImpl;
+import org.exist.dom.DocumentImpl;
 import org.exist.dom.ElementImpl;
 import org.exist.dom.CharacterDataImpl;
 import org.exist.storage.NodePath;
@@ -82,16 +83,16 @@ public abstract class AbstractStreamListener implements StreamListener {
     }
 
     @Override
-    public void startProcessing(Txn tx) {
+    public void startProcessing(Txn tx, DocumentImpl doc) {
         if (next != null) {
-            next.startProcessing(tx);
+            next.startProcessing(tx, doc);
         }
     }
 
     @Override
-    public void endProcessing(Txn tx) {
+    public void endProcessing(Txn tx, DocumentImpl doc) {
         if (next != null) {
-            next.endProcessing(tx);
+            next.endProcessing(tx, doc);
         }
     }
 

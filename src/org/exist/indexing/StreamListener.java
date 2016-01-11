@@ -20,6 +20,7 @@
 package org.exist.indexing;
 
 import org.exist.dom.AttrImpl;
+import org.exist.dom.DocumentImpl;
 import org.exist.dom.ElementImpl;
 import org.exist.dom.CharacterDataImpl;
 import org.exist.storage.NodePath;
@@ -34,24 +35,24 @@ public interface StreamListener {
     /**
      * Undefined mode
      */	
-    public final static int UNKNOWN = -1;
+    int UNKNOWN = -1;
 
     /**
      * Mode for storing nodes of a document
      */	
-    public final static int STORE = 0;
+    int STORE = 0;
 
     /**
      * Mode for removing all the nodes of a document
      */
-    public final static int REMOVE_ALL_NODES = 1;
+    int REMOVE_ALL_NODES = 1;
 
     /**
      * Mode for removing some nodes of a document
      */
-    public final static int REMOVE_SOME_NODES = 2;
+    int REMOVE_SOME_NODES = 2;
 
-    public final static int REMOVE_BINARY = 3;
+    int REMOVE_BINARY = 3;
 
     /**
      * Returns the IndexWorker that owns this listener.
@@ -79,41 +80,41 @@ public interface StreamListener {
     /**
      * Processed the opening tag of an element.
      *
-     * @param transaction the current transaction
+     * @param tx the current transaction
      * @param element the element which has been stored to the db
      * @param path the current node path
      */
-    void startElement(Txn transaction, ElementImpl element, NodePath path);
+    void startElement(Txn tx, ElementImpl element, NodePath path);
 
     /**
      * An attribute has been stored.
      *
-     * @param transaction the current transaction
-     * @param attrib the attribute which has been stored to the db
+     * @param tx the current transaction
+     * @param attr the attribute which has been stored to the db
      * @param path the current node path
      */
-    void attribute(Txn transaction, AttrImpl attrib, NodePath path);
+    void attribute(Txn tx, AttrImpl attr, NodePath path);
 
     /**
      * A text node has been stored.
-     * @param transaction the current transaction
+     * @param tx the current transaction
      * @param text the text node which has been stored to the db.
      * @param path the current node path
      */
-    void characters(Txn transaction, CharacterDataImpl text, NodePath path);
+    void characters(Txn tx, CharacterDataImpl text, NodePath path);
 
     /**
      * Processed the closing tag of an element.
      *
-     * @param transaction the current transaction
+     * @param tx the current transaction
      * @param element the element which has been stored to the db
      * @param path the current node path
      */
-    void endElement(Txn transaction, ElementImpl element, NodePath path);
+    void endElement(Txn tx, ElementImpl element, NodePath path);
 
     void metadata(Txn tx, String key, String value);
 
-    void startProcessing(Txn tx);
+    void startProcessing(Txn tx, DocumentImpl doc);
 
-    void endProcessing(Txn tx);
+    void endProcessing(Txn tx, DocumentImpl doc);
 }

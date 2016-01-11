@@ -321,7 +321,7 @@ public class Indexer extends Observable implements ContentHandler,
     public void endDocument() {
         if (!validate) {
             if (indexListener != null)
-                indexListener.endProcessing(transaction);
+                indexListener.endProcessing(transaction, document);
 
             progress.finish();
             setChanged();
@@ -516,7 +516,7 @@ public class Indexer extends Observable implements ContentHandler,
             elementCnt = 0;
 
             if (indexListener != null)
-                indexListener.startProcessing(transaction);
+                indexListener.startProcessing(transaction, document);
         }
         docSize = 0;
 
