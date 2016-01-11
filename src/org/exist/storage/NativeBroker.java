@@ -37,6 +37,7 @@ import java.util.Observer;
 import java.util.Stack;
 import java.util.StringTokenizer;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,10 +57,8 @@ import org.exist.collections.CollectionConfigurationException;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.collections.triggers.CollectionTrigger;
 import org.exist.collections.triggers.CollectionTriggers;
-import org.exist.collections.triggers.CollectionTriggersVisitor;
 import org.exist.collections.triggers.DocumentTrigger;
 import org.exist.collections.triggers.DocumentTriggers;
-import org.exist.collections.triggers.DocumentTriggersVisitor;
 import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.*;
 import org.exist.indexing.StreamListener;
@@ -1807,6 +1806,39 @@ public class NativeBroker extends DBBroker {
                 }
             }
         }
+    }
+
+    public void index(Collection collection, StreamListener stream, Consumer<String> onError) throws Exception {
+        for(Iterator<DocumentImpl> i = collection.iterator(this); i.hasNext(); ) {
+            DocumentImpl next = i.next();
+            indexXMLResource(next, stream, onError);
+        }
+        for(Iterator<XmldbURI> i = collection.collectionIterator(this); i.hasNext(); ) {
+            XmldbURI next = i.next();
+
+            Collection child = getCollection(collection.getURI().append(next));
+            if(child == null)
+                onError.accept("Collection '" + next + "' not found");
+            else
+                index(child, stream, onError);
+        }
+    }
+
+    private void indexXMLResource(DocumentImpl doc, StreamListener stream, Consumer<String> onError) {
+
+        stream.startProcessing(null, doc);
+
+        final NodeList nodes = doc.getChildNodes();
+        for (int i = 0; i < nodes.getLength(); i++) {
+            StoredNode node = (StoredNode) nodes.item(i);
+
+            Iterator<StoredNode> iterator = getNodeIterator(node);
+            iterator.next();
+
+            scanNodes(null, iterator, node, new NodePath(), 0, stream);
+        }
+
+        stream.endProcessing(null, doc);
     }
 
     public void dropCollectionIndex(final Txn transaction, Collection collection) throws PermissionDeniedException {

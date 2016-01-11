@@ -50,7 +50,7 @@ import org.exist.security.PermissionDeniedException;
  */
 public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex {
 
-    private NativeStructuralIndex index;
+    protected NativeStructuralIndex index;
     private int mode = 0;
     private DocumentImpl document;
 
@@ -702,7 +702,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         }
     }
 
-    private byte[] computeKey(byte type, QName qname, int documentId, NodeId nodeId) {
+    protected byte[] computeKey(byte type, QName qname, int documentId, NodeId nodeId) {
         final SymbolTable symbols = index.getDatabase().getSymbols();
         final short sym = symbols.getSymbol(qname.getLocalName());
         final short nsSym = symbols.getNSSymbol(qname.getNamespaceURI());
@@ -736,8 +736,8 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         ByteConversion.intToByteH(documentId, data, 1);
         return data;
     }
-    
-    private byte[] computeDocKey(byte type, int documentId, QName qname) {
+
+    protected byte[] computeDocKey(byte type, int documentId, QName qname) {
         final SymbolTable symbols = index.getDatabase().getSymbols();
         final short sym = symbols.getSymbol(qname.getLocalName());
         final short nsSym = symbols.getNSSymbol(qname.getNamespaceURI());
@@ -759,7 +759,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return data;
     }
 
-    private long computeValue(NodeProxy proxy) {
+    protected long computeValue(NodeProxy proxy) {
         // dirty hack: encode the extra number of bits needed for the node id into the
         // storage address. this way, everything fits into the long address and
         // we don't need to change the btree.

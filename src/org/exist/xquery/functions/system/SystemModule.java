@@ -80,7 +80,9 @@ public class SystemModule extends AbstractInternalModule {
             new FunctionDef(FunctionTrace.signatures[4], FunctionTrace.class),
             new FunctionDef(GetUptime.signature, GetUptime.class),
             new FunctionDef(FunctionAvailable.signature, FunctionAvailable.class),
-            
+
+            new FunctionDef(CheckStructuralIndex.signature, CheckStructuralIndex.class),
+
             new FunctionDef(ClearXQueryCache.signature, ClearXQueryCache.class)
     };
 	
