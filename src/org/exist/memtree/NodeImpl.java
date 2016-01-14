@@ -131,18 +131,9 @@ public abstract class NodeImpl implements NodeAtExist, NodeValue {
             case Node.ATTRIBUTE_NODE:
             case Node.ELEMENT_NODE:
             case Node.PROCESSING_INSTRUCTION_NODE:
-                final QName qn = document.nodeName[nodeNumber];
-                return( qn );
-            case Node.DOCUMENT_NODE:
-                return( QName.EMPTY_QNAME );
-            case Node.COMMENT_NODE:
-                return( QName.EMPTY_QNAME );
-            case Node.TEXT_NODE:
-                return( QName.EMPTY_QNAME );
-            case Node.CDATA_SECTION_NODE:
-                return( QName.EMPTY_QNAME );
+                return document.nodeName[nodeNumber];
             default:
-                return( null );
+                return QName.EMPTY_QNAME;
         }
     }
 

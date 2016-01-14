@@ -171,19 +171,7 @@ public class StoredNode extends NodeImpl implements Visitable, NodeHandle {
     }
 
     public QName getQName() {
-        switch(getNodeType()) {
-        case Node.DOCUMENT_NODE:
-            return QName.DOCUMENT_QNAME;
-        case Node.TEXT_NODE:
-            return QName.TEXT_QNAME;
-        case Node.COMMENT_NODE:
-            return QName.COMMENT_QNAME;
-        case Node.DOCUMENT_TYPE_NODE:
-            return QName.DOCTYPE_QNAME;
-        default:
-            LOG.error("Unknown node type: " + getNodeType()); 
-            return null;
-        }
+        return QName.EMPTY_QNAME;
     }
 
     /**

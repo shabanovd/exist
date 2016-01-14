@@ -38,10 +38,6 @@ import javax.xml.XMLConstants;
 public class QName implements Comparable<QName> {
 
     public final static QName EMPTY_QNAME = new QName("", "", null);
-    public final static QName DOCUMENT_QNAME = EMPTY_QNAME;
-    public final static QName TEXT_QNAME = EMPTY_QNAME;
-    public final static QName COMMENT_QNAME = EMPTY_QNAME;
-    public final static QName DOCTYPE_QNAME = EMPTY_QNAME; 
 
     private String localName_ = null;
     private String namespaceURI_ = null;
