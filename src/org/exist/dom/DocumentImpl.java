@@ -829,7 +829,7 @@ public class DocumentImpl extends NodeImpl implements Resource, Document, Docume
      * @return a <code>QName</code> value
      */
     public QName getQName() {
-        return QName.DOCUMENT_QNAME;
+        return QName.EMPTY_QNAME;
     }
 
     /**
