@@ -184,10 +184,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 				    	"Permission denied to read resource");}
 				
 				retval = broker.getBinaryResource(blob);
-			} catch(final EXistException e) {
-				throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
-					"error while loading binary resource " + getId(), e);
-			} catch(final IOException e) {
+			} catch(final EXistException | IOException e) {
 				throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
 					"error while loading binary resource " + getId(), e);
 			} finally {
