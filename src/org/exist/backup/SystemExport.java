@@ -584,12 +584,15 @@ public class SystemExport
         if( ( monitor != null ) && !monitor.proceed() ) {
             throw( new TerminatedException( "system export terminated by db" ) );
         }
+
+        String filename = filename( doc.getFileURI() );
+
         final boolean needsBackup = ( prevBackup == null ) || ( date.getTime() < doc.getMetadata().getLastModified() );
 
         if( needsBackup ) {
 
             try {
-                final OutputStream os = output.newEntry( Backup.encode( URIUtils.urlDecodeUtf8( doc.getFileURI() ) ) );
+                final OutputStream os = output.newEntry( filename );
 
                 if( doc.getResourceType() == DocumentImpl.BINARY_FILE ) {
                     broker.readBinaryResource( (BinaryDocument)doc, os );
@@ -653,7 +656,7 @@ public class SystemExport
             LOG.warn( e.getMessage(), e );
         }
 
-        attr.addAttribute( Namespaces.EXIST_NS, "filename", "filename", "CDATA", Backup.encode( URIUtils.urlDecodeUtf8( doc.getFileURI() ) ) );
+        attr.addAttribute( Namespaces.EXIST_NS, "filename", "filename", "CDATA", filename );
         String mimeType = "application/xml";
 
         if( ( metadata != null ) && ( metadata.getMimeType() != null ) ) {
@@ -1005,5 +1008,28 @@ public class SystemExport
                 }
             }
         }
+    }
+
+    public static String filename( XmldbURI uri ) {
+        String name = Backup.encode( URIUtils.urlDecodeUtf8( uri ) );
+
+        if (name.length() > 100) {
+
+            int pos = name.lastIndexOf(".");
+
+            if (pos > 0) {
+                String ext = name.substring(pos);
+                pos = 100 - ext.length();
+                if (pos > 0) {
+                    return name.substring(0, pos) + "_" + UUID.randomUUID().toString() + ext;
+                } else {
+                    return UUID.randomUUID().toString() + ext;
+                }
+            } else {
+                return name.substring(0, 100) + UUID.randomUUID().toString();
+            }
+        }
+
+        return name;
     }
 }

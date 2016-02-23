@@ -72,7 +72,7 @@ public class SystemExportImportTest {
     }
 
     private static XmldbURI col1uri = TestConstants.TEST_COLLECTION_URI;
-    //TODO: fix long collection name
+    //TODO: fix long collection name?
     //private static XmldbURI col2uri = TestConstants.TEST_COLLECTION_URI.append(LONG_NAME);
     private static XmldbURI col2uri = TestConstants.TEST_COLLECTION_URI.append("long_names");
 
@@ -80,9 +80,9 @@ public class SystemExportImportTest {
     private static XmldbURI doc02uri = col1uri.append("test2.xml");
     private static XmldbURI doc03uri = col1uri.append("test3.xml");
     private static XmldbURI doc11uri = col1uri.append("test.binary");
-    private static XmldbURI doc21uri = col1uri.append(LONG_NAME+".xml");
-    //TODO: fix long collection name
-    //private static XmldbURI doc22uri = col1uri.append(LONG_NAME+".binary");
+    private static XmldbURI doc21uri = col2uri.append(LONG_NAME+".xml");
+    //TODO: fix long binary name?
+    //private static XmldbURI doc22uri = col2uri.append(LONG_NAME+".binary");
 
     private static String XML1 = "<test attr=\"test\"/>";
     private static String XML2 = 
@@ -159,6 +159,12 @@ public class SystemExportImportTest {
         	doc = getDoc(broker, col, doc03uri.lastSegment());
         	assertEquals(XML3_PROPER, serializer(broker, doc));
 
+            Collection col2 = broker.getCollection(col2uri);
+            assertNotNull(col2);
+
+            doc = getDoc(broker, col2, doc21uri.lastSegment());
+            assertEquals(XML1, serializer(broker, doc));
+
         } finally {
         	pool.release(broker);
         }
@@ -234,7 +240,7 @@ public class SystemExportImportTest {
                 System.out.println("store " + doc21uri);
                 info = col.validateXMLResource(tx, broker, doc21uri.lastSegment(), XML1);
                 assertNotNull(info);
-                col.store(tx, broker, info, XML3, false);
+                col.store(tx, broker, info, XML1, false);
 
 //                System.out.println("store " + doc22uri);
 //                col.addBinaryResource(tx, broker, doc22uri.lastSegment(), BINARY.getBytes(), null);
