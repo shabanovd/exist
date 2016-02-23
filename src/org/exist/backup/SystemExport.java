@@ -587,9 +587,9 @@ public class SystemExport
         final boolean needsBackup = ( prevBackup == null ) || ( date.getTime() < doc.getMetadata().getLastModified() );
 
         if( needsBackup ) {
-            final OutputStream os = output.newEntry( Backup.encode( URIUtils.urlDecodeUtf8( doc.getFileURI() ) ) );
 
             try {
+                final OutputStream os = output.newEntry( Backup.encode( URIUtils.urlDecodeUtf8( doc.getFileURI() ) ) );
 
                 if( doc.getResourceType() == DocumentImpl.BINARY_FILE ) {
                     broker.readBinaryResource( (BinaryDocument)doc, os );

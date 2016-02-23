@@ -24,12 +24,12 @@ package org.exist.backup;
 import static org.junit.Assert.*;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 import javax.xml.transform.OutputKeys;
 
-import org.exist.backup.SystemExport;
-import org.exist.backup.SystemImport;
 import org.exist.backup.restore.listener.DefaultRestoreListener;
 import org.exist.backup.restore.listener.RestoreListener;
 import org.exist.collections.Collection;
@@ -64,13 +64,26 @@ public class SystemExportImportTest {
             "	</index>" +
         	"</collection>";
 
+    static String LONG_NAME = "";
+    static {
+        for (int i = 0; i < 100; i++) {
+            LONG_NAME += "1234567890";
+        }
+    }
+
     private static XmldbURI col1uri = TestConstants.TEST_COLLECTION_URI;
+    //TODO: fix long collection name
+    //private static XmldbURI col2uri = TestConstants.TEST_COLLECTION_URI.append(LONG_NAME);
+    private static XmldbURI col2uri = TestConstants.TEST_COLLECTION_URI.append("long_names");
 
     private static XmldbURI doc01uri = col1uri.append("test1.xml");
     private static XmldbURI doc02uri = col1uri.append("test2.xml");
     private static XmldbURI doc03uri = col1uri.append("test3.xml");
     private static XmldbURI doc11uri = col1uri.append("test.binary");
-    
+    private static XmldbURI doc21uri = col1uri.append(LONG_NAME+".xml");
+    //TODO: fix long collection name
+    //private static XmldbURI doc22uri = col1uri.append(LONG_NAME+".binary");
+
     private static String XML1 = "<test attr=\"test\"/>";
     private static String XML2 = 
 		"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n" +
@@ -105,8 +118,9 @@ public class SystemExportImportTest {
             Collection root = broker.getCollection(col1uri);
         	assertNotNull(root);
 
-            SystemExport sysexport = new SystemExport( broker, null, null, true );
-            file = sysexport.export( "backup", false, false, null );
+            Files.createDirectories(Paths.get("backup"));
+
+            file = (new SystemExport( broker, null, null, true )).export("backup", false, false, null);
         } finally {
         	pool.release(broker);
         }
@@ -151,7 +165,7 @@ public class SystemExportImportTest {
         
         BrokerPool.stopAll(false);
 	}
-	
+
 	private DocumentImpl getDoc(DBBroker broker, Collection col, XmldbURI uri) throws PermissionDeniedException {
         DocumentImpl doc = col.getDocument(broker, uri);
     	assertNotNull(doc);
@@ -173,59 +187,60 @@ public class SystemExportImportTest {
 	}
     
 	//@BeforeClass
-    public static void startDB() {
-        DBBroker broker = null;
-        TransactionManager transact = null;
-        Txn transaction = null;
-        try {
-            File confFile = ConfigurationHelper.lookup("conf.xml");
-            Configuration config = new Configuration(confFile.getAbsolutePath());
-            BrokerPool.configure(1, 5, config);
-            pool = BrokerPool.getInstance();
-        	assertNotNull(pool);
-        	pool.getPluginsManager().addPlugin("org.exist.storage.md.Plugin");
+    public static void startDB() throws Exception {
+        File confFile = ConfigurationHelper.lookup("conf.xml");
+        Configuration config = new Configuration(confFile.getAbsolutePath());
+        BrokerPool.configure(1, 5, config);
+        pool = BrokerPool.getInstance();
+        assertNotNull(pool);
+        pool.getPluginsManager().addPlugin("org.exist.storage.md.Plugin");
 
-        	broker = pool.get(pool.getSecurityManager().getSystemSubject());
+        try (DBBroker broker = pool.get(pool.getSecurityManager().getSystemSubject())) {
             assertNotNull(broker);
-            transact = pool.getTransactionManager();
-            assertNotNull(transact);
-            transaction = transact.beginTransaction();
-            assertNotNull(transaction);
-            System.out.println("Transaction started ...");
 
-            Collection root = broker.getOrCreateCollection(transaction, col1uri);
-            assertNotNull(root);
-            broker.saveCollection(transaction, root);
+            try (Txn tx = broker.beginTx()) {
+                assertNotNull(tx);
+                System.out.println("Transaction started ...");
 
-            CollectionConfigurationManager mgr = pool.getConfigurationManager();
-            mgr.addConfiguration(transaction, broker, root, COLLECTION_CONFIG);
+                Collection root = broker.getOrCreateCollection(tx, col1uri);
+                assertNotNull(root);
+                broker.saveCollection(tx, root);
 
-            System.out.println("store "+doc01uri);
-            IndexInfo info = root.validateXMLResource(transaction, broker, doc01uri.lastSegment(), XML1);
-            assertNotNull(info);
-            root.store(transaction, broker, info, XML1, false);
+                CollectionConfigurationManager mgr = pool.getConfigurationManager();
+                mgr.addConfiguration(tx, broker, root, COLLECTION_CONFIG);
 
-            System.out.println("store "+doc02uri);
-            info = root.validateXMLResource(transaction, broker, doc02uri.lastSegment(), XML2);
-            assertNotNull(info);
-            root.store(transaction, broker, info, XML2, false);
+                System.out.println("store " + doc01uri);
+                IndexInfo info = root.validateXMLResource(tx, broker, doc01uri.lastSegment(), XML1);
+                assertNotNull(info);
+                root.store(tx, broker, info, XML1, false);
 
-            System.out.println("store "+doc03uri);
-            info = root.validateXMLResource(transaction, broker, doc03uri.lastSegment(), XML3);
-            assertNotNull(info);
-            root.store(transaction, broker, info, XML3, false);
+                System.out.println("store " + doc02uri);
+                info = root.validateXMLResource(tx, broker, doc02uri.lastSegment(), XML2);
+                assertNotNull(info);
+                root.store(tx, broker, info, XML2, false);
 
-            System.out.println("store "+doc11uri);
-            root.addBinaryResource(transaction, broker, doc11uri.lastSegment(), BINARY.getBytes(), null);
+                System.out.println("store " + doc03uri);
+                info = root.validateXMLResource(tx, broker, doc03uri.lastSegment(), XML3);
+                assertNotNull(info);
+                root.store(tx, broker, info, XML3, false);
 
-            transact.commit(transaction);
-        } catch (Exception e) {
-            e.printStackTrace();
-            transact.abort(transaction);
-            fail(e.getMessage());
-        } finally {
-            if (pool != null)
-                pool.release(broker);
+                System.out.println("store " + doc11uri);
+                root.addBinaryResource(tx, broker, doc11uri.lastSegment(), BINARY.getBytes(), null);
+
+                Collection col = broker.getOrCreateCollection(tx, col2uri);
+                assertNotNull(root);
+                broker.saveCollection(tx, col);
+
+                System.out.println("store " + doc21uri);
+                info = col.validateXMLResource(tx, broker, doc21uri.lastSegment(), XML1);
+                assertNotNull(info);
+                col.store(tx, broker, info, XML3, false);
+
+//                System.out.println("store " + doc22uri);
+//                col.addBinaryResource(tx, broker, doc22uri.lastSegment(), BINARY.getBytes(), null);
+
+                tx.success();
+            }
         }
 
         rundb();
