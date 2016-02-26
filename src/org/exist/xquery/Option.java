@@ -70,9 +70,9 @@ public class Option {
 		return tokenize(contents);
 	}
 
+    private static final String[] EMPTY = new String[0];
     public static String[] tokenize(String contents) {
-        if(contents == null)
-			{return new String[0];}
+        if(contents == null) return EMPTY;
 		final StringTokenizer tok = new StringTokenizer(contents, " \r\t\n");
 		final String[] items = new String[tok.countTokens()];
 		for(int i = 0; tok.hasMoreTokens(); i++) {
@@ -81,7 +81,7 @@ public class Option {
 		return items;
     }
 
-    public static synchronized String[] parseKeyValuePair(String s) {
+    public static String[] parseKeyValuePair(String s) {
         Matcher matcher = pattern.matcher(s);
 		if(matcher.matches()) {
 			String value = matcher.group(2);
@@ -93,9 +93,6 @@ public class Option {
 	}
 	
 	public boolean equals(Object other) {
-		if (other instanceof Option) {
-			return qname.equalsSimple(((Option)other).qname);
-		}
-		return false;
-	}
+        return other instanceof Option && qname.equalsSimple(((Option) other).qname);
+    }
 }
