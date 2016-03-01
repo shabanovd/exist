@@ -768,7 +768,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         return address | ((long)(nodeIdLen << 24) & 0xFF000000L);
     }
 
-    private int readDocId(byte[] key) {
+    protected int readDocId(byte[] key) {
         return ByteConversion.byteToIntH(key, 5);
     }
 

@@ -20,6 +20,9 @@
 package org.exist.xquery.functions.system;
 
 import org.apache.log4j.Logger;
+import org.exist.dom.DefaultDocumentSet;
+import org.exist.dom.DocumentImpl;
+import org.exist.dom.MutableDocumentSet;
 import org.exist.dom.QName;
 import org.exist.storage.NativeBroker;
 import org.exist.storage.structural.CheckerStructuralIndex;
@@ -28,6 +31,11 @@ import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class CheckStructuralIndex extends BasicFunction {
@@ -52,23 +60,61 @@ public class CheckStructuralIndex extends BasicFunction {
         NativeBroker broker = (NativeBroker)context.getBroker();
         NativeStructuralIndexWorker worker = (NativeStructuralIndexWorker)broker.getStructuralIndex();
 
-        ValueSequence res = new ValueSequence();
+//        ValueSequence res = new ValueSequence();
 
-        Consumer<String> errors = err -> res.add(new StringValue(err));
+        AtomicLong count = new AtomicLong();
 
-        try (CheckerStructuralIndex checker = new CheckerStructuralIndex(worker)) {
-            broker.index(
-                broker.getCollection(XmldbURI.ROOT_COLLECTION_URI),
-                checker.stream(),
-                errors
-            );
+        Consumer<String> errors = err -> {
+            System.out.println(err);
+            count.incrementAndGet();
+            //res.add(new StringValue(err));
 
-            checker.runChecker(errors);
+            if (count.get() > 10) throw new RuntimeException();
+        };
 
-        } catch (Exception e) {
-            throw new XPathException(this, e);
+        Path data = Paths.get("check_structure_index");
+
+        if (Files.exists(data)) {
+            try (CheckerStructuralIndex checker = new CheckerStructuralIndex(worker, data)) {
+
+                Set<Integer> docIds = checker.runChecker(errors);
+
+                MutableDocumentSet docs = new DefaultDocumentSet();
+                broker.getAllXMLResources(docs);
+
+                System.out.println(docs.getDocumentCount());
+
+                int notFount = 0;
+                for (Integer id : docIds) {
+                    DocumentImpl doc = docs.getDoc(id);
+                    if (doc == null) {
+//                        System.out.println(id);
+                        notFount++;
+                    } else {
+                        System.out.println(docs.getDoc(id).getDocumentURI());
+                    }
+                }
+                System.out.println(docs.getDocumentCount() + ", not found "+notFount);
+
+            } catch (Exception e) {
+                throw new XPathException(this, e);
+            }
+
+        } else {
+            try (CheckerStructuralIndex checker = new CheckerStructuralIndex(worker, data)) {
+                broker.index(
+                    broker.getCollection(XmldbURI.ROOT_COLLECTION_URI),
+                    checker.stream(),
+                    errors
+                );
+
+                checker.runChecker(errors);
+
+            } catch (Exception e) {
+                throw new XPathException(this, e);
+            }
         }
 
-        return res;
+        return new DecimalValue(String.valueOf(count.get()));
     }
 }

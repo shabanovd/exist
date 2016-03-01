@@ -19,28 +19,23 @@
  */
 package org.exist.storage.structural;
 
-import com.google.common.primitives.SignedBytes;
 import com.google.common.primitives.UnsignedBytes;
 import org.exist.dom.*;
 import org.exist.indexing.IndexWorker;
 import org.exist.indexing.StreamListener;
-import org.exist.numbering.NodeId;
 import org.exist.storage.NodePath;
 import org.exist.storage.RangeIndexSpec;
-import org.exist.storage.btree.BTreeCallback;
-import org.exist.storage.btree.BTreeException;
-import org.exist.storage.btree.Value;
 import org.exist.storage.txn.Txn;
-import org.exist.xquery.TerminatedException;
-import org.mapdb.BTreeKeySerializer;
+import org.exist.util.ByteConversion;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
 import org.w3c.dom.Node;
 
+import javax.xml.ws.Holder;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -56,14 +51,24 @@ public class CheckerStructuralIndex implements AutoCloseable {
     DB db;
 
     ConcurrentMap<byte[], Long> map;
-    AtomicInteger counter = new AtomicInteger();
+    AtomicLong counter = new AtomicLong();
+    long ts = 0;
 
-    public CheckerStructuralIndex(NativeStructuralIndexWorker worker) {
+    public CheckerStructuralIndex(NativeStructuralIndexWorker worker, Path data) {
         this.worker = worker;
 
-        db = DBMaker.newTempFileDB()
+        if (data == null) {
+            db = DBMaker.newTempFileDB()
                 .deleteFilesAfterClose()
+                .asyncWriteEnable()
+                .transactionDisable()
                 .make();
+        } else {
+            db = DBMaker.newFileDB(data.toFile())
+                .asyncWriteEnable()
+                .transactionDisable()
+                .make();
+        }
 
         map = db.createTreeMap("structural")
                 .counterEnable()
@@ -73,6 +78,8 @@ public class CheckerStructuralIndex implements AutoCloseable {
                 .makeOrGet();
 
         stream = new Stream();
+
+        ts = System.currentTimeMillis();
     }
 
     public Stream stream() {
@@ -90,44 +97,75 @@ public class CheckerStructuralIndex implements AutoCloseable {
         key = worker.computeDocKey(type, docId, qname);
         map.putIfAbsent(key, 0L);
 
-        if (counter.incrementAndGet() % 100000 == 0) {
+        if (counter.incrementAndGet() % 10000000 == 0) {
+            System.out.println("commit "+(System.currentTimeMillis() - ts));
+            ts = System.currentTimeMillis();
             counter.set(0);
             db.commit();
         }
     }
 
-    public void runChecker(Consumer<String> onError) throws Exception {
+    public Set<Integer> runChecker(Consumer<String> onError) throws Exception {
         db.commit();
 
-        Iterator<Map.Entry<byte[], Long>> it = map.entrySet().iterator();
+        System.out.println("runChecker");
 
-        AtomicLong count = new AtomicLong();
+//        Iterator<Map.Entry<byte[], Long>> it = map.entrySet().iterator();
 
-        worker.index.btree.query(null, (v, p) -> {
-            if (!map.containsKey(v.getData())) {
-                onError.accept("key must not exist " + Arrays.toString(v.getData()));
-            }
+        System.out.println("total "+counter);
+        counter.set(0);
+        Holder<Integer> doc = new Holder<>(-1);
 
-            if (it.hasNext()) {
-                Map.Entry<byte[], Long> e = it.next();
-                if (!Arrays.equals(e.getKey(), v.getData())) {
-                    onError.accept("wrong order of key " + Arrays.toString(v.getData()) + " vs " + Arrays.toString(e.getKey()));
+        Set<Integer> docsTotal = new HashSet<>();
+        Set<Integer> docsWithErrors = new HashSet<>();
+
+        try {
+            worker.index.btree.query(null, (v, p) -> {
+
+                byte[] k = v.getData();
+
+                int docId = worker.readDocId(k);
+
+                if (doc.value != docId) {
+                    doc.value = docId;
+                    docsTotal.add(docId);
                 }
 
-            } else {
-                onError.accept("key must not exist " + Arrays.toString(v.getData()));
-            }
+                if (!map.containsKey(v.getData())) {
+                    docsWithErrors.add(doc.value);
+                    //onError.accept("key must not exist " + Arrays.toString(v.getData()));
+                }
 
-            count.incrementAndGet();
+//            if (it.hasNext()) {
+//                Map.Entry<byte[], Long> e = it.next();
+//                if (!Arrays.equals(e.getKey(), v.getData())) {
+//                    onError.accept("wrong order of key " + Arrays.toString(v.getData()) + " vs " + Arrays.toString(e.getKey()));
+//                }
+//
+//            } else {
+//                onError.accept("key must not exist " + Arrays.toString(v.getData()));
+//            }
 
-            return true;
-        });
+                if (counter.incrementAndGet() % 10000000 == 0) {
+                    System.out.println(counter.get());
+                }
 
-        System.out.println(count);
-
-        while (it.hasNext()) {
-            onError.accept("index missing " + Arrays.toString(it.next().getKey()));
+                return true;
+            });
+        } catch (Throwable e) {
+            e.printStackTrace();
         }
+
+        System.out.println(counter);
+        onError.accept("Documents: " + docsTotal.size() + "; with errors: " + docsWithErrors.size());
+
+
+
+//        while (it.hasNext()) {
+//            onError.accept("index missing " + Arrays.toString(it.next().getKey()));
+//        }
+
+        return docsWithErrors;
     }
 
     @Override
