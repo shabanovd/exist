@@ -5,6 +5,8 @@ import org.exist.indexing.MatchListener;
 import org.exist.storage.DBBroker;
 import org.exist.util.Configuration;
 
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -23,12 +25,25 @@ public class CustomMatchListenerFactory {
     private CustomMatchListener first = null;
     private CustomMatchListener last = null;
 
-    public CustomMatchListenerFactory(DBBroker broker, Configuration config) {
-        this(broker, (List<String>) config.getProperty(CONFIG_MATCH_LISTENERS));
-    }
+    public CustomMatchListenerFactory(DBBroker broker, Configuration config, List<String> customClasses) {
 
-    public CustomMatchListenerFactory(DBBroker broker, List<String> classes) {
-        if (classes == null) return;
+        List<String> classesAtConfig = (List<String>) config.getProperty(CONFIG_MATCH_LISTENERS);
+
+        Collection<String> classes;
+        if (customClasses == null) {
+            if (classesAtConfig == null) return;
+
+            classes = classesAtConfig;
+        } else {
+            if (classesAtConfig == null) {
+                classes = customClasses;
+            } else {
+                classes = new LinkedHashSet<>();
+
+                classes.addAll(classesAtConfig);
+                classes.addAll(customClasses);
+            }
+        }
 
         CustomMatchListener listener;
         for (final String className : classes) {

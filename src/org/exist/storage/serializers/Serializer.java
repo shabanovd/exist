@@ -227,11 +227,7 @@ public abstract class Serializer implements XMLReader {
 		this.broker = broker;
 		factory = TransformerFactoryAllocator.getTransformerFactory(broker.getBrokerPool());
 		xinclude = new XIncludeFilter(this);
-		if (classes == null) {
-			customMatchListeners = new CustomMatchListenerFactory(broker, config);
-		} else {
-			customMatchListeners = new CustomMatchListenerFactory(broker, classes);
-		}
+		customMatchListeners = new CustomMatchListenerFactory(broker, config, classes);
 		receiver = xinclude;
 		
 		String option = (String) config.getProperty(PROPERTY_ENABLE_XSL);
