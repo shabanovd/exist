@@ -429,6 +429,8 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
 
     public abstract Serializer newSerializer();
 
+    public abstract Serializer newSerializer(List<String> classes);
+
     /**
      * Get a node with given owner document and id from the database.
      * 

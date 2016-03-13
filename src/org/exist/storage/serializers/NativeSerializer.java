@@ -45,6 +45,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -65,7 +66,11 @@ public class NativeSerializer extends Serializer {
     private final static QName ID_ATTRIB = new QName("id", Namespaces.EXIST_NS, "exist");
 
     public NativeSerializer(DBBroker broker, Configuration config) {
-        super(broker, config);
+        super(broker, config, null);
+    }
+
+    public NativeSerializer(DBBroker broker, Configuration config, List<String> classes) {
+        super(broker, config, classes);
     }
     
     protected void serializeToReceiver(NodeProxy p, boolean generateDocEvent, boolean checkAttributes)

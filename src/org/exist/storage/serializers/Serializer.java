@@ -27,10 +27,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
@@ -226,11 +223,15 @@ public abstract class Serializer implements XMLReader {
     }
     
     
-    public Serializer(DBBroker broker, Configuration config) {
+    public Serializer(DBBroker broker, Configuration config, List<String> classes) {
 		this.broker = broker;
 		factory = TransformerFactoryAllocator.getTransformerFactory(broker.getBrokerPool());
 		xinclude = new XIncludeFilter(this);
-        customMatchListeners = new CustomMatchListenerFactory(broker, config);
+		if (classes == null) {
+			customMatchListeners = new CustomMatchListenerFactory(broker, config);
+		} else {
+			customMatchListeners = new CustomMatchListenerFactory(broker, classes);
+		}
 		receiver = xinclude;
 		
 		String option = (String) config.getProperty(PROPERTY_ENABLE_XSL);

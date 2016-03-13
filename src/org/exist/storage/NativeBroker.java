@@ -613,6 +613,11 @@ public class NativeBroker extends DBBroker {
         return new NativeSerializer(this, getConfiguration());
     }
 
+    @Override
+    public Serializer newSerializer(List<String> classes) {
+        return new NativeSerializer(this, getConfiguration(), classes);
+    }
+
     public XmldbURI prepend(XmldbURI uri) {
         switch(prepend) {
         case PREPEND_DB_ALWAYS:
@@ -2852,6 +2857,7 @@ public class NativeBroker extends DBBroker {
         // remove document metadata
         final Lock lock = collectionsDb.getLock();
         try {
+            //TODO: must be WRITE_LOCK !!!
             lock.acquire(Lock.READ_LOCK);
             if (LOG.isDebugEnabled())
                 {LOG.debug("Removing resource metadata for " + document.getDocId());}

@@ -24,9 +24,12 @@ public class CustomMatchListenerFactory {
     private CustomMatchListener last = null;
 
     public CustomMatchListenerFactory(DBBroker broker, Configuration config) {
-        final List<String> classes = (List) config.getProperty(CONFIG_MATCH_LISTENERS);
-        if (classes == null)
-            {return;}
+        this(broker, (List<String>) config.getProperty(CONFIG_MATCH_LISTENERS));
+    }
+
+    public CustomMatchListenerFactory(DBBroker broker, List<String> classes) {
+        if (classes == null) return;
+
         CustomMatchListener listener;
         for (final String className : classes) {
             try {
