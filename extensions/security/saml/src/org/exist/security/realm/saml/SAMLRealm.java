@@ -29,17 +29,13 @@ import org.exist.config.Configuration;
 import org.exist.config.ConfigurationException;
 import org.exist.config.Configurator;
 import org.exist.config.annotation.*;
-import org.exist.security.AbstractRealm;
-import org.exist.security.Account;
-import org.exist.security.AuthenticationException;
-import org.exist.security.Group;
-import org.exist.security.PermissionDeniedException;
-import org.exist.security.SchemaType;
-import org.exist.security.Subject;
+import org.exist.security.*;
 import org.exist.security.internal.SecurityManagerImpl;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.DBBroker;
+import org.exist.storage.txn.Txn;
+import org.exist.xmldb.XmldbURI;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLException;
 
@@ -133,8 +129,47 @@ public class SAMLRealm extends AbstractRealm {
     }
 
     @Override
-    public boolean deleteAccount(Account account) throws PermissionDeniedException, EXistException, ConfigurationException {
-        return false;
+    public boolean deleteAccount(Account account) throws PermissionDeniedException, EXistException {
+        if(account == null) {
+            return false;
+        }
+
+        usersByName.modify2E(principalDb -> {
+            final AbstractAccount remove_account = (AbstractAccount)principalDb.get(account.getName());
+            if(remove_account == null){
+                throw new IllegalArgumentException("No such account exists!");
+            }
+
+            try (DBBroker broker = getDatabase().get(null)) {
+                final Account user = broker.getSubject();
+
+                if(!(account.getName().equals(user.getName()) || user.hasDbaRole()) ) {
+                    throw new PermissionDeniedException("You are not allowed to delete '" +account.getName() + "' user");
+                }
+
+                LOG.info("delete account "+account+" by "+user.toString(), new Exception());
+
+                remove_account.setRemoved(true);
+                remove_account.setCollection(broker, collectionRemovedAccounts, XmldbURI.create(UUIDGenerator.getUUID()+".xml"));
+
+                try (Txn txn = broker.beginTx()) {
+
+                    collectionAccounts.removeXMLResource(txn, broker, XmldbURI.create( remove_account.getName() + ".xml"));
+
+                    txn.success();
+
+                } catch(final Exception e) {
+                    LOG.debug("loading configuration failed: " + e.getMessage(), e);
+                }
+
+                getSecurityManager().addUser(remove_account.getId(), remove_account);
+                principalDb.remove(remove_account.getName());
+            } catch (Exception e) {
+                LOG.debug(e.getMessage(), e);
+            }
+        });
+
+        return true;
     }
 
     @Override
