@@ -198,6 +198,8 @@ public class RealmImpl extends AbstractRealm {
                         throw new PermissionDeniedException("You are not allowed to delete '" +account.getName() + "' user");
                     }
 
+                    LOG.info("delete account "+account+" by "+user, new Exception());
+
                     remove_account.setRemoved(true);
                     remove_account.setCollection(broker, collectionRemovedAccounts, XmldbURI.create(UUIDGenerator.getUUID()+".xml"));
 
@@ -246,7 +248,7 @@ public class RealmImpl extends AbstractRealm {
                 
                 ((Group)remove_group).assertCanModifyGroup(subject);
 
-                SecurityManagerImpl.LOG.info("remove group "+remove_group, new EXistException());
+                LOG.info("remove group "+remove_group+" by "+subject, new EXistException());
 		
                 remove_group.setRemoved(true);
                 remove_group.setCollection(broker, collectionRemovedGroups, XmldbURI.create(UUIDGenerator.getUUID() + ".xml"));
