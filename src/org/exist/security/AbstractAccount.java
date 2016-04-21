@@ -230,8 +230,11 @@ public abstract class AbstractAccount extends AbstractPrincipal implements Accou
 		buf.append("\" ");
 		buf.append("id=\"");
 		buf.append(Integer.toString(id));
-		buf.append("\"");
-                buf.append(">");
+		buf.append("\" ");
+        buf.append("realm=\"");
+        buf.append(getRealmId());
+        buf.append("\"");
+        buf.append(">");
 		if (groups != null) {
 			for (final Group group : groups) {
                             buf.append(group.toString());
