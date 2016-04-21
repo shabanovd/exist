@@ -35,6 +35,8 @@ import org.xml.sax.helpers.AttributesImpl;
 @ConfigurationClass("record")
 public class TokenRecord implements Configurable {
 
+    @ConfigurationFieldAsAttribute("name") String name;
+
     @ConfigurationFieldAsAttribute("token") String token;
 
     @ConfigurationFieldAsAttribute("realm") String realm;
@@ -53,6 +55,7 @@ public class TokenRecord implements Configurable {
     }
 
     public TokenRecord(TokenRecord o) {
+        this.name = o.name;
         this.token = o.token;
         this.realm = o.realm;
         this.account = o.account;
@@ -65,6 +68,7 @@ public class TokenRecord implements Configurable {
         builder.startDocument();
 
         AttributesImpl attr = new AttributesImpl();
+        attr.addAttribute("", "name", "name", "CDATA", name);
         attr.addAttribute("", "token", "token", "CDATA", token);
         attr.addAttribute("", "realm", "realm", "CDATA", realm);
         attr.addAttribute("", "account", "account", "CDATA", account);

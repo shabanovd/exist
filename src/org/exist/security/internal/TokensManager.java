@@ -81,7 +81,7 @@ public class TokensManager implements Configurable {
         );
     }
 
-    public String createToken(Account account) {
+    public String createToken(String name, Account account) {
 
         TokenRecord token = new TokenRecord();
 
@@ -93,6 +93,8 @@ public class TokensManager implements Configurable {
         }
 
         String original_token = sb.toString();
+
+        token.name = name;
 
         token.token = hash(original_token);
 

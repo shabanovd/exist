@@ -20,13 +20,11 @@
 package org.exist.xquery.functions.securitymanager;
 
 import org.exist.dom.QName;
-import org.exist.memtree.MemTreeBuilder;
 import org.exist.security.Subject;
 import org.exist.security.internal.TokenRecord;
 import org.exist.security.internal.TokensManager;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
-import org.xml.sax.helpers.AttributesImpl;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -37,10 +35,21 @@ public class TokenFunctions extends BasicFunction {
     private final static QName qnList = new QName("list-tokens", SecurityManagerModule.NAMESPACE_URI, SecurityManagerModule.PREFIX);
     private final static QName qnInvalidate = new QName("invalidate-token", SecurityManagerModule.NAMESPACE_URI, SecurityManagerModule.PREFIX);
 
-    public final static FunctionSignature FN_CREATE = new FunctionSignature(
+    public final static FunctionSignature FN_CREATE_1 = new FunctionSignature(
         qnCreate,
         "Create token for current account",
         null,
+        new SequenceType(Type.STRING, Cardinality.ONE),
+        false,
+        "use sm:create-token($name)"
+    );
+
+    public final static FunctionSignature FN_CREATE_2 = new FunctionSignature(
+        qnCreate,
+        "Create token for current account",
+        new SequenceType[]{
+            new FunctionParameterSequenceType("name", Type.STRING, Cardinality.EXACTLY_ONE, "Name for token"),
+        },
         new SequenceType(Type.STRING, Cardinality.ONE)
     );
 
@@ -78,8 +87,9 @@ public class TokenFunctions extends BasicFunction {
         if (!subject.isAuthenticated())
             throw new XPathException(this, "Login first");
 
-        if (mySignature == FN_CREATE) {
-            return new StringValue(tm.createToken(subject));
+        if (mySignature == FN_CREATE_1 || mySignature == FN_CREATE_2) {
+            String name = args.length > 0 ? args[0].getStringValue() : "";
+            return new StringValue(tm.createToken(name, subject));
 
         } else if (mySignature == FN_LIST) {
 

@@ -111,7 +111,8 @@ public class SecurityManagerModule extends AbstractInternalModule {
         new FunctionDef(PermissionsFunction.FNS_MODE_TO_OCTAL, PermissionsFunction.class),
         new FunctionDef(PermissionsFunction.FNS_OCTAL_TO_MODE, PermissionsFunction.class),
 
-        new FunctionDef(TokenFunctions.FN_CREATE, TokenFunctions.class),
+        new FunctionDef(TokenFunctions.FN_CREATE_1, TokenFunctions.class),
+        new FunctionDef(TokenFunctions.FN_CREATE_2, TokenFunctions.class),
         new FunctionDef(TokenFunctions.FN_LIST, TokenFunctions.class),
         new FunctionDef(TokenFunctions.FN_INVALIDATE, TokenFunctions.class),
 
