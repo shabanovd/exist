@@ -68,7 +68,7 @@ public class TokenRecord implements Configurable {
         builder.startDocument();
 
         AttributesImpl attr = new AttributesImpl();
-        attr.addAttribute("", "name", "name", "CDATA", name);
+        attr.addAttribute("", "name", "name", "CDATA", name != null ? name : "");
         attr.addAttribute("", "token", "token", "CDATA", token);
         attr.addAttribute("", "realm", "realm", "CDATA", realm);
         attr.addAttribute("", "account", "account", "CDATA", account);
