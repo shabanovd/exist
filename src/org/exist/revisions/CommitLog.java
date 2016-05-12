@@ -200,6 +200,7 @@ public class CommitLog implements CommitWriter, CommitReader {
 
     @Override
     public void close() throws IOException, XMLStreamException {
+        if (isClosed) return;
         isClosed = true;
 
         if (isDone) holder.commit(this);
