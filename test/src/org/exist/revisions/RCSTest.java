@@ -22,6 +22,7 @@ package org.exist.revisions;
 import org.apache.commons.io.IOUtils;
 import org.apache.tools.ant.filters.StringInputStream;
 import org.exist.Indexer;
+import org.exist.Operation;
 import org.exist.TestUtils;
 import org.exist.collections.Collection;
 import org.exist.collections.CollectionConfigurationManager;
@@ -50,6 +51,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
 
 public class RCSTest {
 
@@ -225,6 +227,7 @@ public class RCSTest {
             String doc1uuid = metas.getUUID();
             assertNotNull(doc1uuid);
 
+            //check revision
             RCSResource resource = holder.resource(doc1uuid);
             assertNotNull(resource);
 
@@ -245,11 +248,76 @@ public class RCSTest {
 
             assertEquals(XML1, data);
 
+            //commits
+            Iterator<CommitReader> commits = holder.commits().iterator();
+            assertTrue(commits.hasNext());
+
+            CommitReader commit = commits.next();
+            assertFalse(commits.hasNext());
+
+            assertEquals("somebody", commit.author());
+            assertEquals("here go message <possible>xml</possible>", commit.message());
+            assertNotNull(commit.id());
+
+            Iterator<Change> changes = commit.changes().iterator();
+
+            assertTrue(changes.hasNext());
+            Change change = changes.next();
+
+            check(change, Operation.CREATE, colURL.append("test1.xml"));
+
+            Revision revision = change.revision();
+            assertNotNull(revision);
+
+            assertEquals(rev.id(), revision.id());
+
+            assertTrue(revision.isXML());
+            assertFalse(revision.isBinary());
+            assertFalse(revision.isCollection());
+            assertFalse(revision.isDeleted());
+
+            writer = new StringWriter();
+
+            try (InputStream is = rev.getData()) {
+                IOUtils.copy(is, writer);
+            }
+            data = writer.toString();
+
+            assertEquals(XML1, data);
+
+            //others
+            check(changes, Operation.CREATE, colURL.append("test2.xml"));
+            check(changes, Operation.CREATE, colURL.append("test3.xml"));
+            check(changes, Operation.CREATE, colURL.append("test4.xml"));
+            check(changes, Operation.CREATE, colURL.append("test5.xml"));
+            check(changes, Operation.CREATE, colURL.append("test6.xml"));
+            check(changes, Operation.CREATE, colURL.append("test7.xml"));
+            check(changes, Operation.CREATE, colURL.append("test8.xml"));
+
+            assertFalse(changes.hasNext());
+
             System.out.println("Test PASSED.");
         } catch (Exception e) {
             e.printStackTrace();
             fail(e.getMessage());
         }
+    }
+
+    private void check(Iterator<Change> changes, Operation op, XmldbURI uri) {
+        assertTrue(changes.hasNext());
+        Change change = changes.next();
+
+        check(change, op, uri);
+    }
+
+    private void check(Change change, Operation op, XmldbURI uri) {
+        assertEquals(op, change.operation());
+        assertEquals(uri, change.uri());
+
+        assertNull(change.error());
+
+        Revision revision = change.revision();
+        assertNotNull(revision);
     }
 
     @Test
