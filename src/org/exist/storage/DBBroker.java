@@ -455,6 +455,12 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
 
     /**
      * Remove a document from the database.
+     *
+     */
+    public abstract void removeResource(Txn tx, DocumentImpl doc) throws IOException, PermissionDeniedException;
+
+    /**
+     * Remove a document from the database.
      * 
      */
     public void removeXMLResource(Txn transaction, DocumentImpl document)

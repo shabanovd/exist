@@ -2675,8 +2675,7 @@ public class NativeBroker extends DBBroker {
                 }
                 */
 
-                trigger.beforeDeleteDocument(this, transaction, oldDoc);
-                trigger.afterDeleteDocument(this, transaction, oldDoc.getURI());
+                removeResource(transaction, oldDoc);
             }
 
             boolean renameOnly = collection.getId() == destination.getId();
@@ -2729,6 +2728,14 @@ public class NativeBroker extends DBBroker {
             
         } catch (final ReadOnlyException e) {
             throw new PermissionDeniedException(e.getMessage(), e);
+        }
+    }
+
+    public void removeResource(Txn tx, DocumentImpl doc) throws IOException, PermissionDeniedException {
+        if (doc instanceof BinaryDocument) {
+            removeBinaryResource(tx, (BinaryDocument) doc);
+        } else {
+            removeXMLResource(tx, doc);
         }
     }
 
