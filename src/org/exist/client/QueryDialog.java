@@ -358,8 +358,9 @@ public class QueryDialog extends JFrame {
 		try {
             //TODO: lazy loading!!!
 			final Collection root = client.getCollection(XmldbURI.ROOT_COLLECTION);
+			data.add(root.getName());
 			data.add(collection.getName());
-			getCollections(root, collection, data);
+			//getCollections(root, collection, data);
 		} catch (final XMLDBException e) {
 			ClientFrame.showErrorMessage(
 					Messages.getString("QueryDialog.collectionretrievalerrormessage")+".", e);
