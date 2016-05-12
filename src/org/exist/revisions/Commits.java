@@ -23,10 +23,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -46,12 +43,15 @@ public class Commits implements Iterable<CommitReader> {
 
     class CommitsIterator implements Iterator<CommitReader> {
 
-        ArrayList<Path> months;
+        LinkedList<Path> months;
+        LinkedList<Path> commits;
+
+        CommitReader next;
 
         CommitsIterator() {
             Path folder = holder.commitLogsFolder;
 
-            months = new ArrayList<>();
+            months = new LinkedList<>();
 
             try (DirectoryStream<Path> paths = Files.newDirectoryStream(folder)) {
                 for (Path path : paths) {
@@ -61,26 +61,60 @@ public class Commits implements Iterable<CommitReader> {
                 throw new RuntimeException("can't get list of months", e);
             }
 
-            Collections.sort(months, new Comparator<Path>() {
-                @Override
-                public int compare(Path o1, Path o2) {
-                    return o1.getFileName().compareTo(o2.getFileName());
+            Collections.sort(months, (o1, o2) -> o1.getFileName().compareTo(o2.getFileName()));
+
+            prepareNext();
+        }
+
+        private synchronized void prepareNext() {
+            next = null;
+
+            while (next == null) {
+                if (commits == null || commits.isEmpty()) {
+                    if (months.isEmpty()) return;
+
+                    Path folder = months.pollFirst();
+
+                    commits = new LinkedList<>();
+
+                    try (DirectoryStream<Path> paths = Files.newDirectoryStream(folder)) {
+                        for (Path path : paths) {
+                            commits.add(path);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("can't get list of months", e);
+                    }
+
+                    Collections.sort(commits, (o1, o2) -> o1.getFileName().compareTo(o2.getFileName()));
                 }
-            });
+
+                Path commit = commits.pollFirst();
+                try {
+                    next = new CommitLoaded(holder, commit);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    RCSManager.LOG.info(e.getMessage()+" '"+commit.toAbsolutePath().toString()+"'");
+                }
+            }
         }
 
         @Override
         public boolean hasNext() {
-            return false;
+            return next != null;
         }
 
         @Override
         public CommitReader next() {
-            return null;
+            CommitReader current = next;
+
+            prepareNext();
+
+            return current;
         }
 
         @Override
         public void remove() {
+            throw new IllegalAccessError("not allow");
         }
     }
 }

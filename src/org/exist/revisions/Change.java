@@ -34,4 +34,8 @@ public interface Change {
     XmldbURI uri();
 
     void uri(XmldbURI uri);
+
+    String error();
+
+    Revision revision();
 }

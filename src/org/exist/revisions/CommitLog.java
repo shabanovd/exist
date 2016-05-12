@@ -78,6 +78,16 @@ public class CommitLog implements CommitWriter, CommitReader {
 
             this.uri = uri;
         }
+
+        @Override
+        public String error() {
+            throw new IllegalAccessError("not allow");
+        }
+
+        @Override
+        public Revision revision() {
+            throw new IllegalAccessError("not allow");
+        }
     }
 
     RCSHolder holder;
