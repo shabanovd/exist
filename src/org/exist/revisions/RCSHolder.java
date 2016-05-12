@@ -338,6 +338,7 @@ public class RCSHolder implements Constants {
                         Path folder = makeRevision(broker, action, logRelativePath, bh, commitLog.handler);
 
                         if (folder != null) {
+                            log.writeAttribute("operation", action.operation().name());
                             log.writeAttribute("uri", action.uri().toString());
                             log.writeAttribute("path", rcFolder.relativize(folder).toString());
                         }
