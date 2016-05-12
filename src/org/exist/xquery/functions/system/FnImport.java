@@ -102,7 +102,7 @@ public class FnImport extends BasicFunction {
     @Override
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
 		if( !context.getSubject().hasDbaRole() )
-			{throw( new XPathException( this, "Permission denied, calling user '" + context.getSubject().getName() + "' must be a DBA to kill a running xquery" ) );}
+			{throw( new XPathException( this, "Permission denied, calling user '" + context.getSubject().getName() + "' must be a DBA" ) );}
 
     	final String dirOrFile = args[0].getStringValue();
         String adminPass = null;
