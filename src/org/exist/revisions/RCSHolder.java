@@ -334,13 +334,23 @@ public class RCSHolder implements Constants {
 
                     log.writeStartElement("entry");
 
+                    if (action.operation() != null) log.writeAttribute("operation", action.operation().name());
+                    if (action.id() != null) log.writeAttribute("id", action.id());
+
+                    boolean toWriteURL = true;
+                    if (action.uri() != null) {
+                        log.writeAttribute("uri", action.uri().toString());
+                        toWriteURL = false;
+                    }
+
                     try {
                         Path folder = makeRevision(broker, action, logRelativePath, bh, commitLog.handler);
 
                         if (folder != null) {
-                            log.writeAttribute("operation", action.operation().name());
-                            log.writeAttribute("uri", action.uri().toString());
                             log.writeAttribute("path", rcFolder.relativize(folder).toString());
+                            if (toWriteURL) {
+                                log.writeAttribute("uri", action.uri().toString());
+                            }
                         }
 
                     } catch (Exception e) {
