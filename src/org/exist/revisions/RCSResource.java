@@ -46,6 +46,10 @@ public class RCSResource {
         
         this.location = location;
     }
+
+    public String id() {
+        return uuid;
+    }
     
     public Revision revision(long id) throws IOException {
         

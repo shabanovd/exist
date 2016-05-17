@@ -68,6 +68,10 @@ public class Revision implements Comparable<Revision> {
         return id;
     }
 
+    public RCSResource resource() {
+        return resource;
+    }
+
     @Override
     public int compareTo(Revision o) {
         return Long.compare(id, o.id);
