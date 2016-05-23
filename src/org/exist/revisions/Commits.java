@@ -55,7 +55,13 @@ public class Commits implements Iterable<CommitReader> {
 
             try (DirectoryStream<Path> paths = Files.newDirectoryStream(folder)) {
                 for (Path path : paths) {
-                    months.add(path);
+                    if (Files.isDirectory(path)) {
+                        String name = path.getFileName().toString();
+                        //simple check
+                        if (name.length() == 7 && name.charAt(4) == '-') {
+                            months.add(path);
+                        }
+                    }
                 }
             } catch (IOException e) {
                 throw new RuntimeException("can't get list of months", e);
