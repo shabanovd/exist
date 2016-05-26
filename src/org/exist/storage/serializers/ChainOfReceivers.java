@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2016 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -17,23 +17,11 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist.indexing;
+package org.exist.storage.serializers;
 
-import org.exist.storage.serializers.ChainOfReceivers;
 import org.exist.util.serializer.Receiver;
 
-/**
- * Highlight matches in query results. Indexes can implement
- * this interface to filter the output produced by the serializer
- * when serializing query results. See
- * {@link org.exist.indexing.IndexWorker#getMatchListener(org.exist.storage.DBBroker, org.exist.dom.NodeProxy)}.
- * The interface basically extends {@link org.exist.util.serializer.Receiver}. The
- * additional methods are used to chain multiple MatchListeners. Implementations should
- * forward all events to the next receiver in the chain (if there is one).
- * Class {@link org.exist.indexing.AbstractMatchListener} provides default implementations
- * for all methods.
- */
-public interface MatchListener extends ChainOfReceivers {
+public interface ChainOfReceivers extends Receiver {
 
     /**
      * Register the next receiver in the chain. All

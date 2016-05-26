@@ -42,6 +42,7 @@ import org.exist.storage.btree.BTreeCallback;
 import org.exist.storage.btree.Value;
 import org.exist.storage.index.CollectionStore;
 import org.exist.storage.io.VariableByteInput;
+import org.exist.storage.serializers.ChainOfReceiversFactory;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.sync.Sync;
 import org.exist.util.UTF8;
@@ -96,6 +97,9 @@ public class SystemExport
     private static final XmldbURI   CONTENTS_URI            = XmldbURI.createInternal( "__contents__.xml" );
     private static final XmldbURI   LOST_URI                = XmldbURI.createInternal( "__lost_and_found__" );
 
+    public final static String CONFIGURATION_ELEMENT = "backup-filter";
+    public final static String CONFIG_FILTERS = "backup.serialization.filters";
+
     private static final int        currVersion             = 1;
 
     private int                     collectionCount         = -1;
@@ -123,14 +127,26 @@ public class SystemExport
         contentsOutputProps.setProperty( OutputKeys.INDENT, "yes" );
     }
 
-    public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct )
+    private ChainOfReceiversFactory chainFactory;
+
+    public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct, ChainOfReceiversFactory chainFactory )
     {
         this.broker       = broker;
-        this.extCallback  = callback;
+        this.callback     = callback;
         this.monitor      = monitor;
         this.directAccess = direct;
-        
-    	bh = broker.getDatabase().getPluginsManager().getBackupHandler(LOG);
+        this.chainFactory = chainFactory;
+
+        bh = broker.getDatabase().getPluginsManager().getBackupHandler(LOG);
+    }
+
+    public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct ) {
+        this(broker, callback, monitor, direct, null);
+
+        List<String> list = (List<String>) broker.getConfiguration().getProperty(CONFIG_FILTERS);
+        if (list != null) {
+            chainFactory = new ChainOfReceiversFactory(list);
+        }
     }
 
     public File export( String targetDir, boolean incremental, boolean zip, List<ErrorReport> errorList )
@@ -600,9 +616,19 @@ public class SystemExport
                     final BufferedWriter writer            = new BufferedWriter( new OutputStreamWriter( os, "UTF-8" ) );
 
                     // write resource to contentSerializer
-                    final SAXSerializer  contentSerializer = (SAXSerializer)SerializerPool.getInstance().borrowObject( SAXSerializer.class );
+                    final SAXSerializer contentSerializer = (SAXSerializer)SerializerPool.getInstance().borrowObject( SAXSerializer.class );
                     contentSerializer.setOutput( writer, defaultOutputProperties );
-                    writeXML( doc, contentSerializer );
+
+                    final Receiver receiver;
+                    if (chainFactory != null) {
+                        chainFactory.getLast().setNextInChain(contentSerializer);
+                        receiver = chainFactory.getFirst();
+                    } else {
+                        receiver = contentSerializer;
+                    }
+
+                    writeXML( doc, receiver );
+
                     SerializerPool.getInstance().returnObject( contentSerializer );
                     writer.flush();
                 }
