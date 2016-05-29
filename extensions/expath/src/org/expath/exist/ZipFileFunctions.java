@@ -1,17 +1,33 @@
+/*
+ *  eXist Open Source Native XML Database
+ *  Copyright (C) 2001-2016 The eXist Project
+ *  http://exist-db.org
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.expath.exist;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.QName;
-import org.exist.dom.persistent.DocumentImpl;
 import org.exist.dom.memtree.MemTreeBuilder;
 import org.exist.security.PermissionDeniedException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
-import org.exist.storage.lock.Lock;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -108,104 +124,101 @@ public class ZipFileFunctions extends BasicFunction {
             throw new XPathException("Different number of paths (" + paths.length + ") and binaries (" + binaries.length + ")");
         }
 
-        ZipFileSource zipFileSource =  new ZipFileFromDb(uri);
-        ZipInputStream zis = null;
+        try (ZipFileSource zipFileSource = new ZipFileFromDb(context.getBroker(), uri)) {
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        HashMap<String, BinaryValue> binariesTable = new HashMap<String, BinaryValue>(paths.length);
-        for (int i = 0; i < paths.length; i++) {
-            binariesTable.put(paths[i], binaries[i]);
-        }
+            HashMap<String, BinaryValue> binariesTable = new HashMap<>(paths.length);
+            for (int i = 0; i < paths.length; i++) {
+                binariesTable.put(paths[i], binaries[i]);
+            }
 
-        try
-        {
-            zis = zipFileSource.getStream();
-            ZipOutputStream zos = new ZipOutputStream(baos); // zos is the output - the result
-            ZipEntry ze;
-            byte[] buffer = new byte[16384];
-            int bytes_read;
+            try (ZipInputStream zis = zipFileSource.getStream();
+                 ZipOutputStream zos = new ZipOutputStream(baos)
+            ) {
+                ZipEntry ze;
+                byte[] buffer = new byte[16384];
+                int bytes_read;
 
-            while ((ze = zis.getNextEntry())!= null){
-                String zen = ze.getName();
+                while ((ze = zis.getNextEntry()) != null) {
+                    String zen = ze.getName();
 
-                if (binariesTable.containsKey(zen)) { // Replace this entry
-                    ZipEntry nze = new ZipEntry(zen);
-                    zos.putNextEntry(nze);
-                    binariesTable.get(zen).streamBinaryTo(zos);
-                    binariesTable.remove(zen);
-
-                } else { // copy this entry to output
-                    if (ze.isDirectory()) { // can't add empty directory to Zip
-                        ZipEntry dirEntry = new ZipEntry(ze.getName() + System.getProperty("file.separator") + ".");
-                        zos.putNextEntry(dirEntry);
-                    } else {               // copy file across
+                    if (binariesTable.containsKey(zen)) { // Replace this entry
                         ZipEntry nze = new ZipEntry(zen);
                         zos.putNextEntry(nze);
-                        while((bytes_read = zis.read(buffer)) != -1)
-                            zos.write(buffer, 0, bytes_read);
+                        binariesTable.get(zen).streamBinaryTo(zos);
+                        binariesTable.remove(zen);
+
+                    } else { // copy this entry to output
+                        if (ze.isDirectory()) { // can't add empty directory to Zip
+                            ZipEntry dirEntry = new ZipEntry(ze.getName() + System.getProperty("file.separator") + ".");
+                            zos.putNextEntry(dirEntry);
+                        } else {               // copy file across
+                            ZipEntry nze = new ZipEntry(zen);
+                            zos.putNextEntry(nze);
+                            while ((bytes_read = zis.read(buffer)) != -1)
+                                zos.write(buffer, 0, bytes_read);
+                        }
                     }
-
                 }
-            }
-            // add any remaining items as NEW entries
-            for (Map.Entry<String, BinaryValue> entry : binariesTable.entrySet()) {
-                ZipEntry nze = new ZipEntry(entry.getKey());
-                zos.putNextEntry(nze);
-                entry.getValue().streamBinaryTo(zos);
-            }
-            zos.close();
-            zis.close();
+                // add any remaining items as NEW entries
+                for (Map.Entry<String, BinaryValue> entry : binariesTable.entrySet()) {
+                    ZipEntry nze = new ZipEntry(entry.getKey());
+                    zos.putNextEntry(nze);
+                    entry.getValue().streamBinaryTo(zos);
+                }
 
-            return BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), new ByteArrayInputStream(baos.toByteArray()));
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            throw new XPathException("IO Exception in zip:update");
-        } catch (PermissionDeniedException e) {
-            logger.error(e.getMessage(), e);
-            throw new XPathException("Permission denied to read the source zip");
+                return BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), new ByteArrayInputStream(baos.toByteArray()));
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                throw new XPathException("IO Exception in zip:update");
+            } catch (PermissionDeniedException e) {
+                logger.error(e.getMessage(), e);
+                throw new XPathException("Permission denied to read the source zip");
+            }
+        } catch (Exception e) {
+            throw new XPathException(this, e);
         }
     }
 
 
     private Sequence extractEntries(XmldbURI uri) throws XPathException {
-        ZipFileSource zipFileSource = new ZipFileFromDb(uri);
-        ZipInputStream zis = null;
+        try (ZipFileSource zipFileSource = new ZipFileFromDb(context.getBroker(), uri)) {
+            MemTreeBuilder builder = context.getDocumentBuilder();
 
-        Sequence xmlResponse = null;
-        MemTreeBuilder builder = context.getDocumentBuilder();
+            builder.startDocument();
+            builder.startElement(new QName("file", ZipModule.NAMESPACE_URI, ZipModule.PREFIX), null);
+            builder.addAttribute(new QName("href", null, null), uri.toString());
 
-        builder.startDocument();
-        builder.startElement( new QName( "file", ZipModule.NAMESPACE_URI, ZipModule.PREFIX ), null );
-        builder.addAttribute( new QName( "href", null, null ), uri.toString() );
+            try (ZipInputStream zis = zipFileSource.getStream()) {
+                ZipEntry zipEntry;
+                while ((zipEntry = zis.getNextEntry()) != null) {
 
-        try {
-            zis = zipFileSource.getStream();
-            ZipEntry zipEntry;
-            while ((zipEntry = zis.getNextEntry()) != null) {
-
-                if (zipEntry.isDirectory()) {
-                    builder.startElement(new QName("dir",ZipModule.NAMESPACE_URI,ZipModule.PREFIX),null);
-                    builder.addAttribute(new QName("name",null,null), zipEntry.toString());
-                    builder.endElement();
-                } else {
-                    logger.debug("file: " + zipEntry.getName());
-                    builder.startElement(new QName("entry",ZipModule.NAMESPACE_URI,ZipModule.PREFIX),null);
-                    builder.addAttribute(new QName("name",null,null), zipEntry.toString());
-                    builder.endElement();
+                    if (zipEntry.isDirectory()) {
+                        builder.startElement(new QName("dir", ZipModule.NAMESPACE_URI, ZipModule.PREFIX), null);
+                        builder.addAttribute(new QName("name", null, null), zipEntry.toString());
+                        builder.endElement();
+                    } else {
+                        logger.debug("file: " + zipEntry.getName());
+                        builder.startElement(new QName("entry", ZipModule.NAMESPACE_URI, ZipModule.PREFIX), null);
+                        builder.addAttribute(new QName("name", null, null), zipEntry.toString());
+                        builder.endElement();
+                    }
                 }
+            } catch (PermissionDeniedException pde) {
+                logger.error(pde.getMessage(), pde);
+                throw new XPathException(this, "Permission denied to read the source zip");
+            } catch (IOException ioe) {
+                logger.error(ioe.getMessage(), ioe);
+                throw new XPathException(this, "IO exception while reading the source zip");
             }
-        }catch(PermissionDeniedException pde) {
-            logger.error(pde.getMessage(), pde);
-            throw new XPathException("Permission denied to read the source zip");
-        }catch(IOException ioe){
-            logger.error(ioe.getMessage(), ioe);
-            throw new XPathException("IO exception while reading the source zip");
-        }
 
-        builder.endElement();
-        xmlResponse = (NodeValue) builder.getDocument().getDocumentElement();
-        return(xmlResponse);
+            builder.endElement();
+
+            return builder.getDocument();
+        } catch (Exception e) {
+            throw new XPathException(this, e);
+        }
     }
 
     private Sequence createZip(Element zipFile) {
@@ -230,49 +243,6 @@ public class ZipFileFunctions extends BasicFunction {
             child = child.getNextSibling();
         }
         return( Sequence.EMPTY_SEQUENCE );
-    }
-
-    // copied from
-    public interface ZipFileSource {
-        public ZipInputStream getStream() throws IOException, PermissionDeniedException;
-
-        public void close();
-    }
-
-    private class ZipFileFromDb implements ZipFileSource {
-        private BinaryDocument binaryDoc = null;
-        private final XmldbURI uri;
-
-        public ZipFileFromDb(XmldbURI uri) {
-            this.uri = uri;
-        }
-
-        @Override
-        public ZipInputStream getStream() throws IOException, PermissionDeniedException {
-
-            if (binaryDoc == null) {
-                binaryDoc = getDoc();
-            }
-
-            return new ZipInputStream(context.getBroker().getBinaryResource(binaryDoc));
-        }
-
-        @Override
-        public void close() {
-            if (binaryDoc != null) {
-                binaryDoc.getUpdateLock().release(Lock.READ_LOCK);
-            }
-        }
-
-        private BinaryDocument getDoc() throws PermissionDeniedException {
-
-            DocumentImpl doc = context.getBroker().getXMLResource(uri, Lock.READ_LOCK);
-            if (doc == null || doc.getResourceType() != DocumentImpl.BINARY_FILE) {
-                return null;
-            }
-
-            return (BinaryDocument) doc;
-        }
     }
 
     // copied from AccountManagementFunction

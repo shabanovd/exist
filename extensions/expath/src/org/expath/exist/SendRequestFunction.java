@@ -1,23 +1,21 @@
 /*
- *  eXist EXPath HTTP Client Module send-request functions
- *  Copyright (C) 2011 Adam Retter <adam@existsolutions.com>
- *  www.existsolutions.com
- *  
+ *  eXist Open Source Native XML Database
+ *  Copyright (C) 2001-2016 The eXist Project
+ *  http://exist-db.org
+ *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
  *  as published by the Free Software Foundation; either version 2
  *  of the License, or (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.expath.exist;
 
@@ -152,7 +150,7 @@ public class SendRequestFunction extends BasicFunction {
             return result.getResult();
                 
         } catch(final URISyntaxException ex ) {
-            throw new XPathException("Href is not valid: " + req != null ? req.getHref() : "" + ". " + ex.getMessage(), ex);
+            throw new XPathException("Href is not valid: " + req.getHref() + ". " + ex.getMessage(), ex);
         } catch(final HttpClientException hce) {
             throw new XPathException(hce.getMessage(), hce);
         }
@@ -220,14 +218,11 @@ public class SendRequestFunction extends BasicFunction {
     }
     
     private void registerConnectionWithContext(final HttpConnection conn) {
-        context.registerCleanupTask(new XQueryContext.CleanupTask() {
-            @Override
-            public void cleanup(final XQueryContext context) {
-                try {
-                    conn.disconnect();
-                } catch(final HttpClientException hce) {
-                    logger.warn(hce.getMessage(), hce);
-                }
+        context.registerCleanupTask(context1 -> {
+            try {
+                conn.disconnect();
+            } catch(final HttpClientException hce) {
+                logger.warn(hce.getMessage(), hce);
             }
         });
     }

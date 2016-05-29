@@ -1,7 +1,7 @@
 /*
- *  eXist EXPath Zip Client Module Extension
- *  Copyright (C) 2011 Adam Retter <adam@existsolutions.com>
- *  www.existsolutions.com
+ *  eXist Open Source Native XML Database
+ *  Copyright (C) 2001-2016 The eXist Project
+ *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -13,11 +13,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *  $Id$
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.expath.exist;
 

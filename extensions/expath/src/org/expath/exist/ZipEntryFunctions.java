@@ -1,7 +1,7 @@
 /*
- *  eXist EXPath Zip Client Module zip file entry functions
- *  Copyright (C) 2011 Adam Retter <adam@existsolutions.com>
- *  www.existsolutions.com
+ *  eXist Open Source Native XML Database
+ *  Copyright (C) 2001-2016 The eXist Project
+ *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public License
@@ -13,27 +13,22 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *  $Id$
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 package org.expath.exist;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import javax.xml.transform.stream.StreamSource;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.dom.persistent.BinaryDocument;
 import org.exist.dom.QName;
-import org.exist.dom.persistent.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
-import org.exist.storage.lock.Lock;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -128,132 +123,79 @@ public class ZipEntryFunctions extends BasicFunction {
         XmldbURI uri = ((AnyURIValue)args[0].itemAt(0)).toXmldbURI();
         String entryName = args[1].itemAt(0).getStringValue();
 
-        ZipFileSource zipFileSource =  new ZipFileFromDb(uri);
-        ZipInputStream zis = null;
+        try (ZipFileSource zipFileSource =  new ZipFileFromDb(context.getBroker(), uri)) {
 
-        boolean mustClose = true;
-        Sequence result = Sequence.EMPTY_SEQUENCE;
-
-        try {
-            zis = zipFileSource.getStream();
-            ZipEntry zipEntry;
-            while((zipEntry = zis.getNextEntry()) != null) {
-                try {
-                    if(zipEntry.getName().equals(entryName)) {
+            try (ZipInputStream zis = zipFileSource.getStream()) {
+                ZipEntry zipEntry;
+                while ((zipEntry = zis.getNextEntry()) != null) {
+                    if (zipEntry.getName().equals(entryName)) {
                         //process
-                        if(isCalledAs(BINARY_ENTRY_NAME)) {
-                            result = extractBinaryEntry(zis, zipEntry);
-                            mustClose = false;
-                        } else if(isCalledAs(HTML_ENTRY_NAME)) {
-                            result = extractHtmlEntry(zis, zipEntry);
-                        } else if(isCalledAs(TEXT_ENTRY_NAME)) {
-                            result = extractStringEntry(zis, zipEntry);
-                        } else if(isCalledAs(XML_ENTRY_NAME)) {
-                            result = extractXmlEntry(zis, zipEntry);
+                        switch (mySignature.getName().getLocalPart()) {
+                            case BINARY_ENTRY_NAME:
+                                return extractBinaryEntry(zis);
+
+                            case HTML_ENTRY_NAME:
+                                return extractHtmlEntry(zis);
+
+                            case TEXT_ENTRY_NAME:
+                                return extractStringEntry(zis);
+
+                            case XML_ENTRY_NAME:
+                                return extractXmlEntry(zis);
+
+                            default:
+                                return Sequence.EMPTY_SEQUENCE;
                         }
-                        break;
                     }
-                } finally {
-                    //DONT need to close as the extract functions
-                    //close the stream on the zip entry
-                    /*if(mustClose) {
-                        zis.closeEntry();
-                    }*/
                 }
+            } catch (IOException | PermissionDeniedException ioe) {
+                LOG.error(ioe.getMessage(), ioe);
+                throw new XPathException(ioe.getMessage(), ioe);
             }
-        } catch(IOException ioe) {
-            LOG.error(ioe.getMessage(), ioe);
-            throw new XPathException(ioe.getMessage(), ioe);
-        } catch(PermissionDeniedException pde) {
-            LOG.error(pde.getMessage(), pde);
-            throw new XPathException(pde.getMessage(), pde);
-        } finally {
-            if(zis != null && mustClose) {
-                try { zis.close(); } catch (IOException ioe) { LOG.warn(ioe.getMessage(), ioe); }
-            }
-            zipFileSource.close();
+
+            return Sequence.EMPTY_SEQUENCE;
+        } catch (Exception e) {
+            throw new XPathException(this, e);
         }
-
-        return result;
     }
 
-    private BinaryValue extractBinaryEntry(ZipInputStream zis, ZipEntry zipEntry) throws XPathException {
-        return BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), zis);
-    }
-
-    private StringValue extractStringEntry(ZipInputStream zis, ZipEntry zipEntry) throws XPathException, IOException{
-        Reader reader = new InputStreamReader(zis);
-        char buf[] = new char[1024];
-        StringBuilder builder = new StringBuilder();
-        int read = -1;
+    private BinaryValue extractBinaryEntry(ZipInputStream zis) throws XPathException {
+        InputStream is;
         try {
+            is = new ByteArrayInputStream(IOUtils.toByteArray(zis));
+        } catch (IOException e) {
+            throw new XPathException(this, e);
+        }
+        return BinaryValueFromInputStream.getInstance(context, new Base64BinaryValueType(), is);
+    }
+
+    private StringValue extractStringEntry(ZipInputStream zis) throws XPathException, IOException{
+        StringBuilder builder = new StringBuilder();
+        try (Reader reader = new InputStreamReader(zis)) {
+
+            int read;
+            char buf[] = new char[1024];
+
             while((read = reader.read(buf)) > -1) {
                 builder.append(buf, 0, read);
             }
-        } finally {
-            reader.close();
         }
         return new StringValue(builder.toString());
     }
 
-    private org.exist.dom.memtree.DocumentImpl extractHtmlEntry(ZipInputStream zis, ZipEntry zipEntry) throws XPathException {
+    private org.exist.dom.memtree.DocumentImpl extractHtmlEntry(ZipInputStream zis) throws XPathException {
         try {
             return ModuleUtils.htmlToXHtml(context, new StreamSource(zis), null, null);
-        } catch(SAXException saxe) {
-            throw new XPathException(saxe.getMessage(), saxe);
-        } catch(IOException ioe) {
-            throw new XPathException(ioe.getMessage(), ioe);
+        } catch(SAXException | IOException e) {
+            throw new XPathException(this, e);
         }
     }
 
-    private NodeValue extractXmlEntry(ZipInputStream zis, ZipEntry zipEntry) throws XPathException {
+    private NodeValue extractXmlEntry(ZipInputStream zis) throws XPathException {
         try {
             return ModuleUtils.streamToXML(context, zis);
-        } catch(SAXException saxe) {
-            throw new XPathException(saxe.getMessage(), saxe);
-        } catch(IOException ioe) {
-            throw new XPathException(ioe.getMessage(), ioe);
-        }
-    }
-
-    public interface ZipFileSource {
-        public ZipInputStream getStream() throws IOException, PermissionDeniedException;
-        public void close();
-    }
-
-    private class ZipFileFromDb implements ZipFileSource {
-        private BinaryDocument binaryDoc = null;
-        private final XmldbURI uri;
-
-        public ZipFileFromDb(XmldbURI uri) {
-            this.uri = uri;
-        }
-
-        @Override
-        public ZipInputStream getStream() throws IOException, PermissionDeniedException {
-
-            if(binaryDoc == null) {
-                binaryDoc = getDoc();
-            }
-
-            return new ZipInputStream(context.getBroker().getBinaryResource(binaryDoc));
-        }
-
-        @Override
-        public void close() {
-            if(binaryDoc != null) {
-               binaryDoc.getUpdateLock().release(Lock.READ_LOCK);
-            }
-        }
-
-        private BinaryDocument getDoc() throws PermissionDeniedException {
-
-            DocumentImpl doc = context.getBroker().getXMLResource(uri, Lock.READ_LOCK);
-            if(doc == null || doc.getResourceType() != DocumentImpl.BINARY_FILE) {
-                return null;
-            }
-
-            return (BinaryDocument)doc;
+        } catch(SAXException | IOException e) {
+            throw new XPathException(this, e);
         }
     }
 }
