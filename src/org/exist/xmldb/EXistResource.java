@@ -55,6 +55,8 @@ public interface EXistResource {
     DocumentType getDocType() throws XMLDBException;
     
     void setDocType(DocumentType doctype) throws XMLDBException;
-    
+
+    void setLastModificationTime(Date lastModificationTime) throws XMLDBException;
+
     void freeResources() throws XMLDBException;
 }

@@ -30,7 +30,11 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
+import org.exist.storage.lock.Lock;
+import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
+import org.exist.util.function.FunctionE;
+import org.exist.xmldb.function.LocalXmldbDocumentFunction;
 import org.w3c.dom.DocumentType;
 import org.xml.sax.ext.LexicalHandler;
 import org.xmldb.api.base.ErrorCodes;
@@ -39,21 +43,15 @@ import org.xmldb.api.base.XMLDBException;
 /**
  * Abstract base implementation of interface EXistResource.
  */
-public abstract class AbstractEXistResource implements EXistResource {
+public abstract class AbstractEXistResource extends AbstractLocal implements EXistResource {
 
-	protected Subject user;
-	protected BrokerPool pool;
-	protected LocalCollection parent;
 	protected XmldbURI docId = null;
 	protected String mimeType = null;
     protected boolean isNewResource = false;
     
 	public AbstractEXistResource(Subject user, BrokerPool pool, LocalCollection parent, XmldbURI docId, String mimeType) {
-		this.user = user;
-		this.pool = pool;
-		this.parent = parent;
-		docId = docId.lastSegment();
-		this.docId = docId;
+		super(user, pool, parent);
+		this.docId = docId.lastSegment();
         this.mimeType = mimeType;
 	}
 	
@@ -81,6 +79,22 @@ public abstract class AbstractEXistResource implements EXistResource {
 	 */
 	public abstract Date getLastModificationTime() throws XMLDBException;
 
+	@Override
+	public void setLastModificationTime(final Date lastModificationTime) throws XMLDBException {
+		if(lastModificationTime.before(getCreationTime())) {
+			throw new XMLDBException(ErrorCodes.PERMISSION_DENIED, "Modification time must be after creation time.");
+		}
+
+		modify((document, broker, transaction) -> {
+			if (document == null) {
+				throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, "Resource " + docId + " not found");
+			}
+
+			document.getMetadata().setLastModified(lastModificationTime.getTime());
+			return null;
+		});
+	}
+
 	/* (non-Javadoc)
 	 * @see org.exist.xmldb.EXistResource#getPermissions()
 	 */
@@ -104,9 +118,9 @@ public abstract class AbstractEXistResource implements EXistResource {
 	    DocumentImpl document = null;
 	    org.exist.collections.Collection parentCollection = null;
 	    try {
-	    	parentCollection = parent.getCollectionWithLock(lockMode);
+	    	parentCollection = collection.getCollectionWithLock(lockMode);
 		    if(parentCollection == null)
-		    	{throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + parent.getPath() + " not found");}
+		    	{throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + collection.getPath() + " not found");}
 	        try {
 	        	document = parentCollection.getDocumentWithLock(broker, docId, lockMode);
 	        } catch (final PermissionDeniedException pde) {
@@ -141,4 +155,80 @@ public abstract class AbstractEXistResource implements EXistResource {
     public void setDocType(DocumentType doctype) throws XMLDBException {
 		
     }
+
+	/**
+	 * Higher-order-function for performing read-only operations against this resource
+	 *
+	 * NOTE this read will occur using the database user set on the resource
+	 *
+	 * @param readOp The read-only operation to execute against the resource
+	 * @return The result of the read-only operation
+	 */
+	protected <R> R read(final LocalXmldbDocumentFunction<R> readOp) throws XMLDBException {
+		return withDb((broker, transaction) -> this.<R>read(broker, transaction).apply(readOp));
+	}
+
+	/**
+	 * Higher-order-function for performing read-only operations against this resource
+	 *
+	 * @param broker The broker to use for the operation
+	 * @param transaction The transaction to use for the operation
+	 * @return A function to receive a read-only operation to perform against the resource
+	 */
+	public <R> FunctionE<LocalXmldbDocumentFunction<R>, R, XMLDBException> read(final DBBroker broker, final Txn transaction) throws XMLDBException {
+		return with(Lock.READ_LOCK, broker, transaction);
+	}
+
+	/**
+	 * Higher-order-function for performing read/write operations against this resource
+	 *
+	 * NOTE this operation will occur using the database user set on the resource
+	 *
+	 * @param op The read/write operation to execute against the resource
+	 * @return The result of the operation
+	 */
+	protected <R> R modify(final LocalXmldbDocumentFunction<R> op) throws XMLDBException {
+		return withDb((broker, transaction) -> this.<R>modify(broker, transaction).apply(op));
+	}
+
+	/**
+	 * Higher-order-function for performing read/write operations against this resource
+	 *
+	 * @param broker The broker to use for the operation
+	 * @param transaction The transaction to use for the operation
+	 * @return A function to receive an operation to perform against the resource
+	 */
+	public <R> FunctionE<LocalXmldbDocumentFunction<R>, R, XMLDBException> modify(final DBBroker broker, final Txn transaction) throws XMLDBException {
+		return writeOp -> this.<R>with(Lock.WRITE_LOCK, broker, transaction).apply((document, broker1, transaction1) -> {
+			final R result = writeOp.apply(document, broker1, transaction1);
+			broker.storeXMLResource(transaction1, document);
+			return result;
+		});
+	}
+
+	/**
+	 * Higher-order function for performing lockable operations on this resource
+	 *
+	 * @param lockMode
+	 * @param broker The broker to use for the operation
+	 * @param transaction The transaction to use for the operation
+	 * @return A function to receive an operation to perform on the locked database resource
+	 */
+	private <R> FunctionE<LocalXmldbDocumentFunction<R>, R, XMLDBException> with(final int lockMode, final DBBroker broker, final Txn transaction) throws XMLDBException {
+		return documentOp ->
+			collection.<R>with(lockMode, broker, transaction).apply((collection, broker1, transaction1) -> {
+				DocumentImpl doc = null;
+				try {
+					doc = collection.getDocumentWithLock(broker1, docId, lockMode);
+					if(doc == null) {
+						throw new XMLDBException(ErrorCodes.INVALID_RESOURCE);
+					}
+					return documentOp.apply(doc, broker1, transaction1);
+				} finally {
+					if(doc != null) {
+						doc.getUpdateLock().release(lockMode);
+					}
+				}
+			});
+	}
 }

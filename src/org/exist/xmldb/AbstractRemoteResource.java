@@ -153,6 +153,27 @@ public abstract class AbstractRemoteResource
 	{
 		return dateModified;
 	}
+
+	@Override
+	public void setLastModificationTime(final Date dateModified) throws XMLDBException {
+		if (dateModified != null) {
+			if(dateModified.before(getCreationTime())) {
+				throw new XMLDBException(ErrorCodes.PERMISSION_DENIED, "Modification time must be after creation time.");
+			}
+
+			final List params = new ArrayList(2);
+			params.add(path.toString());
+			params.add(dateModified.getTime());
+
+			try {
+				parent.getClient().execute("setLastModified", params);
+			} catch (final XmlRpcException e) {
+				throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e.getMessage(), e);
+			}
+
+			this.dateModified = dateModified;
+		}
+	}
 	
 	/* (non-Javadoc)
 	* @see org.exist.xmldb.EXistResource#getMimeType()

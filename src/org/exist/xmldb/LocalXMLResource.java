@@ -236,7 +236,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 				throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e
 						.getMessage(), e);
 			} finally {
-			    parent.getCollection().releaseDocument(document, Lock.READ_LOCK);
+				collection.getCollection().releaseDocument(document, Lock.READ_LOCK);
 				pool.release(broker);
 				pool.setSubject(preserveSubject);
 			}
@@ -249,7 +249,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 		// case 1: content is an external DOM node
 		if (root != null && !(root instanceof NodeValue)) {
 			try {
-				final String option = parent.properties.getProperty(
+				final String option = collection.properties.getProperty(
 						Serializer.GENERATE_DOC_EVENTS, "false");
                 final DOMStreamer streamer = (DOMStreamer) SerializerPool.getInstance().borrowObject(DOMStreamer.class);
 				streamer.setContentHandler(handler);
@@ -328,10 +328,10 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 	}
 
 	public Collection getParentCollection() throws XMLDBException {
-		if (parent == null)
+		if (collection == null)
 			{throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
 					"collection parent is null");}
-		return parent;
+		return collection;
 	}
 
 	public String getResourceType() throws XMLDBException {
@@ -508,16 +508,16 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 	}
 	
 	private Properties getProperties() {
-		return outputProperties == null ? parent.properties : outputProperties;
+		return outputProperties == null ? collection.properties : outputProperties;
 	}
 
 	protected DocumentImpl getDocument(DBBroker broker, int lock) throws XMLDBException {
 	    DocumentImpl document = null;
             try {
                 if(lock != Lock.NO_LOCK) {
-                    document = parent.getCollection().getDocumentWithLock(broker, docId, lock);
+                    document = collection.getCollection().getDocumentWithLock(broker, docId, lock);
                  } else {
-                    document = parent.getCollection().getDocument(broker, docId);
+                    document = collection.getCollection().getDocument(broker, docId);
                 }
             } catch (final LockException e) {
                 throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,

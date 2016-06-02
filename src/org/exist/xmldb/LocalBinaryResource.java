@@ -67,7 +67,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 	 * @see org.xmldb.api.base.Resource#getParentCollection()
 	 */
 	public Collection getParentCollection() throws XMLDBException {
-		return parent;
+		return collection;
 	}
 	
 	/* (non-Javadoc)
@@ -110,7 +110,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 				"error while loading binary resource " + getId(), e);
 		} finally {
 			if(blob!=null)
-				{parent.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
+				{collection.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
 			if(broker!=null)
 				{pool.release(broker);}
 			
@@ -189,7 +189,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 					"error while loading binary resource " + getId(), e);
 			} finally {
 				if(blob!=null)
-					{parent.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
+					{collection.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
 				if(broker!=null)
 					{pool.release(broker);}
 				
@@ -240,7 +240,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 					"error while loading binary resource " + getId(), ioe);
 		} finally {
 			if(blob!=null)
-				{parent.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
+				{collection.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
 			if(broker!=null)
 				{pool.release(broker);}
 			
@@ -284,7 +284,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 					"error while loading binary resource " + getId(), e);
 			} finally {
 				if(blob!=null)
-					{parent.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
+					{collection.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
 				
 				if(broker!=null)
 					{pool.release(broker);}
@@ -440,7 +440,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 	    DocumentImpl document = null;
 	    if(lock != Lock.NO_LOCK) {
                 try {
-                    document = parent.getCollection().getDocumentWithLock(broker, docId, lock);
+                    document = collection.getCollection().getDocumentWithLock(broker, docId, lock);
                 } catch (final PermissionDeniedException e) {
                     throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
                             "Permission denied for document " + docId + ": " + e.getMessage());
@@ -450,7 +450,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
                 }
             } else {
                 try { 
-                    document = parent.getCollection().getDocument(broker, docId);
+                    document = collection.getCollection().getDocument(broker, docId);
                 } catch (final PermissionDeniedException e) {
                     throw new XMLDBException(ErrorCodes.PERMISSION_DENIED, "Permission denied for document " + docId + ": " + e.getMessage());
                 }

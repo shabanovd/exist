@@ -1945,6 +1945,46 @@ public class RpcConnection implements RpcAPI {
             factory.getBrokerPool().release(broker);
         }
     }
+
+    public boolean setLastModified(final String documentPath, final long lastModified) throws EXistException, PermissionDeniedException {
+
+        XmldbURI docUri = XmldbURI.create(documentPath);
+
+        DBBroker broker = null;
+        DocumentImpl doc = null;
+        final TransactionManager transact = factory.getBrokerPool().getTransactionManager();
+        final Txn transaction = transact.beginTransaction();
+        try {
+            broker = factory.getBrokerPool().get(user);
+            doc = broker.getXMLResource(docUri, Lock.WRITE_LOCK);
+            if (doc == null) {
+                transact.abort(transaction);
+                throw new EXistException("Resource " + docUri + " not found");
+            }
+            //TODO : register the lock within the transaction ?
+            if (!doc.getPermissions().validate(user, Permission.WRITE)) {
+                transact.abort(transaction);
+                throw new PermissionDeniedException("User is not allowed to lock resource " + docUri);
+            }
+
+            doc.getMetadata().setLastModified(lastModified);
+
+            broker.storeXMLResource(transaction, doc);
+            transact.commit(transaction);
+            return true;
+
+        } catch (final Throwable e) {
+            transact.abort(transaction);
+            handleException(e);
+            return false;
+
+        } finally {
+            if(doc != null)
+            {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+            transact.close(transaction);
+            factory.getBrokerPool().release(broker);
+        }
+    }
     
     /**
      * The method <code>getAccount</code>
