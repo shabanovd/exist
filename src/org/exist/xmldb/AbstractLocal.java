@@ -38,12 +38,13 @@ import org.xmldb.api.base.XMLDBException;
  */
 public abstract class AbstractLocal {
     protected final BrokerPool pool;
+    protected final BrokerPool brokerPool;
     protected final Subject user;
     protected LocalCollection collection;
 
     AbstractLocal(final Subject user, final BrokerPool pool, final LocalCollection collection) {
         this.user = user;
-        this.pool = pool;
+        this.pool = brokerPool = pool;
         this.collection = collection;
     }
 
