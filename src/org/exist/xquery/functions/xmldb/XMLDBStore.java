@@ -181,11 +181,16 @@ public class XMLDBStore extends XMLDBAbstractCollectionManipulator {
 				}
 
 			} else {
-				if(binary) {
-					resource = collection.createResource(docName, "BinaryResource");
-                } else {
-					resource = collection.createResource(docName, "XMLResource");
-                }
+				resource = collection.getResource(docName);
+				if (binary) {
+					if (resource == null || !"BinaryResource".equals(resource.getResourceType())) {
+						resource = collection.createResource(docName, "BinaryResource");
+					}
+				} else {
+					if (resource == null || !"XMLResource".equals(resource.getResourceType())) {
+						resource = collection.createResource(docName, "XMLResource");
+					}
+				}
 
 				if(Type.subTypeOf(item.getType(), Type.STRING)) {
 					resource.setContent(item.getStringValue());

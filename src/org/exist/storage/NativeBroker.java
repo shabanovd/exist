@@ -1147,7 +1147,7 @@ public class NativeBroker extends DBBroker {
             if (child.getResourceType() == DocumentImpl.XML_FILE) {
                 //TODO : put a lock on newDoc ?
                 final DocumentImpl newDoc = new DocumentImpl(pool, destCollection, child.getFileURI());
-                newDoc.copyOf(child);
+                newDoc.copyOf(child, false);
                 if(oldDoc != null) {
                     //preserve permissions from existing doc we are replacing
                     newDoc.setPermissions(oldDoc.getPermissions()); //TODO use newDoc.copyOf(oldDoc) ideally, but we cannot currently access oldDoc without READ access to it, which we may not have (and should not need for this)!
@@ -1161,7 +1161,7 @@ public class NativeBroker extends DBBroker {
                 createdDoc = newDoc;
             } else {
                 final BinaryDocument newDoc = new BinaryDocument(pool, destCollection, child.getFileURI());
-                newDoc.copyOf(child);
+                newDoc.copyOf(child, false);
                 if(oldDoc != null) {
                     //preserve permissions from existing doc we are replacing
                     newDoc.setPermissions(oldDoc.getPermissions()); //TODO use newDoc.copyOf(oldDoc) ideally, but we cannot currently access oldDoc without READ access to it, which we may not have (and should not need for this)!
@@ -2548,7 +2548,7 @@ public class NativeBroker extends DBBroker {
                     }
                 } else {
                     DocumentImpl newDoc = new DocumentImpl(pool, destination, newName);
-                    newDoc.copyOf(doc);
+                    newDoc.copyOf(doc, false);
                     newDoc.setDocId(getNextResourceId(transaction, destination));
                     newDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
                     try {
@@ -3009,7 +3009,7 @@ public class NativeBroker extends DBBroker {
             }.run();
             // create a copy of the old doc to copy the nodes into it
             final DocumentImpl tempDoc = new DocumentImpl(pool, doc.getCollection(), doc.getFileURI());
-            tempDoc.copyOf(doc);
+            tempDoc.copyOf(doc, true);
             tempDoc.setDocId(doc.getDocId());
             indexController.setDocument(doc, StreamListener.STORE);
             final StreamListener listener = indexController.getStreamListener();
