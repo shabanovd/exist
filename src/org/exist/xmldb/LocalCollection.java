@@ -402,15 +402,9 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
         }
     }
 
-    //TODO: API change to XmldbURI?
     @Override
     public String getName() throws XMLDBException {
-        final Collection collection = getCollectionWithLock(Lock.READ_LOCK);
-        try {
-            return collection.getURI().toString();
-        } finally {
-            collection.release(Lock.READ_LOCK);
-        }
+        return path.toString();
     }
 
     @Override
