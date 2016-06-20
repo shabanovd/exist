@@ -26,6 +26,8 @@ import java.util.*;
 import org.apache.log4j.Logger;
 import org.exist.*;
 import org.exist.EventListener;
+import org.exist.config.Configuration;
+import org.exist.plugin.Plug;
 import org.exist.plugin.PluginsManager;
 import org.exist.security.*;
 import org.exist.storage.DBBroker;
@@ -39,7 +41,7 @@ import javax.xml.transform.OutputKeys;
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  *
  */
-public class RCSManager {
+public class RCSManager implements Plug {
 
     protected final static Logger LOG = Logger.getLogger( RCSManager.class );
 
@@ -124,6 +126,19 @@ public class RCSManager {
         }
     }
 
+    @Override
+    public void start(DBBroker broker) throws EXistException {
+
+    }
+
+    @Override
+    public void sync(DBBroker broker) throws EXistException {
+    }
+
+    @Override
+    public void stop(DBBroker broker) throws EXistException {
+    }
+
     private Path getDataDir() {
         return db.getActiveBroker().getDataFolder().toPath();
     }
@@ -194,5 +209,15 @@ public class RCSManager {
 
     public boolean unregisterCommitsListener(EventListener<CommitLog> listener) {
         return commitsListener.remove(listener);
+    }
+
+    @Override
+    public boolean isConfigured() {
+        return true;
+    }
+
+    @Override
+    public Configuration getConfiguration() {
+        return null;
     }
 }
