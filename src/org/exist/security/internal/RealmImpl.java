@@ -68,6 +68,7 @@ public class RealmImpl extends AbstractRealm {
     public final static int ADMIN_ACCOUNT_ID = 1048574;
     public final static int GUEST_ACCOUNT_ID = 1048573;
     public final static int UNKNOWN_ACCOUNT_ID = 1048572;
+    public final static int INITIAL_LAST_ACCOUNT_ID = 10;
 
     public final static int DBA_GROUP_ID = 1048575;
     public final static int GUEST_GROUP_ID = 1048574;

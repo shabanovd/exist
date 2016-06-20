@@ -11,6 +11,12 @@ package org.exist.util;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  *
@@ -114,5 +120,54 @@ public class FileUtils
            }
        }
    }
-   
+
+    /**
+     * Get just the filename part of the path
+     *
+     * @return The filename
+     */
+    public static String fileName(final Path path) {
+        return path.getFileName().toString();
+    }
+
+    /**
+     * Deletes a path from the filesystem
+     *
+     * If the path is a directory its contents
+     * will be recursively deleted before it itself
+     * is deleted.
+     *
+     * Note that removal of a directory is not an atomic-operation
+     * and so if an error occurs during removal, some of the directories
+     * descendants may have already been removed
+     *
+     * @throws IOException if an error occurs whilst removing a file or directory
+     */
+    public static void delete(final Path path) throws IOException {
+        if (!Files.isDirectory(path)) {
+            Files.deleteIfExists(path);
+        } else {
+            Files.walkFileTree(path, deleteDirVisitor);
+        }
+    }
+
+    private final static SimpleFileVisitor<Path> deleteDirVisitor = new DeleteDirVisitor();
+
+    private static class DeleteDirVisitor extends SimpleFileVisitor<Path> {
+        @Override
+        public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+            Files.deleteIfExists(file);
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException {
+            if (exc != null) {
+                throw exc;
+            }
+
+            Files.deleteIfExists(dir);
+            return FileVisitResult.CONTINUE;
+        }
+    }
 }
