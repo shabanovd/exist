@@ -75,66 +75,85 @@ public class SystemImport {
         processing.incrementAndGet();
         try {
             //set the new password
-            setAdminCredentials(broker, newCredentials);
-            
-            broker.disableTriggers();
-            try {
-                //get the backup descriptors, can be more than one if it was an incremental backup
-                final Stack<BackupDescriptor> descriptors = getBackupDescriptors(f);
-	        
-                final SAXParserFactory saxFactory = SAXParserFactory.newInstance();
-                saxFactory.setNamespaceAware(true);
-                saxFactory.setValidating(false);
-                final SAXParser sax = saxFactory.newSAXParser();
-                final XMLReader reader = sax.getXMLReader();
-	        
-                try {
-                    listener.restoreStarting();
-	
-                    while(!descriptors.isEmpty()) {
-                        final BackupDescriptor descriptor = descriptors.pop();
-                        final EXistInputSource is = descriptor.getInputSource();
-                        is.setEncoding( "UTF-8" );
+            if (newCredentials != null) {
+                setAdminCredentials(broker, newCredentials);
+            }
 
-                        final SystemImportHandler handler = new SystemImportHandler(broker, listener, uri, descriptor);
+            //restore /db/system
+            restore(listener, broker, getSystemBackupDescriptors(f), uri, false);
 
-                        reader.setContentHandler(handler);
-                        reader.parse(is);
-                    }
-                } finally {
-                    listener.restoreFinished();
-                }
-            } finally {
-                broker.enableTriggers();
-            }                
+            //get the backup descriptors, can be more than one if it was an incremental backup
+            restore(listener, broker, getBackupDescriptors(f), uri, true);
         } finally {
             processing.decrementAndGet();
             db.release(broker);
         }
     }
+
+    private void restore(final RestoreListener listener, final DBBroker broker, final Stack<BackupDescriptor> descriptors, String uri, boolean disableTriggers) throws XMLDBException, FileNotFoundException, IOException, SAXException, ParserConfigurationException, URISyntaxException, AuthenticationException, ConfigurationException, PermissionDeniedException {
+
+        if (disableTriggers) {
+            broker.disableTriggers();
+        }
+        try {
+            final SAXParserFactory saxFactory = SAXParserFactory.newInstance();
+            saxFactory.setNamespaceAware(true);
+            saxFactory.setValidating(false);
+            final SAXParser sax = saxFactory.newSAXParser();
+            final XMLReader reader = sax.getXMLReader();
+
+            try {
+                listener.restoreStarting();
+
+                while(!descriptors.isEmpty()) {
+                    final BackupDescriptor descriptor = descriptors.pop();
+                    final EXistInputSource is = descriptor.getInputSource();
+                    is.setEncoding( "UTF-8" );
+
+                    final SystemImportHandler handler = new SystemImportHandler(broker, listener, uri, descriptor);
+
+                    reader.setContentHandler(handler);
+                    reader.parse(is);
+                }
+            } finally {
+                listener.restoreFinished();
+            }
+        } finally {
+            if (disableTriggers) {
+                broker.enableTriggers();
+            }
+        }
+    }
     
-    public static Stack<BackupDescriptor> getBackupDescriptors(File contents) throws XMLDBException, IOException {
+    private static Stack<BackupDescriptor> getSystemBackupDescriptors(File contents) throws XMLDBException, IOException {
         
         final Stack<BackupDescriptor> descriptors = new Stack<>();
         
+        final BackupDescriptor bd = getBackupDescriptor(contents);
+
+        // check if the system collection is in the backup. This should be processed first
+        final BackupDescriptor sysDescriptor = bd.getChildBackupDescriptor(XmldbURI.SYSTEM_COLLECTION_NAME);
+
+        // check if the system/security collection is in the backup, this must be the first system collection processed
+        if(sysDescriptor != null) {
+            descriptors.push(sysDescriptor);
+
+            final BackupDescriptor secDescriptor = sysDescriptor.getChildBackupDescriptor("security");
+            if(secDescriptor != null) {
+                descriptors.push(secDescriptor);
+            }
+        }
+
+        return descriptors;
+    }
+
+    public static Stack<BackupDescriptor> getBackupDescriptors(File contents) throws XMLDBException, IOException {
+
+        final Stack<BackupDescriptor> descriptors = new Stack<>();
+
         do {
             final BackupDescriptor bd = getBackupDescriptor(contents);
-            
-            
             descriptors.push(bd);
-
-            // check if the system collection is in the backup. This should be processed first
-            final BackupDescriptor sysDescriptor = bd.getChildBackupDescriptor(XmldbURI.SYSTEM_COLLECTION_NAME);
-
-            // check if the system/security collection is in the backup, this must be the first system collection processed
-            if(sysDescriptor != null) {
-                descriptors.push(sysDescriptor);
-                
-                final BackupDescriptor secDescriptor = sysDescriptor.getChildBackupDescriptor("security");
-                if(secDescriptor != null) {
-                    descriptors.push(secDescriptor);
-                }
-            }
 
             contents = null;
 
@@ -151,7 +170,7 @@ public class SystemImport {
                 }
             }
         } while(contents != null);
-        
+
         return descriptors;
     }
     
