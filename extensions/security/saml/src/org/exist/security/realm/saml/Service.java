@@ -46,10 +46,10 @@ import org.exist.config.Configurator;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsAttribute;
 import org.exist.config.annotation.ConfigurationFieldAsElement;
+import org.exist.config.annotation.ConfigurationFieldClassMask;
 import org.exist.security.*;
 import org.exist.security.internal.HttpSessionAuthentication;
 import org.exist.security.internal.SubjectAccreditedImpl;
-import org.exist.storage.DBBroker;
 import org.opensaml.common.SAMLException;
 import org.opensaml.common.SAMLObject;
 import org.opensaml.common.binding.SAMLMessageContext;
@@ -95,7 +95,11 @@ public class Service implements Configurable {
     
     @ConfigurationFieldAsElement("signCertificate")
     String signCertificate;
-    
+
+    @ConfigurationFieldAsElement("attribute-to-schema-type")
+    @ConfigurationFieldClassMask("org.exist.security.realm.saml.SchemaTypeMapping")
+    private List<SchemaTypeMapping> mapAttributes = new ArrayList<>();
+
     Certificate certSigning;
     
     public Service(SAMLRealm realm, Configuration config) {
@@ -182,15 +186,12 @@ public class Service implements Configurable {
             final Account account = found;
 
             try {
-                realm.executeAsSystemUser(new AbstractRealm.Unit<Account>() {
-                    @Override
-                    public Account execute(DBBroker broker) throws EXistException, PermissionDeniedException {
-                        account.addGroup(set_group);
+                realm.executeAsSystemUser(broker -> {
+                    account.addGroup(set_group);
 
-                        account.save();
+                    account.save();
 
-                        return account;
-                    }
+                    return account;
                 });
             } catch (EXistException | PermissionDeniedException e) {
                 throw new AuthenticationException(
@@ -201,8 +202,31 @@ public class Service implements Configurable {
             }
         }
 
-        //XXX: update metas if changed!
-        
+        if (!mapAttributes.isEmpty()) {
+            final Account account = found;
+            try {
+                realm.executeAsSystemUser(broker -> {
+                    mapAttributes.forEach(mapping -> {
+                        String val = responseAttributes.get(mapping.getAttribute());
+
+                        if (val != null) {
+                            account.setMetadataValue(mapping, val);
+                        }
+                    });
+
+                    account.save();
+
+                    return account;
+                });
+            } catch (EXistException | PermissionDeniedException e) {
+                throw new AuthenticationException(
+                    AuthenticationException.UNNOWN_EXCEPTION,
+                    "can't update account's metadata",
+                    e
+                );
+            }
+        }
+
         Account principal = new SubjectAccreditedImpl((AbstractAccount) found, assertions, getSAMLSessionValidTo(assertions));
         
         Subject subject = new Subject();

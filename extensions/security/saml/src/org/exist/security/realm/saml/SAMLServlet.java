@@ -124,7 +124,6 @@ public class SAMLServlet extends HttpServlet {
                 throw new ServletException(e);
             }
         } else {
-            //"https://jorsek.okta.com/home/template_saml_2_0/0oauwz812qUJMIMRYOYV/3079"
             response.sendRedirect(service.getAuthURL());
             return;
         }
