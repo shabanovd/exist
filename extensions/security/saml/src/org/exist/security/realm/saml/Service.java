@@ -86,7 +86,10 @@ public class Service implements Configurable {
 
     @ConfigurationFieldAsAttribute("name")
     String name;
-    
+
+    @ConfigurationFieldAsElement("account-id-by-attribute")
+    String accountIdAttribute;
+
     @ConfigurationFieldAsElement("auth-url")
     String auth_url;
 
@@ -159,13 +162,27 @@ public class Service implements Configurable {
         }
         
         Map<String, String> responseAttributes = getAttributesMap(getSAMLAttributes(assertions));
-        
+
+        if (accountIdAttribute != null) {
+            nameValue = responseAttributes.get(accountIdAttribute);
+
+            if (nameValue == null) {
+                throw new AuthenticationException(AuthenticationException.UNNOWN_EXCEPTION, "attribute '"+accountIdAttribute+"' is null and can't be used as account id");
+            }
+
+            nameValue = nameValue.trim();
+
+            if (nameValue.isEmpty()) {
+                throw new AuthenticationException(AuthenticationException.UNNOWN_EXCEPTION, "attribute '"+accountIdAttribute+"' is empty and can't be used as account id");
+            }
+        }
+
         String accountName = forceLowercase ? nameValue.toLowerCase() : nameValue;
 
         Account found = SAMLRealm.get().getAccount(accountName);
         
         if (found == null) {
-            Map<SchemaType, String> metadata = new HashMap<SchemaType, String>();
+            Map<SchemaType, String> metadata = new HashMap<>();
 //            addMetadata(responseAttributes, metadata, AXSchemaType.ID, "id");
             addMetadata(responseAttributes, metadata, AXSchemaType.FIRSTNAME, "FirstName");
             addMetadata(responseAttributes, metadata, AXSchemaType.LASTNAME, "LastName");
