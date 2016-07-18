@@ -178,7 +178,7 @@ public class SystemExport
 
         File tmp;
         try {
-            tmp = File.createTempFile("export", "log", new File(targetDir));
+            tmp = File.createTempFile("export-", ".log", new File(targetDir));
         } catch (IOException e) {
             reportError("A write error occurred while exporting data: '" + e.getMessage() + "'. Aborting export.", e);
             return null;
@@ -301,9 +301,37 @@ public class SystemExport
 
                 broker.sync(Sync.MAJOR_SYNC);
 
+                LinkedHashSet<String> col_paths = new LinkedHashSet<>(10000);
+                LinkedHashSet<String> doc_paths = new LinkedHashSet<>(100000);
+
+                collectPaths(broker, broker.getCollection(XmldbURI.ROOT_COLLECTION_URI), col_paths, doc_paths);
+
                 final Date date = (prevBackup == null) ? null : prevBackup.getDate();
-                final CollectionCallback cb = new CollectionCallback(output, date, prevBackup, errorList, true);
+                final CollectionCallback cb = new CollectionCallback(output, date, prevBackup, errorList, true, col_paths);
                 broker.getCollectionsFailsafe(cb);
+
+                LinkedHashSet<String> paths = new LinkedHashSet<>(col_paths.size());
+                paths.addAll(col_paths);
+                try {
+                    for (String path : paths) {
+                        try {
+                            Collection col = broker.getCollection(XmldbURI.create(path));
+
+                            exportCollection(path, col, output, date, prevBackup, errorList, col_paths, (MutableDocumentSet) cb.getDocs());
+                        } catch (Exception e) {
+                            System.out.println("can't backup: " + path);
+                        }
+                    }
+                } catch (Exception ee) {
+                    ee.printStackTrace();
+                }
+
+                cb.getDocs().getDocumentIterator().forEachRemaining(doc -> doc_paths.remove(doc.getURI().toString()));
+
+                System.out.println("===== "+col_paths.size());
+                col_paths.forEach(System.out::println);
+                System.out.println("----- "+doc_paths.size());
+                doc_paths.forEach(System.out::println);
 
                 exportOrphans(output, cb.getDocs(), errorList);
 
@@ -357,6 +385,22 @@ public class SystemExport
         }
     }
 
+    private void collectPaths(DBBroker broker, Collection collection, Set<String> col_paths, Set<String> doc_paths) throws PermissionDeniedException {
+        col_paths.add(collection.getURI().toString());
+        for(final Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext(); ) {
+            final DocumentImpl next = i.next();
+            doc_paths.add(next.getURI().toString());
+        }
+        for(final Iterator<XmldbURI> i = collection.collectionIterator(broker); i.hasNext(); ) {
+            final XmldbURI next = i.next();
+            final Collection child = broker.getCollection(collection.getURI().append(next));
+            if(child == null) {
+                LOG.warn("Collection '" + next + "' not found");
+            } else {
+                collectPaths(broker, child, col_paths, doc_paths);
+            }
+        }
+    }
 
     private void reportError( String message, Throwable e )
     {
@@ -825,7 +869,7 @@ public class SystemExport
             AccountImpl.getSecurityProperties().enableCheckPasswords(false);
 
             try {
-                final CollectionCallback cb = new CollectionCallback( null, null, null, null, false );
+                final CollectionCallback cb = new CollectionCallback( null, null, null, null, false, null );
                 broker.getCollectionsFailsafe( cb );
                 collectionCount = cb.collectionCount;
             }
@@ -858,14 +902,16 @@ public class SystemExport
         private boolean            exportCollection;
         private int                lastPercentage   = -1;
         private Agent              jmxAgent         = AgentFactory.getInstance();
+        private Set<String>        col_paths;
 
-        private CollectionCallback( BackupWriter writer, Date date, BackupDescriptor prevBackup, List<ErrorReport> errorList, boolean exportCollection )
+        private CollectionCallback( BackupWriter writer, Date date, BackupDescriptor prevBackup, List<ErrorReport> errorList, boolean exportCollection, Set<String> col_paths)
         {
             this.writer           = writer;
             this.errors           = errorList;
             this.date             = date;
             this.prevBackup       = prevBackup;
             this.exportCollection = exportCollection;
+            this.col_paths        = col_paths;
         }
 
         public boolean indexInfo( Value value, long pointer ) throws TerminatedException
@@ -883,24 +929,18 @@ public class SystemExport
                         return( true );
                     }
 
-                    if( callback != null ) {
-                        callback.startCollection( uri );
-                    }
                     final Collection        collection = new Collection(broker, XmldbURI.createInternal( uri ) );
                     final VariableByteInput istream    = store.getAsStream( pointer );
                     collection.read( broker, istream );
-                    BackupDescriptor bd = null;
 
-                    if( prevBackup != null ) {
-                        bd = prevBackup.getBackupDescriptor( uri );
-                    }
                     int percentage = 100 * ( collectionCount + 1 ) / ( getCollectionCount() + 1 );
 
                     if( ( jmxAgent != null ) && ( percentage != lastPercentage ) ) {
                         lastPercentage = percentage;
                         jmxAgent.updateStatus( broker.getBrokerPool(), percentage );
                     }
-                    export( bh, collection, writer, date, bd, errors, docs );
+
+                    exportCollection(uri, collection, writer, date, prevBackup, errors, col_paths, docs);
                 }
             }
             catch( final TerminatedException e ) {
@@ -920,6 +960,22 @@ public class SystemExport
         {
             return( docs );
         }
+    }
+
+    private void exportCollection(String uri, Collection collection, BackupWriter writer, Date date, BackupDescriptor prevBackup, List<ErrorReport>  errors, Set<String> col_paths, MutableDocumentSet docs) throws TerminatedException, PermissionDeniedException, SAXException, IOException {
+
+        if( callback != null ) {
+            callback.startCollection( uri );
+        }
+        BackupDescriptor bd = null;
+
+        if( prevBackup != null ) {
+            bd = prevBackup.getBackupDescriptor( uri );
+        }
+
+        export( bh, collection, writer, date, bd, errors, docs );
+
+        if (col_paths != null) col_paths.remove(collection.getURI().toString());
     }
 
 
