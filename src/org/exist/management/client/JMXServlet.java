@@ -46,6 +46,11 @@ import javax.xml.transform.TransformerException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.exist.EXistException;
+import org.exist.http.servlets.BasicAuthenticator;
+import org.exist.security.Subject;
+import org.exist.security.internal.web.HttpAccount;
+import org.exist.storage.BrokerPool;
 import org.exist.util.serializer.DOMSerializer;
 import org.w3c.dom.Element;
 
@@ -87,6 +92,9 @@ public class JMXServlet extends HttpServlet {
         defaultProperties.setProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
     }
 
+    BrokerPool pool;
+    BasicAuthenticator authenticator;
+
     private JMXtoXML client;
     private final Set<String> localhostAddresses = new HashSet<>();
 
@@ -98,19 +106,34 @@ public class JMXServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
         // Verify if request is from localhost or if user has specific servlet/container managed role.
-        if (isFromLocalHost(request)) {
-            // Localhost is always authorized to access
-            LOG.debug("Local access granted");
-
-        } else if (hasSecretToken(request, getToken())) {
-            // Correct token is provided
-            LOG.debug("Correct token provided by " + request.getRemoteHost());
-            
-        } else {
-            // Check if user is already authorized, e.g. via MONEX allow user too
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access allowed for localhost, or when correct token has been provided.");
-            return;
+//        if (isFromLocalHost(request)) {
+//            // Localhost is always authorized to access
+//            LOG.debug("Local access granted");
+//
+//      } else
+      if (hasSecretToken(request, getToken())) {
+        // Correct token is provided
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Correct token provided by " + request.getRemoteHost());
         }
+      } else {
+        Subject requestUser = HttpAccount.getUserFromServletRequest(request);
+        if (requestUser == null) {
+          requestUser = authenticator.authenticate(request, response, true);
+        }
+
+        if (requestUser == null) {
+          //Challenge was send
+          return;
+        }
+
+        //allow authenticated DBA
+        if (!requestUser.hasDbaRole()) {
+          // Check if user is already authorized, e.g. via MONEX allow user too
+          response.sendError(HttpServletResponse.SC_FORBIDDEN, "Account don't have DBA access level.");
+          return;
+        }
+      }
 
         // Perform actual writing of data
         writeXmlData(request, response);
@@ -151,13 +174,7 @@ public class JMXServlet extends HttpServlet {
                 }
             } catch (InstanceNotFoundException e) {
                 throw new ServletException("mbean " + mbean + " not found: " + e.getMessage(), e);
-            } catch (MalformedObjectNameException e) {
-                throw new ServletException(e.getMessage(), e);
-            } catch (MBeanException e) {
-                throw new ServletException(e.getMessage(), e);
-            } catch (ReflectionException e) {
-                throw new ServletException(e.getMessage(), e);
-            } catch (IntrospectionException e) {
+            } catch (MalformedObjectNameException | MBeanException | ReflectionException | IntrospectionException e) {
                 throw new ServletException(e.getMessage(), e);
             }
         } else {
@@ -211,6 +228,14 @@ public class JMXServlet extends HttpServlet {
 
         // Setup token and tokenfile
         obtainTokenFileReference();
+
+        try {
+          pool = BrokerPool.getInstance();
+
+          authenticator = new BasicAuthenticator(pool);
+        } catch (EXistException e) {
+          LOG.error("can't get broker pool", e);
+        }
 
         LOG.info(String.format("JMXservlet token: %s", getToken()));
         
