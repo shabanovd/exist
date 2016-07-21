@@ -33,5 +33,9 @@ public enum Operation {
 
     RENAME,
 
-    DELETE
+    DELETE,
+
+    BRANCH,
+
+    MERGE
 }
