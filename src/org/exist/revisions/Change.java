@@ -19,7 +19,6 @@
  */
 package org.exist.revisions;
 
-import org.exist.Operation;
 import org.exist.xmldb.XmldbURI;
 
 /**

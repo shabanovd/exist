@@ -45,5 +45,11 @@ public interface CommitWriter extends AutoCloseable {
     CommitWriter delete(String id);
     CommitWriter delete(String id, XmldbURI uri);
 
+    CommitWriter merge(String id);
+    CommitWriter merge(XmldbURI uri);
+
+    CommitWriter branch(String id);
+    CommitWriter branch(XmldbURI uri);
+
     void done();
 }

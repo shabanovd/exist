@@ -1,6 +1,6 @@
 /*
  * eXist Open Source Native XML Database
- * Copyright (C) 2001-2014 The eXist Project
+ * Copyright (C) 2001-2016 The eXist Project
  * http://exist-db.org
  *
  * This program is free software; you can redistribute it and/or
@@ -17,21 +17,24 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.exist;
+package org.exist.revisions;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
- *
  */
 public enum Operation {
 
-    CREATE,
+  CREATE,
 
-    UPDATE,
+  UPDATE,
 
-    MOVE,
+  MOVE,
 
-    RENAME,
+  RENAME,
 
-    DELETE
+  DELETE,
+
+  BRANCH,
+
+  MERGE
 }

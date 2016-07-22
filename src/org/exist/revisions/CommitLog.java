@@ -19,7 +19,6 @@
  */
 package org.exist.revisions;
 
-import org.exist.Operation;
 import org.exist.xmldb.XmldbURI;
 
 import javax.xml.stream.XMLStreamException;
@@ -27,7 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.exist.Operation.*;
+import static org.exist.revisions.Operation.*;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
@@ -201,6 +200,34 @@ public class CommitLog implements CommitWriter, CommitReader {
         checkIsOpen();
 
         acts.add(new Action(DELETE, id));
+        return this;
+    }
+
+    public CommitLog merge(XmldbURI uri) {
+        checkIsOpen();
+
+        acts.add(new Action(MERGE, uri));
+        return this;
+    }
+
+    public CommitLog merge(String id) {
+        checkIsOpen();
+
+        acts.add(new Action(MERGE, id));
+        return this;
+    }
+
+    public CommitLog branch(XmldbURI uri) {
+        checkIsOpen();
+
+        acts.add(new Action(BRANCH, uri));
+        return this;
+    }
+
+    public CommitLog branch(String id) {
+        checkIsOpen();
+
+        acts.add(new Action(BRANCH, id));
         return this;
     }
 
