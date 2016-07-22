@@ -51,7 +51,7 @@ import java.util.Iterator;
 import java.util.Scanner;
 
 import static java.nio.file.Files.createDirectories;
-import static org.exist.Operation.UPDATE;
+import static org.exist.revisions.Operation.UPDATE;
 import static org.exist.dom.DocumentImpl.*;
 import static org.exist.revisions.RCSManager.LOG;
 
