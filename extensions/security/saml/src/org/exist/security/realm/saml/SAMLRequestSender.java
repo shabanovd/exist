@@ -50,17 +50,17 @@ public class SAMLRequestSender {
     private SAMLAuthnRequestBuilder samlAuthnRequestBuilder = new SAMLAuthnRequestBuilder();
     private MessageEncoder messageEncoder = new MessageEncoder();
 
-    public void sendSAMLAuthRequest(HttpServletRequest request, HttpServletResponse servletResponse, String spId, String acsUrl, String idpSSOUrl) throws Exception {
-        String redirectURL;
-        String idpUrl = idpSSOUrl;
+    public void sendSAMLAuthRequest(HttpServletRequest request, HttpServletResponse servletResponse, String spId, String acsUrl, String idpUrl) throws Exception {
         AuthnRequest authnRequest = samlAuthnRequestBuilder.buildRequest(spId, acsUrl, idpUrl);
         // store SAML 2.0 authentication request
         //String key = SAMLRequestStore.getInstance().storeRequest();
         //authnRequest.setID(key);
-        
-        //LOG.debug("SAML Authentication message : " + SAMLUtils.SAMLObjectToString(authnRequest));
-        
-        redirectURL = messageEncoder.encode(authnRequest, idpUrl, request.getRequestURI());
+
+        if (SAMLRealm.LOG.isDebugEnabled()) {
+          SAMLRealm.LOG.debug("SAML Authentication message : " + SAMLServlet.SAMLObjectToString(authnRequest));
+        }
+
+        String redirectURL = messageEncoder.encode(authnRequest, idpUrl, request.getRequestURI());
 
         HttpServletResponseAdapter responseAdapter = new HttpServletResponseAdapter(servletResponse, request.isSecure());
         HTTPTransportUtils.addNoCacheHeaders(responseAdapter);
@@ -87,7 +87,7 @@ public class SAMLRequestSender {
             authRequest.setProtocolBinding(SAMLConstants.SAML2_POST_BINDING_URI);
             authRequest.setAssertionConsumerServiceURL(acsUrl);
             authRequest.setIssuer(issuer);
-            //XXX: authRequest.setNameIDPolicy(nameIdPolicy);
+            //XXX: authRequest.setNameIDPolicy(nameIdPolicy); //urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
             authRequest.setVersion(SAMLVersion.VERSION_20);
             authRequest.setDestination(idpUrl);
 
@@ -105,9 +105,9 @@ public class SAMLRequestSender {
             URLBuilder urlBuilder = new URLBuilder(endpointURL);
             List<Pair<String, String>> queryParams = urlBuilder.getQueryParams();
             queryParams.clear();
-            queryParams.add(new Pair<String, String>("SAMLRequest", message));
+            queryParams.add(new Pair<>("SAMLRequest", message));
             if (checkRelayState(relayState)) {
-                queryParams.add(new Pair<String, String>("RelayState", relayState));
+                queryParams.add(new Pair<>("RelayState", relayState));
             }
             return urlBuilder.buildURL();
         }
