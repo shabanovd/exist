@@ -124,7 +124,7 @@ public class SAMLServlet extends HttpServlet {
                 throw new ServletException(e);
             }
         } else {
-            response.sendRedirect(service.getAuthURL());
+            service.sendAuthRequest(request, response);
             return;
         }
 

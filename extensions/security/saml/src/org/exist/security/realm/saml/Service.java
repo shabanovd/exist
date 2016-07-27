@@ -22,6 +22,7 @@
 package org.exist.security.realm.saml;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -33,6 +34,9 @@ import java.util.Locale;
 import java.util.Map;
 
 import javax.security.auth.Subject;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.codec.binary.Base64;
@@ -90,6 +94,12 @@ public class Service implements Configurable {
     @ConfigurationFieldAsElement("account-id-by-attribute")
     String accountIdAttribute;
 
+    @ConfigurationFieldAsElement("spID")
+    String spId;
+
+    @ConfigurationFieldAsElement("auth-method")
+    String auth_method;
+
     @ConfigurationFieldAsElement("auth-url")
     String auth_url;
 
@@ -115,7 +125,27 @@ public class Service implements Configurable {
     public String getName() {
         return name;
     }
-    
+
+    public void sendAuthRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if ("redirect".equals(auth_method)) {
+            response.sendRedirect(getAuthURL());
+
+        } else if ("post".equals(auth_method)) {
+            SAMLRequestSender samlRequestSender = new SAMLRequestSender();
+
+          try {
+            samlRequestSender.sendSAMLAuthRequest(request, response,
+                spId, getReturnURL(), getAuthURL());
+          } catch (Exception e) {
+            SAMLRealm.LOG.error(e.getMessage(), e);
+            throw new ServletException(e);
+          }
+        } else {
+            SAMLRealm.LOG.error("unknown authentication method '"+auth_method+"'");
+            throw new ServletException("unknown authentication method '"+auth_method+"'");
+        }
+    }
+
     public String getAuthURL() {
         return auth_url;
     }
@@ -273,7 +303,7 @@ public class Service implements Configurable {
     }
 
     public List<Attribute> getSAMLAttributes(List<Assertion> assertions) {
-        List<Attribute> attributes = new ArrayList<Attribute>();
+        List<Attribute> attributes = new ArrayList<>();
         if (assertions != null) {
             for (Assertion assertion : assertions) {
                 for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
@@ -300,7 +330,7 @@ public class Service implements Configurable {
     }
 
     public Map<String, String> getAttributesMap(List<Attribute> attributes) {
-        Map<String, String> result = new HashMap<String, String>();
+        Map<String, String> result = new HashMap<>();
         for (Attribute attribute : attributes) {
             result.put(attribute.getName(), attribute.getDOM().getTextContent());
         }
