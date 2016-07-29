@@ -48,9 +48,13 @@ public class SAMLResponseVerifier {
         //LOG.debug("SAML Response message : " + SAMLServlet.SAMLObjectToString(samlResponse));
         //System.out.println(SAMLServlet.XMLToString(samlResponse.getDOM()));
 
+        boolean messageSignatureChecked = false;
+
         Signature signature = samlResponse.getSignature();
-        if (signature != null)
+        if (signature != null) {
             validator.validate(signature);
+            messageSignatureChecked = true;
+        }
 
         Status status = samlResponse.getStatus();
         StatusCode statusCode = status.getStatusCode();
@@ -68,10 +72,13 @@ public class SAMLResponseVerifier {
 
         signature = assertion.getSignature();
         if (signature == null) {
-            LOG.error("The assertion have no signature");
-            throw new SAMLException("The assertion have no signature");
+            if (!messageSignatureChecked) {
+                LOG.error("The assertion have no signature");
+                throw new SAMLException("The assertion have no signature");
+            }
+        } else {
+            validator.validate(signature);
         }
-        validator.validate(signature);
 
         NameID nameId = assertion.getSubject().getNameID();
         if (nameId == null) {
