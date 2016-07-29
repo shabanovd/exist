@@ -228,24 +228,41 @@ public class Service implements Configurable {
             found = SAMLRealm.get().createAccountInDatabase(accountName, metadata);
         }
 
-        if (set_group != null && !found.hasGroup(set_group)) {
+        if (set_group != null) {
 
-            final Account account = found;
+            String[] groups = set_group.split(",");
 
-            try {
-                realm.executeAsSystemUser(broker -> {
-                    account.addGroup(set_group);
+            boolean doUpdate = false;
+            for (String group : groups) {
+                if (!found.hasGroup(group)) {
+                    doUpdate = true;
+                    break;
+                }
+            }
 
-                    account.save();
+            if (doUpdate) {
 
-                    return account;
-                });
-            } catch (EXistException | PermissionDeniedException e) {
-                throw new AuthenticationException(
+                final Account account = found;
+
+                try {
+                    realm.executeAsSystemUser(broker -> {
+                        for (String group : groups) {
+                            if (!account.hasGroup(group)) {
+                                account.addGroup(group);
+                            }
+                        }
+
+                        account.save();
+
+                        return account;
+                    });
+                } catch (EXistException | PermissionDeniedException e) {
+                    throw new AuthenticationException(
                         AuthenticationException.UNNOWN_EXCEPTION,
-                        "can't add account to group '"+set_group+"'",
+                        "can't add account to group '" + set_group + "'",
                         e
-                );
+                    );
+                }
             }
         }
 
