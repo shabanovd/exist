@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.exist.extensions.exquery.restxq.impl.adapters;
 
 import java.util.Iterator;
+
 import org.apache.log4j.Logger;
 import org.exist.dom.NodeProxy;
 import org.exist.xquery.XPathException;

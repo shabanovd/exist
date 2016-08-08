@@ -31,6 +31,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
 import org.apache.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.dom.QName;
@@ -38,8 +40,11 @@ import org.exist.extensions.exquery.restxq.RestXqServiceCompiledXQueryCache;
 import org.exist.extensions.exquery.restxq.impl.adapters.SequenceAdapter;
 import org.exist.extensions.exquery.restxq.impl.adapters.TypeAdapter;
 import org.exist.memtree.DocumentImpl;
+import org.exist.security.EffectiveSubject;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
+import org.exist.source.DBSource;
+import org.exist.source.Source;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ProcessMonitor;
@@ -115,23 +120,19 @@ public class ResourceFunctionExecutorImpl implements ResourceFunctionExecuter {
     
     @Override
     public Sequence execute(final ResourceFunction resourceFunction, final Iterable<TypedArgumentValue> arguments, final HttpRequest request) throws RestXqServiceException {
-        
+
         final RestXqServiceCompiledXQueryCache cache = RestXqServiceCompiledXQueryCacheImpl.getInstance();
-        
-        DBBroker broker = null;
+
         CompiledXQuery xquery = null;
         ProcessMonitor processMonitor = null;
-        
-        try {
-            
-            broker = getBrokerPool().get(getBrokerPool().getSubject());
-            
+
+        try(final DBBroker broker = getBrokerPool().getBroker()) {
             //ensure we can execute the function before going any further
             checkSecurity(broker, resourceFunction.getXQueryLocation());
             
             //get a compiled query service from the cache
             xquery = cache.getCompiledQuery(broker, resourceFunction.getXQueryLocation());
-            
+
             //find the function that we will execute
             final UserDefinedFunction fn = findFunction(xquery, resourceFunction.getFunctionSignature());
             
@@ -166,17 +167,23 @@ public class ResourceFunctionExecutorImpl implements ResourceFunctionExecuter {
             
             //execute the function call
             fnRef.analyze(new AnalyzeContextInfo());
-            final org.exist.xquery.value.Sequence result = fnRef.evalFunction(null, null, fnArgs);
-            
-            return new SequenceAdapter(result);
-        } catch(final URISyntaxException use) {
+
+            //if setUid/setGid, determine the effectiveSubject to use for execution
+            final Optional<EffectiveSubject> effectiveSubject = getEffectiveSubject(xquery);
+
+            try {
+                effectiveSubject.ifPresent(broker::pushSubject);  //switch to effective user if setUid/setGid
+                final org.exist.xquery.value.Sequence result = fnRef.evalFunction(null, null, fnArgs);
+                return new SequenceAdapter(result);
+            } finally {
+                //switch back from effective user if setUid/setGid
+                if(effectiveSubject.isPresent()) {
+                    broker.popSubject();
+                }
+            }
+
+        } catch(final URISyntaxException | EXistException | XPathException | PermissionDeniedException use) {
             throw new RestXqServiceException(use.getMessage(), use);
-        } catch(final PermissionDeniedException pde) {
-            throw new RestXqServiceException(pde.getMessage(), pde);
-        } catch(final XPathException xpe) {
-            throw new RestXqServiceException(xpe.getMessage(), xpe);
-        } catch(final EXistException ee) {
-            throw new RestXqServiceException(ee.getMessage(), ee);
         } finally {
             
             //clear down monitoring
@@ -184,19 +191,51 @@ public class ResourceFunctionExecutorImpl implements ResourceFunctionExecuter {
                 xquery.getContext().getProfiler().traceQueryEnd(xquery.getContext());
                 processMonitor.queryCompleted(xquery.getContext().getWatchDog());
             }
-            
-            //return the broker
-            if(broker != null) {
-                getBrokerPool().release(broker);
-            }
-            
+
             if(xquery != null) {
                 //return the compiled query to the pool
                 cache.returnCompiledQuery(resourceFunction.getXQueryLocation(), xquery);
             }
         }
     }
-    
+
+    /**
+     * If the compiled xquery is setUid and/or setGid
+     * we return the EffectiveSubject that should be used
+     * for execution
+     *
+     * @param xquery The XQuery to determine the effective subject for
+     * @return Maybe an effective subject or empty if there is no setUid or setGid bits
+     */
+    private Optional<EffectiveSubject> getEffectiveSubject(final CompiledXQuery xquery) {
+        final Optional<EffectiveSubject> effectiveSubject;
+
+        final Source src = xquery.getContext().getSource();
+        if(src instanceof DBSource) {
+            final DBSource dbSrc = (DBSource)src;
+            final Permission perm = dbSrc.getPermissions();
+
+            if(perm.isSetUid()) {
+                if(perm.isSetGid()) {
+                    //setUid and SetGid
+                    effectiveSubject = Optional.of(new EffectiveSubject(perm.getOwner(), perm.getGroup()));
+                } else {
+                    //just setUid
+                    effectiveSubject = Optional.of(new EffectiveSubject(perm.getOwner()));
+                }
+            } else if(perm.isSetGid()) {
+                //just setGid, so we use the current user as the effective user
+                effectiveSubject = Optional.of(new EffectiveSubject(xquery.getContext().getBroker().getSubject(), perm.getGroup()));
+            } else {
+                effectiveSubject = Optional.empty();
+            }
+        } else {
+            effectiveSubject = Optional.empty();
+        }
+
+        return effectiveSubject;
+    }
+
     private void declareVariables(final XQueryContext xqueryContext) throws XPathException {
         xqueryContext.declareVariable(XQ_VAR_BASE_URI, baseUri);
         xqueryContext.declareVariable(XQ_VAR_URI, uri);
@@ -211,7 +250,7 @@ public class ResourceFunctionExecutorImpl implements ResourceFunctionExecuter {
      * @throws URISyntaxException if the xqueryLocation cannot be parsed
      * @throws PermissionDeniedException if there is not READ and EXECUTE access on the xqueryLocation for the current user
      */
-    private final void checkSecurity(final DBBroker broker, final URI xqueryLocation) throws URISyntaxException, PermissionDeniedException {
+    private void checkSecurity(final DBBroker broker, final URI xqueryLocation) throws URISyntaxException, PermissionDeniedException {
         broker.getResource(XmldbURI.xmldbUriFor(xqueryLocation), Permission.READ | Permission.EXECUTE);
     }
     
@@ -240,7 +279,7 @@ public class ResourceFunctionExecutorImpl implements ResourceFunctionExecuter {
      */
     private org.exist.xquery.value.Sequence[] convertToExistFunctionArguments(final XQueryContext xqueryContext, final UserDefinedFunction fn, final Iterable<TypedArgumentValue> arguments) throws XPathException, RestXqServiceException {
         
-        final List<org.exist.xquery.value.Sequence> fnArgs = new ArrayList<org.exist.xquery.value.Sequence>();
+        final List<org.exist.xquery.value.Sequence> fnArgs = new ArrayList<>();
         
         for(final SequenceType argumentType : fn.getSignature().getArgumentTypes()) {
             
@@ -258,10 +297,10 @@ public class ResourceFunctionExecutorImpl implements ResourceFunctionExecuter {
                 }
             }
             
-            if(found == false) {
+            if(!found) {
                 //value is not always provided, e.g. by PathAnnotation, so use empty sequence
 
-                //TODO do we need to check the cardiality of the receiving arg to make sure it permits ZERO?
+                //TODO do we need to check the cardinality of the receiving arg to make sure it permits ZERO?
                 //argumentType.getCardinality();
         
                 //create the empty sequence

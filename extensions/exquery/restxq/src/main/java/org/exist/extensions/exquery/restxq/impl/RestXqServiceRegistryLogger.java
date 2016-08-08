@@ -34,9 +34,9 @@ import org.exquery.restxq.RestXqServiceRegistryListener;
  *
  * @author Adam Retter <adam.retter@googlemail.com>
  */
-public class RestXqServiceRegistryLogger implements RestXqServiceRegistryListener {
+class RestXqServiceRegistryLogger implements RestXqServiceRegistryListener {
 
-    final Logger log = Logger.getLogger(getClass());
+    private final Logger log = Logger.getLogger(getClass());
     
     @Override
     public void registered(final RestXqService service) {
