@@ -19,24 +19,14 @@
  */
 package org.exist.util.function;
 
-import java.util.Objects;
-
 /**
- * Similar to {@link java.util.function.Function} but
- * permits a single statically know Exception to be thrown
+ * Similar to {@link java.util.function.Consumer} but
+ * permits a statically know Exception to be thrown
  *
- * @param <T> Function parameter type
- * @param <R> Function return type
+ * @param <T> the type of the input to the operation
  * @param <E> Function throws exception type
- *
- * @author Adam Retter <adam.retter@googlemail.com>
  */
 @FunctionalInterface
-public interface FunctionE<T, R, E extends Throwable> {
-    R apply(final T t) throws E;
-
-    default <V> FunctionE<T, V, E> andThen(FunctionE<? super R, ? extends V, ? extends E> after) {
-        Objects.requireNonNull(after);
-        return (T t) -> after.apply(apply(t));
-    }
+public interface ConsumerE<T, E extends Throwable> {
+    void accept(T t) throws E;
 }

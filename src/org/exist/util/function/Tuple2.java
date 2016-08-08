@@ -19,24 +19,29 @@
  */
 package org.exist.util.function;
 
-import java.util.Objects;
-
 /**
- * Similar to {@link java.util.function.Function} but
- * permits a single statically know Exception to be thrown
- *
- * @param <T> Function parameter type
- * @param <R> Function return type
- * @param <E> Function throws exception type
+ * A tuple of two values
  *
  * @author Adam Retter <adam.retter@googlemail.com>
+ *
+ * @param <T1> The type of the first value
+ * @param <T2> The type of the second value
  */
-@FunctionalInterface
-public interface FunctionE<T, R, E extends Throwable> {
-    R apply(final T t) throws E;
+public class Tuple2<T1, T2> {
+    public final T1 _1;
+    public final T2 _2;
 
-    default <V> FunctionE<T, V, E> andThen(FunctionE<? super R, ? extends V, ? extends E> after) {
-        Objects.requireNonNull(after);
-        return (T t) -> after.apply(apply(t));
+    public Tuple2(final T1 _1, final T2 _2) {
+        this._1 = _1;
+        this._2 = _2;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj instanceof Tuple2) {
+            final Tuple2 other = (Tuple2)obj;
+            return _1.equals(other._1) && _2.equals(other._2);
+        }
+        return false;
     }
 }

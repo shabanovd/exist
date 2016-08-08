@@ -19,24 +19,20 @@
  */
 package org.exist.util.function;
 
-import java.util.Objects;
-
 /**
- * Similar to {@link java.util.function.Function} but
- * permits a single statically know Exception to be thrown
+ * Similar to {@link org.exist.util.function.TriFunctionE} but
+ * permits two single statically know Exceptions to be thrown
  *
- * @param <T> Function parameter type
+ * @param <T> Function parameter 1 type
+ * @param <U> Function parameter 2 type
+ * @param <V> Function parameter 3 type
  * @param <R> Function return type
- * @param <E> Function throws exception type
+ * @param <E1> Function throws exception type
+ * @param <E2> Function throws exception type
  *
  * @author Adam Retter <adam.retter@googlemail.com>
  */
 @FunctionalInterface
-public interface FunctionE<T, R, E extends Throwable> {
-    R apply(final T t) throws E;
-
-    default <V> FunctionE<T, V, E> andThen(FunctionE<? super R, ? extends V, ? extends E> after) {
-        Objects.requireNonNull(after);
-        return (T t) -> after.apply(apply(t));
-    }
+public interface TriFunction2E<T, U, V, R, E1 extends Throwable, E2 extends Throwable> {
+    R apply(final T t, final U u, final V v) throws E1, E2;
 }

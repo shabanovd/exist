@@ -22,20 +22,22 @@ package org.exist.util.function;
 import java.util.Objects;
 
 /**
- * Similar to {@link java.util.function.Function} but
- * permits a single statically know Exception to be thrown
+ * Similar to {@link FunctionE} but
+ * permits three statically know Exceptions to be thrown
  *
  * @param <T> Function parameter type
  * @param <R> Function return type
- * @param <E> Function throws exception type
+ * @param <E1> Function throws exception type
+ * @param <E2> Function throws exception type
+ * @param <E3> Function throws exception type
  *
  * @author Adam Retter <adam.retter@googlemail.com>
  */
 @FunctionalInterface
-public interface FunctionE<T, R, E extends Throwable> {
-    R apply(final T t) throws E;
+public interface Function3E<T, R, E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> {
+    R apply(final T t) throws E1, E2, E3;
 
-    default <V> FunctionE<T, V, E> andThen(FunctionE<? super R, ? extends V, ? extends E> after) {
+    default <V> Function3E<T, V, E1, E2, E3> andThen(Function3E<? super R, ? extends V, ? extends E1, ? extends E2, ? extends E3> after) {
         Objects.requireNonNull(after);
         return (T t) -> after.apply(apply(t));
     }

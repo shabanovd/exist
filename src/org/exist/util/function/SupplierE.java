@@ -1,6 +1,8 @@
+package org.exist.util.function;
+
 /*
  * eXist Open Source Native XML Database
- * Copyright (C) 2001-2015 The eXist Project
+ * Copyright (C) 2001-2016 The eXist Project
  * http://exist-db.org
  *
  * This program is free software; you can redistribute it and/or
@@ -17,26 +19,15 @@
  * along with this program; if not, write to the Free Software Foundation
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-package org.exist.util.function;
-
-import java.util.Objects;
 
 /**
- * Similar to {@link java.util.function.Function} but
- * permits a single statically know Exception to be thrown
+ * Similar to {@link java.util.function.Supplier} but
+ * permits a statically known Exception to be thrown
  *
- * @param <T> Function parameter type
- * @param <R> Function return type
+ * @param <T> the type of results supplied by this supplier
  * @param <E> Function throws exception type
- *
- * @author Adam Retter <adam.retter@googlemail.com>
  */
 @FunctionalInterface
-public interface FunctionE<T, R, E extends Throwable> {
-    R apply(final T t) throws E;
-
-    default <V> FunctionE<T, V, E> andThen(FunctionE<? super R, ? extends V, ? extends E> after) {
-        Objects.requireNonNull(after);
-        return (T t) -> after.apply(apply(t));
-    }
+public interface SupplierE<T, E extends Throwable> {
+    T get() throws E;
 }
