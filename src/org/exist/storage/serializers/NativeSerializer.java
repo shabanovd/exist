@@ -53,13 +53,13 @@ import java.util.regex.Pattern;
 
 /**
  * Serializer implementation for the native database backend.
- * 
+ *
  * @author wolf
  */
 public class NativeSerializer extends Serializer {
 
     // private final static AttributesImpl EMPTY_ATTRIBUTES = new AttributesImpl();
-    
+
     private final static QName TEXT_ELEMENT = new QName("text", Namespaces.EXIST_NS, "exist");
     private final static QName ATTRIB_ELEMENT = new QName("attribute", Namespaces.EXIST_NS, "exist");
     private final static QName SOURCE_ATTRIB = new QName("source", Namespaces.EXIST_NS, "exist");
@@ -72,7 +72,7 @@ public class NativeSerializer extends Serializer {
     public NativeSerializer(DBBroker broker, Configuration config, List<String> classes) {
         super(broker, config, classes);
     }
-    
+
     protected void serializeToReceiver(NodeProxy p, boolean generateDocEvent, boolean checkAttributes)
     throws SAXException {
     	if(Type.subTypeOf(p.getType(), Type.DOCUMENT) || p.getNodeId() == NodeId.DOCUMENT_NODE) {
@@ -85,29 +85,29 @@ public class NativeSerializer extends Serializer {
         serializeToReceiver(null, domIter, p.getDocument(), checkAttributes, p.getMatches(), new TreeSet<String>());
         if (generateDocEvent) {receiver.endDocument();}
     }
-    
+
     protected void serializeToReceiver(DocumentImpl doc, boolean generateDocEvent) throws SAXException {
     	final long start = System.currentTimeMillis();
-    	
+
     	setDocument(doc);
     	final NodeList children = doc.getChildNodes();
-    	if (generateDocEvent) 
+    	if (generateDocEvent)
     		{receiver.startDocument();}
-		
+
     	if (doc.getDoctype() != null){
 			if ("yes".equals(getProperty(EXistOutputKeys.OUTPUT_DOCTYPE, "no"))) {
 				final StoredNode n = (StoredNode) doc.getDoctype();
 				serializeToReceiver(n, null, (DocumentImpl) n.getOwnerDocument(), true, null, new TreeSet<String>());
 			}
 		}
-    	
+
     	// iterate through children
     	for (int i = 0; i < children.getLength(); i++) {
     		final StoredNode node = (StoredNode) children.item(i);
     		final Iterator<StoredNode> domIter = broker.getNodeIterator(node);
     		domIter.next();
     		final NodeProxy p = new NodeProxy(node);
-    		serializeToReceiver(node, domIter, (DocumentImpl)node.getOwnerDocument(), 
+    		serializeToReceiver(node, domIter, (DocumentImpl)node.getOwnerDocument(),
     				true, p.getMatches(), new TreeSet<String>());
     	}
 
@@ -118,13 +118,13 @@ public class NativeSerializer extends Serializer {
 	    			+ " to SAX took " + (System.currentTimeMillis() - start) + " msec");}
 
     }
-    
-    
+
+
     protected void serializeToReceiver(StoredNode node, Iterator<StoredNode> iter,
             DocumentImpl doc, boolean first, Match match, Set<String> namespaces) throws SAXException {
-        if (node == null) 
+        if (node == null)
         	{node = iter.next();}
-        if (node == null) 
+        if (node == null)
         	{return;}
         // char ch[];
         String cdata;
@@ -154,7 +154,7 @@ public class NativeSerializer extends Serializer {
         	final AttrList attribs = new AttrList();
         	if ((first && showId == EXIST_ID_ELEMENT) || showId >= EXIST_ID_ALL) {
                 attribs.addAttribute(ID_ATTRIB, node.getNodeId().toString());
-            /* 
+            /*
              * This is a proposed fix-up that the serializer could do
              * to make sure elements always have the namespace declarations
              *
@@ -227,7 +227,7 @@ public class NativeSerializer extends Serializer {
             node.release();
             break;
         case Node.TEXT_NODE:
-            if (showId == EXIST_ID_WRAP_TEXT || (first && createContainerElements)) {
+            if (first && createContainerElements) {
                 final AttrList tattribs = new AttrList();
                 if (showId > 0) {
                     tattribs.addAttribute(ID_ATTRIB, node.getNodeId().toString());
@@ -237,8 +237,8 @@ public class NativeSerializer extends Serializer {
             }
             receiver.setCurrentNode(node);
             receiver.characters(((TextImpl) node).getXMLString());
-            if (showId == EXIST_ID_WRAP_TEXT || (first && createContainerElements))
-                {receiver.endElement(TEXT_ELEMENT);}
+            if (first && createContainerElements)
+            {receiver.endElement(TEXT_ELEMENT);}
             node.release();
             break;
         case Node.ATTRIBUTE_NODE:
@@ -247,7 +247,7 @@ public class NativeSerializer extends Serializer {
             else
                 {cdata = ((AttrImpl) node).getValue();}
         	if(first) {
-                if (createContainerElements) {               
+                if (createContainerElements) {
             		final AttrList tattribs = new AttrList();
                     if (showId > 0) {
                         tattribs.addAttribute(ID_ATTRIB, node.getNodeId().toString());
@@ -260,7 +260,7 @@ public class NativeSerializer extends Serializer {
                 else {
                 	if (this.outputProperties.getProperty("output-method") != null &&
                 			"text".equals(this.outputProperties.getProperty("output-method"))) {
-                		receiver.characters(node.getNodeValue());                	
+                		receiver.characters(node.getNodeValue());
                 	} else {
                 		LOG.warn("Error SENR0001: attribute '" + node.getQName() + "' has no parent element. " +
                 				"While serializing document " + doc.getURI());
@@ -296,7 +296,7 @@ public class NativeSerializer extends Serializer {
                 {receiver.characters(str);}
             else {
                 data = new char[str.length()];
-                str.getChars(0,str.length(), data, 0);   
+                str.getChars(0,str.length(), data, 0);
                 receiver.cdataSection(data, 0, data.length);
             }
             break;

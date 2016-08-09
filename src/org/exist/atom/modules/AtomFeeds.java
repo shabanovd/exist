@@ -57,7 +57,7 @@ import org.exist.xquery.value.Sequence;
 import org.xml.sax.SAXException;
 
 /**
- * 
+ *
  * @author R. Alexander Milowski
  */
 public class AtomFeeds extends AtomModuleBase implements Atom {
@@ -258,7 +258,7 @@ public class AtomFeeds extends AtomModuleBase implements Atom {
 				serializer.setProperties(outputProperties);
 				serializer.setSAXHandlers(sax, sax);
 
-				serializer.toSAX(resultSequence, 1, 1, false, false);
+				serializer.toSAX(resultSequence, 1, 1, false, false, 0, 0);
 
 				SerializerPool.getInstance().returnObject(sax);
 				w.flush();
@@ -287,7 +287,7 @@ public class AtomFeeds extends AtomModuleBase implements Atom {
 	public void getFeed(DBBroker broker, String path, OutgoingMessage response)
 			throws EXistException, BadRequestException,
 			PermissionDeniedException {
-		
+
 		final XQuery xquery = broker.getXQueryService();
 		CompiledXQuery feedQuery = xquery.getXQueryPool().borrowCompiledXQuery(
 				broker, getFeedSource);
@@ -309,8 +309,8 @@ public class AtomFeeds extends AtomModuleBase implements Atom {
 			context = feedQuery.getContext();
 		}
 		context.setStaticallyKnownDocuments(
-			new XmldbURI[] { 
-					XmldbURI.create(path).append(AtomProtocol.FEED_DOCUMENT_NAME) 
+			new XmldbURI[] {
+					XmldbURI.create(path).append(AtomProtocol.FEED_DOCUMENT_NAME)
 			}
 		);
 
@@ -333,7 +333,7 @@ public class AtomFeeds extends AtomModuleBase implements Atom {
 				serializer.setProperties(outputProperties);
 				serializer.setSAXHandlers(sax, sax);
 
-				serializer.toSAX(resultSequence, 1, 1, false, false);
+				serializer.toSAX(resultSequence, 1, 1, false, false, 0, 0);
 
 				SerializerPool.getInstance().returnObject(sax);
 				w.flush();

@@ -69,7 +69,7 @@ import org.exist.xquery.value.Sequence;
 import org.xml.sax.SAXException;
 
 /**
- * 
+ *
  * @author R. Alexander Milowski
  */
 public class Query extends AtomModuleBase implements Atom {
@@ -77,7 +77,7 @@ public class Query extends AtomModuleBase implements Atom {
 	protected final static Logger LOG = Logger.getLogger(Query.class);
 	MimeType xqueryMimeType;
 
-	public class MethodConfiguration {
+	public static class MethodConfiguration {
 		String contentType;
 		URLSource querySource;
 
@@ -115,7 +115,7 @@ public class Query extends AtomModuleBase implements Atom {
 	/** Creates a new instance of AtomProtocol */
 	public Query() {
 		xqueryMimeType = MimeTable.getInstance().getContentType("application/xquery");
-		
+
 		methods = new HashMap<String, MethodConfiguration>();
 		methods.put("GET", new MethodConfiguration());
 		methods.put("POST", new MethodConfiguration());
@@ -141,7 +141,7 @@ public class Query extends AtomModuleBase implements Atom {
 	public void doGet(DBBroker broker, IncomingMessage request,
 			OutgoingMessage response) throws BadRequestException,
 			PermissionDeniedException, NotFoundException, EXistException {
-		
+
 		if (get.querySource != null) {
 			doQuery(broker, request, response, get);
 		} else {
@@ -152,7 +152,7 @@ public class Query extends AtomModuleBase implements Atom {
 	public void doPut(DBBroker broker, IncomingMessage request,
 			OutgoingMessage response) throws BadRequestException,
 			PermissionDeniedException, NotFoundException, EXistException {
-		
+
 		if (put.querySource != null) {
 			// TODO: handle put body
 			doQuery(broker, request, response, put);
@@ -164,7 +164,7 @@ public class Query extends AtomModuleBase implements Atom {
 	public void doDelete(DBBroker broker, IncomingMessage request,
 			OutgoingMessage response) throws BadRequestException,
 			PermissionDeniedException, NotFoundException, EXistException {
-		
+
 		if (delete.querySource != null) {
 			doQuery(broker, request, response, delete);
 		} else {
@@ -175,7 +175,7 @@ public class Query extends AtomModuleBase implements Atom {
 	public void doHead(DBBroker broker, IncomingMessage request,
 			OutgoingMessage response) throws BadRequestException,
 			PermissionDeniedException, NotFoundException, EXistException {
-		
+
 		if (head.querySource != null) {
 			doQuery(broker, request, response, head);
 		} else {
@@ -186,7 +186,7 @@ public class Query extends AtomModuleBase implements Atom {
 	public void doPost(DBBroker broker, IncomingMessage request,
 			OutgoingMessage response) throws BadRequestException,
 			PermissionDeniedException, NotFoundException, EXistException {
-		
+
 		if (post.querySource != null) {
 			// TODO: handle post body
 			doQuery(broker, request, response, post);
@@ -237,7 +237,7 @@ public class Query extends AtomModuleBase implements Atom {
 					builder.append(buffer, 0, len);
 				}
 				compiledQuery = xquery.compile(context, new StringSource(builder.toString()));
-			
+
 			} catch (final XPathException ex) {
 				throw new EXistException("Cannot compile xquery.", ex);
 			} catch (final IOException ex) {
@@ -246,8 +246,8 @@ public class Query extends AtomModuleBase implements Atom {
 			}
 
 			context.setStaticallyKnownDocuments(
-				new XmldbURI[] { 
-					XmldbURI.create(request.getPath()).append(AtomProtocol.FEED_DOCUMENT_NAME) 
+				new XmldbURI[] {
+					XmldbURI.create(request.getPath()).append(AtomProtocol.FEED_DOCUMENT_NAME)
 				}
 			);
 
@@ -270,7 +270,7 @@ public class Query extends AtomModuleBase implements Atom {
 					serializer.setProperties(outputProperties);
 					serializer.setSAXHandlers(sax, sax);
 
-					serializer.toSAX(resultSequence, 1, 1, false, false);
+					serializer.toSAX(resultSequence, 1, 1, false, false, 0, 0);
 
 					SerializerPool.getInstance().returnObject(sax);
 					w.flush();
@@ -298,11 +298,11 @@ public class Query extends AtomModuleBase implements Atom {
 	private void declareVariables(XQueryContext context,
 			HttpServletRequest request, HttpServletResponse response)
 			throws XPathException {
-		
+
 		final RequestWrapper reqw = new HttpRequestWrapper(
-				request, 
+				request,
 				request.getCharacterEncoding(), request.getCharacterEncoding());
-		
+
 		final ResponseWrapper respw = new HttpResponseWrapper(response);
 		// context.declareNamespace(RequestModule.PREFIX,
 		// RequestModule.NAMESPACE_URI);
@@ -317,7 +317,7 @@ public class Query extends AtomModuleBase implements Atom {
 			NotFoundException, EXistException {
 
 		final Collection collection = broker.getCollection(XmldbURI.create(request.getPath()));
-		
+
 		if (collection == null)
 			{throw new BadRequestException("Collection " + request.getPath() + " does not exist.");}
 
@@ -361,13 +361,13 @@ public class Query extends AtomModuleBase implements Atom {
 			try {
 				final Writer w = new OutputStreamWriter(response.getOutputStream(), charset);
 				final SAXSerializer sax = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
-				
+
 				final Properties outputProperties = new Properties();
 				sax.setOutput(w, outputProperties);
 				serializer.setProperties(outputProperties);
 				serializer.setSAXHandlers(sax, sax);
 
-				serializer.toSAX(resultSequence, 1, 1, false, false);
+				serializer.toSAX(resultSequence, 1, 1, false, false, 0, 0);
 
 				SerializerPool.getInstance().returnObject(sax);
 				w.flush();
