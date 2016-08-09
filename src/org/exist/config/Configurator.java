@@ -35,7 +35,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +43,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -1213,8 +1213,8 @@ public class Configurator {
             throw new IOException(e);
         }
     }
-    
-    protected static Set<FullXmldbURI> saving = new HashSet<FullXmldbURI>();
+
+    protected static final Set<FullXmldbURI> saving = new ConcurrentSkipListSet<>();
 
     public static DocumentAtExist save(final Configurable instance, final DBBroker broker, final Collection collection, final XmldbURI uri) throws IOException, ConfigurationException {
         
