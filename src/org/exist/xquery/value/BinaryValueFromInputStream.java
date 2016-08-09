@@ -7,7 +7,6 @@ import org.apache.log4j.Logger;
 import org.exist.util.io.CachingFilterInputStream;
 import org.exist.util.io.FilterInputStreamCache;
 import org.exist.util.io.FilterInputStreamCacheFactory;
-import org.exist.util.io.FilterInputStreamCacheFactory.FilterInputStreamCacheConfiguration;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 
@@ -24,22 +23,15 @@ public class BinaryValueFromInputStream extends BinaryValue {
     private final CachingFilterInputStream is;
     private FilterInputStreamCache cache;
 
-
     protected BinaryValueFromInputStream(final BinaryValueManager manager, final BinaryValueType binaryValueType, final InputStream is) throws XPathException {
         super(manager, binaryValueType);
 
         try {
-            
-            this.cache = FilterInputStreamCacheFactory.getCacheInstance(new FilterInputStreamCacheConfiguration(){
 
-                @Override
-                public String getCacheClass() {
-                    return manager.getCacheClass();
-                }
-            });
-            this.is = new CachingFilterInputStream(cache, is);
+            this.cache = FilterInputStreamCacheFactory.getCacheInstance(() -> manager.getCacheClass(), is);
+            this.is = new CachingFilterInputStream(cache);
 
-        } catch(final IOException ioe) {
+        } catch (final IOException ioe) {
             throw new XPathException(ioe);
         }
 
@@ -55,9 +47,14 @@ public class BinaryValueFromInputStream extends BinaryValue {
 
     @Override
     public BinaryValue convertTo(final BinaryValueType binaryValueType) throws XPathException {
-        final BinaryValueFromInputStream binaryInputStream = new BinaryValueFromInputStream(getManager(), binaryValueType, new CachingFilterInputStream(is));
-        getManager().registerBinaryValueInstance(binaryInputStream);
-        return binaryInputStream;
+        try {
+            final BinaryValueFromInputStream binaryInputStream = new BinaryValueFromInputStream(getManager(), binaryValueType, new CachingFilterInputStream(is));
+            getManager().registerBinaryValueInstance(binaryInputStream);
+            return binaryInputStream;
+        } catch (InstantiationException ex) {
+            LOG.error(ex.getMessage(), ex);
+        }
+        return null;
     }
 
     @Override
@@ -80,26 +77,26 @@ public class BinaryValueFromInputStream extends BinaryValue {
 
     @Override
     public InputStream getInputStream() {
-        return new CachingFilterInputStream(is);
+        try {
+            return new CachingFilterInputStream(is);
+        } catch (InstantiationException ex) {
+            LOG.error(ex.getMessage(), ex);
+        }
+        return null;
     }
 
     @Override
     public void close() throws IOException {
-        try {
-            if(cache != null) {
-                cache.invalidate();
-            }
-        } finally {
-            is.close();
-        }
+        is.close();
     }
 
     @Override
     public void destroy(XQueryContext context, final Sequence contextSequence) {
         // do not close if this object is part of the contextSequence
-        if (contextSequence == this ||
-            (contextSequence instanceof ValueSequence && ((ValueSequence)contextSequence).containsValue(this)))
-            {return;}
+        if (contextSequence == this
+                || (contextSequence instanceof ValueSequence && ((ValueSequence) contextSequence).containsValue(this))) {
+            return;
+        }
         LOG.debug("Closing input stream");
         try {
             this.close();
