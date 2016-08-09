@@ -106,7 +106,7 @@ public class SetCurrentUser extends BasicFunction {
 //				return Sequence.EMPTY_SEQUENCE;
 
 			//validated user, store in session
-			context.getBroker().setUser(user);
+			context.getBroker().setSubject(user);
 			final SessionWrapper session = request.getSession(true);
 			session.setAttribute("user", userName);
 			session.setAttribute("password", new StringValue(passwd));

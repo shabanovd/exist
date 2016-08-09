@@ -366,7 +366,7 @@ public class Journal {
            new FileFilter() {
                public boolean accept(File file) {
                    LOG.info("Checkpoint deleting "+file);
-                   if (!FileUtils.delete(file)) {
+                   if (!FileUtils.deleteQuietly(file.toPath())) {
                        LOG.fatal("Cannot delete file "+file+" from backup journal.");
                    }
                    return false;
