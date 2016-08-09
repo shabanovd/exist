@@ -4,6 +4,7 @@ package xquery.xqdoc;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.nio.file.Paths;
 
 import org.exist.source.FileSource;
 import org.exist.source.Source;
@@ -38,7 +39,7 @@ public class RunTests {
 	public void run() {
 		try {
 			XQueryService xqs = (XQueryService) testCollection.getService("XQueryService", "1.0");
-			Source query = new FileSource(new File(TEST_QUERY), "UTF-8", false);
+			Source query = new FileSource(Paths.get(TEST_QUERY), false);
 			for (File file : files) {
 				xqs.declareVariable("doc", file.getName());
 				ResourceSet result = xqs.execute(query);
