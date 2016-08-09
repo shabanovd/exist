@@ -28,6 +28,7 @@ import java.io.StringWriter;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 import org.exist.Database;
@@ -74,8 +75,6 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
 import org.exist.util.Configuration.StartupTriggerConfig;
-import org.exist.util.hashtable.MapRWLock;
-import org.exist.util.hashtable.MapRWLock.LongOperation;
 import org.exist.xmldb.ShutdownListener;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.PerformanceStats;
@@ -442,17 +441,24 @@ public class BrokerPool implements Database {
 	@ConfigurationFieldAsAttribute("max")
 	private int maxBrokers;
 
-	/**
-	 * The number of inactive brokers for the database instance 
-	 */	
-	private Stack<DBBroker> inactiveBrokers = new Stack<DBBroker>();
-	
-	/**
-	 * The number of active brokers for the database instance 
-	 */	
-	private MapRWLock<Thread, DBBroker> activeBrokers = new MapRWLock<Thread, DBBroker>( new IdentityHashMap<Thread, DBBroker>() );
-		
-	/**
+    /**
+     * The number of inactive brokers for the database instance
+     */
+    private final Deque<DBBroker> inactiveBrokers = new ArrayDeque<>();
+
+    /**
+     * The number of active brokers for the database instance
+     */
+    private final Map<Thread, DBBroker> activeBrokers = new ConcurrentHashMap<>();
+
+    /**
+     * Used when TRACE level logging is enabled
+     * to provide a history of broker leases
+     */
+    private final Map<String, TraceableStateChanges<TraceableBrokerLeaseChange.BrokerInfo, TraceableBrokerLeaseChange.Change>> brokerLeaseChangeTrace = LOG.isTraceEnabled() ? new HashMap<>() : null;
+    private final Map<String, List<TraceableStateChanges<TraceableBrokerLeaseChange.BrokerInfo, TraceableBrokerLeaseChange.Change>>> brokerLeaseChangeTraceHistory = LOG.isTraceEnabled() ? new HashMap<>() : null;
+
+    /**
      * The configuration object for the database instance
      */
 	protected Configuration conf = null;    
@@ -1239,17 +1245,8 @@ public class BrokerPool implements Database {
 		return activeBrokers.size();
 	}
 
-	public Map<Thread, DBBroker> getActiveBrokers() {
-		final Map<Thread, DBBroker> res = new HashMap<Thread, DBBroker>(activeBrokers.size());
-
-		activeBrokers.readOperation(new LongOperation<Thread, DBBroker>() {
-			@Override
-			public void execute(Map<Thread, DBBroker> map) {
-				res.putAll(map);
-			}
-		});
-
-		return res;
+    public Map<Thread, DBBroker> getActiveBrokers() {
+        return new HashMap<>(activeBrokers);
     }
 
     /**
@@ -1486,6 +1483,7 @@ public class BrokerPool implements Database {
 	}
 
     //Seems dangerous and redundant as you myst acquire a broker yourself first, just use broker.setUser()
+    @Deprecated
     public boolean setSubject(Subject subject) {
 		//synchronized(this) {
 			//Try to get an active broker
@@ -1531,42 +1529,37 @@ public class BrokerPool implements Database {
     }
 
     /**
-     *  Get active broker for current thread
-     * 
+     * Get active broker for current thread
+     *
+     * Note - If you call getActiveBroker() you must not call
+     * release on both the returned active broker and the original
+     * lease from {@link BrokerPool#getBroker()} or {@link BrokerPool#get(Subject)}
+     * otherwise release will have been called more than get!
+     *
      * @return Database broker
      * @throws RuntimeException NO broker available for current thread.
-     * 
      */
-	public DBBroker getActiveBroker() { //throws EXistException {
-		//synchronized(this) {
-			//Try to get an active broker
-			final DBBroker broker = activeBrokers.get(Thread.currentThread());
-			if (broker == null) {
-				final StringBuilder sb = new StringBuilder();
-				sb.append("Broker was not obtained for thread '");
-				sb.append(Thread.currentThread());
-				sb.append("'.\n");
-				activeBrokers.readOperation(new LongOperation<Thread, DBBroker>() {
-					@Override
-					public void execute(Map<Thread, DBBroker> map) {
-						for (final Entry<Thread, DBBroker> entry : map.entrySet()) {
-							
-//							if (entry.getKey().equals(Thread.currentThread()))
-//								return entry.getValue();
-							
-							sb.append(entry.getKey());
-							sb.append(" = ");
-							sb.append(entry.getValue());
-							sb.append("\n");
-						}
-					}
-				});
-                LOG.debug(sb.toString());
-				throw new RuntimeException(sb.toString());
-			}
-			return broker;
-		//}
-	}
+    public DBBroker getActiveBroker() {
+        final DBBroker broker = activeBrokers.get(Thread.currentThread());
+        if(broker == null) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Broker was not obtained for thread '");
+            sb.append(Thread.currentThread());
+            sb.append("'.");
+            sb.append(System.getProperty("line.separator"));
+
+            for(final Entry<Thread, DBBroker> entry : activeBrokers.entrySet()) {
+                sb.append(entry.getKey());
+                sb.append(" = ");
+                sb.append(entry.getValue());
+                sb.append(System.getProperty("line.separator"));
+            }
+
+            LOG.debug(sb.toString());
+            throw new RuntimeException(sb.toString());
+        }
+        return broker;
+    }
 
     public DBBroker authenticate(String username, Object credentials) throws AuthenticationException {
     	final Subject subject = getSecurityManager().authenticate(username, credentials);
@@ -1582,64 +1575,78 @@ public class BrokerPool implements Database {
 		return get(null);
 	}
 
-    /** Returns an active broker for the database instance.
-	 * @return The broker
-	 * @throws EXistException If the instance is not available (stopped or not configured)
-	 */
+    /**
+     * Returns an active broker for the database instance.
+     *
+     * @param subject Optionally a subject to set on the broker, if a user is not provided then the
+     *                current user assigned to the broker will be re-used
+     * @return The broker
+     * @throws EXistException If the instance is not available (stopped or not configured)
+     */
     //TODO : rename as getBroker ? getInstance (when refactored) ?
-	public DBBroker get(Subject user) throws EXistException {
-		if (!isInstanceConfigured()) {		
-			throw new EXistException("database instance '" + instanceName + "' is not available");
-		}
+    public DBBroker get(Subject subject) throws EXistException {
 
-		//Try to get an active broker
-		DBBroker broker = activeBrokers.get(Thread.currentThread());
-		//Use it...
-		//TOUNDERSTAND (pb) : why not pop a broker from the inactive ones rather than maintaining reference counters ?
+        if(!isInstanceConfigured()) {
+            throw new EXistException("database instance '" + instanceName + "' is not available");
+        }
+
+        //Try to get an active broker
+        DBBroker broker = activeBrokers.get(Thread.currentThread());
+        //Use it...
+        //TOUNDERSTAND (pb) : why not pop a broker from the inactive ones rather than maintaining reference counters ?
         // WM: a thread may call this more than once in the sequence of operations, i.e. calls to get/release can
         // be nested. Returning a new broker every time would lead to a deadlock condition if two threads have
         // to wait for a broker to become available. We thus use reference counts and return
         // the same broker instance for each thread.
-		if(broker != null) {
-			//increase its number of uses
-			broker.incReferenceCount();
-            if (user != null)
-                {broker.setSubject(user);}
+        if(broker != null) {
+            //increase its number of uses
+            broker.incReferenceCount();
+            broker.pushSubject(subject == null ? broker.getSubject() : subject);
+
+            if(LOG.isTraceEnabled()) {
+                if(!brokerLeaseChangeTrace.containsKey(broker.getId())) {
+                    brokerLeaseChangeTrace.put(broker.getId(), new TraceableStateChanges<>());
+                }
+                brokerLeaseChangeTrace.get(broker.getId()).add(TraceableBrokerLeaseChange.get(new TraceableBrokerLeaseChange.BrokerInfo(broker.getId(), broker.getReferenceCount())));
+            }
+
             return broker;
-			//TODO : share the code with what is below (including notifyAll) ?
+            //TODO : share the code with what is below (including notifyAll) ?
             // WM: notifyAll is not necessary if we don't have to wait for a broker.
-		}
-		
-		//No active broker : get one ASAP
-	
-        while ((serviceModeUser != null && user != null && !user.equals(serviceModeUser)) || (serviceBroker != null)) {
+        }
+
+        //No active broker : get one ASAP
+
+        while(serviceModeUser != null && subject != null && !subject.equals(serviceModeUser)) {
             try {
                 LOG.debug("Db instance is in service mode. Waiting for db to become available again ...");
                 synchronized (this) {
                     wait();
                 }
-            } catch (final InterruptedException e) {
+            } catch(final InterruptedException e) {
             }
         }
 
         synchronized(this) {
             //Are there any available brokers ?
-			if (inactiveBrokers.isEmpty()) {
-				//There are no available brokers. If allowed... 
-				if (brokersCount < maxBrokers)
-					//... create one
-					{createBroker();}
-				else
-					//... or wait until there is one available
-					while (inactiveBrokers.isEmpty()) {
-						LOG.debug("waiting for a broker to become available");
-						try {
-							this.wait();
-						} catch (final InterruptedException e) {
-						}
-					}
-			}
-			broker = inactiveBrokers.pop();
+            if(inactiveBrokers.isEmpty()) {
+                //There are no available brokers. If allowed...
+                if(brokersCount < maxBrokers)
+                //... create one
+                {
+                    createBroker();
+                } else
+                    //... or wait until there is one available
+                    while(inactiveBrokers.isEmpty()) {
+                        LOG.debug("waiting for a broker to become available");
+                        try {
+                            this.wait();
+                        } catch(final InterruptedException e) {
+                            //nothing to be done!
+                        }
+                    }
+            }
+            broker = inactiveBrokers.pop();
 
             if (broker.config_ts != config_ts) {
                 broker.config_ts = config_ts;
@@ -1647,95 +1654,138 @@ public class BrokerPool implements Database {
             }
 
             //activate the broker
-			activeBrokers.put(Thread.currentThread(), broker);
-			
-			if (watchdog != null)
-				{watchdog.add(broker);}
-			
-			broker.incReferenceCount();
-            if (user != null)
-                {broker.setSubject(user);}
-            else
-                {broker.setSubject(securityManager.getGuestSubject());}
+            activeBrokers.put(Thread.currentThread(), broker);
+
+            if(LOG.isTraceEnabled()) {
+                LOG.trace("+++ " + Thread.currentThread() + Stacktrace.top(Thread.currentThread().getStackTrace(), Stacktrace.DEFAULT_STACK_TOP));
+            }
+
+            if(watchdog != null) {
+                watchdog.add(broker);
+            }
+
+            broker.incReferenceCount();
+
+            broker.pushSubject(subject == null ? securityManager.getGuestSubject() : subject);
+
+            if(LOG.isTraceEnabled()) {
+                if(!brokerLeaseChangeTrace.containsKey(broker.getId())) {
+                    brokerLeaseChangeTrace.put(broker.getId(), new TraceableStateChanges<>());
+                }
+                brokerLeaseChangeTrace.get(broker.getId()).add(TraceableBrokerLeaseChange.get(new TraceableBrokerLeaseChange.BrokerInfo(broker.getId(), broker.getReferenceCount())));
+            }
+
             //Inform the other threads that we have a new-comer
             // TODO: do they really need to be informed here???????
             this.notifyAll();
-			return broker;
-		}
-	}
+            return broker;
+        }
+    }
 
-	/**
-	 * Releases a broker for the database instance. If it is no more used, make if invactive.
-	 * If there are pending system maintenance tasks,
-	 * the method will block until these tasks have finished. 
-	 * 
-	 *@param  broker  The broker to be released
-	 */
-	//TODO : rename as releaseBroker ? releaseInstance (when refactored) ?
-	public void release(final DBBroker broker) {
+    /**
+     * Releases a broker for the database instance. If it is no more used, make if invactive.
+     * If there are pending system maintenance tasks,
+     * the method will block until these tasks have finished.
+     *
+     * NOTE - this is intentionally package-private, it is only meant to be
+     * called internally and from {@link DBBroker#close()}
+     *
+     * @param broker The broker to be released
+     */
+    //TODO : rename as releaseBroker ? releaseInstance (when refactored) ?
+    public void release(final DBBroker broker) {
+        Objects.requireNonNull(broker, "Cannot release nothing");
 
-        // might be null as release() is often called within a finally block
-		if (broker == null)
-			{return;}
-		
-		//first check that the broker is active ! If not, return immediately.
-		broker.decReferenceCount();
-		if(broker.getReferenceCount() > 0) {
-			//it is still in use and thus can't be marked as inactive
-			return;
-		}
-		
-		synchronized (this) {
-			//Broker is no more used : inactivate it
-			for (int i = 0; i < inactiveBrokers.size(); i++) {
-				if (broker == inactiveBrokers.get(i)) {
-					LOG.error("Broker is already in the inactive list!!!");
-					return;
-				}
-			}
-			
-			if (activeBrokers.remove(Thread.currentThread())==null) {
-				LOG.error("release() has been called from the wrong thread for broker "+broker.getId());
-				// Cleanup the state of activeBrokers
-				
-				activeBrokers.writeOperation(new LongOperation<Thread, DBBroker>() {
-					@Override
-					public void execute(Map<Thread, DBBroker> map) {
-						for (final Object t : map.keySet()) {
-							if (map.get(t)==broker) {
-								final EXistException ex = new EXistException();
-								LOG.error("release() has been called from '"+Thread.currentThread()+"', but occupied at '"+t+"'.", ex);
-								
-								map.remove(t);
-								break;
-							}
-						}
-					}
-				});
-			}
-			final Subject lastUser = broker.getSubject();
-			broker.setSubject(securityManager.getGuestSubject());
-			inactiveBrokers.push(broker);
-			if (watchdog != null)
-				{watchdog.remove(broker);}
-			
-			//If the database is now idle, do some useful stuff
-			if(activeBrokers.size() == 0) {
-				//TODO : use a "clean" dedicated method (we have some below) ?
-				if (syncRequired) {
-					//Note t hat the broker is not yet really inactive ;-)
-					sync(broker, syncEvent);
-					this.syncRequired = false;
+        if(LOG.isTraceEnabled()) {
+            if(!brokerLeaseChangeTrace.containsKey(broker.getId())) {
+                brokerLeaseChangeTrace.put(broker.getId(), new TraceableStateChanges<>());
+            }
+            brokerLeaseChangeTrace.get(broker.getId()).add(TraceableBrokerLeaseChange.release(new TraceableBrokerLeaseChange.BrokerInfo(broker.getId(), broker.getReferenceCount())));
+        }
+
+        //first check that the broker is active ! If not, return immediately.
+        broker.decReferenceCount();
+        if(broker.getReferenceCount() > 0) {
+            broker.popSubject();
+            //it is still in use and thus can't be marked as inactive
+            return;
+        }
+
+        synchronized(this) {
+            //Broker is no more used : inactivate it
+            for(final DBBroker inactiveBroker : inactiveBrokers) {
+                if(broker == inactiveBroker) {
+                    LOG.error("Broker " + broker.getId() + " is already in the inactive list!!!");
+                    return;
+                }
+            }
+
+            if(activeBrokers.remove(Thread.currentThread()) == null) {
+                LOG.error("release() has been called from the wrong thread for broker " + broker.getId());
+                // Cleanup the state of activeBrokers
+                for(final Entry<Thread, DBBroker> activeBroker : activeBrokers.entrySet()) {
+                    if(activeBroker.getValue() == broker) {
+                        final EXistException ex = new EXistException();
+                        LOG.error("release() has been called from '" + Thread.currentThread() + "', but occupied at '" + activeBroker.getKey() + "'.", ex);
+                        activeBrokers.remove(activeBroker.getKey());
+                        break;
+                    }
+                }
+            } else {
+                if(LOG.isTraceEnabled()) {
+                    LOG.trace("--- " + Thread.currentThread() + Stacktrace.top(Thread.currentThread().getStackTrace(), Stacktrace.DEFAULT_STACK_TOP));
+                }
+            }
+
+            Subject lastUser = broker.popSubject();
+
+            //guard to ensure that the broker has popped all its subjects
+            if(lastUser == null || broker.getSubject() != null) {
+                LOG.warn("Broker " + broker.getId() + " was returned with extraneous Subjects, cleaning...", new IllegalStateException("DBBroker pushSubject/popSubject mismatch").fillInStackTrace());
+                if(LOG.isTraceEnabled()) {
+                    broker.traceSubjectChanges();
+                }
+
+                //cleanup any remaining erroneous subjects
+                while(broker.getSubject() != null) {
+                    lastUser = broker.popSubject();
+                }
+            }
+
+            inactiveBrokers.push(broker);
+            if (watchdog != null) watchdog.remove(broker);
+
+            if(LOG.isTraceEnabled()) {
+                if(!brokerLeaseChangeTraceHistory.containsKey(broker.getId())) {
+                    brokerLeaseChangeTraceHistory.put(broker.getId(), new ArrayList<>());
+                }
+                try {
+                    brokerLeaseChangeTraceHistory.get(broker.getId()).add((TraceableStateChanges<TraceableBrokerLeaseChange.BrokerInfo, TraceableBrokerLeaseChange.Change>) brokerLeaseChangeTrace.get(broker.getId()).clone());
+                    brokerLeaseChangeTrace.get(broker.getId()).clear();
+                } catch(final CloneNotSupportedException e) {
+                    LOG.error(e);
+                }
+
+                broker.clearSubjectChangesTrace();
+            }
+
+            //If the database is now idle, do some useful stuff
+            if(activeBrokers.size() == 0) {
+                //TODO : use a "clean" dedicated method (we have some below) ?
+                if(syncRequired) {
+                    //Note that the broker is not yet really inactive ;-)
+                    sync(broker, syncEvent);
+                    this.syncRequired = false;
                     this.checkpoint = false;
-				}			
-                if (serviceModeUser != null && !lastUser.equals(serviceModeUser)) {
+                }
+                if(serviceModeUser != null && !lastUser.equals(serviceModeUser)) {
                     inServiceMode = true;
                 }
             }
-			//Inform the other threads that someone is gone
-			this.notifyAll();
-		}
-	}
+            //Inform the other threads that someone is gone
+            this.notifyAll();
+        }
+    }
 
     public DBBroker enterServiceMode(Subject user) throws PermissionDeniedException {
         if (!user.hasDbaRole()) {
@@ -1825,49 +1875,54 @@ public class BrokerPool implements Database {
 	{
 		return lastMajorSync;
 	}
-	
+
     /**
      * Executes a waiting cache synchronization for the database instance.
-	 * @param broker A broker responsible for executing the job 
-	 * @param syncEvent One of {@link org.exist.storage.sync.Sync#MINOR_SYNC} or {@link org.exist.storage.sync.Sync#MINOR_SYNC}
-	 */
-	//TODO : rename as runSync ? executeSync ?
-	//TOUNDERSTAND (pb) : *not* synchronized, so... "executes" or, rather, "schedules" ? "executes" (WM)
-	//TOUNDERSTAND (pb) : why do we need a broker here ? Why not get and release one when we're done ?
+     *
+     * @param broker    A broker responsible for executing the job
+     * @param syncEvent One of {@link org.exist.storage.sync.Sync}
+     */
+    //TODO : rename as runSync ? executeSync ?
+    //TOUNDERSTAND (pb) : *not* synchronized, so... "executes" or, rather, "schedules" ? "executes" (WM)
+    //TOUNDERSTAND (pb) : why do we need a broker here ? Why not get and release one when we're done ?
     // WM: the method will always be under control of the BrokerPool. It is guaranteed that no
     // other brokers are active when it is called. That's why we don't need to synchronize here.
-	//TODO : make it protected ?
-	public void sync(DBBroker broker, int syncEvent) {
-		broker.sync(syncEvent);
-		final Subject user = broker.getSubject();
-		//TODO : strange that it is set *after* the sunc method has been called.
-		broker.setSubject(securityManager.getSystemSubject());
-        if (syncEvent == Sync.MAJOR_SYNC) {
-        	LOG.debug("Major sync");
-            try {
-                if (!FORCE_CORRUPTION)
-                    {transactionManager.checkpoint(checkpoint);}
-            } catch (final TransactionException e) {
-                LOG.warn(e.getMessage(), e);
-            }
-            cacheManager.checkCaches();
-            
-            if (pluginManager != null)
-            	{pluginManager.sync(broker);}
-            
-            lastMajorSync = System.currentTimeMillis();
-            if (LOG.isDebugEnabled())
-            	{notificationService.debug();}
-        } else {
-            cacheManager.checkDistribution();
+    //TODO : make it protected ?
+    public void sync(final DBBroker broker, final int syncEvent) {
+        broker.sync(syncEvent);
+
+        //TODO : strange that it is set *after* the sunc method has been called.
+        try {
+            broker.pushSubject(securityManager.getSystemSubject());
+
+            if (syncEvent == Sync.MAJOR_SYNC) {
+                LOG.debug("Major sync");
+                try {
+                    if (!FORCE_CORRUPTION) {
+                        transactionManager.checkpoint(checkpoint);
+                    }
+                } catch (final TransactionException e) {
+                    LOG.warn(e.getMessage(), e);
+                }
+                cacheManager.checkCaches();
+
+                if (pluginManager != null) {
+                    pluginManager.sync(broker);
+                }
+
+                lastMajorSync = System.currentTimeMillis();
+                if (LOG.isDebugEnabled()) {
+                    notificationService.debug();
+                }
+            } else {
+                cacheManager.checkDistribution();
 //            LOG.debug("Minor sync");
+            }
+            //TODO : touch this.syncEvent and syncRequired ?
+        } finally {
+            broker.popSubject();
         }
-        //TODO : touch this.syncEvent and syncRequired ?
-	
-        //After setting the SYSTEM_USER above we must change back to the DEFAULT User to prevent a security problem
-        //broker.setUser(User.DEFAULT);
-        broker.setSubject(user);
-	}
+    }
 	
 	/**
 	 * Schedules a cache synchronization for the database instance. If the database instance is idle,
@@ -2046,7 +2101,7 @@ public class BrokerPool implements Database {
                 //TOUNDERSTAND (pb) : shutdown() is called on only *one* broker ?
                 // WM: yes, the database files are shared, so only one broker is needed to close them for all
                 if (broker != null) {
-                    broker.setSubject(securityManager.getSystemSubject());
+                    broker.pushSubject(securityManager.getSystemSubject());
                     broker.shutdown();
                 }
 
@@ -2249,4 +2304,49 @@ public class BrokerPool implements Database {
 	public MetaStorage getMetaStorage() {
 	    return metaStorage;
 	}
+
+    /**
+     * Represents a change involving {@link BrokerPool#inactiveBrokers}
+     * or {@link BrokerPool#activeBrokers} or {@link DBBroker#referenceCount}
+     *
+     * Used for tracing broker leases
+     */
+    private static class TraceableBrokerLeaseChange extends TraceableStateChange<TraceableBrokerLeaseChange.BrokerInfo, TraceableBrokerLeaseChange.Change> {
+        public enum Change {
+            GET,
+            RELEASE
+        }
+
+        public static class BrokerInfo {
+            final String id;
+            final int referenceCount;
+
+            public BrokerInfo(final String id, final int referenceCount) {
+                this.id = id;
+                this.referenceCount = referenceCount;
+            }
+        }
+
+        private TraceableBrokerLeaseChange(final Change change, final BrokerInfo brokerInfo) {
+            super(change, brokerInfo);
+        }
+
+        @Override
+        public String getId() {
+            return getState().id;
+        }
+
+        @Override
+        public String describeState() {
+            return Integer.toString(getState().referenceCount);
+        }
+
+        static TraceableBrokerLeaseChange get(final BrokerInfo brokerInfo) {
+            return new TraceableBrokerLeaseChange(Change.GET, brokerInfo);
+        }
+
+        static TraceableBrokerLeaseChange release(final BrokerInfo brokerInfo) {
+            return new TraceableBrokerLeaseChange(Change.RELEASE, brokerInfo);
+        }
+    }
 }

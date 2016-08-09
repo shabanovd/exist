@@ -1958,7 +1958,7 @@ public class NativeBroker extends DBBroker {
         finally {
             transact.close(transaction);
             //restore the user
-            setUser(currentUser);
+            setSubject(currentUser);
         }
         return null;
     }

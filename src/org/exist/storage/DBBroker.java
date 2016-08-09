@@ -41,6 +41,8 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
 import org.exist.util.LockException;
+import org.exist.util.TraceableStateChange;
+import org.exist.util.TraceableStateChanges;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.TerminatedException;
 import org.exist.xquery.XQuery;
@@ -52,10 +54,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Observable;
+import java.util.*;
 
 import org.exist.collections.Collection.SubCollectionEntry;
 
@@ -99,7 +98,17 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
 
     protected BrokerPool pool;
 
-    private Subject subject = null;
+    private Deque<Subject> subject = new ArrayDeque<>();
+
+    /**
+     * Used when TRACE level logging is enabled
+     * to provide a history of {@link Subject} state
+     * changes
+     *
+     * This can be written to a log file by calling
+     * {@link DBBroker#traceSubjectChanges()}
+     */
+    private TraceableStateChanges<Subject, TraceableSubjectChange.Change> subjectChangeTrace = LOG.isTraceEnabled() ? new TraceableStateChanges<>() : null;
 
     protected XQuery xqueryService;
 
@@ -131,44 +140,77 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
 
     public abstract File getDataFolder();
 
-    /**
-     * Set the user that is currently using this DBBroker object.
-     *
-     * @param user
-     * @deprecated use setSubject
-     */
-    public void setUser(Subject user) {
-        this.subject = user;
-
-        /*
-        synchronized (this){ System.out.println("DBBroker.setUser(" +
-        user.getName() + ")"); Thread.dumpStack(); }
-         */
-        // debugging user escalation permissions problem - deliriumsky.
-    }
-
-    /**
-     * @return The user that is currently using this DBBroker object
-     * @deprecated user getSubject
-     */
+//    /**
+//     * Set the user that is currently using this DBBroker object.
+//     *
+//     * @param user
+//     * @deprecated use setSubject
+//     */
+//    public void setUser(Subject user) {
+//        this.subject = user;
+//
+//        /*
+//        synchronized (this){ System.out.println("DBBroker.setUser(" +
+//        user.getName() + ")"); Thread.dumpStack(); }
+//         */
+//        // debugging user escalation permissions problem - deliriumsky.
+//    }
+//
+//    /**
+//     * @return The user that is currently using this DBBroker object
+//     * @deprecated user getSubject
+//     */
+//    @Deprecated
+//    public Subject getUser() {
+//        return getSubject();
+//    }
+//
+//    /**
+//     * Set the subject that is currently using this DBBroker object.
+//     *
+//     * @param subject
+//     */
+//    //TODO: this should be done in connection with authenticate (SecurityManager)
+//    public void setSubject(final Subject subject) {
+//        this.subject = subject;
+//        /*
+//        synchronized (this){ System.out.println("DBBroker.setUser(" +
+//            user.getName() + ")"); Thread.dumpStack(); }
+//        */
+//        // debugging user escalation permissions problem - deliriumsky.
+//    }
     @Deprecated
-    public Subject getUser() {
-        return getSubject();
+    public void setSubject(final Subject subject) {
+        if (!this.subject.isEmpty()) {
+            this.subject.addFirst(subject);
+        }
+        this.subject.removeFirst();
+    }
+
+
+    /**
+     * Change the state that the broker performs actions as
+     *
+     * @param subject The new state for the broker to perform actions as
+     */
+    public void pushSubject(final Subject subject) {
+        if(LOG.isTraceEnabled()) {
+            subjectChangeTrace.add(TraceableSubjectChange.push(subject, getId()));
+        }
+        this.subject.addFirst(subject);
     }
 
     /**
-     * Set the subject that is currently using this DBBroker object.
+     * Restore the previous state for the broker to perform actions as
      *
-     * @param subject
+     * @return The state which has been popped
      */
-    //TODO: this should be done in connection with authenticate (SecurityManager)
-    public void setSubject(final Subject subject) {
-        this.subject = subject;
-        /*
-        synchronized (this){ System.out.println("DBBroker.setUser(" +
-            user.getName() + ")"); Thread.dumpStack(); }
-        */
-        // debugging user escalation permissions problem - deliriumsky.
+    public Subject popSubject() {
+        final Subject subject = this.subject.removeFirst();
+        if(LOG.isTraceEnabled()) {
+            subjectChangeTrace.add(TraceableSubjectChange.pop(subject, getId()));
+        }
+        return subject;
     }
 
     /**
@@ -177,7 +219,35 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
      * @return Subject 
      */
     public Subject getSubject() {
-        return subject;
+        return subject.peekFirst();
+    }
+
+    /**
+     * Logs the details of all state changes
+     *
+     * Used for tracing privilege escalation/de-escalation
+     * during the lifetime of an active broker
+     *
+     * @throws IllegalStateException if TRACE level logging is not enabled
+     */
+    public void traceSubjectChanges() {
+        subjectChangeTrace.logTrace(LOG);
+    }
+
+    /**
+     * Clears the details of all state changes
+     *
+     * Used for tracing privilege escalation/de-escalation
+     * during the lifetime of an active broker
+     *
+     * @throws IllegalStateException if TRACE level logging is not enabled
+     */
+    public void clearSubjectChangesTrace() {
+        if(!LOG.isTraceEnabled()) {
+            throw new IllegalStateException("This is only enabled at TRACE level logging");
+        }
+
+        subjectChangeTrace.clear();
     }
 
     public IndexController getIndexController() {
@@ -860,7 +930,7 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         pool.release(this);
     }
     
@@ -871,5 +941,43 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
     
     public Txn beginTx() {
         return getDatabase().getTransactionManager().beginTransaction();
+    }
+
+    /**
+     * Represents a {@link Subject} change
+     * made to a broker
+     *
+     * Used for tracing subject changes
+     */
+    private static class TraceableSubjectChange extends TraceableStateChange<Subject, TraceableSubjectChange.Change> {
+        private final String id;
+
+        public enum Change {
+            PUSH,
+            POP
+        }
+
+        private TraceableSubjectChange(final Change change, final Subject subject, final String id) {
+            super(change, subject);
+            this.id = id;
+        }
+
+        @Override
+        public String getId() {
+            return id;
+        }
+
+        @Override
+        public String describeState() {
+            return getState().getName();
+        }
+
+        final static TraceableSubjectChange push(final Subject subject, final String id) {
+            return new TraceableSubjectChange(Change.PUSH, subject, id);
+        }
+
+        final static TraceableSubjectChange pop(final Subject subject, final String id) {
+            return new TraceableSubjectChange(Change.POP, subject, id);
+        }
     }
 }
