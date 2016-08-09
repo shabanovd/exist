@@ -4,7 +4,7 @@
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/j2se-project/3">
             <name>eXist-db trunk</name>
-            <minimum-ant-version>1.6.5</minimum-ant-version>
+            <minimum-ant-version>1.9.7</minimum-ant-version>
             <source-roots>
                 <root id="src.dir" name="Core"/>
                 <root id="src.src2.dir" name="Index NGram"/>
