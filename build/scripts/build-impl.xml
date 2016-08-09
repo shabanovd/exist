@@ -38,23 +38,20 @@
     <property name="xmldb.src" value="undefined"/>
     <property name="dist.dir" value="${dist}/${project.name}-${project.version}"/>
 
-    <condition property="git.commit" value="${git.commit}" else="">
-      <isset property="git.commit" />      
-    </condition>
     <!-- import common targets -->
     <!-- <import file="../../build.xml"/> -->
+    <import file="git-support.xml"/>
     <import file="./junit.xml"/>
     <import file="./antlr3.xml"/>
-    
+
     <!-- setup conditional properties -->
     <available file="${xmldb.src}" type="dir" property="has.xmldb.src"/>
     <available file="key.store" property="key.store.present"/>
 
     <!-- additional set of ant tasks -->
-    <property name="asocat-exist.jar" location="${tools.ant}/lib/asocat-exist.jar"/>
-    
-    <!-- setup class path -->
-    <path id="classpath.core">
+    <property name="asocat-exist.jar" location="${tools.ant}/lib/asocat-exist-1.0.jar"/>
+
+    <path id="classpath.external">
         <fileset dir="${lib.core}">
             <include name="*.jar"/>
         </fileset>
@@ -78,6 +75,11 @@
         <fileset dir="${tools.ant}/lib">
             <include name="*.jar"/>
         </fileset>
+    </path>
+
+    <!-- setup class path -->
+    <path id="classpath.core">
+        <path refid="classpath.external"/>
 
         <pathelement path="exist.jar"/>
         <pathelement path="exist-optional.jar"/>
@@ -92,19 +94,7 @@
         </fileset>
     </path>
 
-    <taskdef name="java2wsdl" classname="org.apache.axis.tools.ant.wsdl.Java2WsdlAntTask">
-        <classpath refid="classpath.core"/>
-    </taskdef>
-
-    <taskdef name="wsdl2java" classname="org.apache.axis.tools.ant.wsdl.Wsdl2javaAntTask">
-        <classpath refid="classpath.core"/>
-    </taskdef>
-
-    <taskdef name="axis-admin" classname="org.apache.axis.tools.ant.axis.AdminClientTask">
-        <classpath refid="classpath.core"/>
-    </taskdef>
-
-    <taskdef classpath="${tools.aspectj}/lib/aspectjtools-1.8.4.jar" resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"/>
+    <taskdef classpath="${tools.aspectj}/lib/aspectjtools-1.8.9.jar" resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"/>
     <path id="classpath.aspectj">
         <fileset dir="${tools.aspectj}/lib">
             <include name="*.jar"/>
@@ -115,7 +105,7 @@
     <!-- =================================================================== -->
     <!-- Prepare the build                                                   -->
     <!-- =================================================================== -->
-    <target name="prepare">
+    <target name="prepare" depends="git.details">
 
         <tstamp/>
         <property file="VERSION.txt"/>
@@ -159,7 +149,7 @@
         <copy file="${basedir}/mime-types.xml.tmpl" tofile="${basedir}/mime-types.xml"
             filtering="true"/>
         <copy file="${basedir}/mime-types.xml" tofile="${src}/org/exist/util/mime-types.xml"/>
-        
+
         <copy file="${src.webapp}/WEB-INF/web.xml.tmpl" tofile="${src.webapp}/WEB-INF/web.xml"
             filtering="true" overwrite="true"/>
 
@@ -180,8 +170,11 @@
             fork="true" memoryInitialSize="512m" memoryMaximumSize="1024m">
 
             <include name="org/**"/>
-            <include name="org/exist/schema/**"/>
-            <classpath>
+
+            <!-- Do not compile Aspects here, compiled below by iajc -->
+	    <exclude name="org/exist/security/PermissionRequiredAspect.java"/>
+
+	    <classpath>
                 <path refid="classpath.core"/>
                 <path refid="classpath.jetty"/>
                 <path refid="classpath.aspectj"/>
@@ -198,7 +191,7 @@
     <!-- =================================================================== -->
 	<target name="check.aspects.uptodate">
     	<uptodate property="aspectj.uptodate" targetfile="exist.jar">
-			<srcfiles dir= "${src}" includes="org/exist/security/*.java"/>
+			<srcfiles dir= "${src}" includes="org/exist/security/PermissionRequiredAspect.java"/>
     	</uptodate>
   	</target>
 
@@ -211,19 +204,20 @@
         <echo
             message="Compiling aspects with Java ${ant.java.version} from ${build.compiler.source} source to ${build.compiler.target} target, debug ${build.debug}, optimize ${build.optimize}, deprecation ${build.deprecation}"/>
 
+        <path id="classpath.compile-aspectj">
+            <path refid="classpath.aspectj"/>
+            <path refid="classpath.external"/>
+            <path refid="classpath.jetty"/>
+        </path>
+
         <iajc debug="${build.debug}" deprecation="${build.deprecation}" destdir="${build.classes}"
             encoding="UTF-8" srcdir="${src}"
             source="${build.compiler.source}" target="${build.compiler.target}"
-            fork="true" maxmem="1024m" showWeaveInfo="true">
+            fork="true" maxmem="1024m" showWeaveInfo="true" inpath="${build.classes}">
 
-            <include name="org/**"/>
-            <!-- <include name="org/exist/security/**"/> -->
+            <include name="org/exist/security/PermissionRequiredAspect.java"/>
 
-            <classpath>
-                <path refid="classpath.aspectj"/>
-                <path refid="classpath.core"/>
-                <path refid="classpath.jetty"/>
-            </classpath>
+            <classpath refid="classpath.compile-aspectj"/>
         </iajc>
     </target>
 
@@ -273,9 +267,11 @@
     <!-- ================================================================== -->
     <!-- Create jar files                    				    -->
     <!-- ================================================================== -->
-    <target name="jar" depends="compile,compile-aspectj"
+    <target name="jar" depends="git.details,compile,compile-aspectj"
         description="Create eXist-db unsigned jar files">
         <filter token="version" value="${project.version}"/>
+	    <filter token="semver" value="${project.version.numeric}"/>
+	    <filter token="source" value="${project.source}"/>
         <filter token="build" value="${DSTAMP}"/>
         <filter token="git.commit" value="${git.commit}"/>
 
@@ -302,11 +298,6 @@
         <copy todir="${build.classes}/org/exist/http">
             <fileset dir="${src}/org/exist/http">
                 <include name="**.xq"/>
-            </fileset>
-        </copy>
-        <copy todir="${build.classes}/org/exist/security/xacml/policies">
-            <fileset dir="${src}/org/exist/security/xacml/policies">
-                <include name="*.xml"/>
             </fileset>
         </copy>
         <copy file="${src}/org/exist/xquery/util/messages.properties"
@@ -410,13 +401,13 @@
     <target name="all"
         depends="prepare,jar,wrapper,extension-betterform,extension-modules,extension-xprocxq,extensions-xar,test-compile"
         description="Build all">
-        
+
         <!--  hand over build to extensions build -->
         <ant antfile="${build.scripts}/extensions-build.xml" target="all" inheritAll="false"/>
-        
+
         <!--  this module must be built after the ldap extension -->
         <ant antfile="build.xml" dir="extensions/security/activedirectory" inheritall="false"/>
-        
+
         <antcall target="sign"/>
     </target>
 
@@ -434,7 +425,7 @@
 
         <delete dir="${build.javadoc}"/>
         <mkdir dir="${build.javadoc}"/>
-        
+
         <echo message="Generating Javadocs ..."/>
         <javadoc bottom="Copyright (C) The eXist-db Project. All rights reserved." destdir="${build.javadoc}"
             doctitle="eXist Javadocs" noindex="true" notree="true" access="public" maxmemory="1024M"
@@ -460,7 +451,7 @@
             <classpath>
                 <path refid="classpath.core"/>
                 <path refid="classpath.jetty"/>
-                <path refid="classpath.aspectj"/>                
+                <path refid="classpath.aspectj"/>
             </classpath>
             <link href="http://xmldb.exist-db.org/javadoc/"/>
             <link href="http://java.sun.com/javase/7/docs/api/"/>
@@ -474,23 +465,21 @@
             <link href="http://commons.apache.org/pool/apidocs/"/>
             <link href="http://hc.apache.org/httpclient-legacy/apidocs/"/>
             <link href="http://jline.sourceforge.net/javadoc/"/>
-            <link href="http://logging.apache.org/log4j/1.2/apidocs/"/>
+            <link href="http://logging.apache.org/log4j/2.x/log4j-api/apidocs/"/>
             <link href="http://www.slf4j.org/api/"/>
             <link href="http://nekohtml.sourceforge.net/javadoc/"/>
             <link href="http://www.quartz-scheduler.org/api/1.8.5/"/>
-            <link href="http://sunxacml.sourceforge.net/javadoc/"/>  
-            <link href="http://ws.apache.org/axis/java/apiDocs/"/>
             <link href="http://ws.apache.org/xmlrpc/apidocs/"/>
-            <link href="http://www.antlr2.org/javadoc/"/>          
+            <link href="http://www.antlr2.org/javadoc/"/>
             <link href="http://xerces.apache.org/xerces2-j/javadocs/api/"/>
             <link href="http://xerces.apache.org/xerces2-j/javadocs/xerces2/"/>
             <link href="http://xerces.apache.org/xerces2-j/javadocs/xni/"/>
             <link href="http://xml.apache.org/commons/components/apidocs/resolver/"/>
             <link href="http://xml.apache.org/xalan-j/apidocs/"/>
             <link href="http://java.sun.com/products/javamail/javadocs/"/>
-            <link href="http://java.sun.com/javase/technologies/desktop/javabeans/glasgow/javadocs"/>   
-            <link href="http://download.eclipse.org/jetty/stable-7/apidocs/"/> 
-            <link href="http://www.saxonica.com/documentation/javadoc"/> 
+            <link href="http://java.sun.com/javase/technologies/desktop/javabeans/glasgow/javadocs"/>
+            <link href="http://download.eclipse.org/jetty/stable-7/apidocs/"/>
+            <link href="http://www.saxonica.com/documentation/javadoc"/>
             <link href="http://lucene.apache.org/java/2_9_4/api/all/"/>
         </javadoc>
 
@@ -547,21 +536,19 @@
             <link href="http://commons.apache.org/pool/apidocs/"/>
             <link href="http://hc.apache.org/httpclient-3.x/apidocs/"/>
             <link href="http://jline.sourceforge.net/javadoc/"/>
-            <link href="http://logging.apache.org/log4j/1.2/apidocs/"/>
+            <link href="http://logging.apache.org/log4j/2.x/log4j-api/apidocs/"/>
             <link href="http://nekohtml.sourceforge.net/javadoc/"/>
             <link href="http://www.quartz-scheduler.org/docs/api/"/>
-            <link href="http://sunxacml.sourceforge.net/javadoc/"/>  
-            <link href="http://ws.apache.org/axis/java/apiDocs/"/>
             <link href="http://ws.apache.org/xmlrpc/apidocs/"/>
             <link href="http://www.antlr2.org/javadoc/"/>
-            <link href="http://www.jgroups.org/javagroupsnew/docs/javadoc/"/>          
+            <link href="http://www.jgroups.org/javagroupsnew/docs/javadoc/"/>
             <link href="http://xerces.apache.org/xerces2-j/javadocs/api/"/>
             <link href="http://xerces.apache.org/xerces2-j/javadocs/xerces2/"/>
             <link href="http://xerces.apache.org/xerces2-j/javadocs/xni/"/>
             <link href="http://xml.apache.org/commons/components/apidocs/resolver/"/>
             <link href="http://xml.apache.org/xalan-j/apidocs/"/>
             <link href="http://java.sun.com/products/javamail/javadocs/"/>
-            <link href="http://java.sun.com/javase/technologies/desktop/javabeans/glasgow/javadocs"/>   
+            <link href="http://java.sun.com/javase/technologies/desktop/javabeans/glasgow/javadocs"/>
         </javadoc>
 
         <ant antfile="build.xml" dir="extensions/fluent" target="javadoc"/>
@@ -603,26 +590,26 @@
         </delete>
 
         <delete failonerror="no" dir="${dist}"/>
-        
+
         <!-- XQTS files -->
         <delete failonerror="no">
             <fileset dir="${junit.reports}/external" includes="*.zip"/>
         </delete>
         <delete failonerror="no" dir="cat"/>
-        
+
         <ant antfile="build.xml" dir="extensions/betterform" target="clean" inheritall="false"/>
         <ant antfile="build.xml" dir="extensions/modules" target="clean" inheritall="false"/>
         <ant antfile="build.xml" dir="extensions/security/activedirectory"  target="clean" inheritall="false"/>
         <ant antfile="build.xml" dir="extensions/xprocxq" target="clean" inheritall="false"/>
         <ant antfile="build.xml" dir="tools/wrapper" target="clean" inheritall="false"/>
-        
+
         <ant antfile="${build.scripts}/extensions-build.xml" target="clean" inheritAll="false"/>
-        
+
         <!-- fall back -->
         <delete failonerror="no">
             <fileset dir="${lib.extensions}" includes="*.jar"/>
-        </delete> 
-        
+        </delete>
+
     </target>
 
     <target name="clean-conf" description="Cleanup config file">
@@ -636,6 +623,7 @@
         <delete dir="${src.webapp}/WEB-INF/data/fs"/>
         <delete dir="${src.webapp}/WEB-INF/data/fs.journal"/>
         <delete dir="${src.webapp}/WEB-INF/data/lucene"/>
+        <delete dir="${src.webapp}/WEB-INF/data/metadata"/>
         <delete dir="${src.webapp}/WEB-INF/data/range"/>
         <delete dir="${src.webapp}/WEB-INF/data/sanity"/>
         <delete>
@@ -668,7 +656,7 @@
 
         <!-- autodeploy -->
         <delete failonerror="no" dir="autodeploy"/>
-        
+
         <!-- XQTS files -->
         <delete failonerror="no">
             <fileset dir="${junit.reports}/src/org/exist/xquery/xqts" includes="*" excludes="QT3TS_case.java,QT3TS_To_junit.java,XQTS_case.java,XQTS_To_junit.java,config.xml,hacked-tests.xml,xqts.xql"/>
@@ -676,7 +664,7 @@
         </delete>
         <delete failonerror="no">
             <fileset dir="${jetty.dir}/tmp" includes="*"/>
-        </delete> 
+        </delete>
         <mkdir dir="${jetty.dir}/tmp"/>
 		<ant antfile="build.xml" dir="extensions/modules" target="clean-all" inheritall="false"/>
     </target>
@@ -692,11 +680,11 @@
     <target name="extension-modules" depends="jar">
         <ant antfile="build.xml" dir="extensions/modules" inheritall="false"/>
     </target>
-    
+
     <target name="extension-xprocxq" depends="jar">
         <ant antfile="build.xml" dir="extensions/xprocxq" inheritall="false"/>
     </target>
-    
+
     <target name="samples" depends="jar" description="Build samples">
         <ant antfile="build.xml" dir="samples"/>
     </target>
@@ -704,7 +692,7 @@
     <target name="extensions-xar" depends="jar" if="${use.autodeploy.feature}" >
         <ant antfile="build/scripts/setup.xml" dir="." inheritall="false"/>
     </target>
-    
+
     <target name="cleandocs">
         <replaceregexp>
             <regexp pattern="/\*.*Description of the Method.*\*/"/>
@@ -738,7 +726,7 @@
         <!-- the jars are some how locked by ant (classpath.core)-->
 
     </target>
-    
+
 
     <!-- ============================================================================ -->
     <!-- Download additional files                                                    -->
@@ -753,6 +741,7 @@
         <get src="http://download.icu-project.org/files/icu4j/4.8.1.1/icu4j-4_8_1_1.jar"
             dest="${lib.user}" verbose="true" usetimestamp="true"/>
     </target>
+
 
 
 </project>

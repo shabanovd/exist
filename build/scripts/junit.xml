@@ -3,10 +3,9 @@
 <!-- ======================================================================= -->
 <!-- eXist-db build file : Run jUnit tests                                    -->
 <!-- ======================================================================= -->
-<!-- $Id$ -->
 
 <project basedir="../.." default="test" name="jUnit tests">
-	
+
     <description>jUnit tests for eXist-db</description>
     
     <!-- import common targets -->
@@ -22,6 +21,15 @@
         </fileset>
     </path>
 
+    <condition property="junit.haltonerror" value="true" else="false">
+        <isset property="test.haltonerror"/>
+    </condition>
+
+    <condition property="junit.haltonfailure" value="true" else="false">
+        <isset property="test.haltonfailure"/>
+    </condition>
+
+
 
     <target name="test"
         depends="test-prepare, test-local, test-extensions, test-jetty, test-concurrent, test-remote, test-recovery, test-wrapup, test-ant"
@@ -31,8 +39,8 @@
     <property name="jetty.port" value="8080" />
     <property name="jetty.port.ssl" value="8443" />
     <!-- Or shall we rather have two, eg
-	 jetty.port.jetty and jetty.port.standalone
-	 with jetty.port pointing to jetty.port.jetty? /ljo -->
+            jetty.port.jetty and jetty.port.standalone
+            with jetty.port pointing to jetty.port.jetty? /ljo -->
     <property name="jetty.port.jetty" value="8080" />
     <property name="jetty.port.ssl.jetty" value="8443" />
     <property name="jetty.port.standalone" value="8088" />
@@ -66,8 +74,7 @@
         <copy todir="${junit.reports}/classes/org/exist/config/mapping"
             file="${junit.reports}/src/org/exist/config/mapping/Mapping.xml"/>
        <!-- <ant antfile="build.xml" dir="extensions/indexes" target="compile-tests"/>
-        <ant antfile="build.xml" dir="extensions/xqdoc" target="compile-tests"/>
-        <ant antfile="build.xml" dir="extensions/xslt" target="compile-tests"/>  -->
+        <ant antfile="build.xml" dir="extensions/xqdoc" target="compile-tests"/> -->
     </target>
 
     <!-- Seperate target for creating folders -->
@@ -84,6 +91,10 @@
         <mkdir dir="${junit.reports}/classes"/>
         <mkdir dir="${junit.reports.dat}"/>
         <mkdir dir="${junit.reports.html}"/>
+
+        <!-- create a log4j config for running the tests -->
+        <xslt in="${basedir}/log4j2.xml" out="${basedir}/test/classes/log4j2-test.xml" style="${build.scripts}/log4j2-test.xsl"/>
+
     </target>
 
     <!-- Generate HTML reports -->
@@ -105,10 +116,11 @@
         <echo message="Running tests on a local database instance"/>
         <echo message="------------------------------------------"/>
 
-        <junit haltonfailure="false" printsummary="yes" showoutput="${junit.output}" 
+        <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="yes" showoutput="${junit.output}" 
             maxmemory="${junit.forked.VM.maxmemory}">
             <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- local database, so should not be needed. /ljo -->
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
+            <!-- local database, so should not be needed. /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
             <classpath refid="classpath.core"/>
@@ -131,18 +143,29 @@
             <!--test fork="yes" name="xquery.xproc.XProcTests" todir="${junit.reports.dat}"/-->
             <test fork="yes" name="xquery.xquery3.XQuery3Tests" todir="${junit.reports.dat}"/>
             <test fork="yes" name="xquery.optimizer.OptimizerTests" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="xquery.arrays.ArrayTests" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="xquery.maps.MapTests" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="xquery.logicalOp.LogicalOpTests" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="xquery.numbers.NumberTests" todir="${junit.reports.dat}"/>
 
             <!--  //-->            
             <test fork="yes" name="org.exist.util.SortTests" todir="${junit.reports.dat}"/>
             <test fork="yes" name="org.exist.xmldb.XmldbLocalTests" todir="${junit.reports.dat}"/>
-            <test fork="yes" name="org.exist.xupdate.AllXupdateTests" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="org.exist.xupdate.XUpdateTest" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="org.exist.xupdate.RemoveAppendTest" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="org.exist.xupdate.StressTest" todir="${junit.reports.dat}"/>
             <test fork="yes" name="org.exist.xquery.AllXqueryTests" todir="${junit.reports.dat}"/>
             <test fork="yes" name="org.exist.xquery.OptimizerTest" todir="${junit.reports.dat}"/>
-	    	<test fork="yes" name="org.exist.collections.triggers.AllTriggerTests" todir="${junit.reports.dat}"/>
-	    	<test fork="yes" name="org.exist.collections.AllCollectionTests" todir="${junit.reports.dat}"/>
-	    	<!-- <test fork="yes" name="org.exist.fulltext.AllFulltextTests" todir="${junit.reports.dat}"/> -->
+            <test fork="yes" name="org.exist.collections.triggers.AllTriggerTests" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="org.exist.collections.AllCollectionTests" todir="${junit.reports.dat}"/>
             <test fork="yes" name="org.exist.security.XMLDBSecurityTest" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="org.exist.security.XmldbApiSecurityTest" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="org.exist.security.SecurityManagerRoundtripTest" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="org.exist.storage.NativeBrokerTest" todir="${junit.reports.dat}"/>
+	    <test fork="yes" name="org.exist.AllIndexerTests" todir="${junit.reports.dat}"/>
 
+            <test fork="yes" name="org.exist.storage.ModificationTimeTest" todir="${junit.reports.dat}"/>
+            
             <!-- Execute all other tests except those that have to be called manually.   -->
             <batchtest fork="yes" todir="${junit.reports.dat}">
                 <fileset dir="${junit.reports}/src">
@@ -159,27 +182,27 @@
                     <exclude name="**/storage/lock/*.java"/>
                     <exclude name="**/soap/*.java"/>
                     <exclude name="**/numbering/*.java"/>
-		    		<exclude name="**/collections/*.java"/>
+                    <exclude name="**/collections/*.java"/>
                     <exclude name="**/security/*.java"/>
                     <exclude name="org/exist/*.java"/>
-                    <exclude name="**/fulltext/**/*.java"/>
-		    		<exclude name="org/exist/http/underheavyload/*.java"/>
-		    		<exclude name="org/exist/util/hashtable/Abstract*.java"/>
+                    <exclude name="org/exist/http/underheavyload/*.java"/>
+                    <exclude name="org/exist/util/hashtable/Abstract*.java"/>
                     <exclude name="xquery/**/*.java"/>
                 </fileset>
             </batchtest>
         </junit>
     </target>
-	
+
     <!-- Test set 2 : Jetty Server -->
     <target name="test-jetty">
         <echo message="------------------------------------------"/>
         <echo message="Running tests on a remote Jetty Server"/>
         <echo message="------------------------------------------"/>
 
-        <junit haltonfailure="false" printsummary="yes" showoutput="${junit.output}" maxmemory="${junit.forked.VM.maxmemory}">
+        <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="yes" showoutput="${junit.output}" maxmemory="${junit.forked.VM.maxmemory}">
             <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- fixme! - jetty.port.jetty /ljo -->
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
+            <!-- fixme! - jetty.port.jetty /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
             <classpath refid="classpath.core"/>
@@ -208,9 +231,10 @@
         <echo message="-----------------"/>
         <echo message="Concurrency tests on local database"/>
         <echo message="-----------------"/>
-        <junit haltonfailure="false" printsummary="on" showoutput="${junit.output}" fork="no">
+        <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="on" showoutput="${junit.output}" fork="no">
             <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- local database, so should not be needed. /ljo -->
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
+            <!-- local database, so should not be needed. /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
             <classpath refid="classpath.core"/>
@@ -230,9 +254,10 @@
         <echo message="--------------"/>
         <echo message="Recovery tests"/>
         <echo message="--------------"/>
-        <junit haltonfailure="false" printsummary="on" showoutput="${junit.output}" fork="yes" maxmemory="${junit.forked.VM.maxmemory}">
+        <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="on" showoutput="${junit.output}" fork="yes" maxmemory="${junit.forked.VM.maxmemory}">
             <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- local database, so should not be needed. /ljo -->
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
+            <!-- local database, so should not be needed. /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
             <classpath refid="classpath.core"/>
@@ -262,7 +287,8 @@
         </delete>
         <java classname="org.exist.jetty.StandaloneServer">
             <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- fixme! - jetty.port.standalone /ljo -->
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
+            <!-- fixme! - jetty.port.standalone /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port.standalone}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl.standalone}" />
             <classpath refid="classpath.core"/>
@@ -279,9 +305,10 @@
         <echo message="--------------------------------"/>
         <echo message="Running tests on remote database"/>
         <echo message="--------------------------------"/>
-        <junit haltonfailure="false" printsummary="yes" showoutput="${junit.output}" maxmemory="${junit.forked.VM.maxmemory}">
+        <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="yes" showoutput="${junit.output}" maxmemory="${junit.forked.VM.maxmemory}">
             <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- fixme! - jetty.port.standalone /ljo -->
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
+            <!-- fixme! - jetty.port.standalone /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port.standalone}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl.standalone}" />
             <classpath refid="classpath.core"/>
@@ -295,7 +322,7 @@
             <test fork="yes" name="org.exist.xmlrpc.AllXmlRpcTests" todir="${junit.reports.dat}"/>
 
             <test fork="yes" name="org.exist.xmldb.XmldbRemoteTests" todir="${junit.reports.dat}"/>
-            <test fork="yes" name="org.exist.xquery.XqueryRemoteTests" todir="${junit.reports.dat}"/>
+            <test fork="yes" name="org.exist.xquery.XPathQueryTest" todir="${junit.reports.dat}"/>
             <test fork="yes" name="org.exist.http.RESTServiceTest" todir="${junit.reports.dat}"/>
             <test fork="yes" name="org.exist.storage.XIncludeSerializerTest" todir="${junit.reports.dat}"/>
         </junit>
@@ -308,9 +335,10 @@
         <echo message="--------------------------------"/>
         <echo message="Running antunit tests on eXist-db ant tasks"/>
         <echo message="--------------------------------"/>
-        <junit haltonfailure="false" printsummary="yes" showoutput="${junit.output}" maxmemory="${junit.forked.VM.maxmemory}">
+        <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="yes" showoutput="${junit.output}" maxmemory="${junit.forked.VM.maxmemory}">
             <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- local database, so should not be needed. /ljo -->
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
+            <!-- local database, so should not be needed. /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
             <classpath refid="classpath.core"/>
@@ -330,9 +358,10 @@
         <echo message="Running additional tests, which may take some time"/>
         <echo message="------------------------------------------"/>
 
-        <junit haltonfailure="false" printsummary="yes" showoutput="${junit.output}" maxmemory="${junit.forked.VM.maxmemory}">
+        <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="yes" showoutput="${junit.output}" maxmemory="${junit.forked.VM.maxmemory}">
             <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- fixme! - jetty.port.jetty /ljo -->
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
+            <!-- fixme! - jetty.port.jetty /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
             <classpath refid="classpath.core"/>
@@ -354,9 +383,9 @@
       <!-- Register Ant tasks for eXist-db -->
       <typedef resource="org/exist/ant/antlib.xml" uri="http://exist-db.org/ant">
 
-	<!-- fixme! -  jetty.port.standalone.
-	     But no need to pass in here in shutdown. 
-	     And no .ssl needed. /ljo -->
+        <!-- fixme! -  jetty.port.standalone.
+             But no need to pass in here in shutdown.
+             And no .ssl needed. /ljo -->
         <sysproperty key="jetty.port" value="${jetty.port.standalone}" />
         <classpath refid="classpath.core"/>
         <classpath refid="classpath.junit"/>
@@ -394,14 +423,14 @@
         <delete failonerror="false">
             <fileset dir="${junit.reports}/src/org/exist/xquery/xqts/" excludes="XQTS_case.java,XQTS_To_junit.java,QT3TS_case.java,QT3TS_To_junit.java"/>
         </delete>
-    	<!-- workaround include bug -->
-    	<copy todir="${basedir}/cat">
-    		<fileset dir="${junit.reports}/external/XQTS_1_0_3/cat"/>
-    	</copy>
+        <!-- workaround include bug -->
+        <copy todir="${basedir}/cat">
+            <fileset dir="${junit.reports}/external/XQTS_1_0_3/cat"/>
+        </copy>
         <java classname="org.exist.xquery.xqts.XQTS_To_junit">
             <sysproperty key="exist.home" value="${basedir}" />
             <sysproperty key="exist.jmxagent" value="" />
-	    	<!-- fixme! - jetty.port.jetty /ljo -->
+            <!-- fixme! - jetty.port.jetty /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
             <classpath refid="classpath.core"/>
@@ -414,68 +443,6 @@
         <echo>JUnit tests generated.</echo>
     </target>
 
-    <available file="${junit.reports}/external/XSLTS_1_1_0" property="xslts.present"/>
-    
-    <target name="download-xslts" description="Download XSLTS file." unless="xslts.present">
-        <mkdir dir="${junit.reports}/external"/>
-        
-        <!-- XML XSL Test Suite -->
-        <!-- http://www.w3.org/XML/Group/xslt20-test/PublishedTestSuites/XSLTS_1_1_0.zip          -->
-        <get src="http://www.w3.org/XML/Group/xslt20-test/PublishedTestSuites/XSLTS_1_1_0.zip"
-            dest="${junit.reports}/external/XSLTS_1_1_0.zip" verbose="true" usetimestamp="true"/>
-        
-        <unzip src="${junit.reports}/external/XSLTS_1_1_0.zip" dest="${junit.reports}/external/XSLTS_1_1_0"/>
-    </target>
-    
-    <available file="extensions/xslt/test/src/org/exist/xsl/xslts_1_1_0/" property="xslts_junit.present"/>
-    
-    <path id="classpath.xslts">
-        <pathelement path="extensions/xslt/test/classes"/>
-    </path>
-
-    <target name="prepare-xslts" depends="download-xslts"> <!-- unless="xslts_junit.present" -->
-        <!--
-            <delete>
-            <fileset dir="${junit.reports}/src/org/exist/xsl/xslts/"/>
-            </delete>
-        -->
-        
-        <echo message="---------------------------------------"/>
-        <echo message="Generating junit tests from XSLTS"/>
-        <echo message="---------------------------------------"/>
-        <delete failonerror="false">
-            <fileset dir="extensions/xslt/test/src/org/exist/xslt/xslts_1_1_0/"/>
-        </delete>
-        <mkdir dir="extensions/xslt/test/src/org/exist/xslt/xslts_1_1_0"/>
-        <java classname="org.exist.xslt.XSLTStoJUnit">
-            <sysproperty key="exist.home" value="${basedir}" />
-            <sysproperty key="exist.jmxagent" value="" />
-	    <!-- fixme! - jetty.port.jetty /ljo -->
-            <sysproperty key="jetty.port" value="${jetty.port}" />
-            <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
-            <classpath refid="classpath.core"/>
-            <classpath refid="classpath.aspectj"/>
-            <classpath refid="classpath.jetty"/>
-            <classpath refid="classpath.junit"/>
-            <classpath refid="classpath.xslts"/>
-        </java>
-        <echo>tests generated, compiling ...</echo>
-        <mkdir dir="extensions/xslt/test/classes"/>
-        <javac includeAntRuntime="false" debug="${build.debug}" deprecation="${build.deprecation}"
-            destdir="extensions/xslt/test/classes" encoding="UTF-8"
-            optimize="${build.optimize}" srcdir="extensions/xslt/test/src"
-            source="${build.compiler.source}" target="${build.compiler.target}">
-            <classpath>
-                <path refid="classpath.core"/>
-                <path refid="classpath.aspectj"/>
-                <path refid="classpath.junit"/>
-                <path refid="classpath.test-libs"/>
-                <path refid="classpath.xslts"/>
-            </classpath>
-        </javac>
-        <echo>JUnit tests generated.</echo>
-    </target>
-    
     <property name="ant.dir" value="tools/ant"/>
 
     <path id="classpath.ant_launcher">
@@ -489,9 +456,10 @@
         <echo message="--------------"/>
         <echo message="XQTS tests    "/>
         <echo message="--------------"/>
-        <junit haltonfailure="false" printsummary="on" showoutput="${junit.output}" fork="yes" maxmemory="${junit.forked.VM.maxmemory.external}">
+        <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="on" showoutput="${junit.output}" fork="yes" maxmemory="${junit.forked.VM.maxmemory.external}">
             <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- fixme! - jetty.port.jetty /ljo -->
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
+            <!-- fixme! - jetty.port.jetty /ljo -->
             <sysproperty key="jetty.port" value="${jetty.port}" />
             <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
             <classpath refid="classpath.core"/>
@@ -506,33 +474,6 @@
         </junit>
     </target>
 
-    <path id="classpath.xslts">
-        <pathelement path="./extensions/xslt/test/classes"/>
-    </path>
-
-    <!-- Test XSLTS : XSL Test Suite -->
-    <target name="test-xslts" depends="prepare-xslts, test-prepare, test-compile">
-        <echo message="--------------"/>
-        <echo message="XSLTS tests    "/>
-        <echo message="--------------"/>
-        <junit haltonfailure="false" printsummary="on" showoutput="${junit.output}" fork="yes" maxmemory="${junit.forked.VM.maxmemory.external}">
-            <sysproperty key="exist.home" value="${basedir}" />
-	    <!-- fixme! - jetty.port.jetty /ljo -->
-            <sysproperty key="jetty.port" value="${jetty.port}" />
-            <sysproperty key="jetty.port.ssl" value="${jetty.port.ssl}" />
-            <classpath refid="classpath.core"/>
-            <classpath refid="classpath.aspectj"/>
-            <classpath refid="classpath.jetty"/>
-            <classpath refid="classpath.ant_launcher"/>
-            <classpath refid="classpath.junit"/>
-            <classpath refid="classpath.test-libs"/>
-            <classpath refid="classpath.xslts"/>
-            <formatter type="plain"/>
-            <formatter type="xml"/>
-            <test name="org.exist.xslt.xslts_1_1_0.AllTests" todir="${junit.reports.dat}"/>
-        </junit>
-    </target>
-    
     <!-- QT3 tests -->
     <available file="${junit.reports}/external/QT3-test-suite" property="qt3.present"/>
 
@@ -572,8 +513,9 @@
         <echo message="--------------"/>
         <echo message="QT3 tests    "/>
         <echo message="--------------"/>
-        <junit haltonfailure="false" printsummary="on" showoutput="${junit.output}" fork="yes" maxmemory="${junit.forked.VM.maxmemory.external}">
+        <junit haltonfailure="${junit.haltonfailure}" haltonerror="${junit.haltonerror}" printsummary="on" showoutput="${junit.output}" fork="yes" maxmemory="${junit.forked.VM.maxmemory.external}">
             <sysproperty key="exist.home" value="${basedir}" />
+            <sysproperty key="java.util.logging.manager" value="org.apache.logging.log4j.jul.LogManager"/>
 
             <classpath refid="classpath.core"/>
             <classpath refid="classpath.aspectj"/>
@@ -592,4 +534,8 @@
             </batchtest>
         </junit>
     </target>
+    
+    <!-- Build and test for travis service -->
+    <target name="travis" depends="clean,clean-all,all,test-prepare,test-local,test-wrapup"/>
+        
 </project>
