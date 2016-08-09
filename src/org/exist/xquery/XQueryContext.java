@@ -346,7 +346,7 @@ public class XQueryContext implements BinaryValueManager, Context
             return null;
         }
         // build a module object from the file
-        final Source src = new FileSource(resolved, "utf-8", false);
+        final Source src = new FileSource(resolved.toPath(), false);
         return compileOrBorrowModule(prefix, namespace, "", src);
     }
     // TODO: end of expath repo manageer, may change

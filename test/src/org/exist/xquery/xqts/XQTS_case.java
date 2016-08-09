@@ -251,7 +251,7 @@ public class XQTS_case extends TestCase {
                 if ("runtime-error".equals(scenario)) {
                 	try {
                         //compile
-                        CompiledXQuery compiled = xquery.compile(context, new FileSource(caseScript, "UTF8", true));
+                        CompiledXQuery compiled = xquery.compile(context, new FileSource(caseScript.toPath(), true));
 
                         //execute
                         result = xquery.execute(compiled, contextSequence);
@@ -285,7 +285,7 @@ public class XQTS_case extends TestCase {
                     }
                 } else {
                     //compile
-                    CompiledXQuery compiled = xquery.compile(context, new FileSource(caseScript, "UTF8", true));
+                    CompiledXQuery compiled = xquery.compile(context, new FileSource(caseScript.toPath(), true));
 
                     //execute
                     result = xquery.execute(compiled, contextSequence);

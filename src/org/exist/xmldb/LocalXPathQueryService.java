@@ -312,7 +312,7 @@ public class LocalXPathQueryService implements XPathQueryServiceImpl, XQueryServ
 		        modulePath = ((DBSource) source).getDocumentPath().removeLastSegment().toString();
             
 		    } else if (source instanceof FileSource) {
-                modulePath = ((FileSource) source).getFile().getParent();
+                modulePath = ((FileSource) source).getPath().toFile().getParent();
                 
             }
 		    

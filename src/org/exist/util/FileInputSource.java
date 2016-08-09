@@ -7,19 +7,13 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Path;
 
 public class FileInputSource extends EXistInputSource {
 
 	private File file;
 	private InputStream inputStream;
 
-	/**
-	 * Empty constructor
-	 */
-	public FileInputSource() {
-		this(null);
-	}
-	
 	/**
 	 * Constructor which calls {@link #setFile(File)}
 	 * @param file
@@ -30,7 +24,11 @@ public class FileInputSource extends EXistInputSource {
 		inputStream = null;
 		setFile(file);
 	}
-	
+
+	public FileInputSource(Path path) {
+		this(path.toFile());
+	}
+
 	/**
 	 * If a file source has been set, the File
 	 * object used for that is returned

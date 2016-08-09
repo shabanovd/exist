@@ -329,7 +329,7 @@ public class XQuery {
 	
     public Sequence execute(File file, Sequence contextSequence, AccessContext accessCtx) throws XPathException, IOException, PermissionDeniedException {
         final XQueryContext context = new XQueryContext(broker.getBrokerPool(), accessCtx);
-        final CompiledXQuery compiled = compile(context, new FileSource(file, "UTF-8", true));
+        final CompiledXQuery compiled = compile(context, new FileSource(file.toPath(), true));
         return execute(compiled, contextSequence);
     }
 }

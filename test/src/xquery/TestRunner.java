@@ -77,7 +77,7 @@ public abstract class TestRunner {
             StringBuilder fails = new StringBuilder();
             StringBuilder results = new StringBuilder();
             XQueryService xqs = (XQueryService) rootCollection.getService("XQueryService", "1.0");
-            Source query = new FileSource(new File("test/src/xquery/runTests.xql"), "UTF-8", false);
+            Source query = new FileSource(new File("test/src/xquery/runTests.xql").toPath(), false);
             for (File file : files) {
                 Document doc = parse(file);
 
@@ -131,7 +131,7 @@ public abstract class TestRunner {
                 StringBuilder results = new StringBuilder();
                 XQueryService xqs = (XQueryService) rootCollection.getService("XQueryService", "1.0");
                 xqs.setModuleLoadPath(getDirectory());
-                Source query = new FileSource(suite, "UTF-8", false);
+                Source query = new FileSource(suite.toPath(), false);
 
                 ResourceSet result = xqs.execute(query);
                 XMLResource resource = (XMLResource) result.getResource(0);

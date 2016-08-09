@@ -101,7 +101,7 @@ public class TestRunnerMain {
 		try {
 			StringBuilder results = new StringBuilder();
 			XQueryService xqs = (XQueryService) rootCollection.getService("XQueryService", "1.0");
-			Source query = new FileSource(new File("test/src/xquery/runTests.xql"), "UTF-8", false);
+			Source query = new FileSource(new File("test/src/xquery/runTests.xql").toPath(), false);
 			for (String fileName : files) {
 				File file = new File(fileName);
 				if (!file.canRead()) {

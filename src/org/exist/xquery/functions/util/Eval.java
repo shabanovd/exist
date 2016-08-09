@@ -350,7 +350,7 @@ public class Eval extends BasicFunction {
 //          } else if (key instanceof URL) {
 //              TODO: uri = ((URL) key).getParent()
             } else if (key instanceof String && querySource instanceof FileSource) {
-                uri = ((FileSource) querySource).getFile().getParent();
+                uri = ((FileSource) querySource).getPath().toFile().getParent();
             }
         	
             if (uri != null) {

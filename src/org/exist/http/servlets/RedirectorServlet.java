@@ -165,7 +165,7 @@ public class RedirectorServlet extends HttpServlet {
         final File f = new File(qpath);
         if (!(f.canRead() && f.isFile()))
             {throw new ServletException("Cannot read XQuery source from " + f.getAbsolutePath());}
-        final FileSource source = new FileSource(f, "UTF-8", true);
+        final FileSource source = new FileSource(f.toPath(), true);
 
         try {
             // Prepare and execute the XQuery
