@@ -407,9 +407,9 @@ public abstract class BaseHTTPClientFunction extends BasicFunction
                     public String getCacheClass() {
                         return (String) context.getBroker().getConfiguration().getProperty(Configuration.BINARY_CACHE_CLASS_PROPERTY);
                     }
-                });
+                }, bodyAsStream);
 
-                cfis = new CachingFilterInputStream(cache, bodyAsStream);
+                cfis = new CachingFilterInputStream(cache);
 
                 //mark the start of the stream
                 cfis.mark(Integer.MAX_VALUE);
