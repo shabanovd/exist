@@ -31,7 +31,7 @@ public class JSONObjectTest {
         JSONObject root = new JSONObject("root");
         JSONObject node = new JSONObject("hello");
         JSONValue literalValue = new JSONValue("1");
-        literalValue.setSerializationType(JSONNode.SerializationType.AS_LITERAL);
+        literalValue.setSerializationDataType(JSONNode.SerializationDataType.AS_LITERAL);
         node.addObject(literalValue);
         root.addObject(node);
 
@@ -69,13 +69,13 @@ public class JSONObjectTest {
 
         JSONObject node = new JSONObject("hello");
         JSONValue literalValue1 = new JSONValue("1");
-        literalValue1.setSerializationType(JSONNode.SerializationType.AS_LITERAL);
+        literalValue1.setSerializationDataType(JSONNode.SerializationDataType.AS_LITERAL);
         node.addObject(literalValue1);
         root.addObject(node);
 
         JSONObject node2 = new JSONObject("hello");
         JSONValue literalValue2 = new JSONValue("2");
-        literalValue2.setSerializationType(JSONNode.SerializationType.AS_LITERAL);
+        literalValue2.setSerializationDataType(JSONNode.SerializationDataType.AS_LITERAL);
         node2.addObject(literalValue2);
         root.addObject(node2);
 

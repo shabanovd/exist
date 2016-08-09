@@ -5,6 +5,7 @@ import java.io.Writer;
 import java.util.Properties;
 import java.util.Stack;
 import javax.xml.transform.TransformerException;
+
 import org.apache.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.storage.serializers.EXistOutputKeys;
@@ -61,7 +62,7 @@ public class JSONWriter extends XMLWriter {
 	
     protected JSONNode root;
 	
-    protected final Stack<JSONObject> stack = new Stack<JSONObject>();
+    protected final Stack<JSONObject> stack = new Stack<>();
 
     protected boolean useNSPrefix = false;
     
@@ -130,12 +131,12 @@ public class JSONWriter extends XMLWriter {
 
     @Override
     public void startElement(final QName qname) throws TransformerException {
-        if(JASON_NS.equals(qname.getNamespaceURI()) && VALUE.equals(qname.getLocalName())) {
+        if(JASON_NS.equals(qname.getNamespaceURI()) && VALUE.equals(qname.getLocalPart())) {
             processStartValue();
         } else if(useNSPrefix) {
-            processStartElement(qname.getPrefix() + '_' + qname.getLocalName(), false);
+            processStartElement(qname.getPrefix() + '_' + qname.getLocalPart(), false);
         } else {
-            processStartElement(qname.getLocalName(), false);
+            processStartElement(qname.getLocalPart(), false);
         }
     }
 
@@ -181,16 +182,21 @@ public class JSONWriter extends XMLWriter {
     @Override
     public void attribute(final String qname, final String value) throws TransformerException {
         final JSONObject parent = stack.peek();
-        if(qname.equals(JSON_ARRAY)) {
-            parent.setSerializationType(JSONNode.SerializationType.AS_ARRAY);
-        } else if(qname.equals(JSON_LITERAL)) {
-            parent.setSerializationType(JSONNode.SerializationType.AS_LITERAL);
-        } else if(qname.equals(JSON_NAME)) {
-            parent.setName(value);
-        } else {
-            final String name = prefixAttributes ? "@" + qname : qname;
-            final JSONSimpleProperty obj = new JSONSimpleProperty(name, value);
-            parent.addObject(obj);
+        switch (qname) {
+            case JSON_ARRAY:
+                parent.setSerializationType(JSONNode.SerializationType.AS_ARRAY);
+                break;
+            case JSON_LITERAL:
+                parent.setSerializationDataType(JSONNode.SerializationDataType.AS_LITERAL);
+                break;
+            case JSON_NAME:
+                parent.setName(value);
+                break;
+            default:
+                final String name = prefixAttributes ? "@" + qname : qname;
+                final JSONSimpleProperty obj = new JSONSimpleProperty(name, value);
+                parent.addObject(obj);
+                break;
         }
     }
 
@@ -204,6 +210,7 @@ public class JSONWriter extends XMLWriter {
         final JSONObject parent = stack.peek();
         final JSONNode value = new JSONValue(chars.toString());
         value.setSerializationType(parent.getSerializationType());
+        value.setSerializationDataType(parent.getSerializationDataType());
         parent.addObject(value);
     }
 

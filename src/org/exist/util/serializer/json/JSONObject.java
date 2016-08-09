@@ -24,6 +24,7 @@ package org.exist.util.serializer.json;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+
 import org.apache.log4j.Logger;
 
 public class JSONObject extends JSONNode {
