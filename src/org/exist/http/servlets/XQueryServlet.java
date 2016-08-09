@@ -22,11 +22,14 @@
  */
 package org.exist.http.servlets;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 import javax.servlet.ServletConfig;
@@ -44,7 +47,6 @@ import org.exist.security.AuthenticationException;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
-import org.exist.security.internal.AccountImpl;
 import org.exist.security.internal.web.HttpAccount;
 import org.exist.security.xacml.AccessContext;
 import org.exist.source.FileSource;
@@ -52,10 +54,8 @@ import org.exist.source.Source;
 import org.exist.source.SourceFactory;
 import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
-import org.exist.storage.serializers.Serializer;
 import org.exist.util.MimeTable;
-import org.exist.util.serializer.SAXSerializer;
-import org.exist.util.serializer.SerializerPool;
+import org.exist.util.serializer.XQuerySerializer;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.Constants;
@@ -100,7 +100,7 @@ import org.exist.dom.XMLUtil;
  * @author Wolfgang Meier (wolfgang@exist-db.org)
  */
 public class XQueryServlet extends AbstractExistHttpServlet {
-    
+
     private static final long serialVersionUID = 5266794852401553015L;
 
     private static final Logger LOG = Logger.getLogger(XQueryServlet.class);
@@ -118,11 +118,11 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 
     public final static XmldbURI DEFAULT_URI = XmldbURI.EMBEDDED_SERVER_URI.append(XmldbURI.ROOT_COLLECTION_URI);
     public final static String DEFAULT_CONTENT_TYPE = "text/html";
-    
+
     public final static String DRIVER = "org.exist.xmldb.DatabaseImpl";
-    
+
     private XmldbURI collectionURI = null;
-    
+
     private String encoding = null;
     private String contentType = null;
 
@@ -141,16 +141,16 @@ public class XQueryServlet extends AbstractExistHttpServlet {
         final String confCollectionURI = config.getInitParameter("uri");
         if(confCollectionURI == null) {
             collectionURI = DEFAULT_URI;
-            
+
         } else {
             try {
                 collectionURI = XmldbURI.xmldbUriFor(confCollectionURI);
-                
+
             } catch (final URISyntaxException e) {
                 throw new ServletException("Invalid XmldbURI for parameter 'uri': "+e.getMessage(),e);
             }
         }
-        
+
         encoding = config.getInitParameter("encoding");
         if(encoding == null) {
             encoding = DEFAULT_ENCODING;
@@ -162,7 +162,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             contentType = DEFAULT_CONTENT_TYPE;
         }
     }
-    
+
     /* (non-Javadoc)
      * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
@@ -170,14 +170,14 @@ public class XQueryServlet extends AbstractExistHttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         process(request, response);
     }
-    
+
     /* (non-Javadoc)
      * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
         HttpServletRequest request = null;
-        
+
         //For POST request, If we are logging the requests we must wrap HttpServletRequest in HttpServletRequestWrapper
         //otherwise we cannot access the POST parameters from the content body of the request!!! - deliriumsky
         final Descriptor descriptor = Descriptor.getDescriptorSingleton();
@@ -187,14 +187,14 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             } else {
                 request = req;
             }
-            
+
         } else {
             request = req;
         }
-        
+
         process(request, response);
     }
-    
+
     //-------------------------------
     // doPut and doDelete added by Andrzej Taramina (andrzej@chaeron.com)
     // Date: Sept/05/2007
@@ -203,14 +203,14 @@ public class XQueryServlet extends AbstractExistHttpServlet {
     // NOTE: The XQuery referenced in the target URL of the request will be executed and the PUT/DELETE request will be passed to it
     //
     //-------------------------------
-    
+
      /* (non-Javadoc)
      * @see javax.servlet.http.HttpServlet#doPut(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
         HttpServletRequest request = null;
-        
+
         //For POST request, If we are logging the requests we must wrap HttpServletRequest in HttpServletRequestWrapper
         //otherwise we cannot access the POST parameters from the content body of the request!!! - deliriumsky
         final Descriptor descriptor = Descriptor.getDescriptorSingleton();
@@ -220,15 +220,15 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             } else {
                 request = req;
             }
-            
+
         } else {
             request = req;
         }
-        
+
         process(request, response);
     }
-    
-    
+
+
     /* (non-Javadoc)
      * @see javax.servlet.http.HttpServlet#doDelete(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
@@ -236,8 +236,8 @@ public class XQueryServlet extends AbstractExistHttpServlet {
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         process(request, response);
     }
-    
-    
+
+
     /**
      * Processes incoming HTTP requests for XQuery
      */
@@ -251,18 +251,18 @@ public class XQueryServlet extends AbstractExistHttpServlet {
                 {path = path.substring(0, p);}
             path = getServletContext().getRealPath(path);
         }
-        
+
         //second, perform descriptor actions
         final Descriptor descriptor = Descriptor.getDescriptorSingleton();
         if(descriptor != null && !descriptor.requestsFiltered()) {
             //logs the request if specified in the descriptor
             descriptor.doLogRequestInReplayLog(request);
-            
+
             //map's the path if a mapping is specified in the descriptor
             path = descriptor.mapPath(path);
         }
-        
-        
+
+
 //        if (request.getCharacterEncoding() == null)
 //            try {
 //                request.setCharacterEncoding(formEncoding);
@@ -278,7 +278,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
         final int p = requestPath.lastIndexOf("/");
         if(p != Constants.STRING_NOT_FOUND)
             {requestPath = requestPath.substring(0, p);}
-        
+
         String moduleLoadPath;
         final Object loadPathAttrib = request.getAttribute(ATTR_MODULE_LOAD_PATH);
         if (loadPathAttrib != null)
@@ -303,7 +303,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
                 username = getSessionAttribute(session, "user");
                 password = getSessionAttribute(session, "password");
             }
-            
+
             //TODO authentication should use super.authenticate(...) !!!
 			try {
 				if( username != null && password != null ) {
@@ -311,23 +311,23 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 		        	if (newUser != null && newUser.isAuthenticated())
 		        		{user = newUser;}
 				}
-                
+
 			} catch (final AuthenticationException e) {
 				getLog().error("User can not be authenticated ("+username+").", e);
 			}
         }
-        
+
         if (user == getDefaultUser()) {
         	Subject requestUser = HttpAccount.getUserFromServletRequest(request);
         	if (requestUser != null) {
         		user = requestUser;
         	} else {
         		requestUser = getAuthenticator().authenticate(request, response, false);
-        		if (requestUser != null) 
+        		if (requestUser != null)
         			{user = requestUser;}
         	}
         }
-        
+
         Source source = null;
         final Object sourceAttrib = request.getAttribute(ATTR_XQUERY_SOURCE);
         final Object urlAttrib = request.getAttribute(ATTR_XQUERY_URL);
@@ -342,57 +342,52 @@ public class XQueryServlet extends AbstractExistHttpServlet {
                 }
             else
                 {s = sourceAttrib.toString();}
-            
+
             source = new StringSource(s);
-            
+
         } else if (urlAttrib != null) {
-            DBBroker broker = null;
-            try {
-        	    broker = getPool().get(user);
+            try(final DBBroker broker = getPool().get(user)) {
                 source = SourceFactory.getSource(broker, moduleLoadPath, urlAttrib.toString(), true);
             } catch (final Exception e) {
                 getLog().error(e.getMessage(), e);
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 sendError(output, "Error", e.getMessage());
-            } finally {
-                getPool().release(broker);
             }
-            
         } else {
-            final File f = new File(path);
-            if(!f.canRead()) {
+            final Path f = Paths.get(path);
+            if(!Files.isReadable(f)) {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 sendError(output, "Cannot read source file", path);
                 return;
             }
-            source = new FileSource(f, encoding, true);
+            source = new FileSource(f, Charset.forName(encoding), true);
         }
-        
+
         if (source == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             sendError(output, "Source not found", path);
         }
-        
+
         boolean reportErrors = false;
         final String errorOpt = (String) request.getAttribute(ATTR_XQUERY_REPORT_ERRORS);
         if (errorOpt != null)
             {reportErrors = errorOpt.equalsIgnoreCase("YES");}
-        
+
         //allow source viewing for GET?
         if("GET".equals(request.getMethod().toUpperCase())) {
             String option;
             boolean allowSource = false;
             if((option = request.getParameter("_source")) != null)
                 allowSource = "yes".equals(option);
-            
+
             //Should we display the source of the XQuery or execute it
             if(allowSource && descriptor != null) {
                 //show the source
-                
+
                 //check are we allowed to show the xquery source - descriptor.xml
 //                System.out.println("path="+path);
                 if(descriptor.allowSource(path)) {
-                	
+
                 	try {
 						source.validate(user, Permission.READ);
 					} catch (final PermissionDeniedException e) {
@@ -403,7 +398,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 						}
 						return;
 					}
-                    
+
 					//Show the source of the XQuery
                     //writeResourceAs(resource, broker, stylesheet, encoding, "text/plain", outputProperties, response);
                     response.setContentType("text/plain; charset=" + getFormEncoding());
@@ -411,15 +406,15 @@ public class XQueryServlet extends AbstractExistHttpServlet {
                     output.flush();
                     return;
                 } else {
-                   
+
                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission to view XQuery source for: " + path + " denied. Must be explicitly defined in descriptor.xml");
                    return;
                 }
             }
         }
-        
+
         //-------------------------------
-        
+
 //        URI baseUri;
 //        try {
 //            baseUri = new URI(request.getScheme(),
@@ -430,9 +425,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 //        }
 
         final String requestAttr = (String) request.getAttribute(ATTR_XQUERY_ATTRIBUTE);
-        DBBroker broker = null;
-        try {
-        	broker = getPool().get(user);
+        try(final DBBroker broker = getPool().get(user)) {
             final XQuery xquery = broker.getXQueryService();
             CompiledXQuery query = xquery.getXQueryPool().borrowCompiledXQuery(broker, source);
 
@@ -442,14 +435,14 @@ public class XQueryServlet extends AbstractExistHttpServlet {
                context.setModuleLoadPath(moduleLoadPath);
                try {
             	   query = xquery.compile(context, source);
-                   
+
                } catch (final XPathException ex) {
                   throw new EXistException("Cannot compile xquery: "+ ex.getMessage(), ex);
-                  
+
                } catch (final IOException ex) {
                   throw new EXistException("I/O exception while compiling xquery: " + ex.getMessage() ,ex);
                }
-               
+
             } else {
                context = query.getContext();
                context.setModuleLoadPath(moduleLoadPath);
@@ -457,7 +450,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 
             final Properties outputProperties = new Properties();
             outputProperties.put("base-uri", collectionURI.toString());
-            
+
             context.declareVariable(RequestModule.PREFIX + ":request", new HttpRequestWrapper(request, getFormEncoding(), getContainerEncoding()));
             context.declareVariable(ResponseModule.PREFIX + ":response", new HttpResponseWrapper(response));
             context.declareVariable(SessionModule.PREFIX + ":session", ( session != null ? new HttpSessionWrapper( session ) : null ) );
@@ -487,7 +480,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             Sequence resultSequence;
             try {
                 resultSequence = xquery.execute(query, null, outputProperties);
-                
+
             } finally {
                 context.runCleanupTasks();
                 xquery.getXQueryPool().returnCompiledXQuery(source, query);
@@ -501,45 +494,32 @@ public class XQueryServlet extends AbstractExistHttpServlet {
                         response.setCharacterEncoding(getFormEncoding());
                     } else
                 		response.setContentType(mediaType);}
-                
+
             } else {
 	            String contentType = this.contentType;
 	            try {
 	                contentType = getServletContext().getMimeType(path);
 	                if (contentType == null)
 	                    {contentType = this.contentType;}
-                    
+
 	            } catch (final Throwable e) {
 	                contentType = this.contentType;
-                    
+
 	            } finally {
 	                if (MimeTable.getInstance().isTextContent(contentType))
 	                    {contentType += "; charset=" + getFormEncoding();}
 	                response.setContentType(contentType );
 	            }
             }
-            
+
             if (requestAttr != null && (XmldbURI.API_LOCAL.equals(collectionURI.getApiName())) ) {
                 request.setAttribute(requestAttr, resultSequence);
-                
-            } else {
-            	final Serializer serializer = broker.getSerializer();
-            	serializer.reset();
-            
-            	final SerializerPool serializerPool = SerializerPool.getInstance();
 
-            	final SAXSerializer sax = (SAXSerializer) serializerPool.borrowObject(SAXSerializer.class);
-            	try {
-	            	sax.setOutput(output, outputProperties);
-	            	serializer.setProperties(outputProperties);
-	            	serializer.setSAXHandlers(sax, sax);
-	            	serializer.toSAX(resultSequence, 1, resultSequence.getItemCount(), false, false);
-                    
-            	} finally {
-            		serializerPool.returnObject(sax);
-            	}
+            } else {
+                XQuerySerializer serializer = new XQuerySerializer(broker, outputProperties, output);
+                serializer.serialize(resultSequence);
             }
-            
+
 		} catch (final PermissionDeniedException e) {
 			if (getDefaultUser().equals(user)) {
 				getAuthenticator().sendChallenge(request, response);
@@ -547,21 +527,21 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 				response.sendError(HttpServletResponse.SC_FORBIDDEN, "No permission to execute XQuery for: " + path + " denied.");
 			}
 			return;
-           
+
         } catch (final XPathException e){
-            
-            final Logger logger = getLog();            
+
+            final Logger logger = getLog();
             if(logger.isDebugEnabled()) {
                 logger.debug(e.getMessage(),e);
-            }          
-            
+            }
+
             if (reportErrors)
             	{writeError(output, e);}
             else {
             	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             	sendError(output, "Error", e.getMessage());
             }
-            
+
         } catch (final Throwable e){
             getLog().error(e.getMessage(), e);
             if (reportErrors)
@@ -570,15 +550,13 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             	sendError(output, "Error", e.getMessage());
             }
-            
-        } finally {
-            getPool().release(broker);
+
         }
 
         output.flush();
         output.close();
     }
-    
+
     private String getSessionAttribute(HttpSession session, String attribute) {
         final Object obj = session.getAttribute(attribute);
         return getValue(obj);
@@ -587,7 +565,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
     private String getValue(Object obj) {
         if(obj == null)
             {return null;}
-        
+
         if(obj instanceof Sequence)
             try {
                 return ((Sequence)obj).getStringValue();
