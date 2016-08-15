@@ -140,31 +140,31 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
 
     public abstract File getDataFolder();
 
-//    /**
-//     * Set the user that is currently using this DBBroker object.
-//     *
-//     * @param user
-//     * @deprecated use setSubject
-//     */
-//    public void setUser(Subject user) {
-//        this.subject = user;
-//
-//        /*
-//        synchronized (this){ System.out.println("DBBroker.setUser(" +
-//        user.getName() + ")"); Thread.dumpStack(); }
-//         */
-//        // debugging user escalation permissions problem - deliriumsky.
-//    }
-//
-//    /**
-//     * @return The user that is currently using this DBBroker object
-//     * @deprecated user getSubject
-//     */
-//    @Deprecated
-//    public Subject getUser() {
-//        return getSubject();
-//    }
-//
+    /**
+     * Set the user that is currently using this DBBroker object.
+     *
+     * @param user
+     * @deprecated use setSubject
+     */
+    public void setUser(Subject user) {
+        this.setSubject(user);
+
+        /*
+        synchronized (this){ System.out.println("DBBroker.setUser(" +
+        user.getName() + ")"); Thread.dumpStack(); }
+         */
+        // debugging user escalation permissions problem - deliriumsky.
+    }
+
+    /**
+     * @return The user that is currently using this DBBroker object
+     * @deprecated user getSubject
+     */
+    @Deprecated
+    public Subject getUser() {
+        return getSubject();
+    }
+
 //    /**
 //     * Set the subject that is currently using this DBBroker object.
 //     *
@@ -182,9 +182,9 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
     @Deprecated
     public void setSubject(final Subject subject) {
         if (!this.subject.isEmpty()) {
-            this.subject.addFirst(subject);
+            this.subject.removeFirst();
         }
-        this.subject.removeFirst();
+        this.subject.addFirst(subject);
     }
 
 
