@@ -782,7 +782,7 @@ public class Configuration implements ErrorHandler
                     throw( new DatabaseConfigurationException( "cannot read data directory: " + df.getAbsolutePath() ) );
                 }
             }
-            config.put( BrokerPool.PROPERTY_DATA_DIR, df.getAbsolutePath() );
+            config.put( BrokerPool.PROPERTY_DATA_DIR, df.toPath().toAbsolutePath() );
             LOG.debug( BrokerPool.PROPERTY_DATA_DIR + ": " + config.get( BrokerPool.PROPERTY_DATA_DIR ) );
         }
 

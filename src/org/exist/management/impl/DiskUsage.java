@@ -52,7 +52,7 @@ public class DiskUsage implements DiskUsageMBean {
             }
         }
 
-        String dataDirValue = (String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
+        String dataDirValue = config.getProperty(BrokerPool.PROPERTY_DATA_DIR).toString();
         if (StringUtils.isNotBlank(dataDirValue)) {
             File tmpDir = new File(dataDirValue);
             if (tmpDir.isDirectory()) {

@@ -41,6 +41,7 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import java.nio.file.Path;
 import java.util.Iterator;
 
 /**
@@ -124,7 +125,7 @@ public class SymbolTable {
     }
 
     public SymbolTable(BrokerPool pool, Configuration config) throws EXistException {
-        this(pool, new File((String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR)));
+        this(pool, ((Path) config.getProperty(BrokerPool.PROPERTY_DATA_DIR)).toFile());
     }
 
     public static String getFileName() {

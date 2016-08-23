@@ -15,6 +15,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import javax.xml.transform.stream.StreamSource;
 
@@ -189,11 +191,12 @@ public class ExistRepository extends Observable {
     }
 
     public static File getRepositoryDir(Configuration config) {
-        String dataDirPath = (String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
-        if (dataDirPath == null)
-            {dataDirPath = NativeBroker.DEFAULT_DATA_DIR;}
-        final File dataDir = new File(dataDirPath);
-        final File expathDir = new File(dataDir, EXPATH_REPO_DIR);
+        Path dataDirPath = (Path) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
+        if (dataDirPath == null) {
+            dataDirPath = Paths.get(NativeBroker.DEFAULT_DATA_DIR);
+        }
+
+        final File expathDir = dataDirPath.resolve(EXPATH_REPO_DIR).toFile();
         if (!expathDir.exists()) {
             moveOldRepo(config.getExistHome(), expathDir);
         }

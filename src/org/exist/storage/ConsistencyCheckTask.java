@@ -28,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 
@@ -79,7 +80,7 @@ public class ConsistencyCheckTask implements SystemTask {
         exportDir = properties.getProperty(OUTPUT_PROP_NAME, "export");
         File dir = new File(exportDir);
         if (!dir.isAbsolute()) {
-            dir = new File((String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR), exportDir);
+            dir = ((Path) config.getProperty(BrokerPool.PROPERTY_DATA_DIR)).resolve(exportDir).toFile();
         }
         dir.mkdirs();
         exportDir = dir.getAbsolutePath();

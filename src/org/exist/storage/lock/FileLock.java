@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -87,14 +88,9 @@ public class FileLock {
     /** The time (in milliseconds) of the last heartbeat written to the lock file */
     private long lastHeartbeat = -1L;
 
-    public FileLock(BrokerPool pool, String path) {
+    public FileLock(BrokerPool pool, Path path) {
         this.pool = pool;
-        this.lockFile = new File(path);
-    }
-
-    public FileLock(BrokerPool pool, File parent, String lockName) {
-        this.pool = pool;
-        this.lockFile = new File(parent, lockName);
+        this.lockFile = path.toFile();
     }
 
     /**

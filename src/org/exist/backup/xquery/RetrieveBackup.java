@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import java.nio.file.Path;
 import java.util.Properties;
 
 
@@ -71,7 +72,7 @@ public class RetrieveBackup extends BasicFunction
         File   dir       = new File( exportDir );
 
         if( !dir.isAbsolute() ) {
-            dir = new File( (String)context.getBroker().getConfiguration().getProperty( BrokerPool.PROPERTY_DATA_DIR ), exportDir );
+            dir = ( (Path)context.getBroker().getConfiguration().getProperty( BrokerPool.PROPERTY_DATA_DIR )).resolve(exportDir).toFile();
         }
         final String name       = args[1].getStringValue();
         final File   backupFile = new File( dir, name );

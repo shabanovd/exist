@@ -10,6 +10,7 @@ import org.xmldb.api.base.XMLDBException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.Map;
@@ -83,8 +84,7 @@ public class BackupSystemTask implements SystemTask {
         String dir = properties.getProperty("dir", "backup");
         directory = new File(dir);
         if (!directory.isAbsolute()) {
-            dir = (String)config.getProperty(BrokerPool.PROPERTY_DATA_DIR) +
-                File.separatorChar + dir;
+            dir = ((Path)config.getProperty(BrokerPool.PROPERTY_DATA_DIR)).resolve(dir).toAbsolutePath().toString();
             directory = new File(dir);
         }
         directory.mkdirs();

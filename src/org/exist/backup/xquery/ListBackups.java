@@ -45,6 +45,7 @@ import org.exist.xquery.value.Type;
 import java.io.File;
 import java.io.IOException;
 
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -77,7 +78,7 @@ public class ListBackups extends BasicFunction
         File   dir       = new File( exportDir );
 
         if( !dir.isAbsolute() ) {
-            dir = new File( (String)context.getBroker().getConfiguration().getProperty( BrokerPool.PROPERTY_DATA_DIR ), exportDir );
+            dir = ((Path)context.getBroker().getConfiguration().getProperty( BrokerPool.PROPERTY_DATA_DIR )).resolve(exportDir).toFile();
         }
 
         context.pushDocumentContext();

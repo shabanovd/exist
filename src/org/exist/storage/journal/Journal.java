@@ -209,7 +209,7 @@ public class Journal {
 
     public void initialize() throws EXistException, ReadOnlyException {
         final File lck = new File(dir, LCK_FILE);
-        fileLock = new FileLock(pool, lck.getAbsolutePath());
+        fileLock = new FileLock(pool, lck.toPath());
         boolean locked = fileLock.tryLock();
         if (!locked) {
             final String lastHeartbeat =

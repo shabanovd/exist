@@ -25,6 +25,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.Map.Entry;
@@ -768,32 +771,29 @@ public class BrokerPool implements Database {
 	
 	//TODO : create a canReadJournalDir() method in the *relevant* class. The two directories may be different.
     protected boolean canReadDataDir(Configuration conf) throws EXistException {
-        String dataDir = (String) conf.getProperty(PROPERTY_DATA_DIR);
-        if (dataDir == null) 
-        	{dataDir = "data";} //TODO : DEFAULT_DATA_DIR
+        final Path dataDir = Optional.ofNullable((Path) conf.getProperty(PROPERTY_DATA_DIR))
+                .orElse(Paths.get(NativeBroker.DEFAULT_DATA_DIR));
 
-        final File dir = new File(dataDir);        
-        if (!dir.exists()) {
+        if(!Files.exists(dataDir)) {
             try {
             	//TODO : shall we force the creation ? use a parameter to decide ? 
-            	LOG.info("Data directory '" + dir.getAbsolutePath() + "' does not exist. Creating one ...");
-                dir.mkdirs();                
-            } catch (final SecurityException e) {            	
-                LOG.info("Cannot create data directory '" + dir.getAbsolutePath() + "'. Switching to read-only mode.");                
+            	LOG.info("Data directory '" + dataDir.toAbsolutePath().toString() + "' does not exist. Creating one ...");
+                Files.createDirectories(dataDir);
+            } catch (final SecurityException | IOException e) {
+                LOG.info("Cannot create data directory '" + dataDir.toAbsolutePath().toString() + "'. Switching to read-only mode.");
                 return false;
             }
         }
-        
-    	//Save it for further use.
-        //TODO : "data-dir" has sense for *native* brokers
-    	conf.setProperty(PROPERTY_DATA_DIR, dataDir);
-    	if (!dir.canWrite()) {            
-            LOG.info("Cannot write to data directory: " + dir.getAbsolutePath() + ". Switching to read-only mode.");
+
+        //Save it for further use.
+        conf.setProperty(PROPERTY_DATA_DIR, dataDir);
+        if(!Files.isWritable(dataDir)) {
+            LOG.warn("Cannot write to data directory: " + dataDir.toAbsolutePath().toString());
             return false;
         }
-        
+
     	// try to acquire lock on the data dir
-        dataLock = new FileLock(this, dir, "dbx_dir.lck");
+        dataLock = new FileLock(this, dataDir.resolve("dbx_dir.lck"));
         
         try {
             boolean locked = dataLock.tryLock();
@@ -869,7 +869,7 @@ public class BrokerPool implements Database {
 
         			//REFACTOR : construct then... configure
         			//TODO : journal directory *may* be different from BrokerPool.PROPERTY_DATA_DIR
-        			transactionManager = new TransactionManager(this, new File((String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR)), isTransactional());		
+        			transactionManager = new TransactionManager(this, ((Path) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR)).toFile(), isTransactional());
         			try {
         				transactionManager.initialize();
         			} catch (final ReadOnlyException e) {
@@ -1741,7 +1741,8 @@ public class BrokerPool implements Database {
 
             //guard to ensure that the broker has popped all its subjects
             if(lastUser == null || broker.getSubject() != null) {
-                LOG.warn("Broker " + broker.getId() + " was returned with extraneous Subjects, cleaning...", new IllegalStateException("DBBroker pushSubject/popSubject mismatch").fillInStackTrace());
+                LOG.warn("Broker " + broker.getId() + " was returned with extraneous Subjects, cleaning...");
+//                LOG.warn("Broker " + broker.getId() + " was returned with extraneous Subjects, cleaning...", new IllegalStateException("DBBroker pushSubject/popSubject mismatch").fillInStackTrace());
                 if(LOG.isTraceEnabled()) {
                     broker.traceSubjectChanges();
                 }
@@ -2269,7 +2270,7 @@ public class BrokerPool implements Database {
 
 	@Override
 	public File getStoragePlace() {
-		return new File((String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR));
+		return ((Path) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR)).toFile();
 	}
 
     private final List<TriggerProxy<? extends DocumentTrigger>> documentTriggers = new ArrayList<TriggerProxy<? extends DocumentTrigger>>();

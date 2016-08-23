@@ -77,7 +77,7 @@ public class DatabaseAdminServlet extends AbstractExistHttpServlet {
                     "</td></tr>" );
                 output.println( "<tr><td>Configuration:</td><td>" + conf.getConfigFilePath() + "</td></tr>" );
                 output.println( "<tr><td>Data directory:</td><td>" +
-                    (String) conf.getProperty(BrokerPool.PROPERTY_DATA_DIR) +
+                    conf.getProperty(BrokerPool.PROPERTY_DATA_DIR).toString() +
                     "</td></tr>" );
                 output.println( "<tr><td>Active instances:</td><td>" +
                     pool.countActiveBrokers() + "</td></tr>" );

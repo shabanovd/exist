@@ -81,8 +81,7 @@ public class CounterFunctions extends BasicFunction {
         super(context, signature);
 
         // Setup counters
-        String counterDir = (String) context.getBroker().getConfiguration()
-                                                        .getProperty(BrokerPool.PROPERTY_DATA_DIR);
+        String counterDir = context.getBroker().getConfiguration().getProperty(BrokerPool.PROPERTY_DATA_DIR).toString();
 
         logger.debug("Counters directory: "+counterDir);
 

@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -233,7 +234,7 @@ public class NativeBroker extends DBBroker {
             prepend = PREPEND_DB_AS_NEEDED;
         }
 
-        dataDir = (String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
+        dataDir = config.getProperty(BrokerPool.PROPERTY_DATA_DIR).toString();
         if (dataDir == null)
             {dataDir = DEFAULT_DATA_DIR;}
 

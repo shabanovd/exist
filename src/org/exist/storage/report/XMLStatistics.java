@@ -67,7 +67,7 @@ public class XMLStatistics {
                 PREFIX + ":database-instance", atts);
             atts.clear();
             addValue("configuration", instance.getConfiguration().getConfigFilePath());
-            addValue("data-directory", (String)instance.getConfiguration().getProperty(BrokerPool.PROPERTY_DATA_DIR));
+            addValue("data-directory", instance.getConfiguration().getProperty(BrokerPool.PROPERTY_DATA_DIR).toString());
             addValue("cache-size", String.valueOf(instance.getConfiguration().getInteger("db-connection.cache-size")));
             addValue("page-size", String.valueOf(instance.getConfiguration().getInteger("db-connection.page-size")));
             addValue("collection-cache-mem", String.valueOf(instance.getConfiguration().getInteger("db-connection.collection-cache-mem")));

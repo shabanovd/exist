@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -67,8 +68,7 @@ public class DataBackup implements SystemTask {
         dest = properties.getProperty("output-dir", "backup");
         File f = new File(dest);
         if (!f.isAbsolute()) {
-            dest = (String)config.getProperty(BrokerPool.PROPERTY_DATA_DIR) +
-                File.separatorChar + dest;
+            dest = ((Path)config.getProperty(BrokerPool.PROPERTY_DATA_DIR)).resolve(dest).toAbsolutePath().toString();
             f = new File(dest);
         }
         if (f.exists() && !(f.canWrite() && f.isDirectory()))

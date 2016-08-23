@@ -22,6 +22,7 @@
 package org.exist.storage.sync;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Properties;
 
 import org.exist.EXistException;
@@ -61,7 +62,7 @@ public class SyncTask implements SystemTask {
 
         // fixme! - Shouldn't it be data dir AND journal dir we check
         // rather than EXIST_HOME? /ljo
-        dataDir = new File((String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR));
+        dataDir = ((Path) config.getProperty(BrokerPool.PROPERTY_DATA_DIR)).toFile();
         LOG.info("Using DATA_DIR: " + dataDir.getAbsolutePath() + ". Minimal disk space required for database " +
                  "to continue operations: " + (diskSpaceMin / 1024 / 1024) + "mb");
         final long space = dataDir.getUsableSpace();

@@ -467,7 +467,7 @@ public class VersioningTrigger extends FilteringTrigger {
     }
 
     private long newRevision(BrokerPool pool) {
-        String dataDir = (String) pool.getConfiguration().getProperty(BrokerPool.PROPERTY_DATA_DIR);
+        String dataDir = pool.getConfiguration().getProperty(BrokerPool.PROPERTY_DATA_DIR).toString();
         synchronized (latch) {
             File f = new File(dataDir, "versions.dbx");
             long rev = 0;
