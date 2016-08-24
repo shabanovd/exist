@@ -1384,7 +1384,7 @@ public class LocationStep extends Step {
 					}
 				}
 
-				public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
+				public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
 				}
 
 				public void unsubscribe() {

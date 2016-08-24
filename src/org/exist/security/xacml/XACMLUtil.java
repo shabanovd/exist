@@ -53,13 +53,7 @@ import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.collections.triggers.TriggerException;
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.MutableDocumentSet;
-import org.exist.dom.NodeSet;
-import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
+import org.exist.dom.*;
 import org.exist.numbering.NodeId;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
@@ -148,7 +142,7 @@ public class XACMLUtil implements UpdateListener
 	}
 
 
-    public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
+    public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
         // not relevant
     }
 
