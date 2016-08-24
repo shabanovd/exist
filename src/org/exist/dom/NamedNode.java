@@ -71,8 +71,13 @@ public class NamedNode extends StoredNode implements QNameable {
         return nodeName;
     }
 
+    public void setQName(final QName qname) {
+        this.nodeName = qname;
+    }
+
+    @Deprecated
     public void setNodeName(QName name) {
-        nodeName = name;
+        setQName(name);
     }
 
     public void setNodeName(QName name, SymbolTable symbols) throws DOMException {

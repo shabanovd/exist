@@ -189,7 +189,7 @@ public class ElementImpl extends NamedNode implements Element, ElementAtExist {
                 prefixData = bout.toByteArray();
             }
             final short id = symbols.getSymbol(this);
-            final boolean hasNamespace = nodeName.needsNamespaceDecl();
+            final boolean hasNamespace = nodeName.hasNamespace();
             short nsId = 0;
             if (hasNamespace)
                 {nsId =  symbols.getNSSymbol(nodeName.getNamespaceURI());}
@@ -633,7 +633,7 @@ public class ElementImpl extends NamedNode implements Element, ElementAtExist {
                         attrib.setValue(StringValue.trimWhitespace(StringValue.collapseWhitespace(attrib.getValue())));
                         attrib.setType(AttrImpl.ID);
                     } else {
-                        attrName.setNameType(ElementValue.ATTRIBUTE);
+                        attrib.setQName(new QName(attrib.getQName(), ElementValue.ATTRIBUTE));
                     }
                     broker.insertNodeAfter(transaction, last.getNode(), attrib);
                     broker.indexNode(transaction, attrib, lastPath);

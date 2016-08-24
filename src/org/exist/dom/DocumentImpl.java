@@ -841,6 +841,11 @@ public class DocumentImpl extends NodeImpl implements Resource, Document, Docume
         return QName.EMPTY_QNAME;
     }
 
+    @Override
+    public void setQName(final QName qname) {
+        //do nothing
+    }
+
     /**
      * The method <code>getNodeType</code>
      *

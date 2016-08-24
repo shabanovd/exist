@@ -45,7 +45,7 @@ import org.w3c.dom.Node;
  *
  *@author     Wolfgang Meier <meier@ifs.tu-darmstadt.de>
  */
-public class StoredNode extends NodeImpl implements Visitable, NodeHandle {
+public abstract class StoredNode extends NodeImpl implements Visitable, NodeHandle {
 
     public final static int LENGTH_SIGNATURE_LENGTH = 1; //sizeof byte
     public final static long UNKNOWN_NODE_IMPL_ADDRESS = -1;
@@ -172,6 +172,11 @@ public class StoredNode extends NodeImpl implements Visitable, NodeHandle {
 
     public QName getQName() {
         return QName.EMPTY_QNAME;
+    }
+
+    @Override
+    public void setQName(final QName qname) {
+        //do nothing
     }
 
     /**

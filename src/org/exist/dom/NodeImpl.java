@@ -332,9 +332,12 @@ public abstract class NodeImpl implements Node, QNameable, NodeAtExist {
      */
     public void setPrefix(String prefix) throws DOMException {
         final QName nodeName = getQName();
-        if (nodeName != null)
-            {nodeName.setPrefix(prefix);}
+        if(nodeName != null) {
+            setQName(new QName(nodeName.getLocalPart(), nodeName.getNamespaceURI(), prefix));
+        }
     }
+
+    abstract void setQName(QName qname);
 
     /**
      * @see org.w3c.dom.Node#getNamespaceURI()

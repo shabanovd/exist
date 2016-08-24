@@ -96,9 +96,7 @@ public class LuceneUtil {
             byte type = (byte) (l & 0xFFL);
             String namespaceURI = symbols.getNamespace(namespaceId);
             String localName = symbols.getName(localNameId);
-            QName qname = new QName(localName, namespaceURI, "");
-            qname.setNameType(type);
-            return qname;
+            return new QName(localName, namespaceURI, "", type);
         } catch (NumberFormatException e) {
             return null;
         }

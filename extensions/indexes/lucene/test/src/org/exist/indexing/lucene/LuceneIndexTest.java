@@ -233,8 +233,7 @@ public class LuceneIndexTest {
             checkIndex(docs, broker, new QName[] { new QName("hi", "") }, "just", 1);
             checkIndex(docs, broker, null, "in", 1);
 
-            QName attrQN = new QName("rend", "");
-            attrQN.setNameType(ElementValue.ATTRIBUTE);
+            QName attrQN = new QName("rend", "", ElementValue.ATTRIBUTE);
             checkIndex(docs, broker, new QName[] { attrQN }, null, 2);
             checkIndex(docs, broker, new QName[] { attrQN }, "center", 1);
             checkIndex(docs, broker, new QName[] { attrQN }, "right", 1);
@@ -747,8 +746,7 @@ public class LuceneIndexTest {
             checkIndex(docs, broker, new QName[] { new QName("hi", "") }, "just", 1);
             checkIndex(docs, broker, null, "in", 1);
 
-            QName attrQN = new QName("rend", "");
-            attrQN.setNameType(ElementValue.ATTRIBUTE);
+            QName attrQN = new QName("rend", "", ElementValue.ATTRIBUTE);
             checkIndex(docs, broker, new QName[] { attrQN }, null, 2);
             checkIndex(docs, broker, new QName[] { attrQN }, "center", 1);
         } catch (Exception e) {
@@ -1017,8 +1015,7 @@ public class LuceneIndexTest {
             modifications[0].process(transaction);
             proc.reset();
 
-            QName qnattr[] = { new QName("attr", "", "") };
-            qnattr[0].setNameType(ElementValue.ATTRIBUTE);
+            QName qnattr[] = { new QName("attr", "", "", ElementValue.ATTRIBUTE) };
             o = checkIndex(docs, broker, qnattr, null, 1);
             assertEquals("abc", o[0].getTerm());
             checkIndex(docs, broker, qnattr, "attribute", 0);
@@ -1109,8 +1106,7 @@ public class LuceneIndexTest {
             modifications[0].process(transaction);
             proc.reset();
 
-            QName qnattr[] = { new QName("attr", "", "") };
-            qnattr[0].setNameType(ElementValue.ATTRIBUTE);
+            QName qnattr[] = { new QName("attr", "", "", ElementValue.ATTRIBUTE) };
             o = checkIndex(docs, broker, qnattr, null, 1);
             assertEquals("abc", o[0].getTerm());
             checkIndex(docs, broker, qnattr, "attribute", 0);

@@ -96,7 +96,9 @@ public class GetIndexFields extends BasicFunction {
                     qname = QName.parse(getContext(), next.getStringValue());
 
                     //workaround
-                    if (qname.getPrefix() == null) qname.setPrefix("");
+                    if (qname.getPrefix() == null) {
+                        qname = new QName(qname.getLocalPart(), qname.getNamespaceURI(), "", qname.getNameType());
+                    }
                 }
 
                 if (qnames.contains(qname)) {

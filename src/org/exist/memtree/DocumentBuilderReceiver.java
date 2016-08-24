@@ -318,8 +318,7 @@ public class DocumentBuilderReceiver implements ContentHandler, LexicalHandler, 
 	                final String prefix = generatePrfix(context, context.getInScopePrefix(qname.getNamespaceURI()));
 
 	                context.declareInScopeNamespace(prefix, qname.getNamespaceURI());
-	                qname.setPrefix(prefix);
-	                return qname; 
+                    return new QName(qname.getLocalPart(), qname.getNamespaceURI(), prefix);
 	            }
             }
         	if(qname.getPrefix().isEmpty() && qname.getNamespaceURI() == null)
@@ -334,7 +333,7 @@ public class DocumentBuilderReceiver implements ContentHandler, LexicalHandler, 
                 final String prefix = generatePrfix(context, context.getInScopePrefix(qname.getNamespaceURI()));
 
                 context.declareInScopeNamespace(prefix, qname.getNamespaceURI());
-                qname.setPrefix(prefix);
+                return new QName(qname.getLocalPart(), qname.getNamespaceURI(), prefix);
             }
         }
         return qname;

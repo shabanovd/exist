@@ -35,6 +35,7 @@ import org.exist.xquery.value.StringValue;
 import org.exist.xquery.value.Type;
 import org.xml.sax.helpers.AttributesImpl;
 
+import javax.xml.XMLConstants;
 import java.util.Iterator;
 
 /**
@@ -223,13 +224,13 @@ public class ElementConstructor extends NodeConstructor {
             			String prefix = context.getPrefixForURI(namespaceURI);
             			
             			if (prefix != null) {
-            				attrQName.setPrefix(prefix);
+                            attrQName = new QName(attrQName.getLocalPart(), attrQName.getNamespaceURI(), prefix);
             			} else {
             				//generate prefix
             				for (final int n = 1; i < 100; i++) {
             					prefix = "eXnsp"+n;
             		            if (context.getURIForPrefix(prefix) == null) {
-            		            	attrQName.setPrefix(prefix);
+                                    attrQName = new QName(attrQName.getLocalPart(), attrQName.getNamespaceURI(), prefix);
             		            	break;
             		            }
             		            
@@ -277,7 +278,7 @@ public class ElementConstructor extends NodeConstructor {
                  }
                  */
                 if (qn.getPrefix() == null && context.getInScopeNamespace("") != null) {
-                     qn.setNamespaceURI(context.getInScopeNamespace(""));
+                    qn = new QName(qn.getLocalPart(), context.getInScopeNamespace(XMLConstants.DEFAULT_NS_PREFIX), qn.getPrefix());
                 }
              }
 
@@ -293,7 +294,7 @@ public class ElementConstructor extends NodeConstructor {
                 }
             }
             // do we need to add a namespace declaration for the current node?
-            if (qn.needsNamespaceDecl()) {
+            if (qn.hasNamespace()) {
                 if (context.getInScopePrefix(qn.getNamespaceURI()) == null) {
                     String prefix = qn.getPrefix();
                     if (prefix == null || prefix.length() == 0)

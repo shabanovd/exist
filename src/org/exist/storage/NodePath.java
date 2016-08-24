@@ -221,10 +221,18 @@ public class NodePath implements Comparable<NodePath> {
         }
         if (namespaceURI == null)
             {namespaceURI = "";}
-        final QName qn = new QName(localName, namespaceURI, prefix);
-        LOG.debug("URI = " + namespaceURI);
-        if (isAttribute)
-            {qn.setNameType(ElementValue.ATTRIBUTE);}
+
+        final QName qn;
+        if (isAttribute) {
+            qn = new QName(localName, namespaceURI, prefix, ElementValue.ATTRIBUTE);
+        } else {
+            qn = new QName(localName, namespaceURI, prefix);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("URI = " + namespaceURI);
+        }
+
         addComponent(qn);
     }
 
