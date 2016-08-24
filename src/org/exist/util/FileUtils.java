@@ -190,6 +190,11 @@ public class FileUtils {
         return path.getFileName().toString();
     }
 
+    @Deprecated
+    public static String fileName(final File file) {
+        return fileName(file.toPath());
+    }
+
     /**
      * A list of the entries in the directory. The listing is not recursive.
      *
