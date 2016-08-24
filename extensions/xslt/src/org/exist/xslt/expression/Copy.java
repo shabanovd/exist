@@ -121,7 +121,7 @@ public class Copy extends Declaration {
     	            } else {
     	                qn = ((QNameable)item).getQName();
     	                if (qn.getPrefix() == null && context.getInScopeNamespace("") != null) {
-    	                     qn.setNamespaceURI(context.getInScopeNamespace(""));
+    	                     qn = new QName(qn.getLocalPart(), context.getInScopeNamespace(""), qn.getPrefix(), qn.getNameType());
     	                }
     	            }
     				int nodeNr = builder.startElement(qn, null);
