@@ -41,9 +41,9 @@ declare function test:suite($functions as function(*)+) {
         {
             (: Run tests for each module in turn :)
             for $module in $modules
-            let $modFunctions := filter(function($func) {
+            let $modFunctions := filter($functions, function($func) {
                     namespace-uri-from-QName(function-name($func)) = $module
-                }, $functions)
+                })
             let $setup := test:call-func-with-annotation($modFunctions, "setUp")
             let $result :=
                 if (empty($setup) or $setup/self::ok) then
@@ -54,8 +54,8 @@ declare function test:suite($functions as function(*)+) {
                         util:system-time() - $startTime
                     return
                         <testsuite package="{$module}" timestamp="{util:system-dateTime()}"
-                            failures="{count($results/failure)}" tests="{count($results)}"
-                            time="{$elapsed}">
+                            failures="{count($results/failure)}" pending="{count($results/pending)}"
+                            tests="{count($results)}" time="{$elapsed}">
                             { $results }
                         </testsuite>
                 else
@@ -113,12 +113,19 @@ declare %private function test:call-func-with-annotation($functions as function(
  : using the supplied parameters.
  :)
 declare %private function test:run-tests($func as function(*), $meta as element(function)) {
-    let $argsAnnot := $meta/annotation[matches(@name, ":args?")][not(preceding-sibling::annotation[1][matches(@name, ":args?")])]
-    return
-        if ($argsAnnot) then
-            $argsAnnot ! test:test($func, $meta, .)
-        else
-            test:test($func, $meta, ())
+    if($meta/annotation[ends-with(@name,  ":pending")])then
+      test:print-result($meta, (), <report>{
+        element pending {
+          $meta/annotation[ends-with(@name,  ":pending")]/value ! text()
+        }
+      }</report>)
+    else
+      let $argsAnnot := $meta/annotation[matches(@name, ":args?")][not(preceding-sibling::annotation[1][matches(@name, ":args?")])]
+      return
+          if ($argsAnnot) then
+              $argsAnnot ! test:test($func, $meta, .)
+          else
+              test:test($func, $meta, ())
 };
 
 (:~
@@ -596,14 +603,16 @@ declare %private function test:assertXPath($annotation as element(annotation), $
             $output
     let $prolog :=
         if ($result instance of element()*) then
-            let $namespaces := fold-left(function ($namespaces as map(*), $xml as element()) {
-                map:new(($namespaces,
-            	    for $prefix in in-scope-prefixes($xml)
-            	    where $prefix != "" and $prefix != "xml"
-            	    return
-            	        map:entry($prefix, namespace-uri-for-prefix($prefix, $xml))
-                ))
-            }, map:new(), $result/descendant-or-self::*)
+            let $namespaces := fold-left($result/descendant-or-self::*, map {},
+                function ($namespaces as map(*), $xml as element()) {
+                    map:merge(($namespaces,
+                	    for $prefix in in-scope-prefixes($xml)
+                	    where $prefix != "" and $prefix != "xml"
+                	    return
+                	        map:entry($prefix, namespace-uri-for-prefix($prefix, $xml))
+                    ))
+                }
+            )
             return
                 string-join(
                     for $prefix in map:keys($namespaces)
@@ -670,11 +679,11 @@ declare %private function test:cast-to-type($value as item(), $result as item())
 
 (: Helper functions to be used by test modules :)
 
-declare function test:mkcol($root as xs:string, $path as xs:string) as empty() {
+declare function test:mkcol($root as xs:string, $path as xs:string) as empty-sequence() {
     test:mkcol-recursive($root, tokenize($path, "/"))
 };
 
-declare %private function test:mkcol-recursive($collection, $components) as empty() {
+declare %private function test:mkcol-recursive($collection, $components) as empty-sequence() {
     if (exists($components)) then
         let $newColl := concat($collection, "/", $components[1])
         return (

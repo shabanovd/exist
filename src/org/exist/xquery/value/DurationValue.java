@@ -44,6 +44,7 @@ public class DurationValue extends ComputableValue {
 	public final static int DAY = 2;
 	public final static int HOUR = 3;
 	public final static int MINUTE = 4;
+    public final static int SIGN = 5;
 	
 	protected final Duration duration;
 	private Duration canonicalDuration;
@@ -118,7 +119,7 @@ public class DurationValue extends ComputableValue {
 	}
 	
 	private static BigInteger nullIfZero(BigInteger x) {
-		if (BigInteger.ZERO.compareTo(x) == Constants.EQUAL) {x = null;}		
+		if (BigInteger.ZERO.compareTo(x) == Constants.EQUAL) {x = null;}
 		return x;
 	}
 	
@@ -217,6 +218,7 @@ public class DurationValue extends ComputableValue {
 			case DAY: r = duration.getDays(); break;
 			case HOUR: r = duration.getHours(); break;
 			case MINUTE: r = duration.getMinutes(); break;
+            case SIGN: return duration.getSign();
 			default:
 				throw new IllegalArgumentException("Invalid argument to method getPart");
 		}
@@ -272,7 +274,7 @@ public class DurationValue extends ComputableValue {
 		}
 	}
 
-	public boolean compareTo(Collator collator, int operator, AtomicValue other) throws XPathException {		
+	public boolean compareTo(Collator collator, int operator, AtomicValue other) throws XPathException {
 		switch (operator) {
 			case Constants.EQ :
 			{
@@ -296,8 +298,8 @@ public class DurationValue extends ComputableValue {
 					{r = r & areReallyEqual(getCanonicalDuration(), ((DurationValue)other).getCanonicalDuration());}
 				return !r;
 			}
-			case Constants.LT :			
-			case Constants.LTEQ :			
+			case Constants.LT :
+			case Constants.LTEQ :
 			case Constants.GT :
 			case Constants.GTEQ :
 				throw new XPathException(ErrorCodes.XPTY0004, "" + Type.getTypeName(other.getType()) + " type can not be ordered");
@@ -360,7 +362,7 @@ public class DurationValue extends ComputableValue {
     
     public static boolean areReallyEqual(Duration duration1, Duration duration2) {
     	final boolean secondsEqual = zeroIfNull((BigDecimal)duration1.getField(DatatypeConstants.SECONDS)).compareTo(
-    				zeroIfNull((BigDecimal)duration2.getField(DatatypeConstants.SECONDS))) == Constants.EQUAL;    		
+    				zeroIfNull((BigDecimal)duration2.getField(DatatypeConstants.SECONDS))) == Constants.EQUAL;
     	return secondsEqual &&
     	duration1.getMinutes() == duration2.getMinutes() &&
     	duration1.getHours() == duration2.getHours() &&

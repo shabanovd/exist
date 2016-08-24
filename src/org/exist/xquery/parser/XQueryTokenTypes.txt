@@ -1,241 +1,246 @@
 // $ANTLR 2.7.7 (2006-11-01): XQuery.g -> XQueryTokenTypes.txt$
 XQuery    // output token vocab name
 QNAME=4
-PREDICATE=5
-FLWOR=6
-PARENTHESIZED=7
-ABSOLUTE_SLASH=8
-ABSOLUTE_DSLASH=9
-WILDCARD=10
-PREFIX_WILDCARD=11
-FUNCTION=12
-DYNAMIC_FCALL=13
-UNARY_MINUS=14
-UNARY_PLUS=15
-XPOINTER=16
-XPOINTER_ID=17
-VARIABLE_REF=18
-VARIABLE_BINDING=19
-ELEMENT=20
-ATTRIBUTE=21
-ATTRIBUTE_CONTENT=22
-TEXT=23
-VERSION_DECL=24
-NAMESPACE_DECL=25
-DEF_NAMESPACE_DECL=26
-DEF_COLLATION_DECL=27
-DEF_FUNCTION_NS_DECL=28
-ANNOT_DECL=29
-GLOBAL_VAR=30
-FUNCTION_DECL=31
-FUNCTION_INLINE=32
-FUNCTION_TEST=33
-MAP_TEST=34
-PROLOG=35
-OPTION=36
-ATOMIC_TYPE=37
-MODULE=38
-ORDER_BY=39
-GROUP_BY=40
-POSITIONAL_VAR=41
-CATCH_ERROR_CODE=42
-CATCH_ERROR_DESC=43
-CATCH_ERROR_VAL=44
-MODULE_DECL=45
-MODULE_IMPORT=46
-SCHEMA_IMPORT=47
-ATTRIBUTE_TEST=48
-COMP_ELEM_CONSTRUCTOR=49
-COMP_ATTR_CONSTRUCTOR=50
-COMP_TEXT_CONSTRUCTOR=51
-COMP_COMMENT_CONSTRUCTOR=52
-COMP_PI_CONSTRUCTOR=53
-COMP_NS_CONSTRUCTOR=54
-COMP_DOC_CONSTRUCTOR=55
-PRAGMA=56
-GTEQ=57
-SEQUENCE=58
-LITERAL_xpointer="xpointer"=59
-LPAREN("opening parenthesis '('")=60
-RPAREN("closing parenthesis ')'")=61
-NCNAME("name")=62
-LITERAL_xquery="xquery"=63
-LITERAL_version="version"=64
-SEMICOLON("semicolon ';'")=65
-LITERAL_module="module"=66
-LITERAL_namespace="namespace"=67
-EQ("=")=68
-STRING_LITERAL("string literal")=69
-LITERAL_declare="declare"=70
-LITERAL_default="default"=71
-"boundary-space"=72
-LITERAL_ordering="ordering"=73
-LITERAL_construction="construction"=74
-"base-uri"=75
-"copy-namespaces"=76
-LITERAL_option="option"=77
-LITERAL_function="function"=78
-LITERAL_variable="variable"=79
-MOD=80
-LITERAL_import="import"=81
-LITERAL_encoding="encoding"=82
-LITERAL_collation="collation"=83
-LITERAL_element="element"=84
-LITERAL_order="order"=85
-LITERAL_empty="empty"=86
-LITERAL_greatest="greatest"=87
-LITERAL_least="least"=88
-LITERAL_preserve="preserve"=89
-LITERAL_strip="strip"=90
-LITERAL_ordered="ordered"=91
-LITERAL_unordered="unordered"=92
-COMMA=93
-"no-preserve"=94
-LITERAL_inherit="inherit"=95
-"no-inherit"=96
-DOLLAR("dollar sign '$'")=97
-LCURLY("opening curly brace '{'")=98
-RCURLY("closing curly brace '}'")=99
-COLON=100
-LITERAL_external="external"=101
-LITERAL_schema="schema"=102
-":"=103
-LITERAL_as="as"=104
-LITERAL_at="at"=105
-"empty-sequence"=106
-QUESTION("question mark '?'")=107
-STAR("wildcard '*'")=108
-PLUS("+")=109
-LITERAL_item="item"=110
-LITERAL_map="map"=111
-LITERAL_for="for"=112
-LITERAL_let="let"=113
-LITERAL_try="try"=114
-LITERAL_some="some"=115
-LITERAL_every="every"=116
-LITERAL_if="if"=117
-LITERAL_switch="switch"=118
-LITERAL_typeswitch="typeswitch"=119
-LITERAL_update="update"=120
-LITERAL_replace="replace"=121
-LITERAL_value="value"=122
-LITERAL_insert="insert"=123
-LITERAL_delete="delete"=124
-LITERAL_rename="rename"=125
-LITERAL_with="with"=126
-LITERAL_into="into"=127
-LITERAL_preceding="preceding"=128
-LITERAL_following="following"=129
-LITERAL_catch="catch"=130
-UNION("union")=131
-LITERAL_where="where"=132
-LITERAL_return="return"=133
-LITERAL_in="in"=134
-LITERAL_by="by"=135
-LITERAL_stable="stable"=136
-LITERAL_ascending="ascending"=137
-LITERAL_descending="descending"=138
-LITERAL_group="group"=139
-LITERAL_satisfies="satisfies"=140
-LITERAL_case="case"=141
-LITERAL_then="then"=142
-LITERAL_else="else"=143
-LITERAL_or="or"=144
-LITERAL_and="and"=145
-LITERAL_instance="instance"=146
-LITERAL_of="of"=147
-LITERAL_treat="treat"=148
-LITERAL_castable="castable"=149
-LITERAL_cast="cast"=150
-BEFORE=151
-AFTER=152
-LITERAL_eq="eq"=153
-LITERAL_ne="ne"=154
-LITERAL_lt="lt"=155
-LITERAL_le="le"=156
-LITERAL_gt="gt"=157
-LITERAL_ge="ge"=158
-GT(">")=159
-NEQ("!=")=160
-LT("<")=161
-LTEQ("<=")=162
-LITERAL_is="is"=163
-LITERAL_isnot="isnot"=164
-ANDEQ("fulltext operator '&='")=165
-OREQ("fulltext operator '|='")=166
-CONCAT("||")=167
-LITERAL_to="to"=168
-MINUS("-")=169
-LITERAL_div="div"=170
-LITERAL_idiv="idiv"=171
-LITERAL_mod="mod"=172
-PRAGMA_START=173
-PRAGMA_END("pragma expression")=174
-LITERAL_union="union"=175
-LITERAL_intersect="intersect"=176
-LITERAL_except="except"=177
-SLASH("single slash '/'")=178
-DSLASH("double slash '//'")=179
-BANG=180
-LITERAL_text="text"=181
-LITERAL_node="node"=182
-LITERAL_attribute="attribute"=183
-LITERAL_comment="comment"=184
-"processing-instruction"=185
-"document-node"=186
-LITERAL_document="document"=187
-HASH=188
-SELF(".")=189
-XML_COMMENT("XML comment")=190
-XML_PI("processing instruction")=191
-LPPAREN("opening brace '['")=192
-RPPAREN("closing brace ']'")=193
-AT("@ char")=194
-PARENT("..")=195
-LITERAL_child="child"=196
-LITERAL_self="self"=197
-LITERAL_descendant="descendant"=198
-"descendant-or-self"=199
-"following-sibling"=200
-LITERAL_parent="parent"=201
-LITERAL_ancestor="ancestor"=202
-"ancestor-or-self"=203
-"preceding-sibling"=204
-DOUBLE_LITERAL=205
-DECIMAL_LITERAL=206
-INTEGER_LITERAL=207
-"schema-element"=208
-END_TAG_START("XML end tag")=209
-QUOT("double quote '\"'")=210
-APOS("single quote '")=211
-QUOT_ATTRIBUTE_CONTENT=212
-ESCAPE_QUOT=213
-APOS_ATTRIBUTE_CONTENT=214
-ESCAPE_APOS=215
-ELEMENT_CONTENT=216
-XML_COMMENT_END("end of XML comment")=217
-XML_PI_END("end of processing instruction")=218
-XML_CDATA("CDATA section")=219
-LITERAL_collection="collection"=220
-LITERAL_validate="validate"=221
-XML_PI_START("start of processing instruction")=222
-XML_CDATA_START("CDATA section start")=223
-XML_CDATA_END("end of CDATA section")=224
-LETTER=225
-DIGITS=226
-HEX_DIGITS=227
-NMSTART=228
-NMCHAR=229
-WS=230
-XQDOC_COMMENT("XQuery XQDoc comment")=231
-EXPR_COMMENT("XQuery comment")=232
-PREDEFINED_ENTITY_REF=233
-CHAR_REF=234
-S=235
-NEXT_TOKEN=236
-CHAR=237
-BASECHAR=238
-IDEOGRAPHIC=239
-COMBINING_CHAR=240
-DIGIT=241
-EXTENDER=242
+EQNAME=5
+PREDICATE=6
+FLWOR=7
+PARENTHESIZED=8
+ABSOLUTE_SLASH=9
+ABSOLUTE_DSLASH=10
+WILDCARD=11
+PREFIX_WILDCARD=12
+FUNCTION=13
+DYNAMIC_FCALL=14
+UNARY_MINUS=15
+UNARY_PLUS=16
+XPOINTER=17
+XPOINTER_ID=18
+VARIABLE_REF=19
+VARIABLE_BINDING=20
+ELEMENT=21
+ATTRIBUTE=22
+ATTRIBUTE_CONTENT=23
+TEXT=24
+VERSION_DECL=25
+NAMESPACE_DECL=26
+DEF_NAMESPACE_DECL=27
+DEF_COLLATION_DECL=28
+DEF_FUNCTION_NS_DECL=29
+ANNOT_DECL=30
+GLOBAL_VAR=31
+FUNCTION_DECL=32
+INLINE_FUNCTION_DECL=33
+FUNCTION_INLINE=34
+FUNCTION_TEST=35
+MAP_TEST=36
+LOOKUP=37
+ARRAY=38
+ARRAY_TEST=39
+PROLOG=40
+OPTION=41
+ATOMIC_TYPE=42
+MODULE=43
+ORDER_BY=44
+GROUP_BY=45
+POSITIONAL_VAR=46
+CATCH_ERROR_CODE=47
+CATCH_ERROR_DESC=48
+CATCH_ERROR_VAL=49
+MODULE_DECL=50
+MODULE_IMPORT=51
+SCHEMA_IMPORT=52
+ATTRIBUTE_TEST=53
+COMP_ELEM_CONSTRUCTOR=54
+COMP_ATTR_CONSTRUCTOR=55
+COMP_TEXT_CONSTRUCTOR=56
+COMP_COMMENT_CONSTRUCTOR=57
+COMP_PI_CONSTRUCTOR=58
+COMP_NS_CONSTRUCTOR=59
+COMP_DOC_CONSTRUCTOR=60
+PRAGMA=61
+GTEQ=62
+SEQUENCE=63
+LITERAL_xpointer="xpointer"=64
+LPAREN("opening parenthesis '('")=65
+RPAREN("closing parenthesis ')'")=66
+NCNAME("name")=67
+LITERAL_xquery="xquery"=68
+LITERAL_version="version"=69
+SEMICOLON("semicolon ';'")=70
+LITERAL_module="module"=71
+LITERAL_namespace="namespace"=72
+EQ("=")=73
+STRING_LITERAL("string literal")=74
+LITERAL_declare="declare"=75
+LITERAL_default="default"=76
+"boundary-space"=77
+LITERAL_ordering="ordering"=78
+LITERAL_construction="construction"=79
+"base-uri"=80
+"copy-namespaces"=81
+LITERAL_option="option"=82
+LITERAL_function="function"=83
+LITERAL_variable="variable"=84
+MOD=85
+LITERAL_import="import"=86
+LITERAL_encoding="encoding"=87
+LITERAL_collation="collation"=88
+LITERAL_element="element"=89
+LITERAL_order="order"=90
+LITERAL_empty="empty"=91
+LITERAL_greatest="greatest"=92
+LITERAL_least="least"=93
+LITERAL_preserve="preserve"=94
+LITERAL_strip="strip"=95
+LITERAL_ordered="ordered"=96
+LITERAL_unordered="unordered"=97
+COMMA=98
+"no-preserve"=99
+LITERAL_inherit="inherit"=100
+"no-inherit"=101
+DOLLAR("dollar sign '$'")=102
+LCURLY("opening curly brace '{'")=103
+RCURLY("closing curly brace '}'")=104
+COLON=105
+LITERAL_external="external"=106
+LITERAL_schema="schema"=107
+BRACED_URI_LITERAL("braced uri literal")=108
+LITERAL_as="as"=109
+LITERAL_at="at"=110
+"empty-sequence"=111
+QUESTION("question mark '?'")=112
+STAR("wildcard '*'")=113
+PLUS("+")=114
+LITERAL_item="item"=115
+LITERAL_map="map"=116
+LITERAL_array="array"=117
+LITERAL_for="for"=118
+LITERAL_let="let"=119
+LITERAL_try="try"=120
+LITERAL_some="some"=121
+LITERAL_every="every"=122
+LITERAL_if="if"=123
+LITERAL_switch="switch"=124
+LITERAL_typeswitch="typeswitch"=125
+LITERAL_update="update"=126
+LITERAL_replace="replace"=127
+LITERAL_value="value"=128
+LITERAL_insert="insert"=129
+LITERAL_delete="delete"=130
+LITERAL_rename="rename"=131
+LITERAL_with="with"=132
+LITERAL_into="into"=133
+LITERAL_preceding="preceding"=134
+LITERAL_following="following"=135
+LITERAL_catch="catch"=136
+UNION("union")=137
+LITERAL_return="return"=138
+LITERAL_where="where"=139
+LITERAL_in="in"=140
+LITERAL_allowing="allowing"=141
+LITERAL_by="by"=142
+LITERAL_stable="stable"=143
+LITERAL_ascending="ascending"=144
+LITERAL_descending="descending"=145
+LITERAL_group="group"=146
+LITERAL_satisfies="satisfies"=147
+LITERAL_case="case"=148
+LITERAL_then="then"=149
+LITERAL_else="else"=150
+LITERAL_or="or"=151
+LITERAL_and="and"=152
+LITERAL_instance="instance"=153
+LITERAL_of="of"=154
+LITERAL_treat="treat"=155
+LITERAL_castable="castable"=156
+LITERAL_cast="cast"=157
+BEFORE=158
+AFTER=159
+LITERAL_eq="eq"=160
+LITERAL_ne="ne"=161
+LITERAL_lt="lt"=162
+LITERAL_le="le"=163
+LITERAL_gt="gt"=164
+LITERAL_ge="ge"=165
+GT(">")=166
+NEQ("!=")=167
+LT("<")=168
+LTEQ("<=")=169
+LITERAL_is="is"=170
+LITERAL_isnot="isnot"=171
+CONCAT("||")=172
+LITERAL_to="to"=173
+MINUS("-")=174
+LITERAL_div="div"=175
+LITERAL_idiv="idiv"=176
+LITERAL_mod="mod"=177
+BANG=178
+PRAGMA_START=179
+PRAGMA_END("pragma expression")=180
+LITERAL_union="union"=181
+LITERAL_intersect="intersect"=182
+LITERAL_except="except"=183
+SLASH("single slash '/'")=184
+DSLASH("double slash '//'")=185
+LITERAL_text="text"=186
+LITERAL_node="node"=187
+LITERAL_attribute="attribute"=188
+LITERAL_comment="comment"=189
+"processing-instruction"=190
+"document-node"=191
+LITERAL_document="document"=192
+HASH=193
+SELF(".")=194
+XML_COMMENT("XML comment")=195
+XML_PI("processing instruction")=196
+LPPAREN("opening brace '['")=197
+RPPAREN("closing brace ']'")=198
+AT("@ char")=199
+PARENT("..")=200
+LITERAL_child="child"=201
+LITERAL_self="self"=202
+LITERAL_descendant="descendant"=203
+"descendant-or-self"=204
+"following-sibling"=205
+LITERAL_parent="parent"=206
+LITERAL_ancestor="ancestor"=207
+"ancestor-or-self"=208
+"preceding-sibling"=209
+INTEGER_LITERAL=210
+DOUBLE_LITERAL=211
+DECIMAL_LITERAL=212
+"schema-element"=213
+END_TAG_START("XML end tag")=214
+QUOT("double quote '\"'")=215
+APOS("single quote '")=216
+QUOT_ATTRIBUTE_CONTENT=217
+ESCAPE_QUOT=218
+APOS_ATTRIBUTE_CONTENT=219
+ESCAPE_APOS=220
+ELEMENT_CONTENT=221
+XML_COMMENT_END("end of XML comment")=222
+XML_PI_END("end of processing instruction")=223
+XML_CDATA("CDATA section")=224
+LITERAL_collection="collection"=225
+LITERAL_validate="validate"=226
+XML_PI_START("start of processing instruction")=227
+XML_CDATA_START("CDATA section start")=228
+XML_CDATA_END("end of CDATA section")=229
+LETTER=230
+DIGITS=231
+HEX_DIGITS=232
+NMSTART=233
+NMCHAR=234
+WS=235
+XQDOC_COMMENT("XQuery XQDoc comment")=236
+EXPR_COMMENT("XQuery comment")=237
+PREDEFINED_ENTITY_REF=238
+CHAR_REF=239
+S=240
+NEXT_TOKEN=241
+CHAR=242
+BASECHAR=243
+IDEOGRAPHIC=244
+COMBINING_CHAR=245
+DIGIT=246
+EXTENDER=247

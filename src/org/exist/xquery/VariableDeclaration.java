@@ -37,7 +37,7 @@ import org.exist.xquery.value.SequenceType;
  */
 public class VariableDeclaration extends AbstractExpression implements RewritableExpression {
 
-	String qname;
+	QName qname;
 	SequenceType sequenceType = null;
 	Expression expression;
     boolean analyzeDone = false;
@@ -45,13 +45,13 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
     /**
 	 * @param context
 	 */
-	public VariableDeclaration(XQueryContext context, String qname, Expression expr) {
+	public VariableDeclaration(XQueryContext context, QName qname, Expression expr) {
 		super(context);
 		this.qname = qname;
 		this.expression = expr;
 	}
 
-    public String getName() {
+    public QName getName() {
         return qname;
     }
 
@@ -73,11 +73,10 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
      */
     public void analyze(AnalyzeContextInfo contextInfo) throws XPathException {
     	contextInfo.setParent(this);
-        final QName qn = QName.parse(context, qname, null);
-        final Variable var = new VariableImpl(qn);
+        final Variable var = new VariableImpl(qname);
         var.setIsInitialized(false);
         if (!analyzeDone) {
-            final Module myModule = context.getModule(qn.getNamespaceURI());
+            final Module myModule = context.getModule(qname.getNamespaceURI());
             if(myModule != null) {
 // WM: duplicate var declaration is now caught in the XQuery tree parser
 //                if (myModule.isVarDeclared(qn))
@@ -97,11 +96,9 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
         expression.analyze(contextInfo);
         var.setIsInitialized(true);
     }
-    
-	/* (non-Javadoc)
-	 * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
-	 */
-	public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
+
+    @Override
+    public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
         if (context.getProfiler().isEnabled()) {
             context.getProfiler().start(this);
             context.getProfiler().message(this, Profiler.DEPENDENCIES, "DEPENDENCIES", Dependency.getDependenciesName(this.getDependencies()));
@@ -110,40 +107,48 @@ public class VariableDeclaration extends AbstractExpression implements Rewritabl
             if (contextItem != null)
                 {context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT ITEM", contextItem.toSequence());}
         }
+
         context.pushInScopeNamespaces(false);
-		final QName qn = QName.parse(context, qname, null);
-        
-		final Module myModule = context.getRootModule(qn.getNamespaceURI());		
-        context.pushDocumentContext();
-        context.prologEnter(this);
-		// declare the variable
-		final Sequence seq = expression.eval(null, null);
-        Variable var;
-		if(myModule != null) {
-			var = myModule.declareVariable(qn, seq);
-            var.setSequenceType(sequenceType);
-            var.checkType();
-        } else {
-			var = new VariableImpl(qn);
-			var.setValue(seq);
-            var.setSequenceType(sequenceType);
-            var.checkType();
-			context.declareGlobalVariable(var);
-		}
-        
-        if (context.getProfiler().isEnabled())
-            //Note : that we use seq but we return Sequence.EMPTY_SEQUENCE
-            {context.getProfiler().end(this, "", seq);}
-        context.popInScopeNamespaces();
-        context.popDocumentContext();
-		return Sequence.EMPTY_SEQUENCE;
+        try {
+            final Module myModule = context.getRootModule(qname.getNamespaceURI());
+
+            context.pushDocumentContext();
+            try {
+                context.prologEnter(this);
+                // declare the variable
+                final Sequence seq = expression.eval(null, null);
+                final Variable var;
+                if (myModule != null) {
+                    var = myModule.declareVariable(qname, seq);
+                    var.setSequenceType(sequenceType);
+                    var.checkType();
+                } else {
+                    var = new VariableImpl(qname);
+                    var.setValue(seq);
+                    var.setSequenceType(sequenceType);
+                    var.checkType();
+                    context.declareGlobalVariable(var);
+                }
+
+                if (context.getProfiler().isEnabled()) {
+                    //Note : that we use seq but we return Sequence.EMPTY_SEQUENCE
+                    context.getProfiler().end(this, "", seq);
+                }
+            } finally {
+                context.popDocumentContext();
+            }
+        } finally {
+            context.popInScopeNamespaces();
+        }
+
+		    return Sequence.EMPTY_SEQUENCE;
 	}
 	
 	/* (non-Javadoc)
      * @see org.exist.xquery.Expression#dump(org.exist.xquery.util.ExpressionDumper)
      */
     public void dump(ExpressionDumper dumper) {
-        dumper.nl().display("declare variable $").display(qname, line);
+        dumper.nl().display("declare variable $").display(qname.toString(), line);
         if(sequenceType != null) {
             dumper.display(" as ").display(sequenceType.toString());
         }

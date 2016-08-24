@@ -1,7 +1,6 @@
 package org.exist.xquery.functions.inspect;
 
 import org.exist.dom.QName;
-import org.exist.security.xacml.AccessContext;
 import org.exist.xquery.*;
 import org.exist.xquery.functions.fn.FunOnFunctions;
 import org.exist.xquery.parser.XQueryAST;
@@ -54,21 +53,32 @@ public class ModuleFunctions extends BasicFunction {
     public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
         final ValueSequence list = new ValueSequence();
         if (getArgumentCount() == 1) {
-            final XQueryContext tempContext = new XQueryContext(context.getBroker().getBrokerPool(), AccessContext.XMLDB);
+            final XQueryContext tempContext = new XQueryContext(context.getBroker().getBrokerPool());
             tempContext.setModuleLoadPath(context.getModuleLoadPath());
 
             Module module = null;
 
             try {
-            if (isCalledAs("module-functions-by-uri"))
-                {module = tempContext.importModule(args[0].getStringValue(), null, null);}
-            else
-                {module = tempContext.importModule(null, null, args[0].getStringValue());}
+                if (isCalledAs("module-functions-by-uri")) {
+                    module = tempContext.importModule(args[0].getStringValue(), null, null);
+                } else {
+                    module = tempContext.importModule(null, null, args[0].getStringValue());
+                }
+                
+            } catch (final XPathException e) {
+                LOG.debug("Failed to import module: " + args[0].getStringValue() + ": " + e.getMessage(), e);
+
+                if (e.getErrorCode().equals(ErrorCodes.XPST0003)) {
+                    throw new XPathException(this, e.getMessage());
+                }
+
             } catch (final Exception e) {
                 LOG.debug("Failed to import module: " + args[0].getStringValue() + ": " + e.getMessage(), e);
             }
-            if (module == null)
-                {return Sequence.EMPTY_SEQUENCE;}
+            
+            if (module == null) {
+                return Sequence.EMPTY_SEQUENCE;
+            }
             addFunctionRefsFromModule(tempContext, list, module);
         } else {
             addFunctionRefsFromContext(list);

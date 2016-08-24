@@ -27,12 +27,13 @@ import org.exist.dom.NodeSet;
 import org.exist.memtree.DocumentImpl;
 import org.exist.memtree.NodeImpl;
 import org.exist.numbering.NodeId;
-import org.exist.util.FastQSort;
 import org.exist.xquery.Constants;
 import org.exist.xquery.OrderSpec;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.util.ExpressionDumper;
 import org.w3c.dom.Node;
+
+import java.util.stream.Stream;
 
 /**
  * A sequence that sorts its entries in the order specified by the order specs of
@@ -127,7 +128,13 @@ public class OrderedValueSequence extends AbstractSequence {
 	}
 	
 	public void sort() {
-		FastQSort.sort(items, 0, count - 1);
+//		FastQSort.sort(items, 0, count - 1);
+		items =
+			Stream.of(items).filter(entry -> entry != null)
+					.parallel()
+					.sorted()
+					.map(entry -> { entry.clear(); return entry; })
+					.toArray(Entry[]::new);
 	}
 	
 	/* (non-Javadoc)
@@ -194,7 +201,7 @@ public class OrderedValueSequence extends AbstractSequence {
                                 v = (NodeValue) items[j].item;
                                 if(v.getImplementationType() != NodeValue.PERSISTENT_NODE) {
                                     NodeImpl node = (NodeImpl) v;
-                                    if (node.getDocument() == doc) {
+                                    if (node.getOwnerDocument() == doc) {
                                         node = expandedDoc.getNode(node.getNodeNumber());
                                         NodeId nodeId = node.getNodeId();
                                         if (nodeId == null)
@@ -378,6 +385,10 @@ public class OrderedValueSequence extends AbstractSequence {
     		}
     		builder.append("]");
     		return builder.toString();
+		}
+
+		public void clear() {
+			values = null;
 		}
 	}
 	

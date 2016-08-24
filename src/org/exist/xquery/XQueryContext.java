@@ -54,14 +54,7 @@ import org.exist.Namespaces;
 import org.exist.collections.Collection;
 import org.exist.debuggee.Debuggee;
 import org.exist.debuggee.DebuggeeJoint;
-import org.exist.dom.BinaryDocument;
-import org.exist.dom.DefaultDocumentSet;
-import org.exist.dom.DocumentImpl;
-import org.exist.dom.DocumentSet;
-import org.exist.dom.MutableDocumentSet;
-import org.exist.dom.NodeProxy;
-import org.exist.dom.QName;
-import org.exist.dom.StoredNode;
+import org.exist.dom.*;
 import org.exist.http.servlets.RequestWrapper;
 import org.exist.interpreter.Context;
 import org.exist.memtree.InMemoryXMLStreamReader;
@@ -361,6 +354,9 @@ public class XQueryContext implements BinaryValueManager, Context
         profiler = new Profiler( null );
     }
 
+    public XQueryContext( Database db ) {
+        this(db, AccessContext.REST);
+    }
 
     public XQueryContext( Database db, AccessContext accessCtx )
     {
@@ -3627,7 +3623,7 @@ public class XQueryContext implements BinaryValueManager, Context
         }
 
 
-        public void nodeMoved( NodeId oldNodeId, StoredNode newNode )
+        public void nodeMoved( NodeId oldNodeId, NodeHandle newNode )
         {
             for( int i = 0; i < listeners.size(); i++ ) {
                 final UpdateListener listener = (UpdateListener)listeners.get( i );

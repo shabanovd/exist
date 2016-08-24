@@ -22,7 +22,13 @@ package org.exist.xquery.value;
 
 import org.apache.log4j.Logger;
 import org.exist.collections.Collection;
-import org.exist.dom.*;
+import org.exist.dom.DefaultDocumentSet;
+import org.exist.dom.DocumentSet;
+import org.exist.dom.MutableDocumentSet;
+import org.exist.dom.NewArrayNodeSet;
+import org.exist.dom.NodeProxy;
+import org.exist.dom.NodeSet;
+import org.exist.dom.StoredNode;
 import org.exist.memtree.DocumentImpl;
 import org.exist.memtree.NodeImpl;
 import org.exist.numbering.NodeId;
@@ -104,7 +110,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
             add(item);
         }
     }
-    
+
     public void keepUnOrdered(boolean flag) {
     	keepUnOrdered = flag;
     }
@@ -175,7 +181,8 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 	/* (non-Javadoc)
 	 * @see org.exist.xquery.value.Sequence#iterate()
 	 */
-	public SequenceIterator iterate() throws XPathException {
+	@Override
+    public SequenceIterator iterate() throws XPathException {
         sortInDocumentOrder();
 		return new ValueSequenceIterator();
 	}
@@ -183,10 +190,16 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 	/* (non-Javadoc)
 	 * @see org.exist.xquery.value.AbstractSequence#unorderedIterator()
 	 */
+    @Override
 	public SequenceIterator unorderedIterator() throws XPathException {
         sortInDocumentOrder();
         return new ValueSequenceIterator();
 	}
+
+    public SequenceIterator iterateInReverse() throws XPathException {
+        sortInDocumentOrder();
+        return new ReverseValueSequenceIterator();
+    }
 
     public boolean isOrdered() {
         return enforceOrder;
@@ -347,6 +360,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
     @Override
     public void destroy(XQueryContext context, Sequence contextSequence) {
+        holderVar = null;
         for (int i = 0; i <= size; i++) {
             values[i].destroy(context, contextSequence);
         }
@@ -391,7 +405,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 			values = newValues;
 		}
 	}
-	
+
 	private void removeDuplicateNodes() {
         if(noDuplicates || size < 1)
 			{return;}
@@ -416,7 +430,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
             }
             if(!hasNodes)
             {return;}
-            final Map<Item, Item> nodes = new TreeMap<Item, Item>();
+            final Map<Item, Item> nodes = new TreeMap<>(ItemComparator.INSTANCE);
             int j = 0;
             for (int i = 0; i <= size; i++) {
                 if(Type.subTypeOf(values[i].getType(), Type.NODE)) {
@@ -446,7 +460,7 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
     }
 
 
-    public void nodeMoved(NodeId oldNodeId, NodeHandle newNode) {
+    public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
         for (int i = 0; i <= size; i++) {
             values[i].nodeMoved(oldNodeId, newNode);
         }
@@ -750,23 +764,23 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 		}
 		
 	}
-    
+
     /**
     * Returns a hashKey based on sequence item string values.
     * This function is faster than toString() but need to be enhanced.
-    * 
+    *
     * Warning : don't use except for experimental GroupBy clause.
     * author Boris Verhaegen
     *
-    * @see org.exist.xquery.value.GroupedValueSequenceTable 
-    * 
+    * @see org.exist.xquery.value.GroupedValueSequenceTable
+    *
     *
     */
     public String getHashKey(){
     	try{
     		String hashKey = "";
     		for(final SequenceIterator i = iterate();i.hasNext();){
-     			final Item current = i.nextItem();     			
+     			final Item current = i.nextItem();
     			hashKey+=current.getStringValue();
     			hashKey+="&&";  //bv : sentinel value to separate grouping keys values
      		}
@@ -774,8 +788,8 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
     	} catch (final XPathException e) {
       		return "ValueSequence.getHashKey() failed: " + e.getMessage();
       	}
-    }    
-	
+    }
+
 	private class ValueSequenceIterator implements SequenceIterator {
 		
 		private int pos = 0;
@@ -794,11 +808,37 @@ public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 		 * @see org.exist.xquery.value.SequenceIterator#nextItem()
 		 */
 		public Item nextItem() {
-			if(pos <= size)
-				{return values[pos++];}
+			if(pos <= size) {
+                return values[pos++];
+            }
 			return null;
 		}
 	}
+
+    private class ReverseValueSequenceIterator implements SequenceIterator {
+
+        private int pos = size; // size is not the actual size
+
+        public ReverseValueSequenceIterator() {
+        }
+
+        /* (non-Javadoc)
+         * @see org.exist.xquery.value.SequenceIterator#hasNext()
+         */
+        public boolean hasNext() {
+            return pos >= 0;
+        }
+
+        /* (non-Javadoc)
+         * @see org.exist.xquery.value.SequenceIterator#nextItem()
+         */
+        public Item nextItem() {
+            if(pos >= 0) {
+                return values[pos--];
+            }
+            return null;
+        }
+    }
 
     private static class InMemoryNodeComparator implements Comparator<Item> {
 

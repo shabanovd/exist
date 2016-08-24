@@ -51,11 +51,11 @@ public class MapType extends AbstractMapType {
     }
 
     public void add(AbstractMapType other) {
-        if (other.getItemCount() == 1) {
-            setItemType(other.getKey().getType());
+        if (other.size() == 1) {
+            setKeyType(other.getKey().getType());
             map = map.assoc(other.getKey(), other.getValue());
-        } else if (other.getItemCount() > 0) {
-            setItemType(other.getItemType());
+        } else if (other.size() > 0) {
+            setKeyType(other.getKeyType());
             if (map instanceof PersistentHashMap) {
                 ITransientMap<AtomicValue, Sequence> tmap = ((PersistentHashMap)map).asTransient();
                 for (final Map.Entry<AtomicValue, Sequence> entry : other) {
@@ -70,7 +70,7 @@ public class MapType extends AbstractMapType {
     }
 
     public void add(AtomicValue key, Sequence value) {
-        setItemType(key.getType());
+        setKeyType(key.getType());
         this.map = this.map.assoc(key, value);
     }
 
@@ -80,6 +80,11 @@ public class MapType extends AbstractMapType {
             {return Sequence.EMPTY_SEQUENCE;}
         final Map.Entry<AtomicValue, Sequence> e = this.map.entryAt(key);
         return e == null ? Sequence.EMPTY_SEQUENCE : e.getValue();
+    }
+
+    @Override
+    public AbstractMapType put(AtomicValue key, final Sequence value) throws XPathException {
+        return new MapType(this.context, this.map.assoc(key, value), type);
     }
 
     public boolean contains(AtomicValue key) {
@@ -106,13 +111,13 @@ public class MapType extends AbstractMapType {
     }
 
     @Override
-    public Iterator<Map.Entry<AtomicValue, Sequence>> iterator() {
-        return map.iterator();
+    public int size() {
+        return map.count();
     }
 
     @Override
-    public int getItemCount() {
-        return map.count();
+    public Iterator<Map.Entry<AtomicValue, Sequence>> iterator() {
+        return map.iterator();
     }
 
     @Override
@@ -125,13 +130,21 @@ public class MapType extends AbstractMapType {
 
     @Override
     public Sequence getValue() {
-        if (map.count() == 0)
-            {return null;}
-        final Iterator<Map.Entry<AtomicValue,Sequence>> iter = this.map.iterator();
+        return mapToSequence(this.map);
+    }
+
+    /**
+     * Get a Sequence from an internal map representation
+     */
+    private Sequence mapToSequence(final IPersistentMap<AtomicValue, Sequence> map) {
+        if (map.count() == 0) {
+            return null;
+        }
+        final Iterator<Map.Entry<AtomicValue,Sequence>> iter = map.iterator();
         return iter.next().getValue();
     }
 
-    private void setItemType(int newType) {
+    private void setKeyType(int newType) {
         if (type == Type.ANY_TYPE)
             {type = newType;}
         else if (type != newType) {
@@ -150,7 +163,7 @@ public class MapType extends AbstractMapType {
     }
 
     private AtomicValue convert(AtomicValue key) {
-        if (type != Type.ITEM) {
+        if (type != Type.ANY_TYPE && type != Type.ITEM) {
             try {
                 return key.convertTo(type);
             } catch (final XPathException e) {
@@ -160,7 +173,8 @@ public class MapType extends AbstractMapType {
         return key;
     }
 
-    public int getItemType() {
+    @Override
+    public int getKeyType() {
         return type;
     }
 }

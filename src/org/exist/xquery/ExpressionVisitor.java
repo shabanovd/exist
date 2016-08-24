@@ -1,6 +1,23 @@
+/*
+ *  eXist Open Source Native XML Database
+ *  Copyright (C) 2001-2015 The eXist Project
+ *  http://exist-db.org
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package org.exist.xquery;
-
-import org.exist.xquery.functions.fn.ExtFulltext;
 
 /**
  * Defines a visitor to be used for traversing and analyzing the
@@ -17,57 +34,63 @@ public interface ExpressionVisitor {
      * 
      * @param expression
      */
-    public void visit(Expression expression);
+    void visit(Expression expression);
 
     /** Found a PathExpr */
-    public void visitPathExpr(PathExpr expression);
+    void visitPathExpr(PathExpr expression);
 
     /** Found a LocationStep */
-    public void visitLocationStep(LocationStep locationStep);
+    void visitLocationStep(LocationStep locationStep);
 
-    public void visitFilteredExpr(FilteredExpression filtered);
+    void visitFilteredExpr(FilteredExpression filtered);
 
-    public void visitPredicate(Predicate predicate);
+    void visitPredicate(Predicate predicate);
 
-    public void visitFunctionCall(FunctionCall call);
+    void visitFunctionCall(FunctionCall call);
 
-    public void visitGeneralComparison(GeneralComparison comparison);
+    void visitGeneralComparison(GeneralComparison comparison);
 
-    public void visitCastExpr(CastExpression expression);
+    void visitCastExpr(CastExpression expression);
 
-    public void visitUnionExpr(Union union);
+    void visitUnionExpr(Union union);
 
-    public void visitIntersectionExpr(Intersection intersect);
+    void visitIntersectionExpr(Intersect intersect);
 
-    public void visitAndExpr(OpAnd and);
+    void visitAndExpr(OpAnd and);
 
-    public void visitOrExpr(OpOr or);
+    void visitOrExpr(OpOr or);
 
-    public void visitFtExpression(ExtFulltext fulltext);
+    void visitForExpression(ForExpr forExpr);
 
-    public void visitForExpression(ForExpr forExpr);
+    void visitLetExpression(LetExpr letExpr);
 
-    public void visitLetExpression(LetExpr letExpr);
+    void visitOrderByClause(OrderByClause orderBy);
 
-    public void visitBuiltinFunction(Function function);
+    void visitGroupByClause(GroupByClause groupBy);
 
-    public void visitUserFunction(UserDefinedFunction function);
+    void visitWhereClause(WhereClause where);
 
-    public void visitConditional(ConditionalExpression conditional);
+    void visitBuiltinFunction(Function function);
 
-    public void visitTryCatch(TryCatchExpression tryCatch);
+    void visitUserFunction(UserDefinedFunction function);
 
-    public void visitDocumentConstructor(DocumentConstructor constructor);
+    void visitConditional(ConditionalExpression conditional);
 
-    public void visitElementConstructor(ElementConstructor constructor);
+    void visitTryCatch(TryCatchExpression tryCatch);
 
-    public void visitTextConstructor(DynamicTextConstructor constructor);
+    void visitDocumentConstructor(DocumentConstructor constructor);
 
-    public void visitAttribConstructor(AttributeConstructor constructor);
+    void visitElementConstructor(ElementConstructor constructor);
 
-    public void visitAttribConstructor(DynamicAttributeConstructor constructor);
+    void visitTextConstructor(DynamicTextConstructor constructor);
 
-    public void visitVariableReference(VariableReference ref);
+    void visitAttribConstructor(AttributeConstructor constructor);
 
-    public void visitVariableDeclaration(VariableDeclaration decl);
+    void visitAttribConstructor(DynamicAttributeConstructor constructor);
+
+    void visitVariableReference(VariableReference ref);
+
+    void visitVariableDeclaration(VariableDeclaration decl);
+
+    void visitSimpleMapOperator(OpSimpleMap simpleMap);
 }

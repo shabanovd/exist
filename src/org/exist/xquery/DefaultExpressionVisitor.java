@@ -60,32 +60,34 @@ public class DefaultExpressionVisitor extends BasicExpressionVisitor {
 
     public void visitForExpression(ForExpr forExpr) {
         forExpr.getInputSequence().accept(this);
-        final Expression where = forExpr.getWhereExpression();
-        if (where != null) {
-            where.accept(this);
-        }
-        for (OrderSpec orderSpec: forExpr.getOrderSpecs()) {
-            orderSpec.getSortExpression().accept(this);
-        }
-        for (GroupSpec groupSpec: forExpr.getGroupSpecs()) {
-            groupSpec.getGroupExpression().accept(this);
-        }
         forExpr.getReturnExpression().accept(this);
     }
 
     public void visitLetExpression(LetExpr letExpr) {
         letExpr.getInputSequence().accept(this);
-        final Expression where = letExpr.getWhereExpression();
-        if (where != null) {
-            where.accept(this);
-        }
-        for (OrderSpec orderSpec: letExpr.getOrderSpecs()) {
-            orderSpec.getSortExpression().accept(this);
-        }
-        for (GroupSpec groupSpec: letExpr.getGroupSpecs()) {
-            groupSpec.getGroupExpression().accept(this);
-        }
         letExpr.getReturnExpression().accept(this);
+    }
+
+    @Override
+    public void visitOrderByClause(OrderByClause orderBy) {
+        for (OrderSpec spec: orderBy.getOrderSpecs()) {
+            spec.getSortExpression().accept(this);
+        }
+        orderBy.getReturnExpression().accept(this);
+    }
+
+    @Override
+    public void visitGroupByClause(GroupByClause groupBy) {
+        for (GroupSpec spec: groupBy.getGroupSpecs()) {
+            spec.getGroupExpression().accept(this);
+        }
+        groupBy.getReturnExpression().accept(this);
+    }
+
+    @Override
+    public void visitWhereClause(WhereClause where) {
+        where.getWhereExpr().accept(this);
+        where.getReturnExpression().accept(this);
     }
 
     public void visitConditional(ConditionalExpression conditional) {
@@ -143,7 +145,7 @@ public class DefaultExpressionVisitor extends BasicExpressionVisitor {
         union.right.accept(this);
     }
 
-    public void visitIntersectionExpr(Intersection intersect) {
+    public void visitIntersectionExpr(Intersect intersect) {
         intersect.left.accept(this);
         intersect.right.accept(this);
     }
@@ -159,5 +161,11 @@ public class DefaultExpressionVisitor extends BasicExpressionVisitor {
         for (TryCatchExpression.CatchClause clause : tryCatch.getCatchClauses()) {
             clause.getCatchExpr().accept(this);
         }
+    }
+
+    @Override
+    public void visitSimpleMapOperator(OpSimpleMap simpleMap) {
+        simpleMap.getLeft().accept(this);
+        simpleMap.getRight().accept(this);
     }
 }
