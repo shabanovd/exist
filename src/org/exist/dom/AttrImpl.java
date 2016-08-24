@@ -94,7 +94,7 @@ public class AttrImpl extends NamedNode implements Attr {
         final short id = ownerDocument.getBrokerPool().getSymbols().getSymbol( this );
         final byte idSizeType = Signatures.getSizeType( id );
         int prefixLen = 0;
-        if (nodeName.needsNamespaceDecl()) {
+        if (nodeName.hasNamespace()) {
             if (nodeName.getPrefix() != null && nodeName.getPrefix().length() > 0)
                 {prefixLen = UTF8.encoded(nodeName.getPrefix());}
         }
@@ -102,13 +102,13 @@ public class AttrImpl extends NamedNode implements Attr {
         final byte[] data = ByteArrayPool.getByteArray(
                 LENGTH_SIGNATURE_LENGTH + NodeId.LENGTH_NODE_ID_UNITS + nodeIdLen +
                 Signatures.getLength(idSizeType) +
-                (nodeName.needsNamespaceDecl() ? LENGTH_NS_ID + LENGTH_PREFIX_LENGTH + prefixLen : 0) + 
+                (nodeName.hasNamespace() ? LENGTH_NS_ID + LENGTH_PREFIX_LENGTH + prefixLen : 0) +
                 value.UTF8Size());
         int pos = 0;
         data[pos] = (byte) ( Signatures.Attr << 0x5 );
         data[pos] |= idSizeType;
         data[pos] |= (byte) (attributeType << 0x2);
-        if(nodeName.needsNamespaceDecl())
+        if(nodeName.hasNamespace())
             {data[pos] |= 0x10;}
         pos += StoredNode.LENGTH_SIGNATURE_LENGTH;
         ByteConversion.shortToByte((short) nodeId.units(), data, pos);
@@ -117,7 +117,7 @@ public class AttrImpl extends NamedNode implements Attr {
         pos += nodeIdLen;        
         Signatures.write(idSizeType, id, data, pos);
         pos += Signatures.getLength(idSizeType);
-        if(nodeName.needsNamespaceDecl()) {
+        if(nodeName.hasNamespace()) {
             final short nsId = ownerDocument.getBrokerPool().getSymbols().getNSSymbol(nodeName.getNamespaceURI());
             ByteConversion.shortToByte(nsId, data, pos);
             pos += LENGTH_NS_ID;
