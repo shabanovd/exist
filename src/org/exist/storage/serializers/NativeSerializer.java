@@ -81,7 +81,7 @@ public class NativeSerializer extends Serializer {
     	}
     	setDocument(p.getDocument());
     	if (generateDocEvent) {receiver.startDocument();}
-        final Iterator<StoredNode> domIter = broker.getNodeIterator(new StoredNode(p));
+        final Iterator<StoredNode> domIter = broker.getNodeIterator(p.asStoredNode());
         serializeToReceiver(null, domIter, p.getDocument(), checkAttributes, p.getMatches(), new TreeSet<String>());
         if (generateDocEvent) {receiver.endDocument();}
     }
