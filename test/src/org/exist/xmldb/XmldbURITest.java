@@ -854,4 +854,17 @@ public class XmldbURITest {
         
         assertEquals("/db/colB/other", newUri.toString());
     }
+
+    @Test
+    public void startsWith() {
+
+        assertTrue(XmldbURI.create("/db/test").startsWith(XmldbURI.create("/db/test")));
+
+        assertFalse(XmldbURI.create("/db/test").startsWith(XmldbURI.create("/db/test2")));
+
+        assertTrue(XmldbURI.create("/db/test/db").startsWith(XmldbURI.create("/db/test")));
+        assertTrue(XmldbURI.create("/db/test/db").startsWith(XmldbURI.create("/db/test/")));
+
+        assertFalse(XmldbURI.create("/db/test_db").startsWith(XmldbURI.create("/db/test")));
+    }
 }
