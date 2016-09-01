@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.Map.Entry;
@@ -1344,7 +1345,22 @@ public class BrokerPool implements Database {
     }
     
     public boolean isReadOnly() {
-        final long freeSpace = dataLock.getFile().getUsableSpace();
+        if (isReadOnly) {
+            return true;
+        }
+
+        long freeSpace = dataLock.getFile().getUsableSpace();
+        if (freeSpace == 0) {
+            try {
+                freeSpace = Files.getFileStore(dataLock.getFile().toPath()).getUsableSpace();
+            } catch (IOException e) {
+                LOG.error(e,e);
+                return isReadOnly;
+            }
+            if (freeSpace == 0) {
+                return isReadOnly;
+            }
+        }
         if (freeSpace < diskSpaceMin) {
             LOG.fatal("Partition containing DATA_DIR: " + dataLock.getFile().getAbsolutePath() + " is running out of disk space. " +
                     "Switching eXist-db to read only to prevent data loss!");
