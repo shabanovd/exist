@@ -899,8 +899,10 @@ public class BrokerPool implements Database {
         					boolean recovered = false;
         					if(isTransactional()) {
         						recovered = transactionManager.runRecovery(broker);
-        						//TODO : extract the following from this block ? What if we ware not transactional ? -pb 
-        						if(!recovered) {
+        						//TODO : extract the following from this block ? What if we ware not transactional ? -pb
+                                if (recovered) {
+                                    LOG.warn("DB was recovered. REINDEX MAY REQUIRED!!!");
+                                } else {
         							try {
         								if(broker.getCollection(XmldbURI.ROOT_COLLECTION_URI) == null) {
         									final Txn txn = transactionManager.beginTransaction();
@@ -963,25 +965,25 @@ public class BrokerPool implements Database {
         					//If necessary, launch a task to repair the DB
         					//TODO : merge this with the recovery process ?
         					//XXX: don't do if READONLY mode
-        					if(recovered) {
-        						if(!exportOnly) {
-                                    reportStatus("Reindexing database files...");
-        							try {
-        								broker.repair();
-        							} catch (final PermissionDeniedException e) {
-        								LOG.warn("Error during recovery: " + e.getMessage(), e);
-        							}
-        						}
-
-        						if(((Boolean)conf.getProperty(PROPERTY_RECOVERY_CHECK)).booleanValue()) {
-        							final ConsistencyCheckTask task = new ConsistencyCheckTask();
-        							final Properties props = new Properties();
-        							props.setProperty("backup", "no");
-        							props.setProperty("output", "sanity");
-        							task.configure(conf, props);
-        							task.execute(broker);
-        						}
-        					}
+//        					if(recovered) {
+//        						if(!exportOnly) {
+//                                    reportStatus("Reindexing database files...");
+//        							try {
+//        								broker.repair();
+//        							} catch (final PermissionDeniedException e) {
+//        								LOG.warn("Error during recovery: " + e.getMessage(), e);
+//        							}
+//        						}
+//
+//        						if(((Boolean)conf.getProperty(PROPERTY_RECOVERY_CHECK)).booleanValue()) {
+//        							final ConsistencyCheckTask task = new ConsistencyCheckTask();
+//        							final Properties props = new Properties();
+//        							props.setProperty("backup", "no");
+//        							props.setProperty("output", "sanity");
+//        							task.configure(conf, props);
+//        							task.execute(broker);
+//        						}
+//        					}
 
         					//OK : the DB is repaired; let's make a few RW operations
         					statusReporter.setStatus(SIGNAL_WRITABLE);
