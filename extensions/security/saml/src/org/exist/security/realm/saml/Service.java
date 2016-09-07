@@ -98,7 +98,7 @@ public class Service implements Configurable {
     String spId;
 
     @ConfigurationFieldAsElement("auth-method")
-    String auth_method;
+    String auth_method = "redirect";
 
     @ConfigurationFieldAsElement("auth-url")
     String auth_url;
