@@ -1,6 +1,6 @@
 /*
  * eXist Open Source Native XML Database
- * Copyright (C) 2001-2014 The eXist Project
+ * Copyright (C) 2001-2016 The eXist Project
  * http://exist-db.org
  *
  * This program is free software; you can redistribute it and/or
@@ -46,6 +46,12 @@ public interface CommitWriter extends AutoCloseable {
 
     CommitWriter delete(String id);
     CommitWriter delete(String id, XmldbURI uri);
+
+    CommitWriter branch(String id);
+    CommitWriter branch(XmldbURI uri);
+
+    CommitWriter merge(String id);
+    CommitWriter merge(XmldbURI uri);
 
     void done();
 }

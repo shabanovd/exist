@@ -1,6 +1,6 @@
 /*
  * eXist Open Source Native XML Database
- * Copyright (C) 2001-2014 The eXist Project
+ * Copyright (C) 2001-2016 The eXist Project
  * http://exist-db.org
  *
  * This program is free software; you can redistribute it and/or
@@ -230,6 +230,34 @@ public class CommitLog implements CommitWriter, CommitReader {
         checkIsOpen();
 
         acts.add(new Action(DELETE, id));
+        return this;
+    }
+
+    public CommitLog branch(XmldbURI uri) {
+        checkIsOpen();
+
+        acts.add(new Action(BRANCH, uri));
+        return this;
+    }
+
+    public CommitLog branch(String id) {
+        checkIsOpen();
+
+        acts.add(new Action(BRANCH, id));
+        return this;
+    }
+
+    public CommitLog merge(XmldbURI uri) {
+        checkIsOpen();
+
+        acts.add(new Action(MERGE, uri));
+        return this;
+    }
+
+    public CommitLog merge(String id) {
+        checkIsOpen();
+
+        acts.add(new Action(MERGE, id));
         return this;
     }
 
