@@ -48,6 +48,7 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Scanner;
 
 import static java.nio.file.Files.createDirectories;
@@ -189,6 +190,17 @@ public class Converter implements Constants {
             log.writeStartElement("message");
             log.writeCData(commitLog.message());
             log.writeEndElement();
+
+            if (commitLog.metadata != null) {
+                for (Map.Entry<String, String> entry : commitLog.metadata.entrySet()) {
+                    log.writeStartElement("metadata");
+                    log.writeAttribute("key", entry.getKey());
+
+                    log.writeCData(entry.getValue());
+
+                    log.writeEndElement();
+                }
+            }
 
             for (Change action : commitLog.acts) {
 

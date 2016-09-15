@@ -26,8 +26,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static javax.xml.stream.XMLStreamReader.*;
 
@@ -40,6 +39,7 @@ public class CommitLoaded implements CommitReader {
 
     String author;
     String message;
+    Map<String, String> metadata;
 
     List<Change> acts = new ArrayList<>(256);
 
@@ -69,6 +69,15 @@ public class CommitLoaded implements CommitReader {
                                 message = streamReader.getElementText();
                                 break;
 
+                            case "metadata":
+                                if (metadata == null) {
+                                    metadata = new HashMap<>();
+                                }
+                                String key = streamReader.getAttributeValue("", "key");
+                                String value = streamReader.getElementText();
+                                metadata.put(key, value);
+                                break;
+
                             case "entry":
                                 String id = streamReader.getAttributeValue("", "id");
                                 String uri = streamReader.getAttributeValue("", "uri");
@@ -83,6 +92,11 @@ public class CommitLoaded implements CommitReader {
                 }
             }
         }
+
+        if (metadata == null) {
+            metadata = Collections.emptyMap();
+        }
+        metadata = Collections.unmodifiableMap(metadata);
     }
 
     @Override
@@ -98,6 +112,16 @@ public class CommitLoaded implements CommitReader {
     @Override
     public String message() {
         return message;
+    }
+
+    @Override
+    public Map<String, String> metadata() {
+        return metadata;
+    }
+
+    @Override
+    public String metadata(String key) {
+        return metadata.get(key);
     }
 
     @Override

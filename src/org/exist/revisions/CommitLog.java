@@ -24,8 +24,7 @@ import org.exist.xmldb.XmldbURI;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.exist.Operation.*;
 
@@ -100,6 +99,7 @@ public class CommitLog implements CommitWriter, CommitReader {
 
     String author;
     String message;
+    Map<String, String> metadata;
 
     List<Change> acts = new ArrayList<>(256);
 
@@ -117,6 +117,8 @@ public class CommitLog implements CommitWriter, CommitReader {
     }
 
     public CommitLog author(String author) {
+        checkIsOpen();
+
         this.author = author;
         return this;
     }
@@ -126,12 +128,39 @@ public class CommitLog implements CommitWriter, CommitReader {
     }
 
     public CommitLog message(String message) {
+        checkIsOpen();
+
         this.message = message;
         return this;
     }
 
     public String message() {
         return message;
+    }
+
+    public CommitLog metadata(String key, String value) {
+        checkIsOpen();
+
+        if (metadata == null) {
+            metadata = new HashMap<>();
+        }
+
+        metadata.put(key, value);
+        return this;
+    }
+
+    public Map<String, String> metadata() {
+        if (metadata == null) {
+            metadata = new HashMap<>();
+        }
+        return metadata;
+    }
+
+    public String metadata(String key) {
+        if (metadata == null) {
+            return null;
+        }
+        return metadata.get(key);
     }
 
     public CommitLog create(XmldbURI uri) {
@@ -215,6 +244,8 @@ public class CommitLog implements CommitWriter, CommitReader {
 
         if (isDone) holder.commit(this);
         else holder.rollback(this);
+
+        metadata = Collections.unmodifiableMap(metadata);
     }
 
     private void checkIsOpen() {

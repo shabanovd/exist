@@ -328,6 +328,17 @@ public class RCSHolder implements Constants {
                     log.writeEndElement();
                 }
 
+                if (commitLog.metadata != null) {
+                    for (Map.Entry<String, String> entry : commitLog.metadata.entrySet()) {
+                        log.writeStartElement("metadata");
+                        log.writeAttribute("key", entry.getKey());
+
+                        log.writeCData(entry.getValue());
+
+                        log.writeEndElement();
+                    }
+                }
+
                 for (Change action : commitLog.acts) {
 
                     //processEntry(doc, broker, serializer, log, logPath, h);

@@ -207,6 +207,10 @@ public class RCSTest {
                 commit
                     .author("somebody")
                     .message("here go message <possible>xml</possible>")
+                    .metadata("key-string", "value")
+                    .metadata("key-string-xml", "value and <possible>xml</possible>")
+                    .metadata("key-xml", "<possible>xml</possible>")
+                    .metadata("key-json", "[{\"name\":\"value\"}]")
                     .create(colURL.append("test1.xml"))
                     .create(colURL.append("test2.xml"))
                     .create(colURL.append("test3.xml"))
@@ -258,6 +262,14 @@ public class RCSTest {
             assertEquals("somebody", commit.author());
             assertEquals("here go message <possible>xml</possible>", commit.message());
             assertNotNull(commit.id());
+
+            assertEquals("value", commit.metadata("key-string"));
+            assertEquals("value and <possible>xml</possible>", commit.metadata("key-string-xml"));
+            assertEquals("<possible>xml</possible>", commit.metadata("key-xml"));
+            assertEquals("[{\"name\":\"value\"}]", commit.metadata("key-json"));
+
+            Map<String, String> metadata = commit.metadata();
+            assertEquals(4, metadata.size());
 
             Iterator<Change> changes = commit.changes().iterator();
 

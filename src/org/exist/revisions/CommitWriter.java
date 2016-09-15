@@ -30,6 +30,8 @@ public interface CommitWriter extends AutoCloseable {
 
     CommitWriter message(String message);
 
+    CommitWriter metadata(String key, String value);
+
     CommitWriter create(String id);
     CommitWriter create(XmldbURI uri);
 
