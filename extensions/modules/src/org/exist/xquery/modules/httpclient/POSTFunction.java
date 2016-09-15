@@ -56,6 +56,8 @@ import java.io.UnsupportedEncodingException;
 
 import java.util.Properties;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 
 /**
  * Performs HTTP Post method
@@ -133,14 +135,8 @@ public class POSTFunction extends BaseHTTPClientFunction
 
                 //serialize the node to SAX
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                OutputStreamWriter    osw  = null;
 
-                try {
-                    osw = new OutputStreamWriter( baos, "UTF-8" );
-                }
-                catch( UnsupportedEncodingException e ) {
-                    throw( new XPathException( this, e.getMessage() ) );
-                }
+                OutputStreamWriter osw = new OutputStreamWriter( baos, UTF_8 );
 
                 SAXSerializer sax = new SAXSerializer( osw, new Properties() );
 
@@ -155,6 +151,10 @@ public class POSTFunction extends BaseHTTPClientFunction
 
                 byte[] reqPayload = baos.toByteArray();
                 entity = new ByteArrayRequestEntity( reqPayload, "application/xml; charset=utf-8" );
+            } else if( Type.subTypeOf( payload.getType(), Type.BASE64_BINARY ) ) {
+
+                entity = new ByteArrayRequestEntity(payload.toJavaObject(byte[].class));
+
             } else {
 
                 try {
