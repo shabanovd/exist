@@ -67,7 +67,7 @@ public class PATCHFunction extends BaseHTTPClientFunction
             "a body with mime-type of \"text/...\" will be returned as a URLEncoded string, " +
             "and any other body content will be returned as xs:base64Binary encoded data.",
             new SequenceType[] {
-                URI_PARAM, PUT_CONTENT_PARAM, PERSIST_PARAM, REQUEST_HEADER_PARAM
+                URI_PARAM, CONTENT_PARAM, PERSIST_PARAM, REQUEST_HEADER_PARAM
             },
             XML_BODY_RETURN
         ),
@@ -84,7 +84,7 @@ public class PATCHFunction extends BaseHTTPClientFunction
             "a body with mime-type of \"text/...\" will be returned as a URLEncoded string, " +
             "and any other body content will be returned as xs:base64Binary encoded data.",
             new SequenceType[] {
-                URI_PARAM, PUT_CONTENT_PARAM, PERSIST_PARAM, REQUEST_HEADER_PARAM, INDENTATION_PARAM
+                URI_PARAM, CONTENT_PARAM, PERSIST_PARAM, REQUEST_HEADER_PARAM, INDENTATION_PARAM
             },
             XML_BODY_RETURN
         )

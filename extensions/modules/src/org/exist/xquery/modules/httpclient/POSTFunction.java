@@ -79,7 +79,7 @@ public class POSTFunction extends BaseHTTPClientFunction
 			" where XML body content will be returned as a Node, HTML body content will be tidied into an XML compatible form, a body with mime-type of \"text/...\" will be returned as a URLEncoded string, and any other body content will be returned as xs:base64Binary encoded data.", 
 			new SequenceType[] {
                 URI_PARAM,
-                POST_CONTENT_PARAM,
+                CONTENT_PARAM,
                 PERSIST_PARAM,
                 REQUEST_HEADER_PARAM
             }, 

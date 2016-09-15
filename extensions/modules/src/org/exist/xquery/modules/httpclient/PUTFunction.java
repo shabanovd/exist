@@ -66,7 +66,7 @@ public class PUTFunction extends BaseHTTPClientFunction
 			"Performs a HTTP PUT request.." + " This method returns the HTTP response encoded as an XML fragment, that looks as follows: <httpclient:response xmlns:httpclient=\"http://exist-db.org/xquery/httpclient\" statusCode=\"200\"><httpclient:headers><httpclient:header name=\"name\" value=\"value\"/>...</httpclient:headers><httpclient:body type=\"xml|xhtml|text|binary\" mimetype=\"returned content mimetype\">body content</httpclient:body></httpclient:response>" +
 			" where XML body content will be returned as a Node, HTML body content will be tidied into an XML compatible form, a body with mime-type of \"text/...\" will be returned as a URLEncoded string, and any other body content will be returned as xs:base64Binary encoded data.",
 			new SequenceType[] {
-	            URI_PARAM, PUT_CONTENT_PARAM, PERSIST_PARAM, REQUEST_HEADER_PARAM
+	            URI_PARAM, CONTENT_PARAM, PERSIST_PARAM, REQUEST_HEADER_PARAM
 	        },
 			XML_BODY_RETURN
 		),
@@ -76,7 +76,7 @@ public class PUTFunction extends BaseHTTPClientFunction
             "Performs a HTTP PUT request.." + " This method returns the HTTP response encoded as an XML fragment, that looks as follows: <httpclient:response xmlns:httpclient=\"http://exist-db.org/xquery/httpclient\" statusCode=\"200\"><httpclient:headers><httpclient:header name=\"name\" value=\"value\"/>...</httpclient:headers><httpclient:body type=\"xml|xhtml|text|binary\" mimetype=\"returned content mimetype\">body content</httpclient:body></httpclient:response>" +
             " where XML body content will be returned as a Node, HTML body content will be tidied into an XML compatible form, a body with mime-type of \"text/...\" will be returned as a URLEncoded string, and any other body content will be returned as xs:base64Binary encoded data.",
             new SequenceType[] {
-                URI_PARAM, PUT_CONTENT_PARAM, PERSIST_PARAM, REQUEST_HEADER_PARAM, INDENTATION_PARAM
+                URI_PARAM, CONTENT_PARAM, PERSIST_PARAM, REQUEST_HEADER_PARAM, INDENTATION_PARAM
             },
             XML_BODY_RETURN
         )
