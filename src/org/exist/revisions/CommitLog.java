@@ -152,6 +152,9 @@ public class CommitLog implements CommitWriter, CommitReader {
     public Map<String, String> metadata() {
         if (metadata == null) {
             metadata = new HashMap<>();
+            if (isClosed) {
+                metadata = Collections.unmodifiableMap(metadata);
+            }
         }
         return metadata;
     }
@@ -273,7 +276,9 @@ public class CommitLog implements CommitWriter, CommitReader {
         if (isDone) holder.commit(this);
         else holder.rollback(this);
 
-        metadata = Collections.unmodifiableMap(metadata);
+        if (metadata != null) {
+            metadata = Collections.unmodifiableMap(metadata);
+        }
     }
 
     private void checkIsOpen() {
