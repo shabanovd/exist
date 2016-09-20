@@ -41,16 +41,13 @@ import org.apache.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.http.Descriptor;
 import org.exist.security.AuthenticationException;
-import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
-import org.exist.security.internal.AccountImpl;
 import org.exist.security.internal.web.HttpAccount;
 import org.exist.security.xacml.AccessContext;
 import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.source.SourceFactory;
-import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.MimeTable;
@@ -66,7 +63,6 @@ import org.exist.xquery.functions.request.RequestModule;
 import org.exist.xquery.functions.response.ResponseModule;
 import org.exist.xquery.functions.session.SessionModule;
 import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.Item;
 import org.exist.debuggee.DebuggeeFactory;
 import org.exist.dom.XMLUtil;
 
@@ -108,9 +104,9 @@ public class XQueryServlet extends AbstractExistHttpServlet {
     // Request attributes
     public static final String ATTR_XQUERY_USER = "xquery.user";
     public static final String ATTR_XQUERY_PASSWORD = "xquery.password";
-    public static final String ATTR_XQUERY_SOURCE = "xquery.source";
+//    public static final String ATTR_XQUERY_SOURCE = "xquery.source";
     public static final String ATTR_XQUERY_URL = "xquery.url";
-    public static final String ATTR_XQUERY_REPORT_ERRORS = "xquery.report-errors";
+//    public static final String ATTR_XQUERY_REPORT_ERRORS = "xquery.report-errors";
     public static final String ATTR_XQUERY_ATTRIBUTE = "xquery.attribute";
     public static final String ATTR_TIMEOUT = "xquery.timeout";
     public static final String ATTR_MAX_NODES = "xquery.max-nodes";
@@ -329,31 +325,33 @@ public class XQueryServlet extends AbstractExistHttpServlet {
         }
         
         Source source = null;
-        final Object sourceAttrib = request.getAttribute(ATTR_XQUERY_SOURCE);
+//        final Object sourceAttrib = request.getAttribute(ATTR_XQUERY_SOURCE);
         final Object urlAttrib = request.getAttribute(ATTR_XQUERY_URL);
-        if (sourceAttrib != null) {
-            String s;
-            if (sourceAttrib instanceof Item)
-                try {
-                    s = ((Item) sourceAttrib).getStringValue();
-                } catch (final XPathException e) {
-                    throw new ServletException("Failed to read XQuery source string from " +
-                        "request attribute '" + ATTR_XQUERY_SOURCE + "': " + e.getMessage(), e);
-                }
-            else
-                {s = sourceAttrib.toString();}
-            
-            source = new StringSource(s);
-            
-        } else if (urlAttrib != null) {
+//        if (sourceAttrib != null) {
+//            String s;
+//            if (sourceAttrib instanceof Item)
+//                try {
+//                    s = ((Item) sourceAttrib).getStringValue();
+//                } catch (final XPathException e) {
+//                    throw new ServletException("Failed to read XQuery source string from " +
+//                        "request attribute '" + ATTR_XQUERY_SOURCE + "': " + e.getMessage(), e);
+//                }
+//            else
+//                {s = sourceAttrib.toString();}
+//
+//            source = new StringSource(s);
+//
+//        } else
+        if (urlAttrib != null) {
             DBBroker broker = null;
             try {
         	    broker = getPool().get(user);
                 source = SourceFactory.getSource(broker, moduleLoadPath, urlAttrib.toString(), true);
             } catch (final Exception e) {
                 getLog().error(e.getMessage(), e);
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                sendError(output, "Error", e.getMessage());
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                sendError(output, e.getMessage(), "");
+                return;
             } finally {
                 getPool().release(broker);
             }
@@ -362,7 +360,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             final File f = new File(path);
             if(!f.canRead()) {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                sendError(output, "Cannot read source file", path);
+                sendError(output, "Cannot read source file: ", path);
                 return;
             }
             source = new FileSource(f, encoding, true);
@@ -370,53 +368,54 @@ public class XQueryServlet extends AbstractExistHttpServlet {
         
         if (source == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            sendError(output, "Source not found", path);
+            sendError(output, "Source not found", request.getRequestURI());
+            return;
         }
         
         boolean reportErrors = false;
-        final String errorOpt = (String) request.getAttribute(ATTR_XQUERY_REPORT_ERRORS);
-        if (errorOpt != null)
-            {reportErrors = errorOpt.equalsIgnoreCase("YES");}
+//        final String errorOpt = (String) request.getAttribute(ATTR_XQUERY_REPORT_ERRORS);
+//        if (errorOpt != null)
+//            {reportErrors = errorOpt.equalsIgnoreCase("YES");}
         
         //allow source viewing for GET?
-        if("GET".equals(request.getMethod().toUpperCase())) {
-            String option;
-            boolean allowSource = false;
-            if((option = request.getParameter("_source")) != null)
-                allowSource = "yes".equals(option);
-            
-            //Should we display the source of the XQuery or execute it
-            if(allowSource && descriptor != null) {
-                //show the source
-                
-                //check are we allowed to show the xquery source - descriptor.xml
-//                System.out.println("path="+path);
-                if(descriptor.allowSource(path)) {
-                	
-                	try {
-						source.validate(user, Permission.READ);
-					} catch (final PermissionDeniedException e) {
-						if (getDefaultUser().equals(user)) {
-							getAuthenticator().sendChallenge(request, response);
-						} else {
-							response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission to view XQuery source for: " + path + " denied. (no read access)");
-						}
-						return;
-					}
-                    
-					//Show the source of the XQuery
-                    //writeResourceAs(resource, broker, stylesheet, encoding, "text/plain", outputProperties, response);
-                    response.setContentType("text/plain; charset=" + getFormEncoding());
-                    output.write(source.getContent());
-                    output.flush();
-                    return;
-                } else {
-                   
-                   response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission to view XQuery source for: " + path + " denied. Must be explicitly defined in descriptor.xml");
-                   return;
-                }
-            }
-        }
+//        if("GET".equals(request.getMethod().toUpperCase())) {
+//            String option;
+//            boolean allowSource = false;
+//            if((option = request.getParameter("_source")) != null)
+//                allowSource = "yes".equals(option);
+//
+//            //Should we display the source of the XQuery or execute it
+//            if(allowSource && descriptor != null) {
+//                //show the source
+//
+//                //check are we allowed to show the xquery source - descriptor.xml
+////                System.out.println("path="+path);
+//                if(descriptor.allowSource(path)) {
+//
+//                	try {
+//						source.validate(user, Permission.READ);
+//					} catch (final PermissionDeniedException e) {
+//						if (getDefaultUser().equals(user)) {
+//							getAuthenticator().sendChallenge(request, response);
+//						} else {
+//							response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission to view XQuery source for: " + path + " denied. (no read access)");
+//						}
+//						return;
+//					}
+//
+//					//Show the source of the XQuery
+//                    //writeResourceAs(resource, broker, stylesheet, encoding, "text/plain", outputProperties, response);
+//                    response.setContentType("text/plain; charset=" + getFormEncoding());
+//                    output.write(source.getContent());
+//                    output.flush();
+//                    return;
+//                } else {
+//
+//                   response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permission to view XQuery source for: " + path + " denied. Must be explicitly defined in descriptor.xml");
+//                   return;
+//                }
+//            }
+//        }
         
         //-------------------------------
         
@@ -544,7 +543,7 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 			if (getDefaultUser().equals(user)) {
 				getAuthenticator().sendChallenge(request, response);
 			} else {
-				response.sendError(HttpServletResponse.SC_FORBIDDEN, "No permission to execute XQuery for: " + path + " denied.");
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "No permission to execute XQuery.");
 			}
 			return;
            
@@ -558,8 +557,9 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             if (reportErrors)
             	{writeError(output, e);}
             else {
-            	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            	sendError(output, "Error", e.getMessage());
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                sendError(output, e.getMessage(), "");
+                return;
             }
             
         } catch (final Throwable e){
@@ -567,8 +567,9 @@ public class XQueryServlet extends AbstractExistHttpServlet {
             if (reportErrors)
             	{writeError(output, e);}
             else {
-            	response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            	sendError(output, "Error", e.getMessage());
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                sendError(output, e.getMessage(), "");
+                return;
             }
             
         } finally {
@@ -614,12 +615,13 @@ public class XQueryServlet extends AbstractExistHttpServlet {
         out.print("<link rel=\"stylesheet\" type=\"text/css\" href=\"error.css\"></link></head>");
         out.println("<body><h1>Error found</h1>");
         out.print("<div class='message'><b>Message: </b>");
-        out.print(message);
+        out.print(XMLUtil.encodeAttrMarkup(message));
         out.print("</div><div class='description'>");
         out.print("<pre>");
-        out.print(description);
+        out.print(XMLUtil.encodeAttrMarkup(description));
         out.print("</pre>");
         out.print("</div></body></html>");
         out.flush();
+        out.close();
     }
 }
