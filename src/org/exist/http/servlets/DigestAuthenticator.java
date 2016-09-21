@@ -50,7 +50,27 @@ public class DigestAuthenticator implements Authenticator {
 		this.pool = pool;
 	}
 
-	public Subject authenticate(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Override
+    public Subject authenticate(HttpServletRequest request) throws IOException {
+
+        final String credentials = request.getHeader("Authorization");
+        if (credentials == null) {
+            return null;
+        }
+        final Digest digest = new Digest(request.getMethod());
+        parseCredentials(digest, credentials);
+        final SecurityManager secman = pool.getSecurityManager();
+        final AccountImpl user = (AccountImpl)secman.getAccount(digest.username);
+        if (user == null) {
+            return null;
+        }
+        if (!digest.check(user.getDigestPassword())) {
+            return null;
+        }
+        return new SubjectAccreditedImpl(user, this);
+    }
+
+    public Subject authenticate(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		return authenticate(request, response, true);
 	}
 
@@ -62,7 +82,7 @@ public class DigestAuthenticator implements Authenticator {
 		
 		final String credentials = request.getHeader("Authorization");
 		if (credentials == null) {
-			sendChallenge(request, response);
+            if (sendChallenge) {sendChallenge(request, response);}
 			return null;
 		}
 		final Digest digest = new Digest(request.getMethod());
@@ -82,7 +102,7 @@ public class DigestAuthenticator implements Authenticator {
 		return new SubjectAccreditedImpl(user, this);
 	}
 
-    @Override
+	@Override
 	public void sendChallenge(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
 		response.setHeader("WWW-Authenticate", "Digest realm=\"exist\", "

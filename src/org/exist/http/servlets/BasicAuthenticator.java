@@ -48,7 +48,63 @@ public class BasicAuthenticator implements Authenticator {
 		this.pool = pool;
 	}
 
-	public Subject authenticate(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public Subject authenticate(HttpServletRequest request) throws IOException {
+
+        String credentials = request.getHeader("Authorization");
+        String username = null;
+        String password = null;
+        try {
+            if (credentials != null) {
+                final Base64Decoder dec = new Base64Decoder();
+                dec.translate(credentials.substring("Basic ".length()));
+                final byte[] c = dec.getByteArray();
+                final String s = new String(c);
+                // LOG.debug("BASIC auth credentials: "+s);
+                final int p = s.indexOf(':');
+                username = p < 0 ? s : s.substring(0, p);
+                password = p < 0 ? null : s.substring(p + 1);
+            }
+        } catch(final IllegalArgumentException iae) {
+            LOG.warn("Invalid BASIC authentication header received: " + iae.getMessage(), iae);
+            credentials = null;
+        }
+
+        // get the user from the session if possible
+        final HttpSession session = request.getSession(false);
+        Subject user = null;
+        if (session != null) {
+            user = (Subject) session.getAttribute(XQueryContext.HTTP_SESSIONVAR_XMLDB_USER);
+            if (user != null && (username == null || user.getName().equals(username))) {
+                return user;
+            }
+        }
+
+        if (user != null) {
+            session.removeAttribute(XQueryContext.HTTP_SESSIONVAR_XMLDB_USER);
+        }
+
+        if (credentials == null) {
+            return null;
+        }
+
+        // authenticate the credentials
+        final SecurityManager secman = pool.getSecurityManager();
+        try {
+            user = secman.authenticate(username, password);
+        } catch (final AuthenticationException e) {
+            return null;
+        }
+
+        // store the user in the session
+        if (session != null) {
+            session.setAttribute(XQueryContext.HTTP_SESSIONVAR_XMLDB_USER, user);
+        }
+
+        // return the authenticated user
+        return user;
+    }
+
+    public Subject authenticate(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		return authenticate(request, response, true);
 	}
 	/*
