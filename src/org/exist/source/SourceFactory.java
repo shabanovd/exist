@@ -52,12 +52,12 @@ public class SourceFactory {
      * will be read from the current context class loader.
      * 
      * @param broker broker, can be null if not asking for a database resource
-     * @param contextPath
+     * @param contextPath_
      * @param location
      * @throws MalformedURLException
      * @throws IOException
      */
-    public static final Source getSource(DBBroker broker, String contextPath_, String location, boolean checkXQEncoding) throws MalformedURLException, IOException, PermissionDeniedException
+    public static final Source getSource(DBBroker broker, String contextPath_, String location, boolean checkXQEncoding) throws IOException, PermissionDeniedException
     {
     	String contextPath = contextPath_;
     	if (contextPath == null)
