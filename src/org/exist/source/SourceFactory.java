@@ -45,6 +45,11 @@ import org.exist.xquery.Constants;
  */
 public class SourceFactory {
 
+    private static boolean allowExt = true;
+    static {
+        allowExt = Boolean.parseBoolean(System.getProperty("exist.sourceFactory.allow-ext", "true"));
+    }
+
     /**
      * Create a {@link Source} object for the given URL.
      * 
@@ -52,12 +57,16 @@ public class SourceFactory {
      * will be read from the current context class loader.
      * 
      * @param broker broker, can be null if not asking for a database resource
-     * @param contextPath_
+     * @param contextPath
      * @param location
      * @throws MalformedURLException
      * @throws IOException
      */
-    public static final Source getSource(DBBroker broker, String contextPath_, String location, boolean checkXQEncoding) throws IOException, PermissionDeniedException
+    public static final Source getSource(DBBroker broker, String contextPath, String location, boolean checkXQEncoding) throws IOException, PermissionDeniedException {
+        return getSource(broker, contextPath, location, checkXQEncoding, allowExt);
+    }
+
+    public static final Source getSource(DBBroker broker, String contextPath_, String location, boolean checkXQEncoding, boolean allowExt) throws IOException, PermissionDeniedException
     {
     	String contextPath = contextPath_;
     	if (contextPath == null)
@@ -169,10 +178,12 @@ public class SourceFactory {
         }
         
         /* any other URL */
-        else
-        {
+        else if (allowExt) {
             final URL url = new URL(location);
             source = new URLSource(url);
+
+        } else {
+            throw new IOException("unsupported source: "+location);
         }
 
         return source;
