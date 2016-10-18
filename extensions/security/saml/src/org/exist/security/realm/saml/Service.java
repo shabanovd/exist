@@ -209,7 +209,7 @@ public class Service implements Configurable {
 
         String accountName = forceLowercase ? nameValue.toLowerCase() : nameValue;
 
-        Account found = SAMLRealm.get().getAccount(accountName);
+        Account found = SAMLRealm.get().getSecurityManager().getAccount(accountName);
         
         if (found == null) {
             Map<SchemaType, String> metadata = new HashMap<>();

@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-2014 The eXist Project
+ *  Copyright (C) 2001-2016 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -31,7 +31,6 @@ import org.exist.config.Configurator;
 import org.exist.config.annotation.*;
 import org.exist.security.*;
 import org.exist.security.internal.SecurityManagerImpl;
-import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
@@ -47,7 +46,7 @@ import org.opensaml.common.SAMLException;
 public class SAMLRealm extends AbstractRealm {
 
     protected final static Logger LOG = Logger.getLogger(SAMLRealm.class);
-    private final static String SAML = "SAML";
+//    private final static String SAML = "SAML";
 
     protected static SAMLRealm instance = null;
 
@@ -66,7 +65,7 @@ public class SAMLRealm extends AbstractRealm {
     @ConfigurationFieldClassMask("org.exist.security.realm.saml.Service")
     List<Service> services;
 
-    private Group primaryGroup = null;
+//    private Group primaryGroup = null;
 
     public SAMLRealm(final SecurityManagerImpl sm, Configuration config) throws ConfigurationException {
         super(sm, config);
@@ -89,29 +88,29 @@ public class SAMLRealm extends AbstractRealm {
         return ID;
     }
 
-    private synchronized Group getPrimaryGroup() throws PermissionDeniedException {
-        if (primaryGroup == null) {
-            primaryGroup = getGroup(SAML);
-            if (primaryGroup == null)
-                try {
-                    primaryGroup = executeAsSystemUser(new Unit<Group>() {
-                        @Override
-                        public Group execute(DBBroker broker) throws EXistException, PermissionDeniedException {
-                            return addGroup(new GroupAider(ID, SAML));
-                        }
-                    });
-
-                    if (primaryGroup == null)
-                        throw new ConfigurationException("SAML realm can not create primary group 'SAML'.");
-
-                } catch (PermissionDeniedException e) {
-                    throw e;
-                } catch (EXistException e) {
-                    throw new PermissionDeniedException(e);
-                }
-        }
-        return primaryGroup;
-    }
+//    private synchronized Group getPrimaryGroup() throws PermissionDeniedException {
+//        if (primaryGroup == null) {
+//            primaryGroup = getGroup(SAML);
+//            if (primaryGroup == null)
+//                try {
+//                    primaryGroup = executeAsSystemUser(new Unit<Group>() {
+//                        @Override
+//                        public Group execute(DBBroker broker) throws EXistException, PermissionDeniedException {
+//                            return addGroup(new GroupAider(ID, SAML));
+//                        }
+//                    });
+//
+//                    if (primaryGroup == null)
+//                        throw new ConfigurationException("SAML realm can not create primary group 'SAML'.");
+//
+//                } catch (PermissionDeniedException e) {
+//                    throw e;
+//                } catch (EXistException e) {
+//                    throw new PermissionDeniedException(e);
+//                }
+//        }
+//        return primaryGroup;
+//    }
 
     @Override
     public Subject authenticate(final String accountName, Object credentials) throws AuthenticationException {
@@ -173,27 +172,22 @@ public class SAMLRealm extends AbstractRealm {
     }
 
     @Override
-    public boolean deleteGroup(Group group) throws PermissionDeniedException, EXistException, ConfigurationException {
+    public boolean deleteGroup(Group group) throws PermissionDeniedException, EXistException {
         return false;
     }
 
     protected Account createAccountInDatabase(final String username, final Map<SchemaType, String> metadata) throws AuthenticationException {
 
         try {
-            return executeAsSystemUser(new Unit<Account>() {
-                @Override
-                public Account execute(DBBroker broker) throws EXistException, PermissionDeniedException {
-                    // create the user account
-                    UserAider userAider = new UserAider(ID, username, getPrimaryGroup());
+            return executeAsSystemUser(broker -> {
+                // create the user account
+                UserAider userAider = new UserAider(ID, username);
 
-                    // store any requested metadata
-                    for (Entry<SchemaType, String> entry : metadata.entrySet())
-                        userAider.setMetadataValue(entry.getKey(), entry.getValue());
+                // store any requested metadata
+                for (Entry<SchemaType, String> entry : metadata.entrySet())
+                    userAider.setMetadataValue(entry.getKey(), entry.getValue());
 
-                    Account account = getSecurityManager().addAccount(userAider);
-
-                    return account;
-                }
+                return getSecurityManager().addAccount(userAider);
             });
         } catch (Exception e) {
             throw new AuthenticationException(AuthenticationException.UNNOWN_EXCEPTION, e.getMessage(), e);
