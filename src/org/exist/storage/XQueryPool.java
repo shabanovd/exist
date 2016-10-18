@@ -145,11 +145,13 @@ public class XQueryPool {
 
                 final Deque<CompiledXQuery> stack = pool.computeIfAbsent(source, (k) -> new ArrayDeque<>());
 
-                if (stack.size() < maxStackSize) {
-                    // check if the query is already in pool before adding,
-                    // may happen for modules, don't add it a second time!
-                    if(!stack.contains(xquery)) {
-                        stack.push(xquery);
+                synchronized (stack) {
+                    if (stack.size() < maxStackSize) {
+                        // check if the query is already in pool before adding,
+                        // may happen for modules, don't add it a second time!
+                        if (!stack.contains(xquery)) {
+                            stack.push(xquery);
+                        }
                     }
                 }
             }
@@ -163,9 +165,12 @@ public class XQueryPool {
             return null;
         }
 
-        // now check if the compiled expression is valid
-        // it might become invalid if an imported module has changed.
-        final CompiledXQuery query = stack.pollFirst();
+        final CompiledXQuery query;
+        synchronized (stack) {
+            // now check if the compiled expression is valid
+            // it might become invalid if an imported module has changed.
+            query = stack.pollFirst();
+        }
         if (query == null) {
             return null;
         }
