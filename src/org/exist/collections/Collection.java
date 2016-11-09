@@ -266,6 +266,11 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             list.add(entry);
         }
         for(final DocumentImpl document : documents.values()) {
+            //skip if corrupted
+            if (document.getMetadata() == null) {
+                LOG.error("document '"+document.getFileURI()+"' at '"+getURI()+"' have no metadata!");
+                continue;
+            }
             final CollectionEntry entry = new DocumentEntry(document);
             entry.readMetadata(broker);
             list.add(entry);
@@ -587,6 +592,11 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 
     private void addDocumentsToSet(final DBBroker broker, final MutableDocumentSet docs, final LockedDocumentMap lockMap, final int lockType) throws LockException {
     	for(final DocumentImpl doc : documents.values()) {
+            //skip if corrupted
+            if (doc.getMetadata() == null) {
+                LOG.error("document '"+doc.getFileURI()+"' at '"+getURI()+"' have no metadata!");
+                continue;
+            }
             if(doc.getPermissions().validate(broker.getSubject(), Permission.WRITE)) {
                 doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
 
@@ -598,6 +608,11 @@ public class Collection extends Observable implements Resource, Comparable<Colle
     
     private void addDocumentsToSet(final DBBroker broker, final MutableDocumentSet docs) {
     	for(final DocumentImpl doc : documents.values()) {
+            //skip if corrupted
+            if (doc.getMetadata() == null) {
+                LOG.error("document '"+doc.getFileURI()+"' at '"+getURI()+"' have no metadata!");
+                continue;
+            }
             if(doc.getPermissions().validate(broker.getSubject(), Permission.READ)) {
                 docs.add(doc);
             }
@@ -628,6 +643,11 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             return false;
         }
         for(final DocumentImpl doc : documents.values()) {
+            //skip if corrupted
+            if (doc.getMetadata() == null) {
+                LOG.error("document '"+doc.getFileURI()+"' at '"+getURI()+"' have no metadata!");
+                continue;
+            }
             if(doc.isLockedForWrite()) {
                 return false;
             }
