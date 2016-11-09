@@ -268,7 +268,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         for(final DocumentImpl document : documents.values()) {
             //skip if corrupted
             if (document.getMetadata() == null) {
-                LOG.error("document '"+document.getFileURI()+"' at '"+getURI()+"' have no metadata!");
+                LOG.error("document '"+document.getFileURI()+"' at '"+getURI()+"' have no eXistDB metadata!");
                 continue;
             }
             final CollectionEntry entry = new DocumentEntry(document);
@@ -594,7 +594,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
     	for(final DocumentImpl doc : documents.values()) {
             //skip if corrupted
             if (doc.getMetadata() == null) {
-                LOG.error("document '"+doc.getFileURI()+"' at '"+getURI()+"' have no metadata!");
+                LOG.error("document '"+doc.getFileURI()+"' at '"+getURI()+"' have no eXistDB metadata!");
                 continue;
             }
             if(doc.getPermissions().validate(broker.getSubject(), Permission.WRITE)) {
@@ -610,7 +610,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
     	for(final DocumentImpl doc : documents.values()) {
             //skip if corrupted
             if (doc.getMetadata() == null) {
-                LOG.error("document '"+doc.getFileURI()+"' at '"+getURI()+"' have no metadata!");
+                LOG.error("document '"+doc.getFileURI()+"' at '"+getURI()+"' have no eXistDB metadata!");
                 continue;
             }
             if(doc.getPermissions().validate(broker.getSubject(), Permission.READ)) {
@@ -645,7 +645,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         for(final DocumentImpl doc : documents.values()) {
             //skip if corrupted
             if (doc.getMetadata() == null) {
-                LOG.error("document '"+doc.getFileURI()+"' at '"+getURI()+"' have no metadata!");
+                LOG.error("document '"+doc.getFileURI()+"' at '"+getURI()+"' have no eXistDB metadata!");
                 continue;
             }
             if(doc.isLockedForWrite()) {
