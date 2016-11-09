@@ -33,6 +33,7 @@ public class Module extends AbstractInternalModule {
     public final static String RELEASED_IN_VERSION = "eXist-2.2";
 
     public static final FunctionDef[] functions = {
+            new FunctionDef(CleanupMetadata.signatures[0], CleanupMetadata.class),
             new FunctionDef(CleanupRemove.signatures[0], CleanupRemove.class)
     };
 
