@@ -147,23 +147,29 @@ public class FnExport extends BasicFunction {
         }
         
         try {
+            Path folder = Paths.get(dirOrFile);
+
+            if (args.length >= 4 && args[3].effectiveBooleanValue()) {
+
+                Path lastBackup = folder.resolve("last-backup");
+                Path prevBackup = folder.resolve("prev-backup");
+
+                if (Files.exists(lastBackup)) {
+
+                    delete(prevBackup);
+
+                    Files.move(lastBackup, prevBackup);
+
+                    delete(lastBackup);
+                }
+            }
+
             SystemExport export = new SystemExport(context.getBroker(), cb, null, true);
             File backupFile = export.export(dirOrFile, incremental, zip, null);
 
             if (backupFile != null && args.length >= 4 && args[3].effectiveBooleanValue()) {
 
-                Path folder = backupFile.toPath().getParent();
-
                 Path lastBackup = folder.resolve("last-backup");
-                Path prevBackup = folder.resolve("prev-backup");
-
-                delete(prevBackup);
-
-                if (Files.exists(lastBackup)) {
-                    Files.move(lastBackup, prevBackup);
-                }
-
-                delete(lastBackup);
 
                 Files.move(backupFile.toPath(), lastBackup);
             }
