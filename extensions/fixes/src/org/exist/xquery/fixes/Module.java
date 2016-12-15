@@ -21,6 +21,7 @@ package org.exist.xquery.fixes;
 
 import org.exist.xquery.AbstractInternalModule;
 import org.exist.xquery.FunctionDef;
+import org.exist.xquery.restore.FnImportChanges;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,8 @@ public class Module extends AbstractInternalModule {
     public final static String RELEASED_IN_VERSION = "eXist-2.2";
 
     public static final FunctionDef[] functions = {
-            new FunctionDef(CleanupRemove.signatures[0], CleanupRemove.class)
+            new FunctionDef(CleanupRemove.signatures[0], CleanupRemove.class),
+            new FunctionDef(FnImportChanges.signatures[0], FnImportChanges.class)
     };
 
     public Module(Map<String, List<? extends Object>> parameters) {
