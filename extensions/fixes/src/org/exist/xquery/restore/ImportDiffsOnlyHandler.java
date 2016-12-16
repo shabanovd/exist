@@ -423,10 +423,11 @@ public class ImportDiffsOnlyHandler extends DefaultHandler {
         if(is == null) {
             final String msg = "Failed to restore resource '" + name + "'\nfrom file '" + descriptor.getSymbolicPath( name, false ) + "'.\nReason: Unable to obtain its EXistInputSource";
             listener.warn(msg);
-            throw new RuntimeException(msg);
+            LOG.error(msg);
+            //throw new RuntimeException(msg);
         }
 
-        if (currentCollection == null) {
+        if (is == null || currentCollection == null) {
             return new SkippedEntryDeferredPermission();
         }
 
@@ -644,32 +645,33 @@ public class ImportDiffsOnlyHandler extends DefaultHandler {
         @Override
         public void apply() {
             try {
-                mode = Integer.parseInt(perms, 8);
-            } catch (NumberFormatException e) {
-                LOG.warn("Document '"+docUri+"' @ '"+currentCollection.getURI()+"' mode is invalid '"+mode+"', use default!");
-            }
+                try {
+                    mode = Integer.parseInt(perms, 8);
+                } catch (NumberFormatException e) {
+                    LOG.warn("Document '" + docUri + "' @ '" + currentCollection.getURI() + "' mode is invalid '" + mode + "', use default!");
+                }
 
-            try {
-                target = currentCollection.getDocument(broker, docUri);
-            } catch (PermissionDeniedException e) {
-                listener.error(currentCollection.getURI().append(docUri).toString()+": "+e.getMessage());
-            }
+                try {
+                    target = currentCollection.getDocument(broker, docUri);
+                } catch (PermissionDeniedException e) {
+                    listener.error(currentCollection.getURI().append(docUri).toString() + ": " + e.getMessage());
+                }
 
-            if (target != null && (sameLastModified() || rmd.isChecksumSame(listener))) {
+                if (target != null && (sameLastModified() || rmd.isChecksumSame(listener))) {
 
-                DocumentMetadata m = getTarget().getMetadata();
-                //DocumentType dt = m.getDocType();
+                    DocumentMetadata m = getTarget().getMetadata();
+                    //DocumentType dt = m.getDocType();
 
-                Permission p = target.getPermissions();
+                    Permission p = target.getPermissions();
 
-                if (date_created.getTime() == m.getCreated()
-                        && date_modified.getTime() == m.getLastModified()
+                    if (date_created.getTime() == m.getCreated()
+                            && date_modified.getTime() == m.getLastModified()
 
-                        && p.getMode() == getMode()
-                        && p.getOwner() != null && getOwner().equals(p.getOwner().getName())
-                        && p.getGroup() != null && getGroup().equals(p.getGroup().getName())) {
+                            && p.getMode() == getMode()
+                            && p.getOwner() != null && getOwner().equals(p.getOwner().getName())
+                            && p.getGroup() != null && getGroup().equals(p.getGroup().getName())) {
 
-                    //unused
+                        //unused
 //                    if (
 //                            (publicid == null && systemid == null && dt == null)
 //                            || (dt != null
@@ -691,53 +693,58 @@ public class ImportDiffsOnlyHandler extends DefaultHandler {
                             return;
                         }
 //                    }
-                }
-
-                try {
-                    final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
-
-                    getTarget().getUpdateLock().acquire(Lock.WRITE_LOCK);
-
-                    try (Txn txn = txnManager.beginTransaction()) {
-
-                        DocumentMetadata meta = getTarget().getMetadata();
-                        meta.setMimeType(mimetype);
-                        meta.setCreated(date_created.getTime());
-                        meta.setLastModified(date_modified.getTime());
-
-                        if((publicid != null) || (systemid != null)) {
-                            final DocumentType docType = new DocumentTypeImpl(namedoctype, publicid, systemid);
-                            meta.setDocType(docType);
-//                        } else {
-//                            meta.setDocType(null);
-                        }
-                        
-                        final Permission permission = getTarget().getPermissions();
-                        permission.setOwner(getOwner());
-                        permission.setGroup(getGroup());
-                        permission.setMode(getMode());
-                        if(permission instanceof ACLPermission) {
-                            final ACLPermission aclPermission = (ACLPermission)permission;
-                            aclPermission.clear();
-                            for(final ACEAider ace : getAces()) {
-                                aclPermission.addACE(ace.getAccessType(), ace.getTarget(), ace.getWho(), ace.getMode());
-                            }
-                        }
-                        broker.storeXMLResource(txn, getTarget());
-                        txnManager.commit(txn);
-
-                    } finally {
-                        getTarget().getUpdateLock().release(Lock.WRITE_LOCK);
                     }
 
-                } catch (final Exception xe) {
-                    final String msg = "ERROR: Failed to set permissions on Document '" + getTarget().getURI() + "'.";
-                    LOG.error(msg, xe);
-                    getListener().warn(msg);
-                }
+                    try {
+                        final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
 
-            } else {
-                restore();
+                        getTarget().getUpdateLock().acquire(Lock.WRITE_LOCK);
+
+                        try (Txn txn = txnManager.beginTransaction()) {
+
+                            DocumentMetadata meta = getTarget().getMetadata();
+                            meta.setMimeType(mimetype);
+                            meta.setCreated(date_created.getTime());
+                            meta.setLastModified(date_modified.getTime());
+
+                            if ((publicid != null) || (systemid != null)) {
+                                final DocumentType docType = new DocumentTypeImpl(namedoctype, publicid, systemid);
+                                meta.setDocType(docType);
+//                        } else {
+//                            meta.setDocType(null);
+                            }
+
+                            final Permission permission = getTarget().getPermissions();
+                            permission.setOwner(getOwner());
+                            permission.setGroup(getGroup());
+                            permission.setMode(getMode());
+                            if (permission instanceof ACLPermission) {
+                                final ACLPermission aclPermission = (ACLPermission) permission;
+                                aclPermission.clear();
+                                for (final ACEAider ace : getAces()) {
+                                    aclPermission.addACE(ace.getAccessType(), ace.getTarget(), ace.getWho(), ace.getMode());
+                                }
+                            }
+                            broker.storeXMLResource(txn, getTarget());
+                            txnManager.commit(txn);
+
+                        } finally {
+                            getTarget().getUpdateLock().release(Lock.WRITE_LOCK);
+                        }
+
+                    } catch (final Exception xe) {
+                        final String msg = "ERROR: Failed to set permissions on Document '" + getTarget().getURI() + "'.";
+                        LOG.error(msg, xe);
+                        getListener().warn(msg);
+                    }
+
+                } else {
+                    restore();
+                }
+            } finally {
+                if (is != null) {
+                    is.close();
+                }
             }
         }
 
@@ -827,8 +834,6 @@ public class ImportDiffsOnlyHandler extends DefaultHandler {
             } catch(final Exception e) {
                 listener.warn("Failed to restore resource '" + name + "'\nfrom file '" + descriptor.getSymbolicPath(name, false) + "'.\nReason: " + e.getMessage());
                 LOG.error(e.getMessage(), e);
-            } finally {
-                is.close();
             }
         }
     }

@@ -391,7 +391,8 @@ public class ImportNewResourcesHandler extends DefaultHandler {
         if(is == null) {
             final String msg = "Failed to restore resource '" + name + "'\nfrom file '" + descriptor.getSymbolicPath( name, false ) + "'.\nReason: Unable to obtain its EXistInputSource";
             listener.warn(msg);
-            throw new RuntimeException(msg);
+            //throw new RuntimeException(msg);
+            return new SkippedEntryDeferredPermission();
         }
 
         try {
