@@ -504,7 +504,7 @@ public class DocumentImpl extends NodeImpl implements Resource, Document, Docume
     public void write(VariableByteOutputStream ostream) throws IOException {
         try {
             if (!getCollection().isTempCollection() && !getUpdateLock().isLockedForWrite()) {
-                LOG.warn("document not locked for write !");
+                LOG.warn("document not locked for write !", (new IOException()));
             }
             ostream.writeInt(docId);
             ostream.writeUTF(fileURI.toString());
