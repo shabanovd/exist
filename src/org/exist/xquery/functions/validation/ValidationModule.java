@@ -67,6 +67,9 @@ public class ValidationModule extends AbstractInternalModule {
        new FunctionDef(Validation.deprecated[1], Validation.class),
        new FunctionDef(Validation.deprecated[2], Validation.class),
        new FunctionDef(Validation.deprecated[3], Validation.class),
+
+       new FunctionDef(ValidationXSL.signatures[0], ValidationXSL.class),
+       new FunctionDef(ValidationXSL.signatures[1], ValidationXSL.class)
     };
 
 //    static {
