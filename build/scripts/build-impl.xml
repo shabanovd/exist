@@ -324,6 +324,17 @@
                 <include name="**.xq"/>
             </fileset>
         </copy>
+        <copy todir="${build.classes}/org/exist/xquery/functions/validation/iso-schematron-xslt2">
+            <fileset dir="${src}/org/exist/xquery/functions/validation/iso-schematron-xslt2">
+                <include name="*"/>
+            </fileset>
+        </copy>
+        <copy file="${src}/org/exist/xquery/functions/validation/CatalogManager.properties"
+              todir="${build.classes}/org/exist/xquery/functions/validation"
+              filtering="true" overwrite="true"/>
+        <copy file="${src}/org/exist/xquery/functions/validation/entity-catalog.xml"
+              todir="${build.classes}/org/exist/xquery/functions/validation"
+              filtering="true" overwrite="true"/>
         <copy file="${src}/org/exist/scheduler/impl/quartz.properties"
             todir="${build.classes}/org/exist/scheduler/impl"/>
         <copy todir="${build.classes}/org/exist/launcher">
