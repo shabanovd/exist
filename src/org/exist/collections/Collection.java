@@ -1527,7 +1527,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 
             //Sanity check
             if(!document.getUpdateLock().isLockedForWrite()) {
-                LOG.warn("document is not locked for write !");
+                LOG.warn("document is not locked for write !", (new IOException()));
             }
             
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_STORE_DOC, document.getFileURI());
