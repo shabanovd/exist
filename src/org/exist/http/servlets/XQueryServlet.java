@@ -48,6 +48,7 @@ import org.exist.security.xacml.AccessContext;
 import org.exist.source.FileSource;
 import org.exist.source.Source;
 import org.exist.source.SourceFactory;
+import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.MimeTable;
@@ -63,6 +64,7 @@ import org.exist.xquery.functions.request.RequestModule;
 import org.exist.xquery.functions.response.ResponseModule;
 import org.exist.xquery.functions.session.SessionModule;
 import org.exist.xquery.value.Sequence;
+import org.exist.xquery.value.Item;
 import org.exist.debuggee.DebuggeeFactory;
 import org.exist.dom.XMLUtil;
 
@@ -101,10 +103,15 @@ public class XQueryServlet extends AbstractExistHttpServlet {
 
     private static final Logger LOG = Logger.getLogger(XQueryServlet.class);
 
+    private static boolean allowExt = true;
+    static {
+        allowExt = Boolean.parseBoolean(System.getProperty("exist.sourceFactory.allow-ext", "true"));
+    }
+
     // Request attributes
     public static final String ATTR_XQUERY_USER = "xquery.user";
     public static final String ATTR_XQUERY_PASSWORD = "xquery.password";
-//    public static final String ATTR_XQUERY_SOURCE = "xquery.source";
+    public static final String ATTR_XQUERY_SOURCE = "xquery.source";
     public static final String ATTR_XQUERY_URL = "xquery.url";
     public static final String ATTR_XQUERY_REPORT_ERRORS = "xquery.report-errors";
     public static final String ATTR_XQUERY_ATTRIBUTE = "xquery.attribute";
@@ -535,6 +542,25 @@ public class XQueryServlet extends AbstractExistHttpServlet {
     }
 
     private Source source(HttpServletRequest request, String path, String moduleLoadPath, Subject subject) throws EXistException, IOException, PermissionDeniedException {
+        if (allowExt) {
+            //eXide require this for eval
+            final Object source = request.getAttribute(ATTR_XQUERY_SOURCE);
+            if (source != null) {
+                String s;
+                if (source instanceof Item) {
+                    try {
+                        s = ((Item) source).getStringValue();
+                    } catch (final XPathException e) {
+                        throw new IOException("Failed to read XQuery source string from " +
+                                "request attribute '" + ATTR_XQUERY_SOURCE + "': " + e.getMessage(), e);
+                    }
+                } else {
+                    s = source.toString();
+                }
+                return new StringSource(s);
+            }
+        }
+
         final Object url = request.getAttribute(ATTR_XQUERY_URL);
         if (url != null) {
             try (DBBroker broker = getPool().get(subject)) {
