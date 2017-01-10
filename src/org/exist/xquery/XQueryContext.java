@@ -1576,22 +1576,35 @@ public class XQueryContext implements BinaryValueManager, Context
         this.modulesChanged = true;
     }
 
+    private boolean isSourceValid(DBBroker broker) {
+        return source != null && source.isValid(broker) == Source.VALID;
+    }
 
     /**
      * For compiled expressions: check if the source of any module imported by the current
      * query has changed since compilation.
      */
-    public boolean checkModulesValid()
-    {
-    	for (final Module module : allModules.values() ) {
-    		if( !module.isInternalModule() ) {
-    			if( !( (ExternalModule)module ).moduleIsValid( getBroker() ) ) {
-                    LOG.debug( "Module with URI " + module.getNamespaceURI() + " has changed and needs to be reloaded" );
-                    return( false );
+    public boolean checkModulesValid() {
+        DBBroker broker = getBroker();
+
+        if (!isSourceValid(broker)) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Script '" + source + "' has changed and needs to be reloaded");
+            }
+            return false;
+        }
+
+        for (final Module module : allModules.values() ) {
+            if( !module.isInternalModule() ) {
+                if( !( (ExternalModule)module ).moduleIsValid( broker ) ) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Module with URI " + module.getNamespaceURI() + " has changed and needs to be reloaded");
+                    }
+                    return false;
                 }
-    		}
-    	}
-        return( true );
+            }
+        }
+        return true;
     }
 
 
