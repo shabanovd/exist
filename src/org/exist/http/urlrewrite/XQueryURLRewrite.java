@@ -92,6 +92,7 @@ import javax.xml.transform.OutputKeys;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
@@ -129,8 +130,7 @@ public class XQueryURLRewrite extends HttpServlet {
 
     private ServletConfig config;
 
-    private final Map<String, ModelAndView> urlCache =
-            Collections.synchronizedMap(new TreeMap<String, ModelAndView>());
+    private final Map<String, ModelAndView> urlCache = new ConcurrentHashMap<>();
 
     protected Subject defaultUser = null;
     protected BrokerPool pool;
@@ -140,7 +140,8 @@ public class XQueryURLRewrite extends HttpServlet {
     
     //private boolean checkModified = true;
 
-    private boolean compiledCache = true;
+    private boolean cacheCompiled = true;
+    private boolean cacheModelView = true;
 
     private RewriteConfig rewriteConfig;
 
@@ -157,10 +158,15 @@ public class XQueryURLRewrite extends HttpServlet {
 //        if (opt != null)
 //            checkModified = opt != null && opt.equalsIgnoreCase("true");
         
-        final String opt = filterConfig.getInitParameter("compiled-cache");
-        if (opt != null)
-        	{compiledCache = opt != null && opt.equalsIgnoreCase("true");}
-        
+        cacheCompiled = isTrue(filterConfig.getInitParameter("compiled-cache"), false);
+        cacheModelView = isTrue(filterConfig.getInitParameter("model-view-cache"), true);
+    }
+
+    private boolean isTrue(String opt, boolean def) {
+        if (opt == null) {
+            return def;
+        }
+        return opt.equalsIgnoreCase("true");
     }
 
     @Override
@@ -229,16 +235,37 @@ public class XQueryURLRewrite extends HttpServlet {
                     staticRewrite.updateRequest(modifiedRequest);
                 }
 
-                // check if the request URI is already in the url cache
-                ModelAndView modelView = getFromCache(
-                		request.getHeader("Host") + request.getRequestURI(),
-                		user);
+                String key = null;
+                ModelAndView modelView = null;
+                if (cacheModelView) {
+                    StringBuilder sb = new StringBuilder(500);
+
+                    sb.append(user.toString())
+                            .append(request.getHeader("Host"))
+                            .append(request.getRequestURI());
+
+                    for (Map.Entry<String, List<String>> entry : modifiedRequest.addedParams.entrySet()) {
+                        sb.append("|")
+                                .append(entry.getKey())
+                                .append("=");
+
+                        for (String value : entry.getValue()) {
+                            sb.append(value).append("~");
+                        }
+                        sb.append(";");
+                    }
+
+                    key = sb.toString();
+
+                    // check if the request URI is already in the url cache
+                    modelView = getFromCache(key, user);
+                }
                 
                 if (LOG.isDebugEnabled()) {
-                	LOG.debug(
-            			"Checked cache for URI: " + modifiedRequest.getRequestURI() + 
-            			" original: " + request.getRequestURI()
-        			);
+                    LOG.debug(
+                        "Checked cache for URI: " + modifiedRequest.getRequestURI() +
+                        " original: " + request.getRequestURI()
+                    );
                 }
                 // no: create a new model and view configuration
                 if (modelView == null) {
@@ -323,9 +350,11 @@ public class XQueryURLRewrite extends HttpServlet {
                         	return;
 	                    }
 	                    
-	                    if (modelView.useCache()) {
-                            LOG.debug("Caching request to " + request.getRequestURI());
-                            urlCache.put(modifiedRequest.getHeader("Host") + request.getRequestURI(), modelView);
+                        if (modelView.useCache() && key != null) {
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("Caching request to " + request.getRequestURI());
+                            }
+                            urlCache.put(key, modelView);
                         }
 
                     } finally {
@@ -688,7 +717,7 @@ public class XQueryURLRewrite extends HttpServlet {
         final XQueryPool xqyPool = xquery.getXQueryPool();
 		
         CompiledXQuery compiled = null;
-        if (compiledCache) {
+        if (cacheCompiled) {
 			compiled = xqyPool.borrowCompiledXQuery(broker, sourceInfo.source);
         }
         XQueryContext queryContext;
