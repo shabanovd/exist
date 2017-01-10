@@ -226,11 +226,6 @@ public class XQueryPool {
 
         lastTimeOutCheck.set(currentTime);
 
-        for (final Iterator it = pool.entrySet().iterator(); it.hasNext(); ) {
-            final Source next = (Source) it.next();
-            if (currentTime - next.getCacheTimestamp() > timeout) {
-                it.remove();
-            }
-        }
+        pool.entrySet().removeIf(next -> currentTime - next.getKey().getCacheTimestamp() > timeout);
     }
 }
