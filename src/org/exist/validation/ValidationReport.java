@@ -22,6 +22,8 @@
 package org.exist.validation;
 
 import java.io.PrintStream;
+
+import net.sf.saxon.s9api.XdmNode;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -49,7 +51,10 @@ public class ValidationReport implements ErrorHandler {
     
     private Throwable throwed = null;
     private String namespaceUri = null;
-        
+
+    public XdmNode result = null;
+    public boolean isValid = true;
+
     private ValidationReportItem createValidationReportItem(int type, SAXParseException exception){
         
         final ValidationReportItem vri = new ValidationReportItem();
@@ -127,7 +132,7 @@ public class ValidationReport implements ErrorHandler {
      * @return FALSE if no errors and warnings occurred.
      */
     public boolean isValid(){
-        return( (validationReport.size()==0) && (throwed==null) );
+        return( isValid && (validationReport.size()==0) && (throwed==null) );
     }
     
     public List<ValidationReportItem> getValidationReportItemList(){

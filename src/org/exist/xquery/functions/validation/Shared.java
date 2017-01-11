@@ -21,23 +21,23 @@
  */
 package org.exist.xquery.functions.validation;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.stream.StreamSource;
 
+import net.sf.saxon.s9api.XdmNode;
 import org.apache.log4j.Logger;
 
 import org.exist.dom.NodeProxy;
-import org.exist.memtree.DocumentImpl;
 import org.exist.memtree.MemTreeBuilder;
 import org.exist.memtree.NodeImpl;
 import org.exist.storage.serializers.Serializer;
@@ -291,6 +291,14 @@ public class Shared {
         builder.characters("" + report.getValidationDuration());
         builder.endElement();
 
+        if (report.result != null) {
+            try {
+                streamToNode(report.result, builder);
+            } catch (XMLStreamException e) {
+                LOG.error(e.getMessage(), e);
+            }
+        }
+
         // print exceptions if any
         if (report.getThrowable() != null) {
             builder.startElement("", "exception", "exception", null);
@@ -349,8 +357,42 @@ public class Shared {
         builder.endElement();
 
         // return result
-        return ((DocumentImpl) builder.getDocument()).getNode(nodeNr);
+        return builder.getDocument().getNode(nodeNr);
 
+    }
+
+    public static void streamToNode(XdmNode source, MemTreeBuilder builder) throws XMLStreamException {
+        final XMLInputFactory factory = XMLInputFactory.newInstance();
+        factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
+        factory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
+        final XMLStreamReader parser = factory.createXMLStreamReader(new StringReader(source.toString()));
+//        final MemTreeBuilder builder = new MemTreeBuilder();
+//        builder.startDocument();
+        int event;
+        while ((event = parser.next()) != XMLStreamConstants.END_DOCUMENT) {
+            switch (event) {
+                case XMLStreamConstants.START_ELEMENT :
+                    final AttributesImpl attribs = new AttributesImpl();
+                    for (int i = 0; i < parser.getAttributeCount(); i++) {
+                        final javax.xml.namespace.QName qn = parser.getAttributeName(i);
+                        attribs.addAttribute(qn.getNamespaceURI(), qn.getLocalPart(), qn.getPrefix() + ':' + qn.getLocalPart(),
+                                parser.getAttributeType(i), parser.getAttributeValue(i));
+                    }
+                    builder.startElement(org.exist.dom.QName.fromJavaQName(parser.getName()), attribs);
+//                    for (int i = 0; i < parser.getNamespaceCount(); i++) {
+//                        builder.namespaceNode(parser.getNamespacePrefix(i), parser.getNamespaceURI(i));
+//                    }
+                    break;
+                case XMLStreamConstants.END_ELEMENT :
+                    builder.endElement();
+                    break;
+                case XMLStreamConstants.CHARACTERS :
+                    builder.characters(parser.getText());
+                    break;
+            }
+        }
+//        builder.endDocument();
+//        return builder.getDocument().getDocumentElement();
     }
 
     /**

@@ -22,6 +22,7 @@ package org.exist.xquery.functions.validation;
 import java.io.*;
 
 import net.sf.saxon.s9api.*;
+import net.sf.saxon.s9api.QName;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
@@ -33,15 +34,13 @@ import org.exist.xquery.*;
 import org.exist.xquery.value.*;
 
 import javax.xml.parsers.*;
-import javax.xml.transform.Source;
+import javax.xml.transform.*;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
-import javax.xml.transform.Result;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 
-import java.net.URL;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -144,7 +143,7 @@ public class ValidationXSL extends BasicFunction  {
             report.start();
 
             StreamSource data = Shared.getStreamSource(args[0].itemAt(0), context);
-            validate(processor, transformer, data, true);
+            validate(processor, transformer, data, report, true);
 
             report.stop();
 
@@ -220,7 +219,7 @@ public class ValidationXSL extends BasicFunction  {
         try (InputStream stream = ValidationXSL.class.getResourceAsStream(
                 "iso-schematron-xslt2/"+name)) {
 
-            System.out.println("stream: "+stream);
+            //System.out.println("stream: "+stream);
             return compiler.compile(new StreamSource(stream));
         }
     }
@@ -268,7 +267,7 @@ public class ValidationXSL extends BasicFunction  {
         return compiler.compile(chainResult.getXdmNode().asSource());
     }
 
-    public Result validate(Processor processor, XsltTransformer transformer, Source xmlSource, boolean svrlReport) {
+    public Result validate(Processor processor, XsltTransformer transformer, Source xmlSource, ValidationReport report, boolean svrlReport) {
         if (xmlSource == null) {
             throw new IllegalArgumentException("Nothing to validate.");
         }
@@ -280,7 +279,7 @@ public class ValidationXSL extends BasicFunction  {
                 xmlSource = new DOMSource(doc, xmlSource.getSystemId());
             }
         }
-        int totalRuleViolations = 0;
+
         XdmDestination results = new XdmDestination();
         try {
             transformer.setSource(xmlSource);
@@ -289,11 +288,16 @@ public class ValidationXSL extends BasicFunction  {
         } catch (SaxonApiException e1) {
             LOG.warn(e1.getMessage());
         }
-        totalRuleViolations = countRuleViolations(processor, results);
-//        if (LOG.isLoggable(Level.FINER)) {
-//            LOG.log(Level.FINER, "{0} Schematron rule violations found", totalRuleViolations);
-//            writeResultsToTempFile(results);
-//        }
+
+        report.result = results.getXdmNode();
+
+        int totalRuleViolations = countRuleViolations(processor, results);
+        report.isValid = totalRuleViolations == 0;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(totalRuleViolations+" Schematron rule violations found");
+            //writeResultsToTempFile(results);
+        }
         NodeInfo nodeInfo = results.getXdmNode().getUnderlyingNode();
 
         if (svrlReport) {
