@@ -31,7 +31,6 @@ import org.junit.*;
 
 import static org.junit.Assert.*;
 
-import org.apache.log4j.BasicConfigurator;
 import org.exist.collections.IndexInfo;
 
 import org.exist.security.Subject;
@@ -163,7 +162,6 @@ public class ValidationFunctions_DTD_Test {
 
     @BeforeClass
     public static void startup() throws Exception {
-        BasicConfigurator.configure();
         config = new Configuration();
         config.setProperty(XMLReaderObjectFactory.PROPERTY_VALIDATION_MODE, "auto");
 

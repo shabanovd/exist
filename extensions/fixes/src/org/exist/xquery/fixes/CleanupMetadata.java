@@ -19,7 +19,8 @@
  */
 package org.exist.xquery.fixes;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentMetadata;
@@ -34,7 +35,7 @@ import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 
 public class CleanupMetadata extends BasicFunction {
-    protected static final Logger logger = Logger.getLogger(CleanupMetadata.class);
+    protected static final Logger logger = LogManager.getLogger(CleanupMetadata.class);
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
             new QName("cleanup-metadata", Module.NAMESPACE_URI, Module.PREFIX),

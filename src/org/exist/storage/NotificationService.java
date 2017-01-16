@@ -21,7 +21,8 @@
  */
 package org.exist.storage;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.StoredNode;
 import org.exist.numbering.NodeId;
@@ -40,7 +41,7 @@ public class NotificationService extends IdentityHashMap<UpdateListener, Object>
 
 	private static final long serialVersionUID = -3629584664969740903L;
 
-	private final static Logger LOG = Logger.getLogger(NotificationService.class);
+	private final static Logger LOG = LogManager.getLogger(NotificationService.class);
 	
 	public NotificationService() {
 		super();

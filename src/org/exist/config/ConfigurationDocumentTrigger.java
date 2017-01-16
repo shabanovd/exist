@@ -24,7 +24,8 @@ package org.exist.config;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.FilteringTrigger;
@@ -50,7 +51,7 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public class ConfigurationDocumentTrigger extends FilteringTrigger {
 
-    protected final static Logger LOG = Logger.getLogger(ConfigurationDocumentTrigger.class);
+    protected final static Logger LOG = LogManager.getLogger(ConfigurationDocumentTrigger.class);
 
 //    @Override
 //    public void finish(int event, DBBroker broker, Txn transaction,

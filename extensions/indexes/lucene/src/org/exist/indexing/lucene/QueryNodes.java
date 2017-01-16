@@ -22,7 +22,8 @@ package org.exist.indexing.lucene;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsConfig;
@@ -59,7 +60,7 @@ import org.w3c.dom.Node;
  */
 public class QueryNodes {
 
-    protected final static Logger LOG = Logger.getLogger(QueryNodes.class);
+    protected final static Logger LOG = LogManager.getLogger(QueryNodes.class);
 
 	public static Facets query(LuceneIndexWorker worker,
 			QName qname, int contextId, 

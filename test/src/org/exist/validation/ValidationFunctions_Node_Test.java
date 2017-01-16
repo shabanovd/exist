@@ -28,7 +28,8 @@ import org.junit.*;
 //import org.apache.log4j.BasicConfigurator;
 //import org.apache.log4j.ConsoleAppender;
 //import org.apache.log4j.Layout;
-//import org.apache.log4j.Logger;
+//import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 //import org.apache.log4j.PatternLayout;
 //import org.exist.security.Permission;
 //import org.exist.security.UnixStylePermission;
@@ -58,7 +59,7 @@ public class ValidationFunctions_Node_Test {
 
     }
 
-//    private final static Logger logger = Logger.getLogger(ValidationFunctions_Node_Test.class);
+//    private final static Logger logger = LogManager.getLogger(ValidationFunctions_Node_Test.class);
 //
 //    private static String eXistHome = ConfigurationHelper.getExistHome().getAbsolutePath();
 //

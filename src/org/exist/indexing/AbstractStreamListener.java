@@ -19,7 +19,8 @@
  */
 package org.exist.indexing;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.AttrImpl;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.ElementImpl;
@@ -34,7 +35,7 @@ import org.exist.storage.txn.Txn;
  */
 public abstract class AbstractStreamListener implements StreamListener {
 
-    protected final static Logger LOG = Logger.getLogger(AbstractStreamListener.class);
+    protected final static Logger LOG = LogManager.getLogger(AbstractStreamListener.class);
     
     private StreamListener next = null;
 

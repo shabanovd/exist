@@ -23,7 +23,8 @@ package org.exist.backup;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.collections.Collection;
 import org.exist.dom.*;
@@ -91,7 +92,7 @@ import java.util.*;
  */
 public class SystemExport
 {
-    public final static Logger     LOG                     = Logger.getLogger( SystemExport.class );
+    public final static Logger     LOG                     = LogManager.getLogger( SystemExport.class );
 
     private static final XmldbURI   TEMP_COLLECTION         = XmldbURI.createInternal(XmldbURI.TEMP_COLLECTION);
     private static final XmldbURI   CONTENTS_URI            = XmldbURI.createInternal( "__contents__.xml" );

@@ -23,7 +23,8 @@ package org.exist.storage;
 
 //import java.io.EOFException;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.xquery.XQueryWatchDog;
 import org.w3c.dom.Node;
 import org.exist.EXistException;
@@ -89,7 +90,7 @@ import java.util.TreeMap;
  */
 public class NativeValueIndex implements ContentLoadingObserver {
 
-    private final static Logger LOG = Logger.getLogger(NativeValueIndex.class);
+    private final static Logger LOG = LogManager.getLogger(NativeValueIndex.class);
 
     public static final String FILE_NAME = "values.dbx";
     public static final String FILE_KEY_IN_CONFIG = "db-connection.values";

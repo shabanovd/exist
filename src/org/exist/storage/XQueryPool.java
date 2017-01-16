@@ -25,7 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsAttribute;
 import org.exist.security.Permission;
@@ -52,7 +53,7 @@ public class XQueryPool {
     private final static long TIMEOUT = 120000L;
     private final static long TIMEOUT_CHECK_INTERVAL = 30000L;
 
-    private final static Logger LOG = Logger.getLogger(XQueryPool.class);
+    private final static Logger LOG = LogManager.getLogger(XQueryPool.class);
 
     private ConcurrentMap<Source, Deque<CompiledXQuery>> pool = new ConcurrentHashMap<>();
 

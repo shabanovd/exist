@@ -32,7 +32,8 @@ import java.util.TimeZone;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
@@ -51,7 +52,7 @@ import org.exist.xquery.value.Type;
 
 public class FnSnapshot extends BasicFunction {
 
-	protected final static Logger logger = Logger.getLogger(FnSnapshot.class);
+	protected final static Logger logger = LogManager.getLogger(FnSnapshot.class);
 	
 	protected final static QName NAME = 
 		new QName("snapshot", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);

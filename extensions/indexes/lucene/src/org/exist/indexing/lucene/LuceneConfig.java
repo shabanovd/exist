@@ -28,7 +28,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.exist.dom.QName;
@@ -36,7 +37,7 @@ import org.exist.storage.NodePath;
 
 public class LuceneConfig {
 
-	protected final static Logger LOG = Logger.getLogger(LuceneConfig.class);
+	protected final static Logger LOG = LogManager.getLogger(LuceneConfig.class);
 	
 	private Map<QName, LuceneConfigText> paths = new TreeMap<QName, LuceneConfigText>();
 	private List<LuceneConfigText> wildcardPaths = new ArrayList<LuceneConfigText>();

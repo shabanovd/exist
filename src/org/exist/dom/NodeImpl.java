@@ -1,6 +1,7 @@
 package org.exist.dom;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
 import org.w3c.dom.DOMException;
@@ -11,7 +12,7 @@ import org.w3c.dom.UserDataHandler;
 
 public abstract class NodeImpl implements Node, QNameable, NodeAtExist {
 
-    protected final static Logger LOG = Logger.getLogger(NodeImpl.class);    
+    protected final static Logger LOG = LogManager.getLogger(NodeImpl.class);
 
     /**
      * @see org.w3c.dom.Node#cloneNode(boolean)

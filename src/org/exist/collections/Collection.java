@@ -30,7 +30,8 @@ import java.util.Observer;
 import java.util.TreeMap;
 
 import org.apache.commons.io.input.CloseShieldInputStream;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.*;
 import org.exist.collections.triggers.*;
 import org.exist.dom.*;
@@ -85,7 +86,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 
     private final static int DOCUMENT_SIZE = 450;
     
-    private final static Logger LOG = Logger.getLogger(Collection.class);
+    private final static Logger LOG = LogManager.getLogger(Collection.class);
     
     public final static int UNKNOWN_COLLECTION_ID = -1;
     

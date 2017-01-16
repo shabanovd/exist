@@ -1,6 +1,7 @@
 package org.exist.storage.dom;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.NodeProxy;
 import org.exist.dom.StoredNode;
@@ -27,7 +28,7 @@ import java.util.Iterator;
  */
 public final class NodeIterator implements Iterator<StoredNode> {
 
-    private final static Logger LOG = Logger.getLogger(NodeIterator.class);
+    private final static Logger LOG = LogManager.getLogger(NodeIterator.class);
 
     private DOMFile db = null;
     private StoredNode node = null;

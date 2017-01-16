@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
 import org.exist.util.DatabaseConfigurationException;
@@ -42,7 +43,7 @@ public class ExtractorConfig {
 	private final static String CONFIG_ROOT = "extractor";
 	private final static String EXTRACT_ELEMENT = "extract";
 	
-	private final static Logger LOG = Logger.getLogger(ExtractorConfig.class);
+	private final static Logger LOG = LogManager.getLogger(ExtractorConfig.class);
 	
     private Map<QName, ExtractConfig> paths = new TreeMap<QName, ExtractConfig>();
     private List<ExtractConfig> wildcardPaths = new ArrayList<ExtractConfig>();

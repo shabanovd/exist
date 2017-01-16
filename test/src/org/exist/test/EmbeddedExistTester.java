@@ -30,7 +30,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import javax.xml.transform.OutputKeys;
-import org.apache.log4j.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.util.MimeTable;
 import org.exist.util.MimeType;
@@ -60,7 +61,7 @@ import org.xmldb.api.modules.XQueryService;
  */
 public class EmbeddedExistTester {
 
-    protected final static Logger LOG = Logger.getLogger(EmbeddedExistTester.class);
+    protected final static Logger LOG = LogManager.getLogger(EmbeddedExistTester.class);
     protected final static String URI = XmldbURI.LOCAL_DB;
     protected final static String DRIVER = "org.exist.xmldb.DatabaseImpl";
     
@@ -71,24 +72,11 @@ public class EmbeddedExistTester {
     protected static CollectionManagementService cmService = null;
     protected static XQueryService xqService = null;
 
-    private static boolean isInitialized=false;
-
-    public static void initLog4J() {
-        if(!isInitialized){
-            Layout layout = new PatternLayout("%d{ISO8601} [%t] %-5p (%F [%M]:%L) - %m %n");
-            Appender appender = new ConsoleAppender(layout);
-            BasicConfigurator.resetConfiguration();
-            BasicConfigurator.configure(appender);
-            LOG.setLevel(Level.INFO);
-            isInitialized=true;
-        }
-    }
-
     @BeforeClass
     public static void before() {
         try {
             System.out.println("Starting test..");
-            initLog4J();
+
             LOG.info("Starting test..");
 
             Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");

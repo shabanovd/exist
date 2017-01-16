@@ -23,7 +23,8 @@ package org.exist.xquery.update;
 
 import java.util.Iterator;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.triggers.DocumentTrigger;
@@ -66,8 +67,7 @@ import org.xml.sax.SAXException;
 public abstract class Modification extends AbstractExpression
 {
 
-	protected final static Logger LOG =
-		Logger.getLogger(Modification.class);
+	protected final static Logger LOG = LogManager.getLogger(Modification.class);
 	
 	protected final Expression select;
 	protected final Expression value;

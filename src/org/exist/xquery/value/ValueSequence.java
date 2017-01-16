@@ -20,7 +20,8 @@
  */
 package org.exist.xquery.value;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.dom.*;
 import org.exist.memtree.DocumentImpl;
@@ -45,7 +46,7 @@ import java.util.TreeMap;
  */
 public class ValueSequence extends AbstractSequence implements MemoryNodeSet {
 
-	private final Logger LOG = Logger.getLogger(ValueSequence.class);
+	private final Logger LOG = LogManager.getLogger(ValueSequence.class);
 	
     //Do not change the -1 value since size computation relies on this start value
     private final static int UNSET_SIZE = -1;

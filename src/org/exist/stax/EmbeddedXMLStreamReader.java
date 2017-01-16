@@ -33,7 +33,8 @@ import javax.xml.stream.Location;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.StreamFilter;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.AttrImpl;
 import org.exist.dom.CharacterDataImpl;
 import org.exist.dom.DocumentImpl;
@@ -59,7 +60,7 @@ import org.w3c.dom.ProcessingInstruction;
  */
 public class EmbeddedXMLStreamReader implements ExtendedXMLStreamReader {
 
-	private static final Logger LOG = Logger.getLogger(EmbeddedXMLStreamReader.class);
+	private static final Logger LOG = LogManager.getLogger(EmbeddedXMLStreamReader.class);
 
     private RawNodeIterator iterator;
 

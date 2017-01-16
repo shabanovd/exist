@@ -35,7 +35,8 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.stream.StreamSource;
 
 import net.sf.saxon.s9api.XdmNode;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.exist.dom.NodeProxy;
 import org.exist.memtree.MemTreeBuilder;
@@ -65,7 +66,7 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public class Shared {
 
-    private final static Logger LOG = Logger.getLogger(Shared.class);
+    private final static Logger LOG = LogManager.getLogger(Shared.class);
     public final static String simplereportText = "true() if the " +
             "document is valid and no single problem occured, false() for " +
             "all other conditions. For detailed validation information " +

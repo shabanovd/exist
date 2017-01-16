@@ -19,7 +19,8 @@
  */
 package org.exist.xquery.restore;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.TrashManager;
 import org.exist.backup.BackupDescriptor;
@@ -62,7 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class SystemImport {
     
-    public final static Logger LOG = Logger.getLogger( SystemImport.class );
+    public final static Logger LOG = LogManager.getLogger( SystemImport.class );
 
     private static AtomicInteger processing = new AtomicInteger();
     public static boolean isRunning() {

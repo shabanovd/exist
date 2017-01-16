@@ -19,7 +19,8 @@
  */
 package org.exist.indexing.lucene;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
@@ -52,7 +53,7 @@ import org.apache.lucene.util.AttributeSource.State;
 
 public class LuceneMatchChunkListener extends AbstractMatchListener {
 
-    private static final Logger LOG = Logger.getLogger(LuceneMatchChunkListener.class);
+    private static final Logger LOG = LogManager.getLogger(LuceneMatchChunkListener.class);
     
     public static final byte DO_NOT_CHUNK = 1;
     public static final byte CHUNK = 1;

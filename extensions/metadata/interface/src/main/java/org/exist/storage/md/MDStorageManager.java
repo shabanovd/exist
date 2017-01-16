@@ -25,7 +25,8 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.Resource;
@@ -59,7 +60,7 @@ import static org.exist.storage.md.MetaData.*;
  */
 public class MDStorageManager implements Plug, BackupHandler, RestoreHandler {
 	
-    protected final static Logger LOG = Logger.getLogger(MDStorageManager.class);
+    protected final static Logger LOG = LogManager.getLogger(MDStorageManager.class);
 
     public final static String LUCENE_ID = "org.exist.indexing.lucene.LuceneIndex";
 

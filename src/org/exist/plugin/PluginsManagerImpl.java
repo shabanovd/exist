@@ -25,7 +25,8 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.util.*;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Database;
 import org.exist.EXistException;
 import org.exist.LifeCycle;
@@ -59,7 +60,7 @@ import javax.xml.stream.XMLStreamWriter;
 @ConfigurationClass("plugin-manager")
 public class PluginsManagerImpl implements Configurable, PluginsManager, LifeCycle {
 
-	private final static Logger LOG = Logger.getLogger(PluginsManagerImpl.class);
+	private final static Logger LOG = LogManager.getLogger(PluginsManagerImpl.class);
 
 	public final static XmldbURI COLLETION_URI = XmldbURI.SYSTEM.append("plugins");
 	public final static XmldbURI CONFIG_FILE_URI = XmldbURI.create("config.xml");

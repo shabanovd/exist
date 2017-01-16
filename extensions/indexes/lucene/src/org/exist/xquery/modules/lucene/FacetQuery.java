@@ -19,7 +19,8 @@
  */
 package org.exist.xquery.modules.lucene;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.NodeSet;
 import org.exist.dom.QName;
@@ -40,7 +41,7 @@ import java.util.Properties;
 
 public class FacetQuery extends Function implements Optimizable {
 
-	protected static final Logger logger = Logger.getLogger(FacetQuery.class);
+	protected static final Logger logger = LogManager.getLogger(FacetQuery.class);
 
     public final static FunctionSignature[] signatures = {
         new FunctionSignature(

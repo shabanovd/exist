@@ -21,7 +21,8 @@ package org.exist.storage.md;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.Resource;
 import org.exist.collections.Collection;
@@ -47,7 +48,7 @@ public abstract class MetaData implements MetaStorage {
     public final static String PREFIX = "md";
     public final static String NAMESPACE_URI = "http://exist-db.org/metadata";
 
-    protected final static Logger LOG = Logger.getLogger(MetaData.class);
+    protected final static Logger LOG = LogManager.getLogger(MetaData.class);
 
     public abstract DocumentImpl getDocument(String uuid) throws EXistException, PermissionDeniedException;
 

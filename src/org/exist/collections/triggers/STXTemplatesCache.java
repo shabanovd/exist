@@ -26,7 +26,8 @@ import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TemplatesHandler;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.DocumentImpl;
 import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
@@ -40,7 +41,7 @@ import org.xml.sax.SAXException;
  */
 public class STXTemplatesCache {
 
-    protected Logger LOG = Logger.getLogger(getClass());
+    protected Logger LOG = LogManager.getLogger(getClass());
 
     private Map<XmldbURI, CachedTemplate> cache = new HashMap<XmldbURI, CachedTemplate>();
 

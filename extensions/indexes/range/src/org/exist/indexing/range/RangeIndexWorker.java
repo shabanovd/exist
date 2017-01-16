@@ -21,7 +21,8 @@
  */
 package org.exist.indexing.range;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -66,7 +67,7 @@ import java.util.*;
  */
 public class RangeIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
-    private static final Logger LOG = Logger.getLogger(RangeIndexWorker.class);
+    private static final Logger LOG = LogManager.getLogger(RangeIndexWorker.class);
 
     public static final String FIELD_NODE_ID = "nodeId";
     public static final String FIELD_DOC_ID = "docId";

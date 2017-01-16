@@ -19,7 +19,8 @@
  */
 package org.exist.xquery.fixes;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.QName;
@@ -34,7 +35,7 @@ import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 
 public class CleanupRemove extends BasicFunction {
-    protected static final Logger logger = Logger.getLogger(CleanupRemove.class);
+    protected static final Logger logger = LogManager.getLogger(CleanupRemove.class);
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
             new QName("cleanup-remove", Module.NAMESPACE_URI, Module.PREFIX),

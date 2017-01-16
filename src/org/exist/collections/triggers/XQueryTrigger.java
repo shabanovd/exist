@@ -28,7 +28,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.NodeSet;
@@ -81,7 +82,7 @@ import org.xml.sax.ContentHandler;
 */
 public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, CollectionTrigger {
 
-        protected Logger LOG = Logger.getLogger(getClass());
+        protected Logger LOG = LogManager.getLogger(getClass());
     
 	private final static String NAMESPACE = "http://exist-db.org/xquery/trigger";
 

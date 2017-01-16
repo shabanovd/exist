@@ -1,6 +1,7 @@
 package org.exist.indexing.range;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.exist.dom.QName;
 import org.exist.storage.NodePath;
@@ -11,7 +12,7 @@ import java.util.TreeMap;
 
 public class RangeIndexConfig {
 
-    protected static final Logger LOG = Logger.getLogger(RangeIndexConfig.class);
+    protected static final Logger LOG = LogManager.getLogger(RangeIndexConfig.class);
 
     protected Map<QName, RangeIndexConfigElement> paths = new TreeMap<QName, RangeIndexConfigElement>();
 

@@ -22,7 +22,8 @@
 package org.exist.xquery.modules.httpclient;
 
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.OptionsMethod;
@@ -64,7 +65,7 @@ import java.util.Map;
  */
 public abstract class BaseHTTPClientFunction extends BasicFunction {
 
-    protected static final Logger logger = Logger.getLogger(BaseHTTPClientFunction.class);
+    protected static final Logger logger = LogManager.getLogger(BaseHTTPClientFunction.class);
 
     protected static final FunctionParameterSequenceType URI_PARAM = new FunctionParameterSequenceType("url", Type.ANY_URI, Cardinality.EXACTLY_ONE, "The URL to process");
     protected static final FunctionParameterSequenceType CONTENT_PARAM = new FunctionParameterSequenceType("content", Type.ITEM, Cardinality.EXACTLY_ONE, "The XML or binary payload/content. If it is an XML Node it will be serialized. If it is a binary stream it pass as it, any other type will be atomized into a string.");

@@ -19,7 +19,8 @@
  */
 package org.exist.storage.serializers;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
@@ -28,7 +29,7 @@ import java.util.List;
  */
 public class ChainOfReceiversFactory {
 
-    private static final Logger LOG = Logger.getLogger(ChainOfReceiversFactory.class);
+    private static final Logger LOG = LogManager.getLogger(ChainOfReceiversFactory.class);
 
     private ChainOfReceivers first = null;
     private ChainOfReceivers last = null;

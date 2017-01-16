@@ -20,7 +20,8 @@
 package org.exist.xquery.backupsdiffs;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.backup.BackupDescriptor;
 import org.exist.backup.restore.listener.RestoreListener;
@@ -40,7 +41,7 @@ import java.util.concurrent.ExecutorService;
 
 public class BackupsDiffsHandler extends DefaultHandler {
 
-    private final static Logger LOG = Logger.getLogger(BackupsDiffsHandler.class);
+    private final static Logger LOG = LogManager.getLogger(BackupsDiffsHandler.class);
     private final static SAXParserFactory saxFactory = SAXParserFactory.newInstance();
     static {
         saxFactory.setNamespaceAware(true);

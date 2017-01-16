@@ -19,7 +19,8 @@
  */
 package org.exist.indexing.lucene;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -58,7 +59,7 @@ public class LuceneIndex extends AbstractIndex implements RawBackupSupport {
     
     public final static Version LUCENE_VERSION_IN_USE = Version.LUCENE_4_9;
 
-    protected static final Logger LOG = Logger.getLogger(LuceneIndexWorker.class);
+    protected static final Logger LOG = LogManager.getLogger(LuceneIndexWorker.class);
 
     public final static String ID = LuceneIndex.class.getName();
 

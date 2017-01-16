@@ -36,7 +36,8 @@ import java.util.Random;
 
 import javax.xml.transform.OutputKeys;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
@@ -79,7 +80,7 @@ import org.xmldb.api.base.XMLDBException;
  */
 public class LocalCollection extends AbstractLocal implements CollectionImpl {
 
-    private static Logger LOG = Logger.getLogger(LocalCollection.class);
+    private static Logger LOG = LogManager.getLogger(LocalCollection.class);
 
     /**
      * Property to be passed to {@link #setProperty(String, String)}.

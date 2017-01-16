@@ -22,7 +22,8 @@ package org.exist.xquery.modules.ngram.query;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.EmptyNodeSet;
 import org.exist.dom.Match;
@@ -41,7 +42,7 @@ public class WildcardedExpressionSequence implements EvaluatableExpression {
      *
      */
     private final List<WildcardedExpression> expressions;
-    private static Logger LOG = Logger.getLogger(WildcardedExpressionSequence.class);
+    private static Logger LOG = LogManager.getLogger(WildcardedExpressionSequence.class);
 
     public WildcardedExpressionSequence(final List<WildcardedExpression> expressions) {
 

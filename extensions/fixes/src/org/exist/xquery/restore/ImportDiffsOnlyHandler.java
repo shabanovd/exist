@@ -22,7 +22,8 @@ package org.exist.xquery.restore;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.backup.*;
 import org.exist.backup.restore.listener.RestoreListener;
@@ -79,7 +80,7 @@ import static org.exist.dom.DocumentImpl.XML_FILE;
 
 public class ImportDiffsOnlyHandler extends DefaultHandler {
 
-    private final static Logger LOG = Logger.getLogger(ImportDiffsOnlyHandler.class);
+    private final static Logger LOG = LogManager.getLogger(ImportDiffsOnlyHandler.class);
     private final static SAXParserFactory saxFactory = SAXParserFactory.newInstance();
     static {
         saxFactory.setNamespaceAware(true);

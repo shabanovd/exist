@@ -26,7 +26,8 @@ import java.net.URL;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.protocolhandler.protocols.xmldb.Handler;
 
 /**
@@ -39,7 +40,7 @@ import org.exist.protocolhandler.protocols.xmldb.Handler;
  */
 public class eXistURLStreamHandlerFactory implements URLStreamHandlerFactory {
     
-    private final static Logger LOG = Logger.getLogger(eXistURLStreamHandlerFactory.class);
+    private final static Logger LOG = LogManager.getLogger(eXistURLStreamHandlerFactory.class);
     
     public final static String JAVA_PROTOCOL_HANDLER_PKGS="java.protocol.handler.pkgs";
     public final static String EXIST_PROTOCOL_HANDLER="org.exist.protocolhandler.protocols";

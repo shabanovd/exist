@@ -19,7 +19,8 @@
  */
 package org.exist.xquery.restore;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
 import org.exist.backup.BackupDescriptor;
 import org.exist.backup.restore.listener.RestoreListener;
@@ -71,7 +72,7 @@ import java.util.Stack;
  */
 public class ImportNewResourcesHandler extends DefaultHandler {
 
-    private final static Logger LOG = Logger.getLogger(ImportNewResourcesHandler.class);
+    private final static Logger LOG = LogManager.getLogger(ImportNewResourcesHandler.class);
     private final static SAXParserFactory saxFactory = SAXParserFactory.newInstance();
     static {
         saxFactory.setNamespaceAware(true);

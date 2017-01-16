@@ -21,7 +21,8 @@
  */
 package org.exist.contentextraction;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.dom.StoredNode;
 import org.exist.memtree.DocumentBuilderReceiver;
@@ -46,7 +47,7 @@ import org.xml.sax.SAXException;
  */
 public class ContentReceiver implements Receiver {
 
-    private final static Logger LOG = Logger.getLogger(ContentReceiver.class);
+    private final static Logger LOG = LogManager.getLogger(ContentReceiver.class);
     
     private final ValueSequence result = new ValueSequence();
     private final FunctionReference ref;

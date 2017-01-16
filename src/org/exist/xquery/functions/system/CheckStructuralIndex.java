@@ -19,7 +19,8 @@
  */
 package org.exist.xquery.functions.system;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.MutableDocumentSet;
@@ -39,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class CheckStructuralIndex extends BasicFunction {
-    protected static final Logger logger = Logger.getLogger(CheckStructuralIndex.class);
+    protected static final Logger logger = LogManager.getLogger(CheckStructuralIndex.class);
     public final static FunctionSignature signature =
         new FunctionSignature(
             new QName("check-structural-index", SystemModule.NAMESPACE_URI, SystemModule.PREFIX),

@@ -19,7 +19,8 @@
  */
 package org.exist.xquery.restore;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.backup.restore.listener.RestoreListener;
 import org.exist.dom.QName;
 import org.exist.memtree.MemTreeBuilder;
@@ -33,7 +34,7 @@ import java.io.File;
 
 public class FnImportChanges extends BasicFunction {
 
-	protected final static Logger logger = Logger.getLogger(FnImportChanges.class);
+	protected final static Logger logger = LogManager.getLogger(FnImportChanges.class);
 
 	protected final static QName NAME = 
 	        new QName("import", Module.NAMESPACE_URI, Module.PREFIX);

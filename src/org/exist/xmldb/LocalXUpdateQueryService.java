@@ -1,6 +1,7 @@
 package org.exist.xmldb;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
 
 import org.exist.dom.DefaultDocumentSet;
@@ -33,8 +34,7 @@ import java.net.URISyntaxException;
  */
 public class LocalXUpdateQueryService implements XUpdateQueryService {
 
-	private final static Logger LOG = 
-		Logger.getLogger(LocalXUpdateQueryService.class);
+	private final static Logger LOG = LogManager.getLogger(LocalXUpdateQueryService.class);
 
 	private BrokerPool pool;
 	private Subject user;

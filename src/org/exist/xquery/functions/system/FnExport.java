@@ -19,7 +19,8 @@
  */
 package org.exist.xquery.functions.system;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.memtree.MemTreeBuilder;
 import org.exist.xquery.BasicFunction;
@@ -44,7 +45,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 public class FnExport extends BasicFunction {
 
-	protected final static Logger logger = Logger.getLogger(FnExport.class);
+	protected final static Logger logger = LogManager.getLogger(FnExport.class);
 	
 	protected final static QName NAME = 
 		new QName("export", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);

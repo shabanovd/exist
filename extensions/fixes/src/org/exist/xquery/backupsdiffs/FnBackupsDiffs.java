@@ -19,7 +19,8 @@
  */
 package org.exist.xquery.backupsdiffs;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.backup.BackupDescriptor;
 import org.exist.backup.FileSystemBackupDescriptor;
 import org.exist.backup.ZipArchiveBackupDescriptor;
@@ -52,7 +53,7 @@ import java.util.concurrent.TimeUnit;
 
 public class FnBackupsDiffs extends BasicFunction {
 
-    protected final static Logger LOG = Logger.getLogger(FnBackupsDiffs.class);
+    protected final static Logger LOG = LogManager.getLogger(FnBackupsDiffs.class);
 
     protected final static QName NAME =
             new QName("backups-diffs", Module.NAMESPACE_URI, Module.PREFIX);
