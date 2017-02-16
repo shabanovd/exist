@@ -2948,27 +2948,37 @@ public class NativeBroker extends DBBroker {
      * the document if node is null.
      */
     private void reindexXMLResource(Txn txn, DocumentImpl doc, int mode) {
-        if(doc.isCollectionConfig())
-            {doc.getCollection().setCollectionConfigEnabled(false);}
+        if (doc.isCollectionConfig()) {
+            doc.getCollection().setCollectionConfigEnabled(false);
+        }
 
-        //check that document still there
-        Collection col = doc.getCollection();
-        if (col == null || !col.hasDocument(doc.getFileURI())) return;
+        try {
+            doc.getUpdateLock().acquire(Lock.READ_LOCK);
 
-        indexController.setDocument(doc, StreamListener.STORE);
-        
-        if (doc instanceof BinaryDocument) {
-            indexController.indexBinary((BinaryDocument) doc);
+            //check that document still there
+            Collection col = doc.getCollection();
+            if (col == null || !col.hasDocument(doc.getFileURI())) return;
 
-        } else {
-            final StreamListener listener = indexController.getStreamListener();
-            final NodeList nodes = doc.getChildNodes();
-            for (int i = 0; i < nodes.getLength(); i++) {
-                final StoredNode node = (StoredNode) nodes.item(i);
-                final Iterator<StoredNode> iterator = getNodeIterator(node);
-                iterator.next();
-                scanNodes(txn, iterator, node, new NodePath(), mode, listener);
+            indexController.setDocument(doc, StreamListener.STORE);
+
+            if (doc instanceof BinaryDocument) {
+                indexController.indexBinary((BinaryDocument) doc);
+
+            } else {
+                final StreamListener listener = indexController.getStreamListener();
+                final NodeList nodes = doc.getChildNodes();
+                for (int i = 0; i < nodes.getLength(); i++) {
+                    final StoredNode node = (StoredNode) nodes.item(i);
+                    final Iterator<StoredNode> iterator = getNodeIterator(node);
+                    iterator.next();
+                    scanNodes(txn, iterator, node, new NodePath(), mode, listener);
+                }
             }
+        } catch (LockException e) {
+            throw new RuntimeException("document '"+doc.getURI()+"' can't be read locked", e);
+
+        } finally {
+            doc.getUpdateLock().release(Lock.READ_LOCK);
         }
         flush();
         if(doc.isCollectionConfig())
