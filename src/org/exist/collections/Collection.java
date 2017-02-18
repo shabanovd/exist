@@ -46,6 +46,7 @@ import org.exist.storage.index.BFile;
 import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.io.VariableByteOutputStream;
 import org.exist.storage.lock.*;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.sync.Sync;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
@@ -312,7 +313,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * Closes the collection, i.e. releases the lock held by
      * the current thread. This is a shortcut for getLock().release().
      */
-    public void release(final int mode) {
+    public void release(final LockMode mode) {
         getLock().release(mode);
     }
 
@@ -394,13 +395,13 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
         
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             return subCollections.stableIterator();
         } catch(final LockException e) {
             LOG.warn(e.getMessage(), e);
             return null;
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -431,7 +432,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         
         final ArrayList<Collection> collectionList = new ArrayList<Collection>(subCollections.size());
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             for(final Iterator<XmldbURI> i = subCollections.iterator(); i.hasNext(); ) {
                 final XmldbURI childName = i.next();
                 //TODO : resolve URI !
@@ -447,7 +448,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         } catch(final LockException e) {
             LOG.warn(e.getMessage(), e);
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
         return collectionList;
     }
@@ -469,7 +470,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         if(getPermissionsNoLock().validate(broker.getSubject(), Permission.READ)) {
             try {
                 //Acquire a lock on the collection
-                getLock().acquire(Lock.READ_LOCK);
+                getLock().acquire(LockMode.READ_LOCK);
                 //Add all docs in this collection to the returned set
                 getDocuments(broker, docs);
                 //Get a list of sub-collection URIs. We will process them
@@ -478,7 +479,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             } catch(final LockException e) {
                 LOG.warn(e.getMessage(), e);
             } finally {
-                getLock().release(Lock.READ_LOCK);
+                getLock().release(LockMode.READ_LOCK);
             }
         }
         if(recursive && subColls != null) {
@@ -486,7 +487,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             for(final XmldbURI childName : subColls) {
                 //TODO : resolve URI !
                 try {
-                    final Collection child = broker.openCollection(path.appendInternal(childName), Lock.NO_LOCK);
+                    final Collection child = broker.openCollection(path.appendInternal(childName), LockMode.NO_LOCK);
                     //A collection may have been removed in the meantime, so check first
                     if(child != null) {
                         child.allDocs(broker, docs, recursive, protectedDocs);
@@ -500,13 +501,13 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         return docs;
     }
 
-    public DocumentSet allDocs(final DBBroker broker, final MutableDocumentSet docs, final boolean recursive, final LockedDocumentMap lockMap, final int lockType) throws LockException, PermissionDeniedException {
+    public DocumentSet allDocs(final DBBroker broker, final MutableDocumentSet docs, final boolean recursive, final LockedDocumentMap lockMap, final LockMode lockType) throws LockException, PermissionDeniedException {
         
         XmldbURI uris[] = null;
         if(getPermissionsNoLock().validate(broker.getSubject(), Permission.READ)) {
             try {
                 //Acquire a lock on the collection
-                getLock().acquire(Lock.READ_LOCK);
+                getLock().acquire(LockMode.READ_LOCK);
                 //Add all documents in this collection to the returned set
                 getDocuments(broker, docs, lockMap, lockType);
                 //Get a list of sub-collection URIs. We will process them
@@ -523,7 +524,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
                 LOG.error(e.getMessage(), e);
                 throw e;
             } finally {
-                getLock().release(Lock.READ_LOCK);
+                getLock().release(LockMode.READ_LOCK);
             }
         }
         
@@ -532,7 +533,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             for(int i = 0; i < uris.length; i++) {
                 //TODO : resolve URI !
                 try {
-                    final Collection child = broker.openCollection(uris[i], Lock.NO_LOCK);
+                    final Collection child = broker.openCollection(uris[i], LockMode.NO_LOCK);
                     // a collection may have been removed in the meantime, so check first
                     if(child != null) {
                         child.allDocs(broker, docs, recursive, lockMap, lockType);
@@ -557,14 +558,14 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
         
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             docs.addCollection(this);
             addDocumentsToSet(broker, docs);
         } catch(final LockException le) {
             //TODO this should not be caught - it should be thrown - lock errors are bad!!!
             LOG.error(le.getMessage(), le);
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
         
         return docs;
@@ -576,22 +577,22 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         return docs;
     }
 
-    public DocumentSet getDocuments(final DBBroker broker, final MutableDocumentSet docs, final LockedDocumentMap lockMap, final int lockType) throws LockException, PermissionDeniedException {
+    public DocumentSet getDocuments(final DBBroker broker, final MutableDocumentSet docs, final LockedDocumentMap lockMap, final LockMode lockType) throws LockException, PermissionDeniedException {
         if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.READ)) {
             throw new PermissionDeniedException("Permission denied to read collection: " + path);
         }
         
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             docs.addCollection(this);
             addDocumentsToSet(broker, docs, lockMap, lockType);
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
         return docs;
     }
 
-    private void addDocumentsToSet(final DBBroker broker, final MutableDocumentSet docs, final LockedDocumentMap lockMap, final int lockType) throws LockException {
+    private void addDocumentsToSet(final DBBroker broker, final MutableDocumentSet docs, final LockedDocumentMap lockMap, final LockMode lockType) throws LockException {
     	for(final DocumentImpl doc : documents.values()) {
             //skip if corrupted
             if (doc.getMetadata() == null) {
@@ -599,7 +600,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
                 continue;
             }
             if(doc.getPermissions().validate(broker.getSubject(), Permission.WRITE)) {
-                doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+                doc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
 
                 docs.add(doc);
                 lockMap.add(doc);
@@ -715,13 +716,13 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         
         
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             return subCollections.size();
         } catch(final LockException e) {
             LOG.warn(e.getMessage(), e);
             return 0;
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
     }
     
@@ -739,13 +740,13 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
         
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             return documents.isEmpty() && subCollections.isEmpty();
         } catch(final LockException e) {
             LOG.warn(e.getMessage(), e);
             return false;
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -760,7 +761,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      */
     public DocumentImpl getDocument(final DBBroker broker, final XmldbURI path) throws PermissionDeniedException {
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             final DocumentImpl doc = documents.get(path.getRawCollectionPath());
             if(doc != null){
                 if(!doc.getPermissions().validate(broker.getSubject(), Permission.READ)) {
@@ -775,7 +776,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             LOG.warn(e.getMessage(), e);
             return null;
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -791,7 +792,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      */
     @Deprecated
     public DocumentImpl getDocumentWithLock(final DBBroker broker, final XmldbURI name) throws LockException, PermissionDeniedException {
-    	return getDocumentWithLock(broker,name,Lock.READ_LOCK);
+    	return getDocumentWithLock(broker,name,LockMode.READ_LOCK);
     }
 
     /**
@@ -804,9 +805,9 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @return The document that was locked.
      * @throws LockException
      */
-    public DocumentImpl getDocumentWithLock(final DBBroker broker, final XmldbURI uri, final int lockMode) throws LockException, PermissionDeniedException {
+    public DocumentImpl getDocumentWithLock(final DBBroker broker, final XmldbURI uri, final LockMode lockMode) throws LockException, PermissionDeniedException {
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             final DocumentImpl doc = documents.get(uri.getRawCollectionPath());
             
             if(doc != null) {
@@ -817,7 +818,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             }
             return doc;
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -839,7 +840,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
     @Deprecated
     public void releaseDocument(final DocumentImpl doc) {
         if(doc != null) {
-            doc.getUpdateLock().release(Lock.READ_LOCK);
+            doc.getUpdateLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -848,7 +849,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      *
      * @param doc
      */
-    public void releaseDocument(final DocumentImpl doc, final int mode) {
+    public void releaseDocument(final DocumentImpl doc, final LockMode mode) {
         if(doc != null) {
             doc.getUpdateLock().release(mode);
         }
@@ -865,13 +866,13 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
         
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             return documents.size();
         } catch(final LockException e) {
             LOG.warn(e.getMessage(), e);
             return 0;
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -920,13 +921,13 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      */
     final public Permission getPermissions() {
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             return permissions;
         } catch(final LockException e) {
             LOG.warn(e.getMessage(), e);
             return permissions;
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -965,14 +966,14 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
         
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             return subCollections.contains(name);
         } catch(final LockException e) {
             LOG.warn(e.getMessage(), e);
             //TODO : ouch ! Should we return at any price ? Xithout even logging ? -pb
             return subCollections.contains(name);
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -1085,10 +1086,10 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
         
         try {
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
             subCollections.remove(name);
         } finally {
-            getLock().release(Lock.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
         }
     }
     
@@ -1126,7 +1127,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 
         if (trashManager != null) {
 
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
 
             try {
 
@@ -1145,7 +1146,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
                     return;
                 }
             } finally {
-                getLock().release(Lock.WRITE_LOCK);
+                getLock().release(LockMode.WRITE_LOCK);
             }
         }
         
@@ -1154,7 +1155,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         try {
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_XML, docUri);
 
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
             
             doc = documents.get(docUri.getRawCollectionPath());
             
@@ -1162,7 +1163,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
                 return; //TODO should throw an exception!!! Otherwise we dont know if the document was removed
             }
             
-            doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+            doc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
             
             boolean useTriggers = isTriggersEnabled(broker);
             if (CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE_URI.equals(docUri)) {
@@ -1188,9 +1189,9 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         } finally {
             db.getProcessMonitor().endJob();
             if(doc != null) {
-                doc.getUpdateLock().release(Lock.WRITE_LOCK);
+                doc.getUpdateLock().release(LockMode.WRITE_LOCK);
             }
-            getLock().release(Lock.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
         }
     }
     
@@ -1224,9 +1225,9 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         try {
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_XML, docUri);
 
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
             
-            doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+            doc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
             
             boolean useTriggers = isTriggersEnabled(broker);
             if (CollectionConfiguration.DEFAULT_COLLECTION_CONFIG_FILE_URI.equals(docUri)) {
@@ -1252,9 +1253,9 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         } finally {
             db.getProcessMonitor().endJob();
             if(doc != null) {
-                doc.getUpdateLock().release(Lock.WRITE_LOCK);
+                doc.getUpdateLock().release(LockMode.WRITE_LOCK);
             }
-            getLock().release(Lock.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
         }
     }
 
@@ -1264,7 +1265,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         }
         
         try {
-            getLock().acquire(Lock.READ_LOCK);
+            getLock().acquire(LockMode.READ_LOCK);
             final DocumentImpl doc = getDocument(broker, uri);
             
             if(doc.isLockedForWrite()) {
@@ -1273,7 +1274,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             
             removeBinaryResource(transaction, broker, doc);
         } finally {
-            getLock().release(Lock.READ_LOCK);
+            getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -1308,7 +1309,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         
         try {
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_REMOVE_BINARY, doc.getFileURI());
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
             
             if(doc.getResourceType() != DocumentImpl.BINARY_FILE) {
                 throw new PermissionDeniedException("document " + doc.getFileURI() + " is not a binary object");
@@ -1318,7 +1319,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
                 throw new PermissionDeniedException("Document " + doc.getFileURI() + " is locked for write");
             }
             
-            doc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+            doc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
             
             DocumentTriggers trigger = new DocumentTriggers(broker, null, this, isTriggersEnabled(broker) ? getConfiguration(broker) : null);
 
@@ -1336,8 +1337,8 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 
         } finally {
             db.getProcessMonitor().endJob();
-            doc.getUpdateLock().release(Lock.WRITE_LOCK);
-            getLock().release(Lock.WRITE_LOCK);
+            doc.getUpdateLock().release(LockMode.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
         }
     }
 
@@ -1540,7 +1541,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             LOG.debug("document stored.");
         } finally {
             //This lock has been acquired in validateXMLResourceInternal()
-            document.getUpdateLock().release(Lock.WRITE_LOCK);
+            document.getUpdateLock().release(LockMode.WRITE_LOCK);
             broker.getBrokerPool().getProcessMonitor().endJob();
         }
         setCollectionConfigEnabled(true);
@@ -1750,7 +1751,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         boolean oldDocLocked = false;
         try {
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_VALIDATE_DOC, docUri); 
-            getLock().acquire(Lock.WRITE_LOCK);   
+            getLock().acquire(LockMode.WRITE_LOCK);
             
             DocumentImpl document = new DocumentImpl((BrokerPool) db, this, docUri);
             oldDoc = documents.get(docUri.getRawCollectionPath());
@@ -1793,7 +1794,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("removing old document " + oldDoc.getFileURI());
                 }
-                oldDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+                oldDoc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
                 oldDocLocked = true;
                 if (oldDoc.getResourceType() == DocumentImpl.BINARY_FILE) {
                     //TODO : use a more elaborated method ? No triggers...
@@ -1804,7 +1805,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 //                    if (transaction != null)
 //                    	transaction.acquireLock(document.getUpdateLock(), Lock.WRITE_LOCK);
 //                	else
-                    document.getUpdateLock().acquire(Lock.WRITE_LOCK);
+                    document.getUpdateLock().acquire(LockMode.WRITE_LOCK);
                     
                     document.setDocId(broker.getNextResourceId(transaction, this));
                     addDocument(transaction, broker, document);
@@ -1826,7 +1827,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 //            	if (transaction != null)
 //                	transaction.acquireLock(document.getUpdateLock(), Lock.WRITE_LOCK);
 //            	else
-                document.getUpdateLock().acquire(Lock.WRITE_LOCK);
+                document.getUpdateLock().acquire(LockMode.WRITE_LOCK);
             	
                 document.setDocId(broker.getNextResourceId(transaction, this));
                 addDocument(transaction, broker, document);
@@ -1837,9 +1838,9 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             return info;
         } finally {
             if (oldDoc != null && oldDocLocked) {
-                oldDoc.getUpdateLock().release(Lock.WRITE_LOCK);
+                oldDoc.getUpdateLock().release(LockMode.WRITE_LOCK);
             }
-            getLock().release(Lock.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
             
             db.getProcessMonitor().endJob();
         }
@@ -2012,7 +2013,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         final DocumentImpl oldDoc = getDocument(broker, docUri);
         try {
             db.getProcessMonitor().startJob(ProcessMonitor.ACTION_STORE_BINARY, docUri);
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
             checkPermissionsForAddDocument(broker, oldDoc);
             checkCollectionConflict(docUri);
             manageDocumentInformation(oldDoc, blob);
@@ -2053,7 +2054,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             return blob;
         } finally {
             broker.getBrokerPool().getProcessMonitor().endJob();
-            getLock().release(Lock.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
         }
     }
 
@@ -2063,20 +2064,20 @@ public class Collection extends Observable implements Resource, Comparable<Colle
 
     public void setPermissions(final int mode) throws LockException, PermissionDeniedException {
         try {
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
             permissions.setMode(mode);
         } finally {
-            getLock().release(Lock.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
         }
     }
 
     @Deprecated
     public void setPermissions(final String mode) throws SyntaxException, LockException, PermissionDeniedException {
         try {
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
             permissions.setMode(mode);
         } finally {
-            getLock().release(Lock.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
         }
     }
 
@@ -2091,10 +2092,10 @@ public class Collection extends Observable implements Resource, Comparable<Colle
     @Deprecated
     public void setPermissions(final Permission permissions) throws LockException {
         try {
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
             this.permissions = permissions;
         } finally {
-            getLock().release(Lock.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
         }
     }
 
@@ -2163,14 +2164,14 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      ***/
     public void setTriggersEnabled(final boolean enabled) {
         try {
-            getLock().acquire(Lock.WRITE_LOCK);
+            getLock().acquire(LockMode.WRITE_LOCK);
             this.triggersEnabled = enabled;
         } catch(final LockException e) {
             LOG.warn(e.getMessage(), e);
             //Ouch ! -pb
             this.triggersEnabled = enabled;
         } finally {
-            getLock().release(Lock.WRITE_LOCK);
+            getLock().release(LockMode.WRITE_LOCK);
         }
     }
 

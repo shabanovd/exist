@@ -7,7 +7,7 @@ import org.exist.security.xacml.AccessContext;
 import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -140,7 +140,7 @@ public class ConstructedNodesRecoveryTest extends TestCase
         broker.saveCollection(transaction, root);
         
         //get the test document
-        DocumentImpl doc = root.getDocumentWithLock(broker, XmldbURI.create(documentName), Lock.READ_LOCK);
+        DocumentImpl doc = root.getDocumentWithLock(broker, XmldbURI.create(documentName), LockMode.READ_LOCK);
         
         Serializer serializer = broker.getSerializer();
         serializer.reset();

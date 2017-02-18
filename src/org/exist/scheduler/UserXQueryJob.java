@@ -22,7 +22,6 @@
 package org.exist.scheduler;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.Map.Entry;
 import java.util.Properties;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +38,7 @@ import org.exist.source.SourceFactory;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XPathException;
@@ -156,7 +155,7 @@ public class UserXQueryJob extends UserJob {
                 source = SourceFactory.getSource(broker, "", xqueryresource, true);
             } else {
                 final XmldbURI pathUri = XmldbURI.create(xqueryresource);
-                resource = broker.getXMLResource(pathUri, Lock.READ_LOCK);
+                resource = broker.getXMLResource(pathUri, LockMode.READ_LOCK);
 
                 if(resource != null) {
                     source = new DBSource(broker, (BinaryDocument)resource, true);
@@ -223,8 +222,6 @@ public class UserXQueryJob extends UserJob {
             abort("Permission denied for the scheduling user: " + user.getName() + "!");
         } catch(final XPathException xpe) {
             abort("XPathException in the Job: " + xpe.getMessage() + "!", unschedule);
-        } catch(final MalformedURLException e) {
-            abort("Could not load XQuery: " + e.getMessage());
         } catch(final IOException e) {
             abort("Could not load XQuery: " + e.getMessage());
         } finally {
@@ -240,7 +237,7 @@ public class UserXQueryJob extends UserJob {
 
             //release the lock on the xquery resource
             if(resource != null) {
-                resource.getUpdateLock().release(Lock.READ_LOCK);
+                resource.getUpdateLock().release(LockMode.READ_LOCK);
             }
 
             // Release the DBBroker

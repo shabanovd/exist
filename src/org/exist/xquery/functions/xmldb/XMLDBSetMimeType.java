@@ -29,7 +29,7 @@ import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.MimeTable;
@@ -140,7 +140,7 @@ public class XMLDBSetMimeType extends BasicFunction {
             pathUri = context.getBaseURI().toXmldbURI().resolveCollectionPath(pathUri);
 
             // try to open the document and acquire a lock
-            doc = (DocumentImpl) broker.getXMLResource(pathUri, Lock.WRITE_LOCK);
+            doc = broker.getXMLResource(pathUri, LockMode.WRITE_LOCK);
             if (doc == null) {
                 // no document selected, abort
                 txnManager.abort(txn);
@@ -164,7 +164,7 @@ public class XMLDBSetMimeType extends BasicFunction {
         } finally {
             //release all locks
             if (doc != null) {
-                doc.getUpdateLock().release(Lock.WRITE_LOCK);
+                doc.getUpdateLock().release(LockMode.WRITE_LOCK);
             }
             txnManager.close(txn);
         }
@@ -190,11 +190,11 @@ public class XMLDBSetMimeType extends BasicFunction {
 
         try {
             // try to open the document and acquire a lock
-            doc = (DocumentImpl) context.getBroker().getXMLResource(pathUri, Lock.READ_LOCK);
+            doc = context.getBroker().getXMLResource(pathUri, LockMode.READ_LOCK);
             if (doc == null) {
                 throw new XPathException("Resource '" + pathUri + "' does not exist.");
             } else {
-                final String mimetype = ((DocumentImpl) doc).getMetadata().getMimeType();
+                final String mimetype = doc.getMetadata().getMimeType();
                 returnValue = MimeTable.getInstance().getContentType(mimetype);
             }
 
@@ -204,7 +204,7 @@ public class XMLDBSetMimeType extends BasicFunction {
         } finally {
 
             if (doc != null) {
-                doc.getUpdateLock().release(Lock.READ_LOCK);
+                doc.getUpdateLock().release(LockMode.READ_LOCK);
             }
         }
 

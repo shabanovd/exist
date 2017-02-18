@@ -62,7 +62,7 @@ import org.exist.security.ACLPermission.ACE_ACCESS_TYPE;
 import org.exist.security.ACLPermission.ACE_TARGET;
 import org.exist.security.internal.aider.ACEAider;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.xml.sax.XMLReader;
@@ -580,7 +580,7 @@ public class SystemImportHandler extends DefaultHandler {
         @Override
         public void apply() {
             try {
-            	getTarget().getLock().acquire(Lock.WRITE_LOCK);
+            	getTarget().getLock().acquire(LockMode.WRITE_LOCK);
 
                 final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
                 final Txn txn = txnManager.beginTransaction();
@@ -607,7 +607,7 @@ public class SystemImportHandler extends DefaultHandler {
 
             	} finally {
                     txnManager.close(txn);
-                	getTarget().release(Lock.WRITE_LOCK);
+                	getTarget().release(LockMode.WRITE_LOCK);
                 }
                 
             } catch (final Exception xe) {
@@ -627,7 +627,7 @@ public class SystemImportHandler extends DefaultHandler {
         @Override
         public void apply() {
             try {
-            	getTarget().getUpdateLock().acquire(Lock.WRITE_LOCK);
+            	getTarget().getUpdateLock().acquire(LockMode.WRITE_LOCK);
 
             	final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
                 final Txn txn = txnManager.beginTransaction();
@@ -655,7 +655,7 @@ public class SystemImportHandler extends DefaultHandler {
 	            	
 	            } finally {
                     txnManager.close(txn);
-	                getTarget().getUpdateLock().release(Lock.WRITE_LOCK);
+	                getTarget().getUpdateLock().release(LockMode.WRITE_LOCK);
 	            }
             
             } catch (final Exception xe) {

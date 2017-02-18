@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
  *
  */
 public class Locked {
-    
+
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final ReadLock readLock = lock.readLock();
     private final WriteLock writeLock = lock.writeLock();

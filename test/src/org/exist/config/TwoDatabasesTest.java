@@ -31,7 +31,7 @@ import org.exist.dom.MutableDocumentSet;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.security.Subject;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
 import org.exist.xmldb.ShutdownListener;
@@ -106,12 +106,12 @@ public class TwoDatabasesTest extends TestCase
 
       Collection top1 = broker1.getCollection(XmldbURI.create("xmldb:exist:///"));
       assertTrue(top1!=null);
-      top1.getLock().release(Lock.READ_LOCK);
+      top1.getLock().release(LockMode.READ_LOCK);
       pool1.release(broker1);
       
       Collection top2 = broker2.getCollection(XmldbURI.create("xmldb:exist:///"));
       assertTrue(top2!=null);
-      top2.getLock().release(Lock.READ_LOCK);
+      top2.getLock().release(LockMode.READ_LOCK);
       pool2.release(broker2);
          
    }
@@ -137,14 +137,14 @@ public class TwoDatabasesTest extends TestCase
       Txn transaction1 = pool1.getTransactionManager().beginTransaction();
       Collection top1 = storeBin(broker1,transaction1,"1");
       pool1.getTransactionManager().commit(transaction1);
-      top1.release(Lock.READ_LOCK);
+      top1.release(LockMode.READ_LOCK);
       pool1.release(broker1);
       
       DBBroker broker2 = pool2.get(user1);
       Txn transaction2 = pool2.getTransactionManager().beginTransaction();
       Collection top2 = storeBin(broker2,transaction2,"2");
       pool2.getTransactionManager().commit(transaction2);
-      top2.release(Lock.READ_LOCK);
+      top2.release(LockMode.READ_LOCK);
       pool2.release(broker2);
    }
    
@@ -196,7 +196,7 @@ public class TwoDatabasesTest extends TestCase
          }
          //binDoc = (BinaryDocument)broker.getXMLResource(XmldbURI.create("xmldb:exist:///bin"),Lock.READ_LOCK);
          binDoc = (BinaryDocument)top.getDocument(broker,XmldbURI.create("xmldb:exist:///bin"));
-         top.release(Lock.READ_LOCK);
+         top.release(LockMode.READ_LOCK);
          assertTrue(binDoc!=null);
          ByteArrayOutputStream os = new ByteArrayOutputStream();
          broker.readBinaryResource(binDoc,os);
@@ -205,7 +205,7 @@ public class TwoDatabasesTest extends TestCase
          return comp.equals(bin+suffix);
       } finally {
          if (binDoc!=null) {
-            binDoc.getUpdateLock().release(Lock.READ_LOCK);
+            binDoc.getUpdateLock().release(LockMode.READ_LOCK);
          }
       }
    }

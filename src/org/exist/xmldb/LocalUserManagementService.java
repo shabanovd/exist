@@ -20,7 +20,7 @@ import org.exist.security.internal.aider.ACEAider;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
@@ -1054,13 +1054,13 @@ public class LocalUserManagementService implements EXistUserManagementService {
         
         DocumentImpl document = null;    
         try {
-            document = ((AbstractEXistResource) resource).openDocument(broker, Lock.READ_LOCK);
+            document = ((AbstractEXistResource) resource).openDocument(broker, LockMode.READ_LOCK);
                 
             return reader.read(document);
                 
         } finally {
             if(document != null) {
-                ((AbstractEXistResource) resource).closeDocument(document, Lock.READ_LOCK);
+                ((AbstractEXistResource) resource).closeDocument(document, LockMode.READ_LOCK);
             }
         }
     }
@@ -1069,7 +1069,7 @@ public class LocalUserManagementService implements EXistUserManagementService {
         org.exist.collections.Collection coll = null;
         
         try {
-            coll = broker.openCollection(collectionURI, Lock.READ_LOCK);
+            coll = broker.openCollection(collectionURI, LockMode.READ_LOCK);
             if(coll == null) {
                 throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + collectionURI.toString() + " not found");
             }
@@ -1078,7 +1078,7 @@ public class LocalUserManagementService implements EXistUserManagementService {
             
         } finally {
             if(coll != null) {
-                coll.release(Lock.READ_LOCK);
+                coll.release(LockMode.READ_LOCK);
             }
         }
     }
@@ -1089,7 +1089,7 @@ public class LocalUserManagementService implements EXistUserManagementService {
         
         DocumentImpl document = null;
         try {
-            document = ((AbstractEXistResource) resource).openDocument(broker, Lock.WRITE_LOCK);
+            document = ((AbstractEXistResource) resource).openDocument(broker, LockMode.WRITE_LOCK);
             final SecurityManager sm = broker.getBrokerPool().getSecurityManager();
             if(!document.getPermissions().validate(user, Permission.WRITE) && !sm.hasAdminPrivileges(user)) {
                 throw new XMLDBException(ErrorCodes.PERMISSION_DENIED, "you are not the owner of this resource; owner = " + document.getPermissions().getOwner());
@@ -1102,25 +1102,13 @@ public class LocalUserManagementService implements EXistUserManagementService {
             
             return result;
             
-        } catch(final EXistException ee) {
+        } catch(final EXistException | XMLDBException | LockException | SyntaxException | PermissionDeniedException ee) {
             transact.abort(transaction);
             throw ee;
-        } catch(final XMLDBException xmldbe) {
-            transact.abort(transaction);
-            throw xmldbe;
-        } catch(final LockException le) {
-            transact.abort(transaction);
-            throw le;
-        } catch(final PermissionDeniedException pde) {
-            transact.abort(transaction);
-            throw pde;
-        } catch(final SyntaxException se) {
-            transact.abort(transaction);
-            throw se;
         } finally {
             transact.close(transaction);
             if(document != null) {
-                ((AbstractEXistResource)resource).closeDocument(document, Lock.WRITE_LOCK);
+                ((AbstractEXistResource)resource).closeDocument(document, LockMode.WRITE_LOCK);
             }
         }
     }
@@ -1132,7 +1120,7 @@ public class LocalUserManagementService implements EXistUserManagementService {
         org.exist.collections.Collection coll = null;
         
         try {
-            coll = broker.openCollection(collectionURI, Lock.WRITE_LOCK);
+            coll = broker.openCollection(collectionURI, LockMode.WRITE_LOCK);
             if(coll == null) {
                 throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + collectionURI.toString() + " not found");
             }
@@ -1145,31 +1133,13 @@ public class LocalUserManagementService implements EXistUserManagementService {
             
             return result;
             
-        } catch(final EXistException ee) {
+        } catch(final EXistException | XMLDBException | LockException | IOException | PermissionDeniedException | SyntaxException | TriggerException ee) {
             transact.abort(transaction);
             throw ee;
-        } catch(final XMLDBException xmldbe) {
-            transact.abort(transaction);
-            throw xmldbe;
-        } catch(final LockException le) {
-            transact.abort(transaction);
-            throw le;
-        } catch(final PermissionDeniedException pde) {
-            transact.abort(transaction);
-            throw pde;
-        } catch(final IOException ioe) {
-            transact.abort(transaction);
-            throw ioe;
-        } catch(final TriggerException te) {
-            transact.abort(transaction);
-            throw te;
-        } catch(final SyntaxException se) {
-            transact.abort(transaction);
-            throw se;
         } finally {
             transact.close(transaction);
             if(coll != null) {
-                coll.release(Lock.WRITE_LOCK);
+                coll.release(LockMode.WRITE_LOCK);
             }
         }
     }

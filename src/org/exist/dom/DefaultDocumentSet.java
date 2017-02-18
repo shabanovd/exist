@@ -30,6 +30,7 @@ import org.exist.collections.Collection;
 import org.exist.numbering.NodeId;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.util.LockException;
 import org.exist.util.hashtable.Int2ObjectHashMap;
 import org.exist.xmldb.XmldbURI;
@@ -259,9 +260,9 @@ public class DefaultDocumentSet extends Int2ObjectHashMap implements MutableDocu
             //if (checkExisting && dlock.hasLock(thread))
                 //continue;
             if(exclusive)
-                {dlock.acquire(Lock.WRITE_LOCK);}
+                {dlock.acquire(LockMode.WRITE_LOCK);}
             else
-                {dlock.acquire(Lock.READ_LOCK);}
+                {dlock.acquire(LockMode.READ_LOCK);}
         }
     }
 
@@ -276,9 +277,9 @@ public class DefaultDocumentSet extends Int2ObjectHashMap implements MutableDocu
             d = (DocumentImpl)values[idx];
             dlock = d.getUpdateLock();
             if(exclusive)
-                {dlock.release(Lock.WRITE_LOCK);}
+                {dlock.release(LockMode.WRITE_LOCK);}
             else if (dlock.isLockedForRead(thread))
-                {dlock.release(Lock.READ_LOCK);}
+                {dlock.release(LockMode.READ_LOCK);}
         }
     }
 

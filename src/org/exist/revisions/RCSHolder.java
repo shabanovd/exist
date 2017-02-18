@@ -40,6 +40,7 @@ import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.md.MetaData;
 import org.exist.storage.md.Metas;
 import org.exist.storage.serializers.Serializer;
@@ -73,7 +74,7 @@ import static java.nio.file.Files.createDirectories;
 import static org.exist.dom.DocumentImpl.BINARY_FILE;
 import static org.exist.dom.DocumentImpl.XML_FILE;
 import static org.exist.revisions.Utils.readHash;
-import static org.exist.storage.lock.Lock.READ_LOCK;
+import static org.exist.storage.lock.Lock.LockMode.READ_LOCK;
 import static org.exist.revisions.RCSManager.LOG;
 
 /**
@@ -184,7 +185,7 @@ public class RCSHolder implements Constants {
 
         List<Collection> toProcess = new ArrayList<>();
 
-        collection.getLock().acquire(Lock.READ_LOCK);
+        collection.getLock().acquire(LockMode.READ_LOCK);
         try {
             toProcess.add(collection);
 
@@ -214,7 +215,7 @@ public class RCSHolder implements Constants {
 
                         if (childColl != null) {
 
-                            childColl.getLock().acquire(Lock.READ_LOCK);
+                            childColl.getLock().acquire(LockMode.READ_LOCK);
                             next.add(childColl);
 
                             log.writeStartElement("entry");
@@ -241,7 +242,7 @@ public class RCSHolder implements Constants {
 
                 //release lock
                 for (Collection col : toProcess) {
-                    col.getLock().release(Lock.READ_LOCK);
+                    col.getLock().release(LockMode.READ_LOCK);
                 }
 
                 toProcess = nexts;
@@ -249,7 +250,7 @@ public class RCSHolder implements Constants {
         } finally {
             //just make sure that lock release
             for (Collection col : toProcess) {
-                col.getLock().release(Lock.READ_LOCK);
+                col.getLock().release(LockMode.READ_LOCK);
             }
         }
     }
@@ -262,13 +263,13 @@ public class RCSHolder implements Constants {
 
         try {
 
-            doc.getUpdateLock().acquire(Lock.READ_LOCK);
+            doc.getUpdateLock().acquire(LockMode.READ_LOCK);
 
             Path folder = null;
             try {
                 folder = makeRevision(broker, null, uri, doc, logPath, bh, h);
             } finally {
-                doc.getUpdateLock().release(Lock.READ_LOCK);
+                doc.getUpdateLock().release(LockMode.READ_LOCK);
             }
 
             if (folder != null) {
@@ -439,7 +440,7 @@ public class RCSHolder implements Constants {
                 if (action.uri() == null || action.uri() == CommitLog.UNKNOWN_URI) return null;
             }
 
-            DocumentImpl doc = broker.getXMLResource(action.uri(), Lock.READ_LOCK);
+            DocumentImpl doc = broker.getXMLResource(action.uri(), LockMode.READ_LOCK);
             if (doc == null) {
                 Collection col = broker.getCollection(action.uri());
 
@@ -456,7 +457,7 @@ public class RCSHolder implements Constants {
                     folder = makeRevision(broker, action.id(), action.uri(), doc, logPath, bh, h);
 
                 } finally {
-                    doc.getUpdateLock().release(Lock.READ_LOCK);
+                    doc.getUpdateLock().release(LockMode.READ_LOCK);
                 }
             }
         }

@@ -30,7 +30,7 @@ import org.exist.xquery.value.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.exist.storage.lock.Lock.READ_LOCK;
+import static org.exist.storage.lock.Lock.LockMode.READ_LOCK;
 import static org.exist.storage.md.MetaData.NAMESPACE_URI;
 import static org.exist.storage.md.MetaData.PREFIX;
 

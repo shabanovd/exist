@@ -25,7 +25,7 @@ import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DocumentImpl;
 import org.exist.security.xacml.AccessContext;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -65,11 +65,11 @@ public abstract class AbstractUpdateTest {
             DocumentImpl doc;
             String data;
             
-            doc = broker.getXMLResource(TEST_COLLECTION_URI.append("test2/test.xml"), Lock.READ_LOCK);
+            doc = broker.getXMLResource(TEST_COLLECTION_URI.append("test2/test.xml"), LockMode.READ_LOCK);
             assertNotNull("Document '"+ TEST_COLLECTION_URI.append("test2/test.xml")+"' should not be null", doc);
             data = serializer.serialize(doc);
             System.out.println(data);
-            doc.getUpdateLock().release(Lock.READ_LOCK);
+            doc.getUpdateLock().release(LockMode.READ_LOCK);
             
             XQuery xquery = broker.getXQueryService();
             Sequence seq = xquery.execute("/products/product[last()]", null, AccessContext.TEST);

@@ -65,7 +65,7 @@ import org.exist.memtree.MemTreeBuilder;
 import org.exist.numbering.NodeId;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.serializers.XIncludeFilter;
 import org.exist.storage.serializers.EXistOutputKeys;
@@ -566,14 +566,14 @@ public class Transform extends BasicFunction {
 				final String docPath = uri.substring(XmldbURI.EMBEDDED_SERVER_URI_PREFIX.length());
 				DocumentImpl doc = null;
 				try {
-					doc = context.getBroker().getXMLResource(XmldbURI.create(docPath), Lock.READ_LOCK);
+					doc = context.getBroker().getXMLResource(XmldbURI.create(docPath), LockMode.READ_LOCK);
 					if (!caching || (doc != null && (templates == null || doc.getMetadata().getLastModified() > lastModified)))
 						{templates = getSource(doc);}
 					lastModified = doc.getMetadata().getLastModified();
 				} catch (final PermissionDeniedException e) {
 					throw new XPathException(Transform.this, "Permission denied to read stylesheet: " + uri);
 				} finally {
-					if (doc != null) {doc.getUpdateLock().release(Lock.READ_LOCK);}
+					if (doc != null) {doc.getUpdateLock().release(LockMode.READ_LOCK);}
 				}
 			} else {
 				final URL url = new URL(uri);

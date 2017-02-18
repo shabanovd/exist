@@ -37,7 +37,7 @@ import org.exist.security.xacml.AccessContext;
 import org.exist.security.xacml.NullAccessContextException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
@@ -184,7 +184,7 @@ public class LocalCollectionManagementService implements CollectionManagementSer
         org.exist.collections.Collection collection = null;
         try {
             broker = brokerPool.get(user);
-            collection = broker.openCollection(collName, Lock.WRITE_LOCK);
+            collection = broker.openCollection(collName, LockMode.WRITE_LOCK);
             if(collection == null) {
                 transact.abort(transaction);
             	throw new XMLDBException(ErrorCodes.INVALID_COLLECTION,
@@ -212,7 +212,7 @@ public class LocalCollectionManagementService implements CollectionManagementSer
                 "failed to remove collection " + collName, e );
 		} finally {
         	if(collection != null)
-        		{collection.release(Lock.WRITE_LOCK);}
+        		{collection.release(LockMode.WRITE_LOCK);}
             transact.close(transaction);
             brokerPool.release( broker );
             brokerPool.setSubject(preserveSubject);
@@ -248,12 +248,12 @@ public class LocalCollectionManagementService implements CollectionManagementSer
         org.exist.collections.Collection destination = null;
         try {
             broker = brokerPool.get(user);
-            collection = broker.openCollection(collectionPath, Lock.WRITE_LOCK);
+            collection = broker.openCollection(collectionPath, LockMode.WRITE_LOCK);
             if(collection == null) {
                 transact.abort(transaction);
                 throw new XMLDBException(ErrorCodes.NO_SUCH_COLLECTION, "Collection " + collectionPath + " not found");
             }
-            destination = broker.openCollection(destinationPath, Lock.WRITE_LOCK);
+            destination = broker.openCollection(destinationPath, LockMode.WRITE_LOCK);
             if(destination == null) {
                 transact.abort(transaction);
                 throw new XMLDBException(ErrorCodes.NO_SUCH_COLLECTION, "Collection " + destinationPath + " not found");
@@ -267,27 +267,19 @@ public class LocalCollectionManagementService implements CollectionManagementSer
         	e.printStackTrace();
             throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
                 "failed to move collection " + collectionPath, e );
-        } catch ( final IOException e ) {
+        } catch ( final IOException | TriggerException e ) {
             transact.abort(transaction);
             throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
                 "failed to move collection " + collectionPath, e );
-        } catch ( final PermissionDeniedException e ) {
+        } catch ( final PermissionDeniedException | LockException e ) {
             transact.abort(transaction);
             throw new XMLDBException( ErrorCodes.PERMISSION_DENIED,
                 e.getMessage(), e );
-        } catch (final LockException e) {
-            transact.abort(transaction);
-            throw new XMLDBException( ErrorCodes.PERMISSION_DENIED,
-                    e.getMessage(), e );
-        } catch (final TriggerException e) {
-            transact.abort(transaction);
-            throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
-                "failed to move collection " + collectionPath, e );
-		} finally {
+        } finally {
         	if(destination != null)
-        		{destination.release(Lock.WRITE_LOCK);}
+        		{destination.release(LockMode.WRITE_LOCK);}
         	if(collection != null)
-        		{collection.release(Lock.WRITE_LOCK);}
+        		{collection.release(LockMode.WRITE_LOCK);}
             transact.close(transaction);
             brokerPool.release( broker );
             brokerPool.setSubject(preserveSubject);
@@ -322,7 +314,7 @@ public class LocalCollectionManagementService implements CollectionManagementSer
         org.exist.collections.Collection source = null;
         try {
             broker = brokerPool.get(user);
-     		source = broker.openCollection(resourcePath.removeLastSegment(), Lock.WRITE_LOCK);
+     		source = broker.openCollection(resourcePath.removeLastSegment(), LockMode.WRITE_LOCK);
     		if(source == null) {
                 transact.abort(transaction);
     			throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + resourcePath.removeLastSegment() + " not found");
@@ -332,7 +324,7 @@ public class LocalCollectionManagementService implements CollectionManagementSer
                 transact.abort(transaction);
                 throw new XMLDBException(ErrorCodes.NO_SUCH_RESOURCE, "Resource " + resourcePath + " not found");
             }
-            destination = broker.openCollection(destinationPath, Lock.WRITE_LOCK);
+            destination = broker.openCollection(destinationPath, LockMode.WRITE_LOCK);
             if(destination == null) {
                 transact.abort(transaction);
                 throw new XMLDBException(ErrorCodes.NO_SUCH_COLLECTION, "Collection " + destinationPath + " not found");
@@ -347,27 +339,19 @@ public class LocalCollectionManagementService implements CollectionManagementSer
         	e.printStackTrace();
             throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
                 "failed to move resource " + resourcePath, e );
-        } catch ( final IOException e ) {
+        } catch ( final IOException | TriggerException e ) {
             transact.abort(transaction);
             throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
                 "failed to move resource " + resourcePath, e );
-        } catch ( final PermissionDeniedException e ) {
+        } catch ( final PermissionDeniedException | LockException e ) {
             transact.abort(transaction);
             throw new XMLDBException( ErrorCodes.PERMISSION_DENIED,
                 e.getMessage(), e );
-        } catch (final LockException e) {
-            transact.abort(transaction);
-            throw new XMLDBException( ErrorCodes.PERMISSION_DENIED,
-                    e.getMessage(), e );
-        } catch (final TriggerException e) {
-            transact.abort(transaction);
-            throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
-                "failed to move resource " + resourcePath, e );
-		} finally {
+        } finally {
         	if(source != null)
-        		{source.release(Lock.WRITE_LOCK);}
+        		{source.release(LockMode.WRITE_LOCK);}
         	if(destination != null)
-        		{destination.release(Lock.WRITE_LOCK);}
+        		{destination.release(LockMode.WRITE_LOCK);}
             transact.close(transaction);
             brokerPool.release( broker );
             brokerPool.setSubject(preserveSubject);
@@ -402,12 +386,12 @@ public class LocalCollectionManagementService implements CollectionManagementSer
         org.exist.collections.Collection destination = null;
         try {
             broker = brokerPool.get(user);
-            collection = broker.openCollection(collectionPath, Lock.READ_LOCK);
+            collection = broker.openCollection(collectionPath, LockMode.READ_LOCK);
             if(collection == null) {
                 transact.abort(transaction);
                 throw new XMLDBException(ErrorCodes.NO_SUCH_COLLECTION, "Collection '" + collectionPath + "' not found");
             }
-            destination = broker.openCollection(destinationPath, Lock.WRITE_LOCK);
+            destination = broker.openCollection(destinationPath, LockMode.WRITE_LOCK);
             if(destination == null) {
                 transact.abort(transaction);
                 throw new XMLDBException(ErrorCodes.NO_SUCH_COLLECTION, "Collection '" + destinationPath + "' not found");
@@ -417,32 +401,18 @@ public class LocalCollectionManagementService implements CollectionManagementSer
 	    }
             broker.copyCollection(transaction, collection, destination, newName);
             transact.commit(transaction);
-        } catch ( final EXistException e ) {
+        } catch ( final EXistException | IOException | TriggerException e ) {
             transact.abort(transaction);
         	e.printStackTrace();
             throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
                 "failed to move collection " + collectionPath, e );
-        } catch ( final IOException e ) {
-            transact.abort(transaction);
-        	e.printStackTrace();
-            throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
-                "failed to move collection " + collectionPath, e );
-        } catch ( final PermissionDeniedException e ) {
+        } catch ( final PermissionDeniedException | LockException e ) {
             transact.abort(transaction);
             throw new XMLDBException( ErrorCodes.PERMISSION_DENIED,
                 e.getMessage(), e );
-        } catch (final LockException e) {
-            transact.abort(transaction);
-            throw new XMLDBException( ErrorCodes.PERMISSION_DENIED,
-                    e.getMessage(), e );
-        } catch (final TriggerException e) {
-            transact.abort(transaction);
-        	e.printStackTrace();
-            throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
-                "failed to move collection " + collectionPath, e );
-		} finally {
-        	if(collection != null) {collection.release(Lock.READ_LOCK);}
-        	if(destination != null) {destination.release(Lock.WRITE_LOCK);}
+        } finally {
+        	if(collection != null) {collection.release(LockMode.READ_LOCK);}
+        	if(destination != null) {destination.release(LockMode.WRITE_LOCK);}
             transact.close(transaction);
             brokerPool.release( broker );
             brokerPool.setSubject(preserveSubject);
@@ -479,7 +449,7 @@ public class LocalCollectionManagementService implements CollectionManagementSer
         org.exist.collections.Collection source = null;
         try {
             broker = brokerPool.get(user);
-     		source = broker.openCollection(resourcePath.removeLastSegment(), Lock.WRITE_LOCK);
+     		source = broker.openCollection(resourcePath.removeLastSegment(), LockMode.WRITE_LOCK);
     		if(source == null) {
                 transact.abort(transaction);
     			throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + resourcePath.removeLastSegment() + " not found");
@@ -489,7 +459,7 @@ public class LocalCollectionManagementService implements CollectionManagementSer
                 transact.abort(transaction);
                 throw new XMLDBException(ErrorCodes.NO_SUCH_RESOURCE, "Resource " + resourcePath + " not found");
             }
-            destination = broker.openCollection(destinationPath, Lock.WRITE_LOCK);
+            destination = broker.openCollection(destinationPath, LockMode.WRITE_LOCK);
             if(destination == null) {
                 transact.abort(transaction);
                 throw new XMLDBException(ErrorCodes.NO_SUCH_COLLECTION, "Collection " + destinationPath + " not found");
@@ -504,17 +474,13 @@ public class LocalCollectionManagementService implements CollectionManagementSer
         	e.printStackTrace();
             throw new XMLDBException( ErrorCodes.VENDOR_ERROR,
                 "failed to move resource " + resourcePath, e );
-        } catch ( final PermissionDeniedException e ) {
+        } catch ( final PermissionDeniedException | LockException e ) {
             transact.abort(transaction);
             throw new XMLDBException( ErrorCodes.PERMISSION_DENIED,
                 e.getMessage(), e );
-        } catch (final LockException e) {
-            transact.abort(transaction);
-            throw new XMLDBException( ErrorCodes.PERMISSION_DENIED,
-                    e.getMessage(), e );
         } finally {
-        	if(source != null) {source.release(Lock.WRITE_LOCK);}
-        	if(destination != null) {destination.release(Lock.WRITE_LOCK);}
+        	if(source != null) {source.release(LockMode.WRITE_LOCK);}
+        	if(destination != null) {destination.release(LockMode.WRITE_LOCK);}
             transact.close(transaction);
             brokerPool.release( broker );
             brokerPool.setSubject(preserveSubject);

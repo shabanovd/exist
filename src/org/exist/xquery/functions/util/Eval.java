@@ -59,7 +59,7 @@ import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -498,7 +498,7 @@ public class Eval extends BasicFunction {
 
                 DocumentImpl sourceDoc = null;
                 try {
-                    sourceDoc = context.getBroker().getXMLResource(locationUri.toCollectionPathURI(), Lock.READ_LOCK);
+                    sourceDoc = context.getBroker().getXMLResource(locationUri.toCollectionPathURI(), LockMode.READ_LOCK);
                     if (sourceDoc == null)
                         {throw new XPathException(this, "source for module " + location + " not found in database");}
                     if (sourceDoc.getResourceType() != DocumentImpl.BINARY_FILE ||
@@ -510,7 +510,7 @@ public class Eval extends BasicFunction {
                     throw new XPathException(this, "permission denied to read module source from " + location);
                 } finally {
                     if(sourceDoc != null)
-                        {sourceDoc.getUpdateLock().release(Lock.READ_LOCK);}
+                        {sourceDoc.getUpdateLock().release(LockMode.READ_LOCK);}
                 }
             } catch(final URISyntaxException e) {
                 throw new XPathException(this, e);

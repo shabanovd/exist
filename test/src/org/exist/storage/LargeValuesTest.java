@@ -3,7 +3,7 @@ package org.exist.storage;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DocumentImpl;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -143,7 +143,7 @@ public class LargeValuesTest {
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.READ_LOCK);
+            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.READ_LOCK);
             assertNotNull(root);
 
             DocumentImpl doc = root.getDocument(broker, XmldbURI.create("test.xml"));
@@ -188,7 +188,7 @@ public class LargeValuesTest {
             Txn transaction = transact.beginTransaction();
             assertNotNull(transaction);
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.READ_LOCK);
+            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.READ_LOCK);
             assertNotNull(root);
             broker.removeCollection(transaction, root);
 

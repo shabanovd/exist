@@ -67,7 +67,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.UUIDGenerator;
 import org.exist.storage.DBBroker;
 import org.exist.storage.StorageAddress;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
@@ -300,7 +300,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 					final ElementImpl feedRoot = (ElementImpl) feedDoc.getDocumentElement();
 
 					// Lock the feed
-					feedDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+					feedDoc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
 
 					// Append the entry
 					collection = broker.getOrCreateCollection(transaction, pathUri.append(ENTRY_COLLECTION_URI));
@@ -366,7 +366,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 				} finally {
                     transact.close(transaction);
 					if (feedDoc != null)
-						{feedDoc.getUpdateLock().release(Lock.WRITE_LOCK);}
+						{feedDoc.getUpdateLock().release(LockMode.WRITE_LOCK);}
 				}
 			} else {
 				throw new BadRequestException(
@@ -433,7 +433,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 
 				try {
 					LOG.debug("Acquiring lock on feed document...");
-					feedDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+					feedDoc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
 					
 					String title = request.getHeader("Title");
 					if (title == null)
@@ -489,7 +489,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 				} finally {
                     transact.close(transaction);
 					if (feedDoc != null)
-						{feedDoc.getUpdateLock().release(Lock.WRITE_LOCK);}
+						{feedDoc.getUpdateLock().release(LockMode.WRITE_LOCK);}
 				}
 
 			} catch (final IOException ex) {
@@ -609,7 +609,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 				final TransactionManager transact = broker.getBrokerPool().getTransactionManager();
 				final Txn transaction = transact.beginTransaction();
 				try {
-					feedDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+					feedDoc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
 					final ElementImpl feedRoot = (ElementImpl) feedDoc.getDocumentElement();
 
 					// Modify the feed by merging the new feed-level elements
@@ -629,7 +629,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 				} finally {
                     transact.close(transaction);
 					if (feedDoc != null)
-						{feedDoc.getUpdateLock().release(Lock.WRITE_LOCK);}
+						{feedDoc.getUpdateLock().release(LockMode.WRITE_LOCK);}
 				}
 
 			} else if ("entry".equals(root.getLocalName())) {
@@ -656,7 +656,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 								"Permission denied to update feed "
 										+ collection.getURI());}
 					
-					feedDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+					feedDoc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
 
 					// Find the entry
 					final String uuid = id.substring(9);
@@ -668,7 +668,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 								"Cannot find entry with id " + id);}
 
 					// Lock the entry
-					entryDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+					entryDoc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
 
 					final Element entry = entryDoc.getDocumentElement();
 
@@ -711,10 +711,10 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 				} finally {
                     transact.close(transaction);
 					if (feedDoc != null)
-						{feedDoc.getUpdateLock().release(Lock.WRITE_LOCK);}
+						{feedDoc.getUpdateLock().release(LockMode.WRITE_LOCK);}
 
 					if (entryDoc != null)
-						{entryDoc.getUpdateLock().release(Lock.WRITE_LOCK);}
+						{entryDoc.getUpdateLock().release(LockMode.WRITE_LOCK);}
 				}
 
 			} else {
@@ -849,7 +849,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 				{throw new PermissionDeniedException(
 						"Permission denied to update feed "
 								+ collection.getURI());}
-			feedDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+			feedDoc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
 
 			// Find the entry
 			final String uuid = id.substring(9);
@@ -905,7 +905,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 		} finally {
             transact.close(transaction);
 			if (feedDoc != null) {
-				feedDoc.getUpdateLock().release(Lock.WRITE_LOCK);
+				feedDoc.getUpdateLock().release(LockMode.WRITE_LOCK);
 			}
 		}
 

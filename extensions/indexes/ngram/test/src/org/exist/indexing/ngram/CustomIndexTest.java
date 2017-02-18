@@ -29,7 +29,7 @@ import org.exist.dom.MutableDocumentSet;
 import org.exist.security.xacml.AccessContext;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
@@ -535,7 +535,7 @@ public class CustomIndexTest extends TestCase {
             checkIndex(broker, docs, "cha", 1);
             checkIndex(broker, docs, "le8", 1);
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.WRITE_LOCK);
+            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
             assertNotNull(root);
 
             root.removeXMLResource(transaction, broker, XmldbURI.create("test_string.xml"));

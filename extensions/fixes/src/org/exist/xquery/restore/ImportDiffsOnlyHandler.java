@@ -41,7 +41,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.aider.ACEAider;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.md.*;
 import org.exist.storage.serializers.ChainOfReceiversFactory;
 import org.exist.storage.serializers.EXistOutputKeys;
@@ -579,7 +579,7 @@ public class ImportDiffsOnlyHandler extends DefaultHandler {
         @Override
         public void apply() {
             try {
-                getTarget().getLock().acquire(Lock.WRITE_LOCK);
+                getTarget().getLock().acquire(LockMode.WRITE_LOCK);
 
                 final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
                 final Txn txn = txnManager.beginTransaction();
@@ -606,7 +606,7 @@ public class ImportDiffsOnlyHandler extends DefaultHandler {
 
                 } finally {
                     txnManager.close(txn);
-                    getTarget().release(Lock.WRITE_LOCK);
+                    getTarget().release(LockMode.WRITE_LOCK);
                 }
 
             } catch (final Exception xe) {
@@ -699,7 +699,7 @@ public class ImportDiffsOnlyHandler extends DefaultHandler {
                     try {
                         final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
 
-                        getTarget().getUpdateLock().acquire(Lock.WRITE_LOCK);
+                        getTarget().getUpdateLock().acquire(LockMode.WRITE_LOCK);
 
                         try (Txn txn = txnManager.beginTransaction()) {
 
@@ -730,7 +730,7 @@ public class ImportDiffsOnlyHandler extends DefaultHandler {
                             txnManager.commit(txn);
 
                         } finally {
-                            getTarget().getUpdateLock().release(Lock.WRITE_LOCK);
+                            getTarget().getUpdateLock().release(LockMode.WRITE_LOCK);
                         }
 
                     } catch (final Exception xe) {

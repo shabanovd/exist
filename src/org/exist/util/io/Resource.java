@@ -47,7 +47,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
@@ -316,7 +316,7 @@ public class Resource extends File {
 	        org.exist.collections.Collection source = null;
 	        XmldbURI newName;
 			try {
-	     		source = broker.openCollection(uri.removeLastSegment(), Lock.WRITE_LOCK);
+	     		source = broker.openCollection(uri.removeLastSegment(), LockMode.WRITE_LOCK);
 	    		if(source == null) {
 	    			return false;
 	            }
@@ -324,7 +324,7 @@ public class Resource extends File {
 	            if(doc == null) {
 	                return false;
 	            }
-	            destination = broker.openCollection(destinationPath.removeLastSegment(), Lock.WRITE_LOCK);
+	            destination = broker.openCollection(destinationPath.removeLastSegment(), LockMode.WRITE_LOCK);
 	            if(destination == null) {
 	                return false;
 	            }
@@ -342,8 +342,8 @@ public class Resource extends File {
 	        	return false;
 	        } finally {
                 tm.close(transaction);
-	        	if(source != null) {source.release(Lock.WRITE_LOCK);}
-	        	if(destination != null) {destination.release(Lock.WRITE_LOCK);}
+	        	if(source != null) {source.release(LockMode.WRITE_LOCK);}
+	        	if(destination != null) {destination.release(LockMode.WRITE_LOCK);}
 	        }
         } finally {
         	if (db != null)
@@ -376,7 +376,7 @@ public class Resource extends File {
             org.exist.collections.Collection source = null;
             XmldbURI newName;
             try {
-                source = broker.openCollection(uri.removeLastSegment(), Lock.WRITE_LOCK);
+                source = broker.openCollection(uri.removeLastSegment(), LockMode.WRITE_LOCK);
                 if(source == null) {
                     return false;
                 }
@@ -384,7 +384,7 @@ public class Resource extends File {
                 if(doc == null) {
                     return false;
                 }
-                destination = broker.openCollection(destinationPath.removeLastSegment(), Lock.WRITE_LOCK);
+                destination = broker.openCollection(destinationPath.removeLastSegment(), LockMode.WRITE_LOCK);
                 if(destination == null) {
                     return false;
                 }
@@ -408,8 +408,8 @@ public class Resource extends File {
                 return false;
             } finally {
                 tm.close(transaction);
-                if(source != null) {source.release(Lock.WRITE_LOCK);}
-                if(destination != null) {destination.release(Lock.WRITE_LOCK);}
+                if(source != null) {source.release(LockMode.WRITE_LOCK);}
+                if(destination != null) {destination.release(LockMode.WRITE_LOCK);}
             }
         } finally {
             if (db != null)
@@ -599,7 +599,7 @@ public class Resource extends File {
 			tm = db.getTransactionManager();
 	        Txn txn = null;
 	        try {
-	            collection = broker.openCollection(uri.removeLastSegment(), Lock.NO_LOCK);
+	            collection = broker.openCollection(uri.removeLastSegment(), LockMode.NO_LOCK);
 	            if (collection == null) {
 	                return false;
 	            }
@@ -680,17 +680,20 @@ public class Resource extends File {
 //			}
 //			
 			try {
-				resource = broker.getResource(uri, Lock.READ_LOCK);
+                resource = broker.getXMLResource(uri, LockMode.READ_LOCK);
 			} catch (final PermissionDeniedException e1) {
+                return false;
 			} finally {
 				if (resource != null) {
-					resource.getUpdateLock().release(Lock.READ_LOCK);
+                    resource.getUpdateLock().release(LockMode.READ_LOCK);
 					collection = resource.getCollection();
 					initialized = true;
-					
-					return false;
 				}
 			}
+
+            if (resource != null) {
+                return false;
+            }
 
 			MimeType mimeType = MimeTable.getInstance().getContentTypeFor(fileName);
 	
@@ -731,8 +734,8 @@ public class Resource extends File {
                 tm.close(transaction);
 				closeFile(is);
 	
-				if (resource != null)
-					{resource.getUpdateLock().release(Lock.READ_LOCK);}
+//                if (resource != null)
+//                    {resource.getUpdateLock().release(Lock.READ_LOCK);}
 			}
 			
 		} catch (final Exception e) {
@@ -774,7 +777,7 @@ public class Resource extends File {
 					
 				//resource
 				} else {
-					resource = broker.getXMLResource(uri, Lock.READ_LOCK);
+					resource = broker.getXMLResource(uri, LockMode.READ_LOCK);
 					if (resource == null) {
 						//may be, it's collection ... checking ...
 						collection = broker.getCollection(uri);
@@ -790,8 +793,9 @@ public class Resource extends File {
 			} catch (final Exception e) {
 				throw new IOException(e);
 			} finally {
-				if (resource != null)
-					{resource.getUpdateLock().release(Lock.READ_LOCK);}
+                if (resource != null) {
+                    resource.getUpdateLock().release(LockMode.READ_LOCK);
+                }
 			}
 		} finally {
 			if (db != null)
@@ -987,7 +991,7 @@ public class Resource extends File {
 			}
 	
 	    	try {
-	        	collection.getLock().acquire(Lock.READ_LOCK);
+	        	collection.getLock().acquire(LockMode.READ_LOCK);
 	
 	        	final File[] children = new File[collection.getChildCollectionCount(broker) + 
 	                                       collection.getDocumentCount(broker)];
@@ -1017,15 +1021,11 @@ public class Resource extends File {
 	            }
 	            
 	            return children;
-	        } catch (final LockException e) {
-	        	//throw new IOException("Failed to acquire lock on collection '" + uri + "'");
-	    		return null;
-	        
 	        } catch (final Exception e) {
 	        	return null;
 	        	
 		    } finally {
-		        collection.release(Lock.READ_LOCK);
+		        collection.release(LockMode.READ_LOCK);
 		    }
 	    
 		} catch (final Exception e) {
@@ -1288,7 +1288,7 @@ public class Resource extends File {
 					
 				//resource
 				} else {
-					resource = broker.getXMLResource(uri, Lock.READ_LOCK);
+					resource = broker.getXMLResource(uri, LockMode.READ_LOCK);
 					if (resource == null) {
 						//may be, it's collection ... checking ...
 						collection = broker.getCollection(uri);
@@ -1327,7 +1327,7 @@ public class Resource extends File {
 			} finally {
                 tm.close(txn);
 				if (resource != null)
-					{resource.getUpdateLock().release(Lock.READ_LOCK);}
+					{resource.getUpdateLock().release(LockMode.READ_LOCK);}
 			}
 		} finally {
 			if (db != null)

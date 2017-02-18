@@ -32,7 +32,7 @@ import org.exist.source.Source;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.CompiledXQuery;
 import org.exist.xquery.XQuery;
@@ -99,8 +99,8 @@ public class AuditTrailSessionListener implements HttpSessionListener {
             DBBroker broker = null;
             Subject subject = null;
 
+            DocumentImpl resource = null;
             try {
-                DocumentImpl resource = null;
                 Source source = null;
 
                 pool = BrokerPool.getInstance();
@@ -115,7 +115,7 @@ public class AuditTrailSessionListener implements HttpSessionListener {
                 final XmldbURI pathUri = XmldbURI.create(xqueryResourcePath);
 
 
-                resource = broker.getXMLResource(pathUri, Lock.READ_LOCK);
+                resource = broker.getXMLResource(pathUri, LockMode.READ_LOCK);
 
                 if(resource != null) {
                     LOG.info("Resource [" + xqueryResourcePath + "] exists.");
@@ -166,6 +166,9 @@ public class AuditTrailSessionListener implements HttpSessionListener {
                 LOG.error("Exception while executing [" + xqueryResourcePath + "] script for " + subject.getName(), e);
             }
             finally {
+                if (resource != null) {
+                    resource.getUpdateLock().release(LockMode.READ_LOCK);
+                }
                 if (pool != null)
                     {pool.release(broker);}
             }

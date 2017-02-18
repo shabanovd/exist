@@ -26,7 +26,7 @@ import org.exist.security.Permission;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -108,7 +108,7 @@ public class CollectionRemovalTest {
 			assertNotNull(transact);
 			transaction = transact.beginTransaction();
 
-            test = broker.openCollection(uri, Lock.WRITE_LOCK);
+            test = broker.openCollection(uri, LockMode.WRITE_LOCK);
             broker.removeCollection(transaction, test);
             transact.commit(transaction);
         } catch (Exception e) {
@@ -116,7 +116,7 @@ public class CollectionRemovalTest {
 			e.printStackTrace();
 		} finally {
             if (test != null)
-                test.release(Lock.WRITE_LOCK);
+                test.release(LockMode.WRITE_LOCK);
             pool.release(broker);
 		}
     }
@@ -126,7 +126,7 @@ public class CollectionRemovalTest {
         Collection test = null;
         try {
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
-            test = broker.openCollection(uri, Lock.WRITE_LOCK);
+            test = broker.openCollection(uri, LockMode.WRITE_LOCK);
             assertNotNull(test);
             
             DocumentImpl doc = test.getDocument(broker, XmldbURI.createInternal("document.xml"));
@@ -141,7 +141,7 @@ public class CollectionRemovalTest {
             fail(e.getMessage());
         } finally {
             if (test != null)
-                test.release(Lock.WRITE_LOCK);
+                test.release(LockMode.WRITE_LOCK);
             pool.release(broker);
         }
     }

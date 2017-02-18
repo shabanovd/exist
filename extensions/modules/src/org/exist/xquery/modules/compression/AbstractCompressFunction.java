@@ -30,7 +30,7 @@ import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.MutableDocumentSet;
 import org.exist.security.PermissionDeniedException;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.Base64Decoder;
 import org.exist.util.LockException;
@@ -148,7 +148,7 @@ public abstract class AbstractCompressFunction extends BasicFunction
                     try
                     {
                         XmldbURI xmldburi = XmldbURI.create(uri);
-                        doc = context.getBroker().getXMLResource(xmldburi, Lock.READ_LOCK);
+                        doc = context.getBroker().getXMLResource(xmldburi, LockMode.READ_LOCK);
 
                         if(doc == null)
                         {
@@ -172,26 +172,13 @@ public abstract class AbstractCompressFunction extends BasicFunction
                             compressResource(os, doc, useHierarchy, stripOffset, method, resourceName);
                         }
                     }
-                    catch(PermissionDeniedException pde)
+                    catch(PermissionDeniedException | IOException | SAXException | LockException pde)
                     {
                         throw new XPathException(this, pde.getMessage());
-                    }
-                    catch(IOException ioe)
-                    {
-                        throw new XPathException(this, ioe.getMessage());
-                    }
-                    catch(SAXException saxe)
-                    {
-                        throw new XPathException(this, saxe.getMessage());
-                    }
-                    catch(LockException le)
-                    {
-                        throw new XPathException(this, le.getMessage());
-                    }
-                    finally
+                    } finally
                     {
                         if(doc != null)
-                            doc.getUpdateLock().release(Lock.READ_LOCK);
+                            doc.getUpdateLock().release(LockMode.READ_LOCK);
                     }
                 }
 
@@ -481,18 +468,18 @@ public abstract class AbstractCompressFunction extends BasicFunction
 		col.getDocuments(context.getBroker(), childDocs);
 		for (Iterator<DocumentImpl> itChildDocs = childDocs.getDocumentIterator(); itChildDocs
 				.hasNext();) {
-			DocumentImpl childDoc = (DocumentImpl) itChildDocs.next();
-			childDoc.getUpdateLock().acquire(Lock.READ_LOCK);
+			DocumentImpl childDoc = itChildDocs.next();
+			childDoc.getUpdateLock().acquire(LockMode.READ_LOCK);
 			try {
 				compressResource(os, childDoc, useHierarchy, stripOffset, "", null);
 			} finally {
-				childDoc.getUpdateLock().release(Lock.READ_LOCK);
+				childDoc.getUpdateLock().release(LockMode.READ_LOCK);
 			}
 		}
 		// iterate over child collections
 		for (Iterator<XmldbURI> itChildCols = col.collectionIterator(context.getBroker()); itChildCols.hasNext();) {
 			// get the child collection
-			XmldbURI childColURI = (XmldbURI) itChildCols.next();
+			XmldbURI childColURI = itChildCols.next();
 			Collection childCol = context.getBroker().getCollection(col.getURI().append(childColURI));
 			// recurse
 			compressCollection(os, childCol, useHierarchy, stripOffset);

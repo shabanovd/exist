@@ -30,13 +30,16 @@ import org.exist.dom.DocumentImpl;
 import org.exist.dom.DocumentSet;
 import org.exist.dom.MutableDocumentSet;
 import org.exist.dom.NewArrayNodeSet;
+import org.exist.dom.NodeHandle;
 import org.exist.dom.NodeProxy;
 import org.exist.dom.NodeSet;
 import org.exist.dom.QName;
 import org.exist.dom.StoredNode;
 import org.exist.numbering.NodeId;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.UpdateListener;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Cardinality;
@@ -59,7 +62,6 @@ import org.exist.xquery.value.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.exist.security.PermissionDeniedException;
 
 /**
  * @author wolf
@@ -72,14 +74,14 @@ public class ExtCollection extends Function {
         new FunctionSignature(
             new QName("collection", Function.BUILTIN_FUNCTION_NS),
             "Returns the documents contained in the collections specified in " +
-            "the input sequence. " + XMLDBModule.COLLECTION_URI +
-            " Documents contained in subcollections are also included. If no value is supplied, the statically know documents are used, for the REST Server this could be the addressed collection.",
+                "the input sequence. " + XMLDBModule.COLLECTION_URI +
+                " Documents contained in subcollections are also included. If no value is supplied, the statically know documents are used, for the REST Server this could be the addressed collection.",
             new SequenceType[] {
                 //Different from the offical specs
                 new FunctionParameterSequenceType("collection-uris", Type.STRING,
                     Cardinality.ZERO_OR_MORE, "The collection-URIs for which to include the documents")},
-                new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_MORE, 
-                    "The document nodes contained in or under the given collections"),
+            new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_MORE,
+                "The document nodes contained in or under the given collections"),
             true);
 
     private boolean includeSubCollections = false;
@@ -92,22 +94,22 @@ public class ExtCollection extends Function {
         this(context, signature, true);
     }
 
-	public ExtCollection(XQueryContext context, FunctionSignature signature, boolean inclusive) {
-		super(context, signature);
-		includeSubCollections = inclusive;
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.exist.xquery.Expression#eval(org.exist.dom.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
-	 */
-	public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
+    public ExtCollection(XQueryContext context, FunctionSignature signature, boolean inclusive) {
+        super(context, signature);
+        includeSubCollections = inclusive;
+    }
+
+    /* (non-Javadoc)
+     * @see org.exist.xquery.Expression#eval(org.exist.dom.persistent.DocumentSet, org.exist.xquery.value.Sequence, org.exist.xquery.value.Item)
+     */
+    public Sequence eval(Sequence contextSequence, Item contextItem) throws XPathException {
         if (context.getProfiler().isEnabled()) {
-            context.getProfiler().start(this);       
+            context.getProfiler().start(this);
             context.getProfiler().message(this, Profiler.DEPENDENCIES, "DEPENDENCIES", Dependency.getDependenciesName(this.getDependencies()));
             if (contextSequence != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT SEQUENCE", contextSequence);}
+            {context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT SEQUENCE", contextSequence);}
             if (contextItem != null)
-                {context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT ITEM", contextItem.toSequence());}
+            {context.getProfiler().message(this, Profiler.START_SEQUENCES, "CONTEXT ITEM", contextItem.toSequence());}
         }
         final List<String> args = getParameterValues(contextSequence, contextItem);
         // TODO: disabled cache for now as it may cause concurrency issues
@@ -117,11 +119,11 @@ public class ExtCollection extends Function {
         // if (cachedArgs != null)
         //    cacheIsValid = compareArguments(cachedArgs, args);
         // if (cacheIsValid) {
-             //If the expression occurs in a nested context, we might have cached the
-             //document set
-             //if (context.getProfiler().isEnabled())
-                 //context.getProfiler().end(this, "fn:collection: loading documents", cached);
-             //return cached;
+        //If the expression occurs in a nested context, we might have cached the
+        //document set
+        //if (context.getProfiler().isEnabled())
+        //context.getProfiler().end(this, "fn:collection: loading documents", cached);
+        //return cached;
         // }
         //Build the document set
         DocumentSet docs = null;
@@ -141,10 +143,10 @@ public class ExtCollection extends Function {
                         }
                     } else {
                         if (context.inProtectedMode())
-                            {context.getProtectedDocs().getDocsByCollection(coll, includeSubCollections, ndocs);}
+                        {context.getProtectedDocs().getDocsByCollection(coll, ndocs);}
                         else
-                            {coll.allDocs(context.getBroker(), ndocs,
-                                includeSubCollections, context.getProtectedDocs());}
+                        {coll.allDocs(context.getBroker(), ndocs,
+                            includeSubCollections, context.getProtectedDocs());}
                     }
                 }
                 docs = ndocs;
@@ -154,10 +156,10 @@ public class ExtCollection extends Function {
             throw new XPathException("FODC0002: " + e.getMessage());
         } catch(final PermissionDeniedException pde) {
             throw new XPathException("FODC0002: can not access collection '" + pde.getMessage() + "'");
-            
+
         }
         // iterate through all docs and create the node set
-        final NodeSet result = new NewArrayNodeSet(docs.getDocumentCount(), 1);
+        final NodeSet result = new NewArrayNodeSet();
         Lock dlock;
         DocumentImpl doc;
         for (final Iterator<DocumentImpl> i = docs.getDocumentIterator(); i.hasNext();) {
@@ -166,7 +168,7 @@ public class ExtCollection extends Function {
             boolean lockAcquired = false;
             try {
                 if (!context.inProtectedMode() && !dlock.hasLock()) {
-                    dlock.acquire(Lock.READ_LOCK);
+                    dlock.acquire(LockMode.READ_LOCK);
                     lockAcquired = true;
                 }
                 result.add(new NodeProxy(doc)); // , -1, Node.DOCUMENT_NODE));
@@ -174,12 +176,12 @@ public class ExtCollection extends Function {
                 throw new XPathException(e.getMessage());
             } finally {
                 if (lockAcquired)
-                    {dlock.release(Lock.READ_LOCK);}
+                {dlock.release(LockMode.READ_LOCK);}
             }
         }
         registerUpdateListener();
         if (context.getProfiler().isEnabled())
-               {context.getProfiler().end(this, "", result);}
+        {context.getProfiler().end(this, "", result);}
         return result;
     }
 
@@ -189,7 +191,7 @@ public class ExtCollection extends Function {
      * @throws XPathException
      */
     private List<String> getParameterValues(Sequence contextSequence,
-            Item contextItem) throws XPathException {
+        Item contextItem) throws XPathException {
         final List<String> args = new ArrayList<String>(getArgumentCount() + 10);
         for (int i = 0; i < getArgumentCount(); i++) {
             final Sequence seq = getArgument(i).eval(contextSequence, contextItem);
@@ -205,18 +207,22 @@ public class ExtCollection extends Function {
         if (listener == null) {
             listener = new UpdateListener() {
 
+                @Override
                 public void documentUpdated(DocumentImpl document, int event) {
                     //Nothing to do (previously was cache management)
                 }
 
+                @Override
                 public void unsubscribe() {
                     ExtCollection.this.listener = null;
                 }
 
+                @Override
                 public void nodeMoved(NodeId oldNodeId, StoredNode newNode) {
                     // not relevant
                 }
 
+                @Override
                 public void debug() {
                     LOG.debug("UpdateListener: Line: " + getLine() + ": " +
                         ExtCollection.this.toString());

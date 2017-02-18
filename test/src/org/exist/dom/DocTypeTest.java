@@ -1,9 +1,6 @@
 package org.exist.dom;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Properties;
 
 import javax.xml.transform.OutputKeys;
@@ -13,23 +10,16 @@ import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
 import org.exist.util.FileInputSource;
-import org.exist.util.VirtualTempFile;
 import org.exist.xmldb.XmldbURI;
-import org.w3c.dom.Attr;
 import org.w3c.dom.DocumentType;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 /**
  * Tests basic DOM methods like getChildNodes(), getAttribute() ...
@@ -98,7 +88,7 @@ public class DocTypeTest extends XMLTestCase {
 
 			transact.commit(transaction);
 
-			doc = broker.getXMLResource(root.getURI().append(XmldbURI.create("test2.xml")),Lock.READ_LOCK);
+			doc = broker.getXMLResource(root.getURI().append(XmldbURI.create("test2.xml")),LockMode.READ_LOCK);
 
 			DocumentType docType = doc.getDoctype();
 			
@@ -122,7 +112,7 @@ public class DocTypeTest extends XMLTestCase {
 		    e.printStackTrace();
 		    fail(e.getMessage());
 		} finally {
-		    if (doc != null) doc.getUpdateLock().release(Lock.READ_LOCK);
+		    if (doc != null) doc.getUpdateLock().release(LockMode.READ_LOCK);
 		    if (pool != null) pool.release(broker);
 		}
 	}
@@ -134,7 +124,7 @@ public class DocTypeTest extends XMLTestCase {
 			assertNotNull(pool);
 
 			broker = pool.get(pool.getSecurityManager().getSystemSubject());
-			doc = broker.getXMLResource(root.getURI().append(XmldbURI.create("test.xml")),Lock.READ_LOCK);
+			doc = broker.getXMLResource(root.getURI().append(XmldbURI.create("test.xml")),LockMode.READ_LOCK);
 
 			DocumentType docType = doc.getDoctype();
 			
@@ -157,7 +147,7 @@ public class DocTypeTest extends XMLTestCase {
 		    e.printStackTrace();
 		    fail(e.getMessage());
 		} finally {
-		    if (doc != null) doc.getUpdateLock().release(Lock.READ_LOCK);
+		    if (doc != null) doc.getUpdateLock().release(LockMode.READ_LOCK);
 		    if (pool != null) pool.release(broker);
 		}
 	}

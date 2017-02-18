@@ -26,7 +26,7 @@ import java.io.InputStream;
 
 import org.exist.collections.Collection;
 import org.exist.dom.BinaryDocument;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
@@ -124,7 +124,7 @@ public class ResourceTest {
             XmldbURI docPath = TestConstants.TEST_COLLECTION_URI.append(DOCUMENT_NAME_URI);
             
             BinaryDocument binDoc = (BinaryDocument) broker
-                    .getXMLResource(docPath, Lock.READ_LOCK);
+                    .getXMLResource(docPath, LockMode.READ_LOCK);
             
             // if document is not present, null is returned
             if(binDoc == null){
@@ -134,7 +134,7 @@ public class ResourceTest {
                data = new byte[(int)broker.getBinaryResourceSize(binDoc)];
                is.read(data);
                is.close();
-                binDoc.getUpdateLock().release(Lock.READ_LOCK);
+                binDoc.getUpdateLock().release(LockMode.READ_LOCK);
             }
             
             Collection collection = broker.getCollection(TestConstants.TEST_COLLECTION_URI);
@@ -183,7 +183,7 @@ public class ResourceTest {
             XmldbURI docPath = TestConstants.TEST_COLLECTION_URI.append(DOCUMENT_NAME_URI);
             
             BinaryDocument binDoc = (BinaryDocument) broker
-                    .getXMLResource(docPath, Lock.READ_LOCK);
+                    .getXMLResource(docPath, LockMode.READ_LOCK);
             
             // if document is not present, null is returned
             if(binDoc == null){
@@ -193,7 +193,7 @@ public class ResourceTest {
                data = new byte[(int)broker.getBinaryResourceSize(binDoc)];
                is.read(data);
                is.close();
-                binDoc.getUpdateLock().release(Lock.READ_LOCK);
+                binDoc.getUpdateLock().release(LockMode.READ_LOCK);
             }
             
             Collection collection = broker.getCollection(TestConstants.TEST_COLLECTION_URI);

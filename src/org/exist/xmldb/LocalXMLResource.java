@@ -32,7 +32,7 @@ import org.exist.security.Permission;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -171,7 +171,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
                     content = serializer.serialize(proxy);
                     
                 } else {
-				    document = openDocument(broker, Lock.READ_LOCK);
+				    document = openDocument(broker, LockMode.READ_LOCK);
 					if (!document.getPermissions().validate(user,
 							Permission.READ))
 						{throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
@@ -191,7 +191,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 				throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e
 						.getMessage(), e);
 			} finally {
-			    closeDocument(document, Lock.READ_LOCK);
+			    closeDocument(document, LockMode.READ_LOCK);
 				pool.release(broker);
 				pool.setSubject(preserveSubject);
 			}
@@ -224,7 +224,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 			DBBroker broker = null;
 			try {
 				broker = pool.get(user);
-				document = getDocument(broker, Lock.READ_LOCK);
+				document = getDocument(broker, LockMode.READ_LOCK);
 				if (!document.getPermissions().validate(user, Permission.READ))
 					{throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
 							"permission denied to read resource");}
@@ -236,7 +236,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 				throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e
 						.getMessage(), e);
 			} finally {
-				collection.getCollection().releaseDocument(document, Lock.READ_LOCK);
+				collection.getCollection().releaseDocument(document, LockMode.READ_LOCK);
 				pool.release(broker);
 				pool.setSubject(preserveSubject);
 			}
@@ -294,22 +294,18 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
                 } else {
 					DocumentImpl document = null;
 					try {
-						document = openDocument(broker, Lock.READ_LOCK);
+						document = openDocument(broker, LockMode.READ_LOCK);
 						if (!document.getPermissions().validate(user,
 								Permission.READ))
 							{throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
 							"permission denied to read resource");}
 						serializer.toSAX(document);
 					} finally {
-					    closeDocument(document, Lock.READ_LOCK);
+					    closeDocument(document, LockMode.READ_LOCK);
 					}
 				}
-			} catch (final EXistException e) {
-				throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e
-						.getMessage(), e);
-			} catch (final SAXException e) {
-				throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e
-						.getMessage(), e);
+			} catch (final EXistException | SAXException e) {
+				throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
 			} finally {
 				pool.release(broker);
 				pool.setSubject(preserveSubject);
@@ -343,7 +339,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 		DBBroker broker = null;
 		try {
 			broker = pool.get(user);
-			final DocumentImpl document = getDocument(broker, Lock.NO_LOCK);
+			final DocumentImpl document = getDocument(broker, LockMode.NO_LOCK);
 			return new Date(document.getMetadata().getCreated());
 		} catch (final EXistException e) {
 			throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e.getMessage(),
@@ -359,7 +355,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 		DBBroker broker = null;
 		try {
 			broker = pool.get(user);
-			final DocumentImpl document = getDocument(broker, Lock.NO_LOCK);
+			final DocumentImpl document = getDocument(broker, LockMode.NO_LOCK);
 			return new Date(document.getMetadata().getLastModified());
 		} catch (final EXistException e) {
 			throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e.getMessage(),
@@ -378,7 +374,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 		DBBroker broker = null;
 		try {
 			broker = pool.get(user);
-			final DocumentImpl document = getDocument(broker, Lock.NO_LOCK);
+			final DocumentImpl document = getDocument(broker, LockMode.NO_LOCK);
 			return document.getContentLength();
 		} catch (final EXistException e) {
 			throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e.getMessage(),
@@ -486,7 +482,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 	    DBBroker broker = null;
 	    try {
 	        broker = pool.get(user);
-		    final DocumentImpl document = getDocument(broker, Lock.NO_LOCK);
+		    final DocumentImpl document = getDocument(broker, LockMode.NO_LOCK);
 			return document != null ? document.getPermissions() : null;
 	    } catch (final EXistException e) {
             throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, e.getMessage(), e);
@@ -511,10 +507,10 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 		return outputProperties == null ? collection.properties : outputProperties;
 	}
 
-	protected DocumentImpl getDocument(DBBroker broker, int lock) throws XMLDBException {
+	protected DocumentImpl getDocument(DBBroker broker, LockMode lock) throws XMLDBException {
 	    DocumentImpl document = null;
             try {
-                if(lock != Lock.NO_LOCK) {
+                if(lock != LockMode.NO_LOCK) {
                     document = collection.getCollection().getDocumentWithLock(broker, docId, lock);
                  } else {
                     document = collection.getCollection().getDocument(broker, docId);
@@ -540,7 +536,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 	    DBBroker broker = null;
 	    try {
 	        broker = pool.get(user);
-	        final DocumentImpl document = getDocument(broker, Lock.NO_LOCK);
+	        final DocumentImpl document = getDocument(broker, LockMode.NO_LOCK);
 	        // this XMLResource represents a document
 			return new NodeProxy(document, NodeId.DOCUMENT_NODE);
 	    } catch (final EXistException e) {
@@ -556,7 +552,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 		DBBroker broker = null;
 		try {
 			broker = pool.get(user);
-			final DocumentImpl document = getDocument(broker, Lock.NO_LOCK);
+			final DocumentImpl document = getDocument(broker, LockMode.NO_LOCK);
 			if (!document.getPermissions().validate(user, Permission.READ))
 				{throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
 						"permission denied to read resource");}
@@ -579,7 +575,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 	        final Txn transaction = transact.beginTransaction();
 		try {
 			broker = pool.get(user);
-			document = openDocument(broker, Lock.WRITE_LOCK);
+			document = openDocument(broker, LockMode.WRITE_LOCK);
            	
 			if (document == null) {
                 throw new EXistException("Resource "
@@ -601,7 +597,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
 					e);
 		} finally {
             transact.close(transaction);
-			closeDocument(document, Lock.WRITE_LOCK);
+			closeDocument(document, LockMode.WRITE_LOCK);
 			pool.release(broker);
 			pool.setSubject(preserveSubject);
 		}

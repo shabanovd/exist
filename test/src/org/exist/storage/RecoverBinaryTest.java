@@ -29,7 +29,7 @@ import java.io.FileInputStream;
 
 import org.exist.collections.Collection;
 import org.exist.dom.BinaryDocument;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
@@ -112,7 +112,7 @@ public class RecoverBinaryTest {
                 assertNotNull(pool);
                 broker = pool.get(pool.getSecurityManager().getSystemSubject());
                 assertNotNull(broker);
-            BinaryDocument binDoc = (BinaryDocument) broker.getXMLResource(TestConstants.TEST_COLLECTION_URI.append(TestConstants.TEST_BINARY_URI), Lock.READ_LOCK);
+            BinaryDocument binDoc = (BinaryDocument) broker.getXMLResource(TestConstants.TEST_COLLECTION_URI.append(TestConstants.TEST_BINARY_URI), LockMode.READ_LOCK);
             assertNotNull("Binary document is null", binDoc);
             InputStream is = broker.getBinaryResource(binDoc);
             byte [] bdata = new byte[(int)broker.getBinaryResourceSize(binDoc)];

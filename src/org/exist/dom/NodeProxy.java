@@ -1435,16 +1435,16 @@ public class NodeProxy implements NodeSet, NodeValue, NodeHandle, DocumentSet, C
     @Override
     public void lock(final DBBroker broker, final boolean exclusive, final boolean checkExisting) throws LockException {
         final Lock docLock = doc.getUpdateLock();
-        docLock.acquire(exclusive ? Lock.WRITE_LOCK : Lock.READ_LOCK);
+        docLock.acquire(exclusive ? Lock.LockMode.WRITE_LOCK : Lock.LockMode.READ_LOCK);
     }
 
     @Override
     public void unlock(final boolean exclusive) {
         final Lock docLock = doc.getUpdateLock();
         if(exclusive) {
-            docLock.release(Lock.WRITE_LOCK);
+            docLock.release(Lock.LockMode.WRITE_LOCK);
         } else if(docLock.isLockedForRead(Thread.currentThread())) {
-            docLock.release(Lock.READ_LOCK);
+            docLock.release(Lock.LockMode.READ_LOCK);
         }
     }
 

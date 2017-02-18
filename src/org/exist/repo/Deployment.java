@@ -39,7 +39,7 @@ import org.exist.security.internal.aider.UserAider;
 import org.exist.security.xacml.AccessContext;
 import org.exist.source.FileSource;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
@@ -62,7 +62,6 @@ import org.w3c.dom.Element;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.helpers.AttributesImpl;
 
 import java.io.*;
 import java.util.Date;
@@ -598,12 +597,12 @@ public class Deployment {
         try {
             // lock the collection while we store the files
             // TODO: could be released after each operation
-            collection.getLock().acquire(Lock.WRITE_LOCK);
+            collection.getLock().acquire(LockMode.WRITE_LOCK);
             storeFiles(directory, collection, inRootDir);
         } catch (final LockException e) {
             e.printStackTrace();
         } finally {
-            collection.getLock().release(Lock.WRITE_LOCK);
+            collection.getLock().release(LockMode.WRITE_LOCK);
         }
 
         // scan sub directories

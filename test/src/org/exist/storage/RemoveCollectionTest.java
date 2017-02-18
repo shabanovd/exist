@@ -26,7 +26,7 @@ import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.collections.CollectionConfigurationManager;
 import org.exist.dom.DocumentImpl;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
@@ -238,7 +238,7 @@ public class RemoveCollectionTest {
         	assertNotNull(pool);
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             if (checkResource) {
-                doc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI.append("hamlet.xml"), Lock.READ_LOCK);
+                doc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI.append("hamlet.xml"), LockMode.READ_LOCK);
                 assertNull("Resource should have been removed", doc);
             }
         } catch (Exception e) {
@@ -246,7 +246,7 @@ public class RemoveCollectionTest {
             fail(e.getMessage());
 	    } finally {
             if (doc != null)
-                doc.getUpdateLock().release(Lock.READ_LOCK);
+                doc.getUpdateLock().release(LockMode.READ_LOCK);
             if (pool != null) pool.release(broker);
             stopDB();
         }

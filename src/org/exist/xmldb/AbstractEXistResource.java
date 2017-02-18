@@ -30,7 +30,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.util.function.FunctionE;
@@ -114,7 +114,7 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
         return mimeType;
     }
     
-	protected DocumentImpl openDocument(DBBroker broker, int lockMode) throws XMLDBException {
+	protected DocumentImpl openDocument(DBBroker broker, LockMode lockMode) throws XMLDBException {
 	    DocumentImpl document = null;
 	    org.exist.collections.Collection parentCollection = null;
 	    try {
@@ -141,7 +141,7 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
 	    }
 	}
 	
-	protected void closeDocument(DocumentImpl doc, int lockMode) throws XMLDBException {
+	protected void closeDocument(DocumentImpl doc, LockMode lockMode) throws XMLDBException {
 		if(doc == null)
 			{return;}
 //		System.out.println("Closed " + doc.getName() + " mode = " + lockMode);
@@ -176,7 +176,7 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
 	 * @return A function to receive a read-only operation to perform against the resource
 	 */
 	public <R> FunctionE<LocalXmldbDocumentFunction<R>, R, XMLDBException> read(final DBBroker broker, final Txn transaction) throws XMLDBException {
-		return with(Lock.READ_LOCK, broker, transaction);
+		return with(LockMode.READ_LOCK, broker, transaction);
 	}
 
 	/**
@@ -199,7 +199,7 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
 	 * @return A function to receive an operation to perform against the resource
 	 */
 	public <R> FunctionE<LocalXmldbDocumentFunction<R>, R, XMLDBException> modify(final DBBroker broker, final Txn transaction) throws XMLDBException {
-		return writeOp -> this.<R>with(Lock.WRITE_LOCK, broker, transaction).apply((document, broker1, transaction1) -> {
+		return writeOp -> this.<R>with(LockMode.WRITE_LOCK, broker, transaction).apply((document, broker1, transaction1) -> {
 			final R result = writeOp.apply(document, broker1, transaction1);
 			broker.storeXMLResource(transaction1, document);
 			return result;
@@ -214,7 +214,7 @@ public abstract class AbstractEXistResource extends AbstractLocal implements EXi
 	 * @param transaction The transaction to use for the operation
 	 * @return A function to receive an operation to perform on the locked database resource
 	 */
-	private <R> FunctionE<LocalXmldbDocumentFunction<R>, R, XMLDBException> with(final int lockMode, final DBBroker broker, final Txn transaction) throws XMLDBException {
+	private <R> FunctionE<LocalXmldbDocumentFunction<R>, R, XMLDBException> with(final LockMode lockMode, final DBBroker broker, final Txn transaction) throws XMLDBException {
 		return documentOp ->
 			collection.<R>with(lockMode, broker, transaction).apply((collection, broker1, transaction1) -> {
 				DocumentImpl doc = null;

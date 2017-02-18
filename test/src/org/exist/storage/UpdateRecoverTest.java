@@ -27,7 +27,7 @@ import org.exist.dom.DefaultDocumentSet;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.MutableDocumentSet;
 import org.exist.security.xacml.AccessContext;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -304,12 +304,12 @@ public class UpdateRecoverTest {
             assertNotNull(serializer);
             serializer.reset();
             
-            DocumentImpl doc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append(TestConstants.TEST_XML_URI), Lock.READ_LOCK);
+            DocumentImpl doc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append(TestConstants.TEST_XML_URI), LockMode.READ_LOCK);
             assertNotNull("Document '" + XmldbURI.ROOT_COLLECTION + "/test/test2/test.xml' should not be null", doc);
             String data = serializer.serialize(doc);
             assertNotNull(data);
             System.out.println(data);
-            doc.getUpdateLock().release(Lock.READ_LOCK);
+            doc.getUpdateLock().release(LockMode.READ_LOCK);
         } catch (Exception e) {            
         	fail(e.getMessage());                    
         } finally {

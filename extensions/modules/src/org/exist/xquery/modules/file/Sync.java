@@ -17,10 +17,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.sax.SAXResult;
 import javax.xml.transform.sax.SAXTransformerFactory;
-import javax.xml.transform.sax.TemplatesHandler;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamSource;
 
@@ -30,11 +28,9 @@ import org.exist.dom.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.memtree.MemTreeBuilder;
 import org.exist.security.PermissionDeniedException;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
-import org.exist.util.serializer.Receiver;
-import org.exist.util.serializer.ReceiverToSAX;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
 import org.exist.xmldb.XmldbURI;
@@ -140,7 +136,7 @@ public class Sync extends BasicFunction {
 		List<XmldbURI> subcollections = null;
 		Collection collection = null;
 		try {
-			collection = context.getBroker().openCollection(collectionPath, Lock.READ_LOCK);
+			collection = context.getBroker().openCollection(collectionPath, LockMode.READ_LOCK);
 			if (collection == null) {
 				reportError(output, "Collection not found: " + collectionPath);
 				return;
@@ -156,13 +152,13 @@ public class Sync extends BasicFunction {
 				}
 			}
 			
-			subcollections = new ArrayList<XmldbURI>(collection.getChildCollectionCount(context.getBroker()));
+			subcollections = new ArrayList<>(collection.getChildCollectionCount(context.getBroker()));
 			for (Iterator<XmldbURI> i = collection.collectionIterator(context.getBroker()); i.hasNext(); ) {
 				subcollections.add(i.next());
 			}
 		} finally {
 			if (collection != null)
-				collection.getLock().release(Lock.READ_LOCK);
+				collection.getLock().release(LockMode.READ_LOCK);
 		}
 		
 		for (XmldbURI childURI : subcollections) {

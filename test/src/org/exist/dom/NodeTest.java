@@ -5,7 +5,7 @@ import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
@@ -48,7 +48,7 @@ public class NodeTest extends XMLTestCase {
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
             
-            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"),Lock.READ_LOCK);
+            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"),LockMode.READ_LOCK);
             NodeList children = doc.getChildNodes();
             for (int i = 0; i < children.getLength(); i++) {
                 StoredNode node = (StoredNode) children.item(i);
@@ -58,7 +58,7 @@ public class NodeTest extends XMLTestCase {
             e.printStackTrace();
             fail(e.getMessage());
         } finally {
-            if (doc != null) doc.getUpdateLock().release(Lock.READ_LOCK);
+            if (doc != null) doc.getUpdateLock().release(LockMode.READ_LOCK);
             if (pool != null) pool.release(broker);
         }
     }
@@ -71,7 +71,7 @@ public class NodeTest extends XMLTestCase {
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
             
-            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"),Lock.READ_LOCK);
+            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"),LockMode.READ_LOCK);
             Element rootNode = doc.getDocumentElement();
             
             System.out.println("Testing getChildNodes() ...");
@@ -105,7 +105,7 @@ public class NodeTest extends XMLTestCase {
         	e.printStackTrace();
 	        fail(e.getMessage());
         } finally {
-        	if (doc != null) doc.getUpdateLock().release(Lock.READ_LOCK);
+        	if (doc != null) doc.getUpdateLock().release(LockMode.READ_LOCK);
         	if (pool != null) pool.release(broker);
         }
 	}
@@ -120,7 +120,7 @@ public class NodeTest extends XMLTestCase {
             
             System.out.println("testSiblingAxis() ...");
             
-            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"),Lock.READ_LOCK);
+            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"),LockMode.READ_LOCK);
             Element rootNode = doc.getDocumentElement();
             Element child = (Element) rootNode.getFirstChild();
             assertNotNull(child);
@@ -153,7 +153,7 @@ public class NodeTest extends XMLTestCase {
             e.printStackTrace();
             fail(e.getMessage());
         } finally {
-            if (doc != null) doc.getUpdateLock().release(Lock.READ_LOCK);
+            if (doc != null) doc.getUpdateLock().release(LockMode.READ_LOCK);
             if (pool != null) pool.release(broker);
         }
     }
@@ -166,7 +166,7 @@ public class NodeTest extends XMLTestCase {
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
             
-            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"),Lock.READ_LOCK);
+            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"),LockMode.READ_LOCK);
             Element rootNode = doc.getDocumentElement();
             Element first = (Element) rootNode.getFirstChild();
             assertEquals(first.getNodeName(), "a");
@@ -207,7 +207,7 @@ public class NodeTest extends XMLTestCase {
         	e.printStackTrace();
 	        fail(e.getMessage());
         } finally {
-        	if (doc != null) doc.getUpdateLock().release(Lock.READ_LOCK);
+        	if (doc != null) doc.getUpdateLock().release(LockMode.READ_LOCK);
         	if (pool != null) pool.release(broker);
         }
 	}
@@ -223,7 +223,7 @@ public class NodeTest extends XMLTestCase {
             
             System.out.println("testVisitor() ...");
             
-            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"));
+            doc = root.getDocumentWithLock(broker, XmldbURI.create("test.xml"),LockMode.READ_LOCK);
             StoredNode rootNode = (StoredNode) doc.getDocumentElement();
             NodeVisitor visitor = new NodeVisitor() {
                 public boolean visit(StoredNode node) {
@@ -236,7 +236,7 @@ public class NodeTest extends XMLTestCase {
             e.printStackTrace();
             fail(e.getMessage());
         } finally {
-            if (doc != null) doc.getUpdateLock().release(Lock.READ_LOCK);
+            if (doc != null) doc.getUpdateLock().release(LockMode.READ_LOCK);
             if (pool != null) pool.release(broker);
         }
     }

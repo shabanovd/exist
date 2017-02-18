@@ -466,7 +466,7 @@ public class CollectionConfigurationManager {
         try {
             Collection collection = null;
             try {
-                collection = broker.openCollection(XmldbURI.ROOT_COLLECTION_URI, Lock.READ_LOCK);
+                collection = broker.openCollection(XmldbURI.ROOT_COLLECTION_URI, Lock.LockMode.READ_LOCK);
                 if (collection == null) {
                     transact.abort(txn);
                     throw new EXistException("collection " + XmldbURI.ROOT_COLLECTION_URI + " not found!");
@@ -482,7 +482,7 @@ public class CollectionConfigurationManager {
                 }
             } finally {
                 if (collection != null) {
-                    collection.release(Lock.READ_LOCK);
+                    collection.release(Lock.LockMode.READ_LOCK);
                 }
             }
             // Configure the root collection

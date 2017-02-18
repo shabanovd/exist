@@ -51,7 +51,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.util.serializer.Receiver;
@@ -129,17 +129,14 @@ public class VersioningTrigger extends FilteringTrigger {
     		if (vDoc != null && !removeLast) {
     			if(!(vDoc instanceof BinaryDocument)) {
     				try {
-    					vDoc.getUpdateLock().acquire(Lock.WRITE_LOCK);
+    					vDoc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
     					vCollection.addDocument(transaction, broker, vDoc);
     					broker.storeXMLResource(transaction, vDoc);
-    				} catch (LockException e) {
+    				} catch (LockException | PermissionDeniedException e) {
     					LOG.warn("Versioning trigger could not store base document: " + vDoc.getFileURI() +
     							e.getMessage(), e);
-    				} catch (PermissionDeniedException e) {
-    					LOG.warn("Versioning trigger could not store base document: " + vDoc.getFileURI() +
-    							e.getMessage(), e);
-                                } finally {
-    					vDoc.getUpdateLock().release(Lock.WRITE_LOCK);
+    				} finally {
+    					vDoc.getUpdateLock().release(LockMode.WRITE_LOCK);
     				}
     			}
     		}
@@ -453,7 +450,7 @@ public class VersioningTrigger extends FilteringTrigger {
     private Collection getVersionsCollection(DBBroker broker, Txn transaction, XmldbURI collectionPath) 
     throws IOException, PermissionDeniedException, TriggerException {
         XmldbURI path = VERSIONS_COLLECTION.append(collectionPath);
-        Collection collection = broker.openCollection(path, Lock.WRITE_LOCK);
+        Collection collection = broker.openCollection(path, LockMode.WRITE_LOCK);
         
         if (collection == null) {
             if(LOG.isDebugEnabled())
@@ -461,7 +458,7 @@ public class VersioningTrigger extends FilteringTrigger {
             collection = broker.getOrCreateCollection(transaction, path);
             broker.saveCollection(transaction, collection);
         } else {
-            transaction.registerLock(collection.getLock(), Lock.WRITE_LOCK);
+            transaction.registerLock(collection.getLock(), LockMode.WRITE_LOCK);
         }
         
         return collection;

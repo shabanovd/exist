@@ -2,7 +2,7 @@ package org.exist.storage;
 
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
@@ -121,9 +121,9 @@ public class ReindexTest {
             assertNotNull(transaction);
             System.out.println("Transaction started ...");
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.WRITE_LOCK);
+            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
             assertNotNull(root);
-            transaction.registerLock(root.getLock(), Lock.WRITE_LOCK);
+            transaction.registerLock(root.getLock(), LockMode.WRITE_LOCK);
             broker.removeCollection(transaction, root);
             transact.getJournal().flushToLog(true);
             transact.commit(transaction);
@@ -150,7 +150,7 @@ public class ReindexTest {
             broker = pool.get(pool.getSecurityManager().getSystemSubject());
             assertNotNull(broker);
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.READ_LOCK);
+            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.READ_LOCK);
             assertNull("Removed collection does still exist", root);
         } catch (Exception e) {
             e.printStackTrace();

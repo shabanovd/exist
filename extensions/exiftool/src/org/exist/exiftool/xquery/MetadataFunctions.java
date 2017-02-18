@@ -17,7 +17,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.source.Source;
 import org.exist.source.SourceFactory;
 import org.exist.storage.NativeBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -93,7 +93,7 @@ public class MetadataFunctions extends BasicFunction {
     private Sequence extractMetadataFromLocalResource(XmldbURI docUri) throws XPathException {
         DocumentImpl doc = null;
         try {
-            doc = context.getBroker().getXMLResource(docUri, Lock.READ_LOCK);
+            doc = context.getBroker().getXMLResource(docUri, LockMode.READ_LOCK);
             if (doc instanceof BinaryDocument) {
                 //resolve real filesystem path of binary file
                 File binaryFile = ((NativeBroker) context.getBroker()).getCollectionBinaryFileFsPath(docUri);
@@ -108,7 +108,7 @@ public class MetadataFunctions extends BasicFunction {
             throw new XPathException("Could not access binary document: " + pde.getMessage(), pde);
         } finally {
             if (doc != null) {
-                doc.getUpdateLock().release(Lock.READ_LOCK);
+                doc.getUpdateLock().release(LockMode.READ_LOCK);
             }
         }
     }

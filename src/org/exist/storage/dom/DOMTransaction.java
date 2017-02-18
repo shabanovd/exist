@@ -25,6 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.DocumentImpl;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.util.LockException;
 import org.exist.util.ReadOnlyException;
 
@@ -45,7 +46,7 @@ public abstract class DOMTransaction {
     private Object ownerObject;
     private DOMFile file;
     private DocumentImpl document = null;
-    private int mode;
+    private LockMode mode;
 
     /**
      * @deprecated : use other constructors
@@ -53,7 +54,7 @@ public abstract class DOMTransaction {
     public DOMTransaction(Object owner, DOMFile file) {
         this.ownerObject = owner;
         this.file = file;
-        this.mode = Lock.READ_LOCK;
+        this.mode = LockMode.READ_LOCK;
     }
 
     /**
@@ -63,7 +64,7 @@ public abstract class DOMTransaction {
      * @param file a <code>DOMFile</code> value
      * @param mode an <code>int</code> value
      */
-    public DOMTransaction(Object owner, DOMFile file, int mode) {
+    public DOMTransaction(Object owner, DOMFile file, LockMode mode) {
         this(owner, file);
         this.mode = mode;
     }
@@ -76,7 +77,7 @@ public abstract class DOMTransaction {
      * @param mode an <code>int</code> value
      * @param doc a <code>DocumentImpl</code> value
      */
-    public DOMTransaction(Object owner, DOMFile file, int mode, DocumentImpl doc) {
+    public DOMTransaction(Object owner, DOMFile file, LockMode mode, DocumentImpl doc) {
         this(owner, file, mode);
         this.document = doc;
     }

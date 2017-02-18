@@ -37,7 +37,7 @@ import org.exist.security.Permission;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.aider.ACEAider;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.EXistInputSource;
@@ -606,7 +606,7 @@ public class ImportNewResourcesHandler extends DefaultHandler {
         @Override
         public void apply() {
             try {
-                getTarget().getLock().acquire(Lock.WRITE_LOCK);
+                getTarget().getLock().acquire(LockMode.WRITE_LOCK);
 
                 final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
                 final Txn txn = txnManager.beginTransaction();
@@ -633,7 +633,7 @@ public class ImportNewResourcesHandler extends DefaultHandler {
 
                 } finally {
                     txnManager.close(txn);
-                	getTarget().release(Lock.WRITE_LOCK);
+                	getTarget().release(LockMode.WRITE_LOCK);
                 }
                 
             } catch (final Exception xe) {
@@ -653,7 +653,7 @@ public class ImportNewResourcesHandler extends DefaultHandler {
         @Override
         public void apply() {
             try {
-                getTarget().getUpdateLock().acquire(Lock.WRITE_LOCK);
+                getTarget().getUpdateLock().acquire(LockMode.WRITE_LOCK);
 
                 final TransactionManager txnManager = broker.getDatabase().getTransactionManager();
                 final Txn txn = txnManager.beginTransaction();
@@ -681,7 +681,7 @@ public class ImportNewResourcesHandler extends DefaultHandler {
 
                 } finally {
                     txnManager.close(txn);
-                    getTarget().getUpdateLock().release(Lock.WRITE_LOCK);
+                    getTarget().getUpdateLock().release(LockMode.WRITE_LOCK);
                 }
 
             } catch (final Exception xe) {

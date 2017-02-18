@@ -30,7 +30,7 @@ import org.exist.dom.MutableDocumentSet;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.LockedDocumentMap;
 import org.exist.storage.md.MetaData;
 import org.exist.util.LockException;
@@ -109,7 +109,7 @@ public class Check extends BasicFunction {
 		
 		MutableDocumentSet childDocs = new DefaultDocumentSet();
 		LockedDocumentMap lockedDocuments = new LockedDocumentMap();
-		col.getDocuments(broker, childDocs, lockedDocuments, Lock.WRITE_LOCK);
+		col.getDocuments(broker, childDocs, lockedDocuments, LockMode.WRITE_LOCK);
 
         try {
             for (Iterator<DocumentImpl> itChildDocs = childDocs.getDocumentIterator(); itChildDocs.hasNext(); ) {

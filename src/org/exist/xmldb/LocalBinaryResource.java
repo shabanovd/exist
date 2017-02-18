@@ -30,7 +30,7 @@ import org.exist.security.Permission;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.util.EXistInputSource;
 import org.exist.util.LockException;
 import org.xml.sax.InputSource;
@@ -96,21 +96,18 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 		InputStream rawDataStream = null;
 		try {
 			broker = pool.get(user);
-			blob = (BinaryDocument)getDocument(broker, Lock.READ_LOCK);
+			blob = (BinaryDocument)getDocument(broker, LockMode.READ_LOCK);
 			if(!blob.getPermissions().validate(user, Permission.READ))
 			    {throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
 			    	"Permission denied to read resource");}
 			
 			rawDataStream = broker.getBinaryResource(blob);
-		} catch(final EXistException e) {
-			throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
-				"error while loading binary resource " + getId(), e);
-		} catch(final IOException e) {
+		} catch(final EXistException | IOException e) {
 			throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
 				"error while loading binary resource " + getId(), e);
 		} finally {
 			if(blob!=null)
-				{collection.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
+				{collection.getCollection().releaseDocument(blob, LockMode.READ_LOCK);}
 			if(broker!=null)
 				{pool.release(broker);}
 			
@@ -178,7 +175,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 			BinaryDocument blob = null;
 			try {
 				broker = pool.get(user);
-				blob = (BinaryDocument)getDocument(broker, Lock.READ_LOCK);
+				blob = (BinaryDocument)getDocument(broker, LockMode.READ_LOCK);
 				if(!blob.getPermissions().validate(user, Permission.READ))
 				    {throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
 				    	"Permission denied to read resource");}
@@ -189,7 +186,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 					"error while loading binary resource " + getId(), e);
 			} finally {
 				if(blob!=null)
-					{collection.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
+					{collection.getCollection().releaseDocument(blob, LockMode.READ_LOCK);}
 				if(broker!=null)
 					{pool.release(broker);}
 				
@@ -220,7 +217,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 		boolean doClose=false;
 		try {
 			broker = pool.get(user);
-			blob = (BinaryDocument)getDocument(broker, Lock.READ_LOCK);
+			blob = (BinaryDocument)getDocument(broker, LockMode.READ_LOCK);
 			if(!blob.getPermissions().validate(user, Permission.READ))
 				{throw new XMLDBException(ErrorCodes.PERMISSION_DENIED,
 					"Permission denied to read resource");}
@@ -232,15 +229,12 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 			}
 			
 			broker.readBinaryResource(blob, os);
-		} catch(final EXistException e) {
+		} catch(final EXistException | IOException e) {
 			throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
 				"error while loading binary resource " + getId(), e);
-		} catch(final IOException ioe) {
-			throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
-					"error while loading binary resource " + getId(), ioe);
 		} finally {
 			if(blob!=null)
-				{collection.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
+				{collection.getCollection().releaseDocument(blob, LockMode.READ_LOCK);}
 			if(broker!=null)
 				{pool.release(broker);}
 			
@@ -277,14 +271,14 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 			BinaryDocument blob = null;
 			try {
 				broker = pool.get(user);
-				blob = (BinaryDocument)getDocument(broker, Lock.READ_LOCK);
+				blob = (BinaryDocument)getDocument(broker, LockMode.READ_LOCK);
 				retval=blob.getContentLength();
 			} catch(final EXistException e) {
 				throw new XMLDBException(ErrorCodes.VENDOR_ERROR,
 					"error while loading binary resource " + getId(), e);
 			} finally {
 				if(blob!=null)
-					{collection.getCollection().releaseDocument(blob, Lock.READ_LOCK);}
+					{collection.getCollection().releaseDocument(blob, LockMode.READ_LOCK);}
 				
 				if(broker!=null)
 					{pool.release(broker);}
@@ -344,7 +338,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 		DBBroker broker = null;
 		try {
 			broker = pool.get(user);
-			final BinaryDocument blob = (BinaryDocument)getDocument(broker, Lock.NO_LOCK);
+			final BinaryDocument blob = (BinaryDocument)getDocument(broker, LockMode.NO_LOCK);
 			return new Date(blob.getMetadata().getCreated());
 		} catch (final EXistException e) {
 			throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e.getMessage(), e);
@@ -364,7 +358,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 		DBBroker broker = null;
 		try {
 			broker = pool.get(user);
-			final BinaryDocument blob = (BinaryDocument)getDocument(broker, Lock.NO_LOCK);
+			final BinaryDocument blob = (BinaryDocument)getDocument(broker, LockMode.NO_LOCK);
 			return new Date(blob.getMetadata().getLastModified());
 		} catch (final EXistException e) {
 			throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e.getMessage(), e);
@@ -384,7 +378,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
         DBBroker broker = null;
         try {
             broker = pool.get(user);
-            final BinaryDocument blob = (BinaryDocument)getDocument(broker, Lock.NO_LOCK);
+            final BinaryDocument blob = (BinaryDocument)getDocument(broker, LockMode.NO_LOCK);
             mimeType = blob.getMetadata().getMimeType();
             return mimeType;
         } catch (final EXistException e) {
@@ -405,7 +399,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 	    DBBroker broker = null;
 	    try {
 	        broker = pool.get(user);
-		    final DocumentImpl document = getDocument(broker, Lock.NO_LOCK);
+		    final DocumentImpl document = getDocument(broker, LockMode.NO_LOCK);
 			return document != null ? document.getPermissions() : null;
 	    } catch (final EXistException e) {
             throw new XMLDBException(ErrorCodes.INVALID_RESOURCE, e.getMessage(), e);
@@ -425,7 +419,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 		DBBroker broker = null;
 		try {
 			broker = pool.get(user);
-			final DocumentImpl document = getDocument(broker, Lock.NO_LOCK);
+			final DocumentImpl document = getDocument(broker, LockMode.NO_LOCK);
 			return document.getContentLength();
 		} catch (final EXistException e) {
 			throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, e.getMessage(),
@@ -436,9 +430,9 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 		}
 	}
 	
-	protected DocumentImpl getDocument(DBBroker broker, int lock) throws XMLDBException {
+	protected DocumentImpl getDocument(DBBroker broker, LockMode lock) throws XMLDBException {
 	    DocumentImpl document = null;
-	    if(lock != Lock.NO_LOCK) {
+	    if(lock != LockMode.NO_LOCK) {
                 try {
                     document = collection.getCollection().getDocumentWithLock(broker, docId, lock);
                 } catch (final PermissionDeniedException e) {
@@ -468,7 +462,7 @@ public class LocalBinaryResource extends AbstractEXistResource implements Extend
 	    return document;
 	}
 	
-	protected DocumentImpl openDocument(DBBroker broker, int lockMode) throws XMLDBException {
+	protected DocumentImpl openDocument(DBBroker broker, LockMode lockMode) throws XMLDBException {
 	    final DocumentImpl document = super.openDocument(broker, lockMode);
 	    if (document.getResourceType() != DocumentImpl.BINARY_FILE) {
 	    	closeDocument(document, lockMode);

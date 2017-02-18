@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Observable;
 import java.util.Observer;
 import java.util.Properties;
 import java.util.Random;
@@ -53,7 +52,7 @@ import org.exist.security.xacml.AccessContext;
 import org.exist.security.xacml.NullAccessContextException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.sync.Sync;
 import org.exist.storage.txn.TransactionManager;
@@ -150,7 +149,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
         return accessCtx;
     }
 
-    protected Collection getCollectionWithLock(final int lockMode) throws XMLDBException {
+    protected Collection getCollectionWithLock(final LockMode lockMode) throws XMLDBException {
     	final Subject subject = pool.getSubject();
         DBBroker broker = null;
         Collection collection = null;
@@ -179,7 +178,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
         final TransactionManager transact = pool.getTransactionManager();
         try (Txn transaction = transact.beginTransaction()) {
             broker = pool.get(user);
-            collection = broker.openCollection(path, Lock.WRITE_LOCK);
+            collection = broker.openCollection(path, LockMode.WRITE_LOCK);
             if(collection == null) {
                 throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + path + " not found");
             }
@@ -191,7 +190,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
             throw new XMLDBException(ErrorCodes.PERMISSION_DENIED, e.getMessage(), e);
         } finally {
             if(collection != null) {
-                collection.release(Lock.WRITE_LOCK);
+                collection.release(LockMode.WRITE_LOCK);
             }
             pool.release(broker);
             pool.setSubject(subject);
@@ -262,7 +261,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
     public String createId() throws XMLDBException {
         //TODO: API change to XmldbURI ?
     	final Subject subject = pool.getSubject();
-        final Collection collection = getCollectionWithLock(Lock.READ_LOCK);
+        final Collection collection = getCollectionWithLock(LockMode.READ_LOCK);
         DBBroker broker = null;
         try {
             broker = pool.get(user);
@@ -292,7 +291,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
                 pool.release(broker);
                 pool.setSubject(subject);
             }
-            collection.getLock().release(Lock.READ_LOCK);
+            collection.getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -339,7 +338,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
             throw new XMLDBException(ErrorCodes.INVALID_URI,e);
         }
         
-        final Collection collection = getCollectionWithLock(Lock.READ_LOCK);
+        final Collection collection = getCollectionWithLock(LockMode.READ_LOCK);
     	final Subject subject = pool.getSubject();
         DBBroker broker = null;
         try {
@@ -359,7 +358,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
                 pool.release(broker);
                 pool.setSubject(subject);
             }
-            collection.release(Lock.READ_LOCK);
+            collection.release(LockMode.READ_LOCK);
         }
         if(childName != null) {
             return new LocalCollection(user, pool, this, childName, accessCtx);
@@ -370,7 +369,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
 
     @Override
     public int getChildCollectionCount() throws XMLDBException {
-        final Collection collection = getCollectionWithLock(Lock.READ_LOCK);
+        final Collection collection = getCollectionWithLock(LockMode.READ_LOCK);
     	final Subject subject = pool.getSubject();
         DBBroker broker = null;
         try {
@@ -389,7 +388,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
                 pool.release(broker);
                 pool.setSubject(subject);
             }
-            collection.getLock().release(Lock.READ_LOCK);
+            collection.getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -411,7 +410,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
             Collection col = null;
             try {
                 broker = pool.get(user);
-                col = broker.openCollection(path, Lock.READ_LOCK);
+                col = broker.openCollection(path, LockMode.READ_LOCK);
                 if(col == null) {
                     throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + path + " not found");
                 }
@@ -422,7 +421,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
                 throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, "Error while retrieving parent collection: " + e.getMessage(), e);
             } finally {
                 if(col != null) {
-                    col.getLock().release(Lock.READ_LOCK);
+                    col.getLock().release(LockMode.READ_LOCK);
                 }
                 pool.release(broker);
                 pool.setSubject(subject);
@@ -460,7 +459,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
         
         try {
             broker = pool.get(user);
-            collection = broker.openCollection(path, Lock.READ_LOCK);
+            collection = broker.openCollection(path, LockMode.READ_LOCK);
             if(collection == null) {
                 throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + path + " not found");
             }
@@ -493,7 +492,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
                 "Error while retrieving resource: " + e.getMessage(), e);
         } finally {
             if(collection != null) {
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             pool.release(broker);
             pool.setSubject(subject);
@@ -502,7 +501,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
 
     @Override
     public int getResourceCount() throws XMLDBException {
-        final Collection collection = getCollectionWithLock(Lock.READ_LOCK);
+        final Collection collection = getCollectionWithLock(LockMode.READ_LOCK);
     	final Subject subject = pool.getSubject();
         DBBroker broker = null;
         try {
@@ -521,7 +520,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
                 pool.release(broker);
                 pool.setSubject(subject);
             }
-            collection.getLock().release(Lock.READ_LOCK);
+            collection.getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -579,7 +578,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
         Collection collection = null;
         DBBroker broker = null;
         try {
-            collection = getCollectionWithLock(Lock.READ_LOCK);
+            collection = getCollectionWithLock(LockMode.READ_LOCK);
             broker = pool.get(user);
             final String[] collections = new String[collection.getChildCollectionCount(broker)];
             int j = 0;
@@ -596,7 +595,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
             }
             
             if(collection != null) {
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
         }
     }
@@ -618,7 +617,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
         DBBroker broker = null;
         try {
             broker = pool.get(user);
-            collection = broker.openCollection(path, Lock.READ_LOCK);
+            collection = broker.openCollection(path, LockMode.READ_LOCK);
             if(collection == null) {
                 throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + path + " not found");
             }
@@ -647,7 +646,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
             throw new XMLDBException(ErrorCodes.UNKNOWN_ERROR, "Error while retrieving resource: " + e.getMessage(), e);
         } finally {
             if(collection != null) {
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             pool.release(broker);
             pool.setSubject(subject);
@@ -685,7 +684,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
                 LOG.debug("removing " + resURI);
             }
             broker = pool.get(user);
-            collection = broker.openCollection(path, Lock.WRITE_LOCK);
+            collection = broker.openCollection(path, LockMode.WRITE_LOCK);
             if(collection == null) {
                 transact.abort(transaction);
                 throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + path + " not found");
@@ -713,7 +712,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
         } finally {
             if(collection != null) {
-                collection.getLock().release(Lock.WRITE_LOCK);
+                collection.getLock().release(LockMode.WRITE_LOCK);
             }
             pool.release(broker);
             pool.setSubject(subject);
@@ -771,7 +770,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
         DBBroker broker = null;
         try (Txn txn = transact.beginTransaction()) {
             broker = pool.get(user);
-            collection = broker.openCollection(path, Lock.WRITE_LOCK);
+            collection = broker.openCollection(path, LockMode.WRITE_LOCK);
             if(collection == null) {
                 transact.abort(txn);
                 throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + path + " not found");
@@ -791,7 +790,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
             throw new XMLDBException(ErrorCodes.VENDOR_ERROR, "Exception while storing binary resource: " + e.getMessage(), e);
         } finally {
             if(collection != null) {
-                collection.getLock().release(Lock.WRITE_LOCK);
+                collection.getLock().release(LockMode.WRITE_LOCK);
             }
             pool.release(broker);
             pool.setSubject(subject);
@@ -820,7 +819,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
             Collection collection = null;
             final IndexInfo info;
             try {
-                collection = broker.openCollection(path, Lock.WRITE_LOCK);
+                collection = broker.openCollection(path, LockMode.WRITE_LOCK);
                 if(collection == null) {
                     transact.abort(txn);
                     throw new XMLDBException(ErrorCodes.INVALID_COLLECTION, "Collection " + path + " not found");
@@ -848,7 +847,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
                 }
             } finally {
                 if(collection != null) {
-                    collection.release(Lock.WRITE_LOCK);
+                    collection.release(LockMode.WRITE_LOCK);
                 }
             }
             
@@ -898,11 +897,11 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
 
     @Override
     public Date getCreationTime() throws XMLDBException {
-        final Collection collection = getCollectionWithLock(Lock.READ_LOCK);
+        final Collection collection = getCollectionWithLock(LockMode.READ_LOCK);
         try {
             return new Date(collection.getCreationTime());
         } finally {
-            collection.getLock().release(Lock.READ_LOCK);
+            collection.getLock().release(LockMode.READ_LOCK);
         }
     }
 
@@ -967,7 +966,7 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
      * @param transaction The transaction to use for the operation
      * @return A function to receive an operation to perform on the locked database collection
      */
-    protected <R> FunctionE<LocalXmldbCollectionFunction<R>, R, XMLDBException> with(final int lockMode, final DBBroker broker, final Txn transaction) throws XMLDBException {
+    protected <R> FunctionE<LocalXmldbCollectionFunction<R>, R, XMLDBException> with(final LockMode lockMode, final DBBroker broker, final Txn transaction) throws XMLDBException {
         return op -> this.<R>with(lockMode, broker, transaction, path).apply((collection, broker1, transaction1) -> {
             collection.setReader(userReader);
             return op.apply(collection, broker1, transaction1);

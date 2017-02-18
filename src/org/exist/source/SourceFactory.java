@@ -33,7 +33,7 @@ import org.exist.dom.DocumentImpl;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Constants;
 
@@ -164,7 +164,7 @@ public class SourceFactory {
         	try
         	{
 				final XmldbURI pathUri = XmldbURI.create(location);
-				resource = broker.getXMLResource(pathUri, Lock.READ_LOCK);
+				resource = broker.getXMLResource(pathUri, LockMode.READ_LOCK);
 				if (resource != null)
 					{source = new DBSource(broker, (BinaryDocument)resource, true);}
         	}
@@ -173,7 +173,7 @@ public class SourceFactory {
 				//TODO: this is nasty!!! as we are unlocking the resource whilst there
 				//is still a source
 				if(resource != null)
-					{resource.getUpdateLock().release(Lock.READ_LOCK);}
+					{resource.getUpdateLock().release(LockMode.READ_LOCK);}
 			}
         }
         

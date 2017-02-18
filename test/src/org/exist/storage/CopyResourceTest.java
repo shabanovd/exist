@@ -26,7 +26,7 @@ import java.io.File;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DocumentImpl;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -128,12 +128,12 @@ public class CopyResourceTest {
 			Serializer serializer = broker.getSerializer();
 			serializer.reset();
 
-			DocumentImpl doc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test").append(testCollectionName).append("new_test.xml"), Lock.READ_LOCK);
+			DocumentImpl doc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test").append(testCollectionName).append("new_test.xml"), LockMode.READ_LOCK);
 			assertNotNull("Document should not be null", doc);
 			String data = serializer.serialize(doc);
 			assertNotNull(data);
 			//System.out.println(data);
-			doc.getUpdateLock().release(Lock.READ_LOCK);
+			doc.getUpdateLock().release(LockMode.READ_LOCK);
 	    } catch (Exception e) {            
 	        fail(e.getMessage()); 			
 		} finally {
@@ -208,14 +208,14 @@ public class CopyResourceTest {
 			Serializer serializer = broker.getSerializer();
 			serializer.reset();
 
-			DocumentImpl doc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test").append(testCollectionName).append(subCollection).append("test2.xml"),	Lock.READ_LOCK);
+			DocumentImpl doc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test").append(testCollectionName).append(subCollection).append("test2.xml"),	LockMode.READ_LOCK);
 			assertNotNull("Document should not be null", doc);
 			String data = serializer.serialize(doc);
 			assertNotNull(data);
 			//System.out.println(data);
-			doc.getUpdateLock().release(Lock.READ_LOCK);
+			doc.getUpdateLock().release(LockMode.READ_LOCK);
 
-			doc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test").append(testCollectionName).append("new_test2.xml"), Lock.READ_LOCK);
+			doc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test").append(testCollectionName).append("new_test2.xml"), LockMode.READ_LOCK);
 			assertNull("Document should not exist", doc);
 	    } catch (Exception e) {            
 	        fail(e.getMessage());  			

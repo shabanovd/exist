@@ -11,6 +11,7 @@ import org.exist.dom.*;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.util.LockException;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.XPathException;
@@ -341,24 +342,14 @@ public class Folder extends NamedResource implements Cloneable {
 				public XMLDocument completed(Node[] nodes) {
 					assert nodes.length == 1;
 					Node node = nodes[0];
-					transact(Lock.WRITE_LOCK);
+					transact(LockMode.WRITE_LOCK);
 					try {
 						name.setContext(handle);
 						IndexInfo info = handle.validateXMLResource(tx.tx, broker, XmldbURI.create(name.get()), node);
-						changeLock(Lock.NO_LOCK);
+						changeLock(LockMode.NO_LOCK);
 						handle.store(tx.tx, broker, info, node, false);
 						commit();
-					} catch (EXistException e) {
-						throw new DatabaseException(e);
-					} catch (PermissionDeniedException e) {
-						throw new DatabaseException(e);
-					} catch (TriggerException e) {
-						throw new DatabaseException(e);
-					} catch (SAXException e) {
-						throw new DatabaseException(e);
-					} catch (LockException e) {
-						throw new DatabaseException(e);
-					} catch (IOException e) {
+					} catch (EXistException | PermissionDeniedException | SAXException | IOException | LockException e) {
 						throw new DatabaseException(e);
 					} finally {
 						release();
@@ -404,12 +395,12 @@ public class Folder extends NamedResource implements Cloneable {
 			Folder target = name.stripPathPrefix(Folder.this);
 			if (target != Folder.this) return target.documents().load(name, source);
 			
-			transact(Lock.WRITE_LOCK);
+			transact(LockMode.WRITE_LOCK);
 			try {
 				source.applyOldName(name);
 				name.setContext(handle);
 				IndexInfo info = handle.validateXMLResource(tx.tx, broker, XmldbURI.create(name.get()), source.toInputSource());
-				changeLock(Lock.NO_LOCK);
+				changeLock(LockMode.NO_LOCK);
 				handle.store(tx.tx, broker, info, source.toInputSource(), false);
 				commit();
 			} catch (EXistException e) {
@@ -442,22 +433,16 @@ public class Folder extends NamedResource implements Cloneable {
 			Folder target = name.stripPathPrefix(Folder.this);
 			if (target != Folder.this) return target.documents().load(name, source);
 			
-			transact(Lock.WRITE_LOCK);
+			transact(LockMode.WRITE_LOCK);
 			try {
 				source.applyOldName(name);
 				name.setContext(handle);
 				InputStream inputStream = source.toInputStream();
 				try {
 					handle.addBinaryResource(tx.tx, broker, XmldbURI.create(name.get()), inputStream, null, source.getLength());
-				} catch (PermissionDeniedException e) {
+				} catch (PermissionDeniedException | LockException | TriggerException | EXistException e) {
 					throw new DatabaseException("failed to create document '" + name + "' from source " + source, e);
-				} catch (LockException e) {
-					throw new DatabaseException("failed to create document '" + name + "' from source " + source, e);
-				} catch (TriggerException e) {
-					throw new DatabaseException("failed to create document '" + name + "' from source " + source, e);
-				} catch (EXistException e) {
-                                        throw new DatabaseException("failed to create document '" + name + "' from source " + source, e);
-                                } finally {
+				} finally {
 					inputStream.close();
 				}
 				commit();
@@ -548,7 +533,7 @@ public class Folder extends NamedResource implements Cloneable {
 			return new QueryService(Folder.this) {
 				@Override
 				protected void prepareContext(DBBroker broker_) {
-					acquire(Lock.READ_LOCK, broker_);
+					acquire(LockMode.READ_LOCK, broker_);
 					try {
 						docs = handle.allDocs(broker_, new DefaultDocumentSet(), false);
 						baseUri = new AnyURIValue(handle.getURI());
@@ -572,7 +557,7 @@ public class Folder extends NamedResource implements Cloneable {
 				private Iterator<DocumentImpl> delegate;
 				private Document last;
 				{
-					acquire(Lock.READ_LOCK);
+					acquire(LockMode.READ_LOCK);
 					try {
 						delegate = handle.iterator(broker);
                                         } catch(PermissionDeniedException pde) {
@@ -662,7 +647,7 @@ public class Folder extends NamedResource implements Cloneable {
 	private DBBroker broker;
 	private Collection handle;
 	private Transaction tx;
-	private int lockMode;
+	private LockMode lockMode;
 	private boolean ownBroker;
 	
 	/**
@@ -787,7 +772,7 @@ public class Folder extends NamedResource implements Cloneable {
 		}
 	}
 	
-	void transact(int _lockMode) {
+	void transact(LockMode _lockMode) {
 		if (tx != null) throw new IllegalStateException("transaction already in progress");
 		tx = Database.requireTransaction();
 		acquire(_lockMode);
@@ -798,7 +783,7 @@ public class Folder extends NamedResource implements Cloneable {
 		tx.commit();		// later aborts will do nothing
 	}
 	
-	void acquire(int _lockMode) {
+	void acquire(LockMode _lockMode) {
 		DBBroker _broker = db.acquireBroker();
 		ownBroker = true;
 		try {
@@ -810,7 +795,7 @@ public class Folder extends NamedResource implements Cloneable {
 		}
 	}
 	
-	void acquire(int _lockMode, DBBroker _broker) {
+	void acquire(LockMode _lockMode, DBBroker _broker) {
 		staleMarker.check();
 		if(broker != null || handle != null) throw new IllegalStateException("broker already acquired");
 		broker = _broker;
@@ -834,7 +819,7 @@ public class Folder extends NamedResource implements Cloneable {
 	void release() {
 		if (broker == null || handle == null) throw new IllegalStateException("broker not acquired");
 		if (tx != null) tx.abortIfIncomplete();
-		if (lockMode != Lock.NO_LOCK) handle.getLock().release(lockMode);
+		if (lockMode != LockMode.NO_LOCK) handle.getLock().release(lockMode);
 		if (ownBroker) db.releaseBroker(broker);
 		ownBroker = false;
 		broker = null;
@@ -842,10 +827,10 @@ public class Folder extends NamedResource implements Cloneable {
 		tx = null;
 	}
 	
-	void changeLock(int newLockMode) {
+	void changeLock(LockMode newLockMode) {
 		if (broker == null || handle == null) throw new IllegalStateException("broker not acquired");
 		if (lockMode == newLockMode) return;
-		if (lockMode == Lock.NO_LOCK) {
+		if (lockMode == LockMode.NO_LOCK) {
 			try {
 				handle.getLock().acquire(newLockMode);
 				lockMode = newLockMode;
@@ -853,14 +838,14 @@ public class Folder extends NamedResource implements Cloneable {
 				throw new DatabaseException(e);
 			}
 		} else {
-			if (newLockMode != Lock.NO_LOCK) throw new IllegalStateException("cannot change between read and write lock modes");
+			if (newLockMode != LockMode.NO_LOCK) throw new IllegalStateException("cannot change between read and write lock modes");
 			handle.getLock().release(lockMode);
 			lockMode = newLockMode;
 		}
 	}
 	
 	private Collection getQuickHandle() {
-		acquire(Lock.NO_LOCK);
+		acquire(LockMode.NO_LOCK);
 		try {
 			return handle;
 		} finally {
@@ -874,7 +859,7 @@ public class Folder extends NamedResource implements Cloneable {
 	 * @return whether this folder is empty
 	 */
 	public boolean isEmpty() {
-		acquire(Lock.NO_LOCK);
+		acquire(LockMode.NO_LOCK);
 		try {
 			return handle.getDocumentCount(broker) == 0 && handle.getChildCollectionCount(broker) == 0;
                 } catch (PermissionDeniedException pde) {
@@ -889,17 +874,13 @@ public class Folder extends NamedResource implements Cloneable {
 	 * Remove all resources and subfolders from this folder, but keep the folder itself.
 	 */
 	public void clear() {
-		transact(Lock.READ_LOCK);
+		transact(LockMode.READ_LOCK);
 		try {
 			if (handle.getDocumentCount(broker) == 0 && handle.getChildCollectionCount(broker) == 0) return;
 			broker.removeCollection(tx.tx, handle);
 			createInternal(path);
 			commit();
-		} catch (PermissionDeniedException e) {
-			throw new DatabaseException(e);
-		} catch (IOException e) {
-			throw new DatabaseException(e);
-		} catch (TriggerException e) {
+		} catch (PermissionDeniedException | IOException | TriggerException e) {
 			throw new DatabaseException(e);
 		} finally {
 			release();
@@ -912,7 +893,7 @@ public class Folder extends NamedResource implements Cloneable {
 	 * deletes all documents and descendants but does not delete the root folder itself.
 	 */
 	@Override public void delete() {
-		transact(Lock.NO_LOCK);
+		transact(LockMode.NO_LOCK);
 		try {
 			// TODO: temporary hack, remove once removing root collection works in eXist
 			if (path.equals("/")) {
@@ -930,11 +911,7 @@ public class Folder extends NamedResource implements Cloneable {
 			commit();
 		} catch (PermissionDeniedException e) {
 			throw new RuntimeException(e);
-		} catch (IOException e) {
-			throw new DatabaseException(e);
-		} catch (LockException e) {
-			throw new DatabaseException(e);
-		} catch (TriggerException e) {
+		} catch (IOException | LockException | TriggerException e) {
 			throw new DatabaseException(e);
 		} finally {
 			release();
@@ -968,9 +945,9 @@ public class Folder extends NamedResource implements Cloneable {
 	
 	private String moveOrCopyThisFolder(Folder destination, Name name, boolean copy) {
 		db.checkSame(destination);
-		transact(Lock.WRITE_LOCK);
+		transact(LockMode.WRITE_LOCK);
 		try {
-			destination.acquire(Lock.WRITE_LOCK, broker);
+			destination.acquire(LockMode.WRITE_LOCK, broker);
 			try {
 				name.setOldName(name());
 				name.setContext(handle);
@@ -980,15 +957,7 @@ public class Folder extends NamedResource implements Cloneable {
 					broker.moveCollection(tx.tx, handle, destination.handle, XmldbURI.create(name.get()));
 				}
 				commit();
-			} catch (PermissionDeniedException e) {
-				throw new DatabaseException(e);
-			} catch (LockException e) {
-				throw new DatabaseException(e);
-			} catch (IOException e) {
-				throw new DatabaseException(e);
-			} catch (TriggerException e) {
-				throw new DatabaseException(e);
-			} catch (EXistException e) {
+			} catch (PermissionDeniedException | LockException | IOException | EXistException | TriggerException e) {
 				throw new DatabaseException(e);
 			} finally {
 				destination.release();
@@ -1101,7 +1070,7 @@ public class Folder extends NamedResource implements Cloneable {
 	private Sequence getDocsSequence(boolean recursive) {
 		try {
 			DocumentSet docs;
-			acquire(Lock.READ_LOCK);
+			acquire(LockMode.READ_LOCK);
 			try {
 				docs = handle.allDocs(broker, new DefaultDocumentSet(), recursive);
                         } catch(PermissionDeniedException pde) {
@@ -1134,7 +1103,7 @@ public class Folder extends NamedResource implements Cloneable {
 	@Override QueryService createQueryService() {
 		return new QueryService(this) {
 			@Override void prepareContext(DBBroker broker_) {
-				acquire(Lock.READ_LOCK, broker_);
+				acquire(LockMode.READ_LOCK, broker_);
 				try {
 					docs = handle.allDocs(broker_, new DefaultDocumentSet(), true);
 					baseUri = new AnyURIValue(handle.getURI());
@@ -1148,7 +1117,7 @@ public class Folder extends NamedResource implements Cloneable {
 	}
 	
 	void removeDocument(DocumentImpl dimpl) {
-		transact(Lock.WRITE_LOCK);
+		transact(LockMode.WRITE_LOCK);
 		try {
 			if (dimpl instanceof BinaryDocument) {
 				handle.removeBinaryResource(tx.tx, broker, dimpl.getFileURI());
@@ -1165,7 +1134,7 @@ public class Folder extends NamedResource implements Cloneable {
 	
 	DocumentImpl moveOrCopyDocument(DocumentImpl doc, Name name, boolean copy) {
 		XmldbURI uri;
-		transact(Lock.WRITE_LOCK);
+		transact(LockMode.WRITE_LOCK);
 		try {
 			name.setContext(handle);
 			uri = XmldbURI.create(name.get());

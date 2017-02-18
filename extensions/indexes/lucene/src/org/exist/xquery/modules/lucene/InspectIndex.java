@@ -27,7 +27,7 @@ import org.exist.dom.QName;
 import org.exist.indexing.lucene.LuceneIndex;
 import org.exist.indexing.lucene.LuceneIndexWorker;
 import org.exist.security.PermissionDeniedException;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -65,10 +65,11 @@ public class InspectIndex extends BasicFunction {
 	public Sequence eval(Sequence[] args, Sequence contextSequence)
 			throws XPathException {
 		String path = args[0].itemAt(0).getStringValue();
-		
+
+        DocumentImpl doc = null;
         try {
 			// Retrieve document from database
-			DocumentImpl doc = context.getBroker().getXMLResource(XmldbURI.xmldbUriFor(path), Lock.READ_LOCK);
+            doc = context.getBroker().getXMLResource(XmldbURI.xmldbUriFor(path), LockMode.READ_LOCK);
 
 			// Verify the document actually exists
 			if (doc == null) {
@@ -84,6 +85,10 @@ public class InspectIndex extends BasicFunction {
 			throw new XPathException(this, LuceneModule.EXXQDYFT0003, e.getMessage());
 		} catch (IOException e) {
 			throw new XPathException(this, LuceneModule.EXXQDYFT0002, e.getMessage());
+		} finally {
+            if (doc != null) {
+                doc.getUpdateLock().release(LockMode.READ_LOCK);
+            }
 		}
 	}
 

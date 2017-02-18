@@ -23,6 +23,7 @@ import org.exist.security.xacml.AccessContext;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.sync.Sync;
 import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.TransactionManager;
@@ -352,7 +353,8 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             broker = pool.get(session.getUser());
 // TODO check XML/Binary resource
 //            DocumentImpl doc = (DocumentImpl)broker.getDocument(documentName);
-            final DocumentImpl doc = broker.getXMLResource(documentName, Permission.READ);
+            //TODO: need read lock!
+            final DocumentImpl doc = broker.getXMLResource(documentName, Lock.LockMode.NO_LOCK);
             if (doc == null) {
                 transact.abort(transaction);
                 throw new RemoteException(
@@ -371,25 +373,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             }
             transact.commit(transaction);
             return (int) mods;
-        } catch (final ParserConfigurationException e) {
-            transact.abort(transaction);
-            throw new RemoteException(e.getMessage(), e);
-        } catch (final IOException e) {
-            transact.abort(transaction);
-            throw new RemoteException(e.getMessage(), e);
-        } catch (final EXistException e) {
-            transact.abort(transaction);
-            throw new RemoteException(e.getMessage(), e);
-        } catch (final SAXException e) {
-            transact.abort(transaction);
-            throw new RemoteException(e.getMessage(), e);
-        } catch (final PermissionDeniedException e) {
-            transact.abort(transaction);
-            throw new RemoteException(e.getMessage(), e);
-        } catch (final XPathException e) {
-            transact.abort(transaction);
-            throw new RemoteException(e.getMessage(), e);
-        } catch (final LockException e) {
+        } catch (final ParserConfigurationException | IOException | EXistException | PermissionDeniedException | SAXException | XPathException | LockException e) {
             transact.abort(transaction);
             throw new RemoteException(e.getMessage(), e);
         } finally {
@@ -421,7 +405,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
                 transact.abort(txn);
                 throw new EXistException("Illegal document path");
             }
-            collection = broker.openCollection(collectionUri, Lock.WRITE_LOCK);
+            collection = broker.openCollection(collectionUri, LockMode.WRITE_LOCK);
             if (collection == null)
                 {throw new EXistException("Collection " + collectionUri
                         + " not found");}
@@ -446,7 +430,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         } finally {
             transact.close(txn);
             if(collection != null)
-                {collection.release(Lock.WRITE_LOCK);}
+                {collection.release(LockMode.WRITE_LOCK);}
             pool.release(broker);
         }
 //        documentCache.clear();
@@ -468,7 +452,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         try {
             broker = pool.get(session.getUser());
             // TODO check XML/Binary resource
-            doc = broker.getXMLResource(name, Lock.READ_LOCK);
+            doc = broker.getXMLResource(name, LockMode.READ_LOCK);
             if (doc == null)
                 {throw new EXistException("Resource " + name + " not found");}
             if (doc.getResourceType() != DocumentImpl.BINARY_FILE)
@@ -488,7 +472,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             throw new RemoteException(ex.getMessage());
         } finally {
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.READ_LOCK);}
+                {doc.getUpdateLock().release(LockMode.READ_LOCK);}
             pool.release(broker);
         }
     }
@@ -510,7 +494,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             if (collectionName == null)
                 {collectionName = XmldbURI.ROOT_COLLECTION_URI;}
             
-            collection = broker.openCollection(collectionName, Lock.READ_LOCK);
+            collection = broker.openCollection(collectionName, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("collection " + collectionName
                         + " not found!");}
@@ -552,7 +536,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             throw new RemoteException(ex.getMessage());
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             pool.release(broker);
         }
     }
@@ -575,10 +559,13 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         try {
             broker = pool.get(session.getUser());
             final org.exist.security.SecurityManager manager = pool.getSecurityManager();
-            collection = broker.openCollection(resource, Lock.WRITE_LOCK);
+            collection = broker.openCollection(resource, LockMode.WRITE_LOCK);
             if (collection == null) {
+                transaction.registerLock(collection.getLock(), LockMode.WRITE_LOCK);
+
+            } else {
                 // TODO check XML/Binary resource
-                doc = broker.getXMLResource(resource, Lock.WRITE_LOCK);
+                doc = broker.getXMLResource(resource, LockMode.WRITE_LOCK);
                 if (doc == null)
                     {throw new RemoteException("document or collection "
                             + resource + " not found");}
@@ -605,13 +592,13 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             LOG.debug("changing permissions on collection " + resource);
             final Permission perm = collection.getPermissionsNoLock();
             if (perm.getOwner().equals(session.getUser())
-            || manager.hasAdminPrivileges(session.getUser())) {
+                || manager.hasAdminPrivileges(session.getUser())) {
+
                 perm.setMode(permissions);
                 if (owner != null) {
                     perm.setOwner(owner);
                     perm.setGroup(ownerGroup);
                 }
-                transaction.registerLock(collection.getLock(), Lock.WRITE_LOCK);
                 broker.saveCollection(transaction, collection);
                 transact.commit(transaction);
                 broker.flush();
@@ -619,23 +606,15 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             }
             transact.abort(transaction);
             throw new PermissionDeniedException("not allowed to change permissions");
-        } catch (final IOException e) {
+        } catch (final IOException | PermissionDeniedException | TriggerException e) {
             transact.abort(transaction);
-            throw new RemoteException(e.getMessage());
-        } catch (final PermissionDeniedException e) {
-            transact.abort(transaction);
-            throw new RemoteException(e.getMessage());
-        } catch (final TransactionException e) {
             throw new RemoteException(e.getMessage());
         } catch (final EXistException e) {
             throw new RemoteException(e.getMessage());
-        } catch (final TriggerException e) {
-            transact.abort(transaction);
-            throw new RemoteException(e.getMessage());
-		} finally {
+        } finally {
             transact.close(transaction);
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+                {doc.getUpdateLock().release(LockMode.WRITE_LOCK);}
             pool.release(broker);
         }
     }
@@ -667,20 +646,20 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
                 transact.abort(transaction);
                 throw new EXistException("Illegal document path");
             }
-            collection = broker.openCollection(collectionUri, move ? Lock.WRITE_LOCK : Lock.READ_LOCK);
+            collection = broker.openCollection(collectionUri, move ? LockMode.WRITE_LOCK : LockMode.READ_LOCK);
             if (collection == null) {
                 transact.abort(transaction);
                 throw new RemoteException("Collection " + collectionUri
                         + " not found");
             }
-            doc = collection.getDocumentWithLock(broker, docUri, Lock.WRITE_LOCK);
+            doc = collection.getDocumentWithLock(broker, docUri, LockMode.WRITE_LOCK);
             if(doc == null) {
                 transact.abort(transaction);
                 throw new RemoteException("Document " + docUri + " not found");
             }
             
             // get destination collection
-            destination = broker.openCollection(destinationPath, Lock.WRITE_LOCK);
+            destination = broker.openCollection(destinationPath, LockMode.WRITE_LOCK);
             if(destination == null) {
                 transact.abort(transaction);
                 throw new RemoteException("Destination collection " + destinationPath + " not found");
@@ -702,24 +681,21 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         } catch (final PermissionDeniedException e) {
             transact.abort(transaction);
             throw new RemoteException("Could not move/copy document " + docPath);
-        } catch (final IOException e) {
+        } catch (final IOException | TriggerException e) {
             transact.abort(transaction);
             throw new RemoteException(e.getMessage());
         } catch (final TransactionException e) {
             throw new RemoteException("Error commiting transaction " + e.getMessage());
         } catch (final EXistException e) {
             throw new RemoteException(e.getMessage());
-        } catch (final TriggerException e) {
-            transact.abort(transaction);
-            throw new RemoteException(e.getMessage());
-		} finally {
+        } finally {
             transact.close(transaction);
             if(destination != null)
-                {destination.release(Lock.WRITE_LOCK);}
+                {destination.release(LockMode.WRITE_LOCK);}
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+                {doc.getUpdateLock().release(LockMode.WRITE_LOCK);}
             if(collection != null)
-                {collection.release(move ? Lock.WRITE_LOCK : Lock.READ_LOCK);}
+                {collection.release(move ? LockMode.WRITE_LOCK : LockMode.READ_LOCK);}
             pool.release(broker);
         }
     }
@@ -746,14 +722,14 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             final Subject user = session.getUser();
             broker = pool.get(user);
             // get source document
-            collection = broker.openCollection(collectionPath, move ? Lock.WRITE_LOCK : Lock.READ_LOCK);
+            collection = broker.openCollection(collectionPath, move ? LockMode.WRITE_LOCK : LockMode.READ_LOCK);
             if (collection == null) {
                 transact.abort(transaction);
                 throw new EXistException("Collection " + collectionPath
                         + " not found");
             }
             // get destination collection
-            destination = broker.openCollection(destinationPath, Lock.WRITE_LOCK);
+            destination = broker.openCollection(destinationPath, LockMode.WRITE_LOCK);
             if(destination == null) {
                 transact.abort(transaction);
                 throw new EXistException("Destination collection " + destinationPath + " not found");
@@ -765,21 +741,18 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             transact.commit(transaction);
 //            documentCache.clear();
             return true;
-        } catch (final IOException e) {
+        } catch (final IOException | TriggerException e) {
         	transact.abort(transaction);
             throw new RemoteException(e.getMessage());            
         } catch (final LockException e) {
         	transact.abort(transaction);
             throw new PermissionDeniedException(e.getMessage());
-        } catch (final TriggerException e) {
-        	transact.abort(transaction);
-            throw new RemoteException(e.getMessage());            
-		} finally {
+        } finally {
             transact.close(transaction);
             if(collection != null)
-                {collection.release(move ? Lock.WRITE_LOCK : Lock.READ_LOCK);}
+                {collection.release(move ? LockMode.WRITE_LOCK : LockMode.READ_LOCK);}
             if(destination != null)
-                {destination.release(Lock.WRITE_LOCK);}
+                {destination.release(LockMode.WRITE_LOCK);}
             pool.release(broker);
         }
     }
@@ -978,7 +951,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             broker = pool.get(user);
 // TODO check XML/Binary resource
 //            doc = (DocumentImpl) broker.openDocument(path, Lock.WRITE_LOCK);
-            doc = broker.getXMLResource(path, Lock.WRITE_LOCK);
+            doc = broker.getXMLResource(path, LockMode.WRITE_LOCK);
             if (doc == null) {
                 throw new EXistException("Resource "
                         + path + " not found");
@@ -1007,7 +980,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         } finally {
             transact.close(transaction);
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+                {doc.getUpdateLock().release(LockMode.WRITE_LOCK);}
             pool.release(broker);
         }
     }
@@ -1030,7 +1003,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         try {
             broker = pool.get(user);
             // TODO check XML/Binary resource
-            doc = broker.getXMLResource(path, Lock.WRITE_LOCK);
+            doc = broker.getXMLResource(path, LockMode.WRITE_LOCK);
             if (doc == null)
                 {throw new EXistException("Resource "
                         + path + " not found");}
@@ -1054,7 +1027,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         } finally {
             transact.close(transaction);
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+                {doc.getUpdateLock().release(LockMode.WRITE_LOCK);}
             pool.release(broker);
         }
     }
@@ -1076,7 +1049,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             broker = pool.get(user);
 // TODO check XML/Binary resource
 //            doc = (DocumentImpl) broker.openDocument(path, Lock.READ_LOCK);
-            doc = broker.getXMLResource(path, Lock.READ_LOCK);
+            doc = broker.getXMLResource(path, LockMode.READ_LOCK);
             if (doc == null)
                 {throw new EXistException("Resource "
                         + path + " not found");}
@@ -1088,7 +1061,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             throw new RemoteException(ex.getMessage());
         } finally {
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.READ_LOCK);}
+                {doc.getUpdateLock().release(LockMode.READ_LOCK);}
             pool.release(broker);
         }
     }
@@ -1109,20 +1082,20 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             broker = pool.get(user);
             Collection collection = null;
             try {
-            	collection = broker.openCollection(resource, Lock.READ_LOCK);
+            	collection = broker.openCollection(resource, LockMode.READ_LOCK);
 	            Permission perm = null;
 	            if (collection == null) {
 					// TODO check XML/Binary resource
 					// DocumentImpl doc = (DocumentImpl) broker.openDocument(resource, Lock.READ_LOCK);
 	            	DocumentImpl doc = null;
 	            	try {
-	            	    doc = broker.getXMLResource(resource, Lock.READ_LOCK);
+	            	    doc = broker.getXMLResource(resource, LockMode.READ_LOCK);
 		                if (doc == null)
 		                    {throw new EXistException("document or collection " + resource + " not found");}
 		                perm = doc.getPermissions();
 	            	} finally {
 	            		if (doc != null)
-	            			{doc.getUpdateLock().release(Lock.READ_LOCK);}
+	            			{doc.getUpdateLock().release(LockMode.READ_LOCK);}
 	            	}
 	            } else {
 	                perm = collection.getPermissionsNoLock();
@@ -1134,7 +1107,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
 	            return p;
             } finally {
             	if (collection != null)
-            		{collection.release(Lock.READ_LOCK);}            	
+            		{collection.release(LockMode.READ_LOCK);}
             }
         } catch (final Exception ex) {
             throw new RemoteException(ex.getMessage());
@@ -1158,7 +1131,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         Collection collection = null;
         try {
             broker = pool.get(user);
-            collection = broker.openCollection(name, Lock.READ_LOCK);
+            collection = broker.openCollection(name, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("Collection " + name + " not found");}
             if (!collection.getPermissionsNoLock().validate(user, Permission.READ))
@@ -1186,7 +1159,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             throw new RemoteException(ex.getMessage());
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             pool.release(broker);
         }
     }
@@ -1206,7 +1179,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         Collection collection = null;
         try {
             broker = pool.get(user);
-            collection = broker.openCollection(name, Lock.READ_LOCK);
+            collection = broker.openCollection(name, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("Collection " + name + " not found");}
             if (!collection.getPermissionsNoLock().validate(user, Permission.READ))
@@ -1231,7 +1204,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             throw new RemoteException(ex.getMessage());
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             pool.release(broker);
         }
     }
@@ -1251,7 +1224,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
         Collection collection = null;
         try {
             broker = pool.get(user);
-            collection = broker.openCollection(collectionName, Lock.READ_LOCK);
+            collection = broker.openCollection(collectionName, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("collection " + collectionName
                         + " not found");}
@@ -1269,7 +1242,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
             throw new RemoteException(ex.getMessage());
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             pool.release(broker);
         }
     }

@@ -28,7 +28,7 @@ import junit.textui.TestRunner;
 
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.test.TestConstants;
@@ -134,9 +134,9 @@ public class RecoveryTest3 extends TestCase {
             assertNotNull(transaction);
             System.out.println("Transaction started ...");
             
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.WRITE_LOCK);
+            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
             assertNotNull(root);
-            transaction.registerLock(root.getLock(), Lock.WRITE_LOCK);            
+            transaction.registerLock(root.getLock(), LockMode.WRITE_LOCK);
             broker.removeCollection(transaction, root);   
             
             transact.commit(transaction);

@@ -26,7 +26,7 @@ import java.io.File;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
 import org.exist.dom.DocumentImpl;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
@@ -113,12 +113,12 @@ public class MoveResourceTest {
 	        Serializer serializer = broker.getSerializer();
 	        serializer.reset();
 
-	        DocumentImpl doc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test/new_test.xml"), Lock.READ_LOCK);
+	        DocumentImpl doc = broker.getXMLResource(XmldbURI.ROOT_COLLECTION_URI.append("test/new_test.xml"), LockMode.READ_LOCK);
 	        assertNotNull("Document should not be null", doc);
 	        String data = serializer.serialize(doc);
 	        assertNotNull(data);
 //	        System.out.println(data);
-	        doc.getUpdateLock().release(Lock.READ_LOCK);
+	        doc.getUpdateLock().release(LockMode.READ_LOCK);
 
             transact = pool.getTransactionManager();
             assertNotNull(transact);
@@ -126,9 +126,9 @@ public class MoveResourceTest {
             assertNotNull(transaction);
             System.out.println("Transaction started ...");
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.WRITE_LOCK);
+            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
             assertNotNull(root);
-            transaction.registerLock(root.getLock(), Lock.WRITE_LOCK);
+            transaction.registerLock(root.getLock(), LockMode.WRITE_LOCK);
             broker.removeCollection(transaction, root);
 
             transact.commit(transaction);
@@ -208,12 +208,12 @@ public class MoveResourceTest {
 	        Serializer serializer = broker.getSerializer();
 	        serializer.reset();
 
-	        DocumentImpl doc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append("new_test2.xml"), Lock.READ_LOCK);
+	        DocumentImpl doc = broker.getXMLResource(TestConstants.TEST_COLLECTION_URI2.append("new_test2.xml"), LockMode.READ_LOCK);
 	        assertNotNull("Document should not be null", doc);
 	        String data = serializer.serialize(doc);
 	        assertNotNull(data);
 //	        System.out.println(data);
-	        doc.getUpdateLock().release(Lock.READ_LOCK);
+	        doc.getUpdateLock().release(LockMode.READ_LOCK);
 
             transact = pool.getTransactionManager();
             assertNotNull(transact);
@@ -221,9 +221,9 @@ public class MoveResourceTest {
             assertNotNull(transaction);
             System.out.println("Transaction started ...");
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, Lock.WRITE_LOCK);
+            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
             assertNotNull(root);
-            transaction.registerLock(root.getLock(), Lock.WRITE_LOCK);
+            transaction.registerLock(root.getLock(), LockMode.WRITE_LOCK);
             broker.removeCollection(transaction, root);
 
             transact.commit(transaction);

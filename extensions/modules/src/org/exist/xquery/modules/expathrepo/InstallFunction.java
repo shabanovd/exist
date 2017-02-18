@@ -14,7 +14,7 @@ import org.exist.repo.ExistRepository;
 import org.exist.security.PermissionDeniedException;
 import org.exist.repo.ClasspathHelper;
 import org.exist.storage.NativeBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -90,7 +90,7 @@ public class InstallFunction extends BasicFunction {
                     repo.reportAction(ExistRepository.Action.INSTALL, pkg.getName());
         		} finally {
         			if (doc != null)
-        				doc.getUpdateLock().release(Lock.READ_LOCK);
+        				doc.getUpdateLock().release(LockMode.READ_LOCK);
         		}
         	}
             ExistPkgInfo info = (ExistPkgInfo) pkg.getInfo("exist");
@@ -127,7 +127,7 @@ public class InstallFunction extends BasicFunction {
     private BinaryDocument _getDocument(String path) throws XPathException {
     	try {
 			XmldbURI uri = XmldbURI.createInternal(path);
-			DocumentImpl doc = context.getBroker().getXMLResource(uri, Lock.READ_LOCK);
+			DocumentImpl doc = context.getBroker().getXMLResource(uri, LockMode.READ_LOCK);
 			if (doc.getResourceType() != DocumentImpl.BINARY_FILE)
 				throw new XPathException(this, EXPathErrorCode.EXPDY001, path + " is not a valid .xar", new StringValue(path));
 			return (BinaryDocument) doc;

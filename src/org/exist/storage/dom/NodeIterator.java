@@ -11,6 +11,7 @@ import org.exist.storage.btree.BTree;
 import org.exist.storage.btree.BTreeException;
 import org.exist.storage.btree.Paged.Page;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.util.ByteConversion;
 import org.exist.util.LockException;
 import org.exist.util.sanity.SanityCheck;
@@ -69,7 +70,7 @@ public final class NodeIterator implements Iterator<StoredNode> {
         final Lock lock = db.getLock();
         try {
             try {
-                lock.acquire(Lock.READ_LOCK);
+                lock.acquire(LockMode.READ_LOCK);
             } catch (final LockException e) {
                 LOG.warn("Failed to acquire read lock on " + db.getFile().getName());
                 //TODO : throw exception here ? -pb
@@ -87,14 +88,11 @@ public final class NodeIterator implements Iterator<StoredNode> {
                     //Mmmmh... strange -pb
                     {return true;}
             }
-        } catch (final BTreeException e) {
-            LOG.warn(e);
-            //TODO : throw exception here ? -pb
-        } catch (final IOException e) {
+        } catch (final BTreeException | IOException e) {
             LOG.warn(e);
             //TODO : throw exception here ? -pb
         } finally {
-            lock.release(Lock.READ_LOCK);
+            lock.release(LockMode.READ_LOCK);
         }
         return false;
     }
@@ -106,7 +104,7 @@ public final class NodeIterator implements Iterator<StoredNode> {
         final Lock lock = db.getLock();
         try {
             try {
-                lock.acquire(Lock.READ_LOCK);
+                lock.acquire(LockMode.READ_LOCK);
             } catch (final LockException e) {
                 LOG.warn("Failed to acquire read lock on " + db.getFile().getName());
                 //TODO : throw exception here ? -pb
@@ -206,14 +204,11 @@ public final class NodeIterator implements Iterator<StoredNode> {
                 } while (nextNode == null);
             }
             return nextNode;
-        } catch (final BTreeException e) {
-            LOG.error(e.getMessage(), e);
-            //TODO : re-throw exception ? -pb
-        } catch (final IOException e) {
+        } catch (final BTreeException | IOException e) {
             LOG.error(e.getMessage(), e);
             //TODO : re-throw exception ? -pb
         } finally {
-            lock.release(Lock.READ_LOCK);
+            lock.release(LockMode.READ_LOCK);
         }
         return null;
     }

@@ -1,26 +1,30 @@
 /*
  * eXist Open Source Native XML Database
- * Copyright (C) 2007 The eXist Project
+ * Copyright (C) 2001-2015 The eXist Project
  * http://exist-db.org
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- *  
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software Foundation
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
+ *
  *  $Id$
  */
 package org.exist.storage.lock;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
@@ -55,10 +59,10 @@ import java.util.Map;
  */
 public class DeadlockDetection {
 
-    private final static Object latch = new Object();
+    private final static Logger LOG = LogManager.getLogger(DeadlockDetection.class);
 
-    private final static Map<Thread, WaitingThread> waitForResource = new HashMap<Thread, WaitingThread>();
-    private final static Map<Thread, Lock> waitForCollection = new HashMap<Thread, Lock>();
+    private final static Map<Thread, WaitingThread> waitForResource = new HashMap<>();
+    private final static Map<Thread, Lock> waitForCollection = new HashMap<>();
 
     /**
      * Register a thread as waiting for a resource lock.
@@ -66,29 +70,29 @@ public class DeadlockDetection {
      * @param thread the thread
      * @param waiter the WaitingThread object which wraps around the thread
      */
-    public static void addResourceWaiter(Thread thread, WaitingThread waiter) {
-        synchronized (latch) {
+    public static void addResourceWaiter(final Thread thread, final WaitingThread waiter) {
+        synchronized (DeadlockDetection.class) {
             waitForResource.put(thread, waiter);
         }
     }
 
     /**
      * Deregister a waiting thread.
-     *  
+     *
      * @param thread
      * @return lock
      */
-    public static Lock clearResourceWaiter(Thread thread) {
-        synchronized (latch) {
+    public static Lock clearResourceWaiter(final Thread thread) {
+        synchronized (DeadlockDetection.class) {
             final WaitingThread waiter = waitForResource.remove(thread);
             if (waiter != null)
-                {return waiter.getLock();}
+            {return waiter.getLock();}
             return null;
         }
     }
 
-    public static WaitingThread getResourceWaiter(Thread thread) {
-        synchronized (latch) {
+    public static WaitingThread getResourceWaiter(final Thread thread) {
+        synchronized (DeadlockDetection.class) {
             return waitForResource.get(thread);
         }
     }
@@ -104,8 +108,8 @@ public class DeadlockDetection {
      * @param threadB
      * @return waiting thread
      */
-    public static WaitingThread deadlockCheckResource(Thread threadA, Thread threadB) {
-        synchronized (latch) {
+    public static WaitingThread deadlockCheckResource(final Thread threadA, final Thread threadB) {
+        synchronized (DeadlockDetection.class) {
             //Check if threadB is waiting for a resource lock
             final WaitingThread waitingThread = waitForResource.get(threadB);
             //If lock != null, check if thread B waits for a resource lock currently held by thread A
@@ -124,8 +128,8 @@ public class DeadlockDetection {
      * @param threadB the thread to check
      * @return true if threadB is currently blocked by a lock held by threadA
      */
-    public static boolean isBlockedBy(Thread threadA, Thread threadB) {
-        synchronized (latch) {
+    public static boolean isBlockedBy(final Thread threadA, final Thread threadB) {
+        synchronized (DeadlockDetection.class) {
             //Check if threadB is waiting for a resource lock
             final WaitingThread waitingThread = waitForResource.get(threadB);
             //If lock != null, check if thread B waits for a resource lock currently held by thread A
@@ -136,8 +140,8 @@ public class DeadlockDetection {
         }
     }
 
-    public static boolean wouldDeadlock(Thread waiter, Thread owner, List<WaitingThread> waiters) {
-        synchronized (latch) {
+    public static boolean wouldDeadlock(final Thread waiter, final Thread owner, final List<WaitingThread> waiters) {
+        synchronized (DeadlockDetection.class) {
             final WaitingThread wt = waitForResource.get(owner);
             if (wt != null) {
                 if (waiters.contains(wt)) {
@@ -153,7 +157,7 @@ public class DeadlockDetection {
                 }
                 if (t != null) {
                     if (t == waiter)
-                        {return true;}
+                    {return true;}
                     return wouldDeadlock(waiter, t, waiters);
                 }
                 return false;
@@ -166,7 +170,7 @@ public class DeadlockDetection {
                 }
                 if (t != null) {
                     if (t == waiter)
-                        {return true;}
+                    {return true;}
                     return wouldDeadlock(waiter, t, waiters);
                 }
             }
@@ -180,26 +184,26 @@ public class DeadlockDetection {
      * @param waiter the thread
      * @param lock the lock object
      */
-    public static void addCollectionWaiter(Thread waiter, Lock lock) {
-        synchronized (latch) {
+    public static void addCollectionWaiter(final Thread waiter, final Lock lock) {
+        synchronized (DeadlockDetection.class) {
             waitForCollection.put(waiter, lock);
         }
     }
 
-    public static Lock clearCollectionWaiter(Thread waiter) {
-        synchronized (latch) {
+    public static Lock clearCollectionWaiter(final Thread waiter) {
+        synchronized (DeadlockDetection.class) {
             return waitForCollection.remove(waiter);
         }
     }
 
-    public static Lock isWaitingFor(Thread waiter) {
-        synchronized (latch) {
+    public static Lock isWaitingFor(final Thread waiter) {
+        synchronized (DeadlockDetection.class) {
             return waitForCollection.get(waiter);
         }
     }
 
     public static Map<String, LockInfo> getWaitingThreads() {
-        final Map<String, LockInfo> table = new HashMap<String, LockInfo>();
+        final Map<String, LockInfo> table = new HashMap<>();
         for (final WaitingThread waitingThread : waitForResource.values()) {
             table.put(waitingThread.getThread().getName(), waitingThread.getLock().getLockInfo());
         }
@@ -209,16 +213,17 @@ public class DeadlockDetection {
         return table;
     }
 
-    public static void debug(String name, LockInfo info) {
-        final StringWriter sout = new StringWriter();
-        final PrintWriter writer = new PrintWriter(sout);
-        debug(writer, name, info);
-        writer.flush();
-        writer.close();
-        System.out.println(sout.toString());
+    public static void debug(final String name, final LockInfo info) {
+        try(final StringWriter sout = new StringWriter();
+            final PrintWriter writer = new PrintWriter(sout)) {
+            debug(writer, name, info);
+            System.out.println(sout.toString());
+        } catch(final IOException e) {
+            LOG.error(e.getMessage(), e);
+        }
     }
 
-    public static void debug(PrintWriter writer, String name, LockInfo info) {
+    public static void debug(final PrintWriter writer, final String name, final LockInfo info) {
         writer.println("Thread: " + name);
         if (info != null) {
             writer.format("%20s: %s\n", "Lock type", info.getLockType());
@@ -232,31 +237,13 @@ public class DeadlockDetection {
         }
     }
 
-    public static void debug(PrintWriter writer) {
+    public static void debug(final PrintWriter writer) {
         writer.println("Threads currently waiting for a lock:");
         writer.println("=====================================");
-        
+
         final Map<String, LockInfo> threads = getWaitingThreads();
         for (final Map.Entry<String, LockInfo> entry : threads.entrySet()) {
-            debug(writer, entry.getKey().toString(), entry.getValue());
+            debug(writer, entry.getKey(), entry.getValue());
         }
-    }
-
-    //TODO: move to utils
-    public static String arrayToString(Object[] array) {
-        if (array == null)
-            {return "null";}
-        if (array.length == 0)
-            {return "[]";}
-        final StringBuffer buf = new StringBuffer();
-        for (int i = 0; i < array.length; i++) {
-            if (i == 0)
-                {buf.append('[');}
-            else
-                {buf.append(", ");}
-            buf.append(array[i] == null ? "null" : array[i].toString());
-        }
-        buf.append("]");
-        return buf.toString();
     }
 }

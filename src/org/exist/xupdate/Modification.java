@@ -52,6 +52,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.StorageAddress;
 import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
 import org.exist.util.LockException;
 import org.exist.util.hashtable.Int2ObjectHashMap;
@@ -234,7 +235,7 @@ public abstract class Modification {
 			XPathException, TriggerException {
 	    final Lock globalLock = broker.getBrokerPool().getGlobalUpdateLock();
 	    try {
-	        globalLock.acquire(Lock.READ_LOCK);
+	        globalLock.acquire(LockMode.READ_LOCK);
 	        
 	        final NodeList nl = select(docs);
 	        lockedDocuments = ((NodeSet)nl).getDocumentSet();
@@ -257,7 +258,7 @@ public abstract class Modification {
 			}
 			return ql;
 	    } finally {
-	        globalLock.release(Lock.READ_LOCK);
+	        globalLock.release(LockMode.READ_LOCK);
 	    }
 	}
 	

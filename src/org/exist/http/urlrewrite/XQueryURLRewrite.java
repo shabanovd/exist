@@ -61,6 +61,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.util.MimeType;
 import org.exist.util.serializer.SAXSerializer;
@@ -792,7 +793,7 @@ public class XQueryURLRewrite extends HttpServlet {
         	}
             try {
                 final XmldbURI locationUri = XmldbURI.xmldbUriFor(basePath);
-                final Collection collection = broker.openCollection(locationUri, Lock.READ_LOCK);
+                final Collection collection = broker.openCollection(locationUri, LockMode.READ_LOCK);
                 if (collection == null) {
                     LOG.warn("Controller base collection not found: " + basePath);
                     return null;
@@ -808,16 +809,16 @@ public class XQueryURLRewrite extends HttpServlet {
                             if (LOG.isTraceEnabled()) {
                             	LOG.trace("Inspecting sub-collection: " + newSubCollURI);
                             }
-                            subColl = broker.openCollection(newSubCollURI, Lock.READ_LOCK);
+                            subColl = broker.openCollection(newSubCollURI, LockMode.READ_LOCK);
                             if (subColl != null) {
                                 if (LOG.isTraceEnabled()) {
                                 	LOG.trace("Looking for controller.xql in " + subColl.getURI());
                                 }
                                 final XmldbURI docUri = subColl.getURI().append("controller.xql");
-                                doc = broker.getXMLResource(docUri, Lock.READ_LOCK);
+                                doc = broker.getXMLResource(docUri, LockMode.READ_LOCK);
                                 if (doc != null) {
                                 	if (controllerDoc != null) {
-                                		controllerDoc.getUpdateLock().release(Lock.READ_LOCK);
+                                		controllerDoc.getUpdateLock().release(LockMode.READ_LOCK);
                                 	}
                                     controllerDoc = doc;
                                 }
@@ -837,19 +838,19 @@ public class XQueryURLRewrite extends HttpServlet {
                     
                     } finally {
                         if (doc != null && controllerDoc == null) {
-                            doc.getUpdateLock().release(Lock.READ_LOCK);
+                            doc.getUpdateLock().release(LockMode.READ_LOCK);
                         }
                         
                         if (subColl != null && subColl != collection) {
-                            subColl.getLock().release(Lock.READ_LOCK);
+                            subColl.getLock().release(LockMode.READ_LOCK);
                         }
                     }
                 }
-                collection.getLock().release(Lock.READ_LOCK);
+                collection.getLock().release(LockMode.READ_LOCK);
                 if (controllerDoc == null) {
                     try {
                         final XmldbURI docUri = collection.getURI().append("controller.xql");
-                        controllerDoc = broker.getXMLResource(docUri, Lock.READ_LOCK);
+                        controllerDoc = broker.getXMLResource(docUri, LockMode.READ_LOCK);
                     } catch (final PermissionDeniedException e) {
                         LOG.debug("Permission denied while scanning for XQueryURLRewrite controllers: " +
                             e.getMessage(), e);
@@ -878,7 +879,7 @@ public class XQueryURLRewrite extends HttpServlet {
                     return sourceInfo;
                 } finally {
                     if (controllerDoc != null) {
-                        controllerDoc.getUpdateLock().release(Lock.READ_LOCK);
+                        controllerDoc.getUpdateLock().release(LockMode.READ_LOCK);
                     }
                 }
             } catch (final URISyntaxException e) {
@@ -944,7 +945,7 @@ public class XQueryURLRewrite extends HttpServlet {
                 final XmldbURI locationUri = XmldbURI.xmldbUriFor(query);
                 DocumentImpl sourceDoc = null;
                 try {
-                    sourceDoc = broker.getXMLResource(locationUri.toCollectionPathURI(), Lock.READ_LOCK);
+                    sourceDoc = broker.getXMLResource(locationUri.toCollectionPathURI(), LockMode.READ_LOCK);
                     if (sourceDoc == null)
                         {throw new ServletException("XQuery resource: " + query + " not found in database");}
                     if (sourceDoc.getResourceType() != DocumentImpl.BINARY_FILE ||
@@ -957,7 +958,7 @@ public class XQueryURLRewrite extends HttpServlet {
                     throw new ServletException("permission denied to read module source from " + query);
                 } finally {
                     if(sourceDoc != null)
-                        {sourceDoc.getUpdateLock().release(Lock.READ_LOCK);}
+                        {sourceDoc.getUpdateLock().release(LockMode.READ_LOCK);}
                 }
             } catch(final URISyntaxException e) {
                 throw new ServletException(e.getMessage(), e);

@@ -41,7 +41,7 @@ import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
 import org.exist.storage.ProcessMonitor;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.AtomicValue;
@@ -167,7 +167,7 @@ public class SMEvents implements Configurable {
             try {
                 final XmldbURI pathUri = XmldbURI.create(scriptURI);
 
-                resource = broker.getXMLResource(pathUri, Lock.READ_LOCK);
+                resource = broker.getXMLResource(pathUri, LockMode.READ_LOCK);
                 if (resource != null) {
                     return new DBSource(broker, (BinaryDocument) resource, true);
                 }
@@ -176,7 +176,7 @@ public class SMEvents implements Configurable {
                 SecurityManagerImpl.LOG.error(e.getMessage(), e);
             } finally {
                 if (resource != null) {
-                    resource.getUpdateLock().release(Lock.READ_LOCK);
+                    resource.getUpdateLock().release(LockMode.READ_LOCK);
                 }
             }
 

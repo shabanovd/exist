@@ -66,7 +66,7 @@ import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.DataBackup;
 import org.exist.storage.XQueryPool;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.LockedDocumentMap;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
@@ -243,14 +243,14 @@ public class RpcConnection implements RpcAPI {
         try {
             broker = factory.getBrokerPool().get(user);
             try {
-	            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+	            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
 	            if (collection == null) {
 	                transact.abort(transaction);
 	                throw new EXistException("collection " + collUri + " not found!");
 	            }
             } finally {
             	if (collection != null)
-            		{collection.release(Lock.READ_LOCK);}
+            		{collection.release(LockMode.READ_LOCK);}
             }
             final CollectionConfigurationManager mgr = factory.getBrokerPool().getConfigurationManager();
             mgr.addConfiguration(transaction, broker, collection, configuration);
@@ -282,7 +282,7 @@ public class RpcConnection implements RpcAPI {
         final DBBroker broker = factory.getBrokerPool().get(user);
         Collection collection = null;
         try {
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("collection " + collUri + " not found!");}
             XmldbURI id;
@@ -302,7 +302,7 @@ public class RpcConnection implements RpcAPI {
             return id.toString();
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -354,7 +354,7 @@ public class RpcConnection implements RpcAPI {
             try {
                 final Collection coll = broker.getCollection(XmldbURI.createInternal(protectColl));
                 docs = new DefaultDocumentSet();
-                coll.allDocs(broker, docs, true, lockedDocuments, Lock.WRITE_LOCK);
+                coll.allDocs(broker, docs, true, lockedDocuments, LockMode.WRITE_LOCK);
                 return lockedDocuments;
             } catch (final LockException e) {
                 LOG.debug("Deadlock detected. Starting over again. Docs: " + docs.getDocumentCount() + "; locked: " +
@@ -571,7 +571,7 @@ public class RpcConnection implements RpcAPI {
         final DBBroker broker = factory.getBrokerPool().get(user);
         Collection collection = null;
         try {           
-            collection = broker.openCollection(XmldbURI.xmldbUriFor(collectionUri), Lock.READ_LOCK);
+            collection = broker.openCollection(XmldbURI.xmldbUriFor(collectionUri), LockMode.READ_LOCK);
             if(collection == null) {
                 return false;
             }
@@ -581,7 +581,7 @@ public class RpcConnection implements RpcAPI {
             throw new EXistException("Collection '" + collectionUri + "' does not indicate a valid collection URI: " + use.getMessage(), use);
         } finally {
             if(collection != null) {
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }
@@ -616,7 +616,7 @@ public class RpcConnection implements RpcAPI {
         final DBBroker broker = factory.getBrokerPool().get(user);
         Collection collection = null;
         try {           
-            collection = broker.openCollection(rootUri, Lock.READ_LOCK);
+            collection = broker.openCollection(rootUri, LockMode.READ_LOCK);
             if (collection == null) {
                 throw new EXistException("collection " + rootUri + " not found!");
             }
@@ -653,7 +653,7 @@ public class RpcConnection implements RpcAPI {
             return desc;
         } finally {
             if(collection != null) {
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }
@@ -693,7 +693,7 @@ public class RpcConnection implements RpcAPI {
         DocumentImpl doc = null;
         final HashMap<String, Object> hash = new HashMap<String, Object>(5);
         try {
-            doc = broker.getXMLResource(resourceUri, Lock.READ_LOCK);
+            doc = broker.getXMLResource(resourceUri, LockMode.READ_LOCK);
             if (doc == null) {
                 LOG.debug("document " + resourceUri + " not found!");
                 return hash;
@@ -721,7 +721,7 @@ public class RpcConnection implements RpcAPI {
             return hash;
         } finally {
             if(doc != null) {
-                doc.getUpdateLock().release(Lock.READ_LOCK);
+                doc.getUpdateLock().release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }
@@ -770,7 +770,7 @@ public class RpcConnection implements RpcAPI {
         final DBBroker broker = factory.getBrokerPool().get(user);
         Collection collection = null;
         try {
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             if (collection == null) {
                 throw new EXistException("collection " + collUri + " not found!");
             }
@@ -794,7 +794,7 @@ public class RpcConnection implements RpcAPI {
             return desc;
         } finally {
             if(collection != null) {
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }
@@ -881,7 +881,7 @@ public class RpcConnection implements RpcAPI {
         DocumentImpl doc = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(docUri.removeLastSegment(), Lock.READ_LOCK);
+            collection = broker.openCollection(docUri.removeLastSegment(), LockMode.READ_LOCK);
             if (collection == null) {
                 LOG.debug("collection " + docUri.removeLastSegment() + " not found!");
                 return null;
@@ -889,7 +889,7 @@ public class RpcConnection implements RpcAPI {
             if(!collection.getPermissionsNoLock().validate(user, Permission.READ)) {
                 throw new PermissionDeniedException("Insufficient privileges to read resource");
             }
-            doc = collection.getDocumentWithLock(broker, docUri.lastSegment(), Lock.READ_LOCK);
+            doc = collection.getDocumentWithLock(broker, docUri.lastSegment(), LockMode.READ_LOCK);
             if (doc == null) {
                 LOG.debug("document " + docUri + " not found!");
                 throw new EXistException("document not found");
@@ -907,9 +907,9 @@ public class RpcConnection implements RpcAPI {
             return null;
         } finally {
             if(collection != null)
-                {collection.releaseDocument(doc, Lock.READ_LOCK);}
+                {collection.releaseDocument(doc, LockMode.READ_LOCK);}
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -931,7 +931,7 @@ public class RpcConnection implements RpcAPI {
     	try {
             broker = factory.getBrokerPool().get(user);
             final XmldbURI docURI = XmldbURI.xmldbUriFor(docName);  
-            collection = broker.openCollection(docURI.removeLastSegment(), Lock.READ_LOCK);
+            collection = broker.openCollection(docURI.removeLastSegment(), LockMode.READ_LOCK);
             if (collection == null) {
                 LOG.debug("collection " + docURI.removeLastSegment() + " not found!");
                 throw new EXistException("Collection " + docURI.removeLastSegment() + " not found!");
@@ -939,7 +939,7 @@ public class RpcConnection implements RpcAPI {
             //if(!collection.getPermissions().validate(user, Permission.READ)) {
             //	throw new PermissionDeniedException("Insufficient privileges to read resource");
             //}
-            doc = collection.getDocumentWithLock(broker, docURI.lastSegment(), Lock.READ_LOCK);
+            doc = collection.getDocumentWithLock(broker, docURI.lastSegment(), LockMode.READ_LOCK);
             if (doc == null) {
                 LOG.debug("document " + docURI + " not found!");
                 throw new EXistException("document "+docURI+" not found");
@@ -1006,8 +1006,8 @@ public class RpcConnection implements RpcAPI {
             return null;
     	} finally {
             if(collection != null) {
-                collection.releaseDocument(doc, Lock.READ_LOCK);
-                collection.getLock().release(Lock.READ_LOCK);
+                collection.releaseDocument(doc, LockMode.READ_LOCK);
+                collection.getLock().release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
     	}
@@ -1134,7 +1134,7 @@ public class RpcConnection implements RpcAPI {
         DocumentImpl doc = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            doc = broker.getXMLResource(name, Lock.READ_LOCK);
+            doc = broker.getXMLResource(name, LockMode.READ_LOCK);
             
             if(doc == null) {
                 throw new EXistException("Resource " + name + " not found");
@@ -1163,7 +1163,7 @@ public class RpcConnection implements RpcAPI {
             }
         } finally {
             if(doc != null) {
-                doc.getUpdateLock().release(Lock.READ_LOCK);
+                doc.getUpdateLock().release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }
@@ -1405,7 +1405,7 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             final Vector<String> vec = new Vector<String>();
             if (collection == null) {
             	if (LOG.isDebugEnabled()) {
@@ -1419,7 +1419,7 @@ public class RpcConnection implements RpcAPI {
             return vec;
         } finally {
             if(collection != null) {
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }
@@ -1454,7 +1454,7 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             final Vector<String> vec = new Vector<String>();
             if (collection == null) {
             	if (LOG.isDebugEnabled()) {
@@ -1468,7 +1468,7 @@ public class RpcConnection implements RpcAPI {
             return vec;
         } finally {
             if(collection != null) {
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }
@@ -1503,11 +1503,11 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             return collection.getDocumentCount(broker);
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -1542,7 +1542,7 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             XmldbURI id;
             final Random rand = new Random();
             boolean ok;
@@ -1560,7 +1560,7 @@ public class RpcConnection implements RpcAPI {
             return id.toString();
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -1612,19 +1612,19 @@ public class RpcConnection implements RpcAPI {
 
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(uri, Lock.READ_LOCK);
+            collection = broker.openCollection(uri, LockMode.READ_LOCK);
             Permission perm = null;
             if(collection == null) {
                 DocumentImpl doc = null;
                 try {
-                    doc = broker.getXMLResource(uri, Lock.READ_LOCK);
+                    doc = broker.getXMLResource(uri, LockMode.READ_LOCK);
                     if(doc == null) {
                         throw new EXistException("document or collection " + uri + " not found");
                     }
                     perm = doc.getPermissions();
                 } finally {
                     if(doc != null) {
-                        doc.getUpdateLock().release(Lock.READ_LOCK);
+                        doc.getUpdateLock().release(LockMode.READ_LOCK);
                     }
                 }
             } else {
@@ -1642,7 +1642,7 @@ public class RpcConnection implements RpcAPI {
             return result;
         } finally {
             if(collection != null){
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }
@@ -1657,7 +1657,7 @@ public class RpcConnection implements RpcAPI {
 
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(uri, Lock.READ_LOCK);
+            collection = broker.openCollection(uri, LockMode.READ_LOCK);
             Permission perm = null;
             if(collection == null) {
                 throw new EXistException("collection " + uri + " not found");
@@ -1676,7 +1676,7 @@ public class RpcConnection implements RpcAPI {
             return result;
         } finally {
             if(collection != null){
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }
@@ -1690,7 +1690,7 @@ public class RpcConnection implements RpcAPI {
 
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(uri, Lock.READ_LOCK);
+            collection = broker.openCollection(uri, LockMode.READ_LOCK);
             Permission perm = null;
             if(collection == null) {
                 throw new EXistException("collection " + uri + " not found");
@@ -1709,7 +1709,7 @@ public class RpcConnection implements RpcAPI {
             return result;
         } finally {
             if(collection != null){
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }   
@@ -1723,7 +1723,7 @@ public class RpcConnection implements RpcAPI {
 
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(uri, Lock.READ_LOCK);
+            collection = broker.openCollection(uri, LockMode.READ_LOCK);
             if(collection == null) {
                 throw new EXistException("collection " + uri + " not found");
             } else {
@@ -1732,7 +1732,7 @@ public class RpcConnection implements RpcAPI {
 
         } finally {
             if(collection != null){
-                collection.release(Lock.READ_LOCK);
+                collection.release(LockMode.READ_LOCK);
             }
             factory.getBrokerPool().release(broker);
         }   
@@ -1774,7 +1774,7 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("Collection " + collUri + " not found");}
             if (!collection.getPermissionsNoLock().validate(user, Permission.READ))
@@ -1799,7 +1799,7 @@ public class RpcConnection implements RpcAPI {
             return result;
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -1833,7 +1833,7 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("Collection " + collUri + " not found");}
             if (!collection.getPermissionsNoLock().validate(user, Permission.READ))
@@ -1856,7 +1856,7 @@ public class RpcConnection implements RpcAPI {
             return result;
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -1890,13 +1890,13 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("collection " + collUri + " not found");}
             return new Date(collection.getCreationTime());
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -1930,7 +1930,7 @@ public class RpcConnection implements RpcAPI {
         DocumentImpl doc = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            doc = broker.getXMLResource(docUri, Lock.READ_LOCK);
+            doc = broker.getXMLResource(docUri, LockMode.READ_LOCK);
             if (doc == null) {
                 LOG.debug("document " + docUri + " not found!");
                 throw new EXistException("document not found");
@@ -1942,7 +1942,7 @@ public class RpcConnection implements RpcAPI {
             return vector;
         } finally {
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.READ_LOCK);}
+                {doc.getUpdateLock().release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -1957,7 +1957,7 @@ public class RpcConnection implements RpcAPI {
         final Txn transaction = transact.beginTransaction();
         try {
             broker = factory.getBrokerPool().get(user);
-            doc = broker.getXMLResource(docUri, Lock.WRITE_LOCK);
+            doc = broker.getXMLResource(docUri, LockMode.WRITE_LOCK);
             if (doc == null) {
                 transact.abort(transaction);
                 throw new EXistException("Resource " + docUri + " not found");
@@ -1981,7 +1981,7 @@ public class RpcConnection implements RpcAPI {
 
         } finally {
             if(doc != null)
-            {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+            {doc.getUpdateLock().release(LockMode.WRITE_LOCK);}
             transact.close(transaction);
             factory.getBrokerPool().release(broker);
         }
@@ -2266,7 +2266,7 @@ public class RpcConnection implements RpcAPI {
             InputSource source = null;
             Collection collection = null;
             try {
-            	collection = broker.openCollection(docUri.removeLastSegment(), Lock.WRITE_LOCK);
+            	collection = broker.openCollection(docUri.removeLastSegment(), LockMode.WRITE_LOCK);
 	            if (collection == null) {
 	                transact.abort(transaction);
 	                throw new EXistException("Collection " + docUri.removeLastSegment() + " not found");
@@ -2296,7 +2296,7 @@ public class RpcConnection implements RpcAPI {
 	            
             } finally {
             	if (collection != null)
-            		{collection.release(Lock.WRITE_LOCK);}
+            		{collection.release(LockMode.WRITE_LOCK);}
             }
             
             collection.store(transaction, broker, info, source, false);
@@ -2467,7 +2467,7 @@ public class RpcConnection implements RpcAPI {
 
     		try {
 
-    			collection = broker.openCollection(docUri.removeLastSegment(), Lock.WRITE_LOCK);
+    			collection = broker.openCollection(docUri.removeLastSegment(), LockMode.WRITE_LOCK);
     			if (collection == null) {
     				transact.abort(transaction);
     				throw new EXistException("Collection " + docUri.removeLastSegment() + " not found");
@@ -2501,7 +2501,7 @@ public class RpcConnection implements RpcAPI {
 
     		} finally {
     			if (collection != null)
-    				{collection.release(Lock.WRITE_LOCK);}
+    				{collection.release(LockMode.WRITE_LOCK);}
     		}
 
     		// DWES why seperate store?
@@ -2592,13 +2592,13 @@ public class RpcConnection implements RpcAPI {
         final Txn transaction = transact.beginTransaction();
         try {
             broker = factory.getBrokerPool().get(user);
-            final Collection collection = broker.openCollection(docUri.removeLastSegment(), Lock.WRITE_LOCK);
+            final Collection collection = broker.openCollection(docUri.removeLastSegment(), LockMode.WRITE_LOCK);
             if (collection == null) {
             	transact.abort(transaction);
                 throw new EXistException("Collection " + docUri.removeLastSegment() + " not found");
             }
             // keep the write lock in the transaction
-            transaction.registerLock(collection.getLock(), Lock.WRITE_LOCK);
+            transaction.registerLock(collection.getLock(), LockMode.WRITE_LOCK);
             if (overwrite == 0) {
                 final DocumentImpl old = collection.getDocument(broker, docUri.lastSegment());
                 if (old != null) {
@@ -2978,7 +2978,7 @@ public class RpcConnection implements RpcAPI {
         try {
             broker = factory.getBrokerPool().get(user);
             
-            xquery = (BinaryDocument)broker.getResource(XmldbURI.createInternal(pathToQuery), Lock.READ_LOCK);
+            xquery = (BinaryDocument)broker.getXMLResource(XmldbURI.createInternal(pathToQuery), LockMode.READ_LOCK);
             
             if(xquery == null) {
                 throw new EXistException("Resource " + pathToQuery + " not found");
@@ -3064,7 +3064,7 @@ public class RpcConnection implements RpcAPI {
             factory.getBrokerPool().release(broker);
             
             if(xquery != null) {
-                xquery.getUpdateLock().release(Lock.READ_LOCK);
+                xquery.getUpdateLock().release(LockMode.READ_LOCK);
             }
         }
         queryResult.result = resultSeq;
@@ -3120,13 +3120,13 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(docUri.removeLastSegment(), Lock.WRITE_LOCK);
+            collection = broker.openCollection(docUri.removeLastSegment(), LockMode.WRITE_LOCK);
             if (collection == null) {
                 transact.abort(transaction);
                 throw new EXistException("Collection " + docUri.removeLastSegment() + " not found");
             }
             // keep the write lock in the transaction
-            transaction.registerLock(collection.getLock(), Lock.WRITE_LOCK);
+            transaction.registerLock(collection.getLock(), LockMode.WRITE_LOCK);
 
             final DocumentImpl doc = collection.getDocument(broker, docUri.lastSegment());
             if (doc == null) {
@@ -3179,13 +3179,13 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collURI, Lock.WRITE_LOCK);
+            collection = broker.openCollection(collURI, LockMode.WRITE_LOCK);
             if (collection == null) {
             	transact.abort(transaction);
                 return false;
             }
             // keep the write lock in the transaction
-            transaction.registerLock(collection.getLock(), Lock.WRITE_LOCK);
+            transaction.registerLock(collection.getLock(), LockMode.WRITE_LOCK);
             LOG.debug("removing collection " + collURI);
             final boolean removed = broker.removeCollection(transaction, collection);
             transact.commit(transaction);
@@ -4433,7 +4433,7 @@ public class RpcConnection implements RpcAPI {
         final Txn transaction = transact.beginTransaction();
         try {
             broker = factory.getBrokerPool().get(user);
-            doc = broker.getXMLResource(docURI, Lock.WRITE_LOCK);           
+            doc = broker.getXMLResource(docURI, LockMode.WRITE_LOCK);
             if (doc == null) {
                 throw new EXistException("Resource " + docURI + " not found");
             }
@@ -4461,7 +4461,7 @@ public class RpcConnection implements RpcAPI {
         } finally {
             transact.close(transaction);
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+                {doc.getUpdateLock().release(LockMode.WRITE_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -4491,7 +4491,7 @@ public class RpcConnection implements RpcAPI {
         DocumentImpl doc = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            doc = broker.getXMLResource(docURI, Lock.READ_LOCK);
+            doc = broker.getXMLResource(docURI, LockMode.READ_LOCK);
             if (doc == null)
                 {throw new EXistException("Resource " + docURI + " not found");}
             if(!doc.getPermissions().validate(user, Permission.READ))
@@ -4505,7 +4505,7 @@ public class RpcConnection implements RpcAPI {
 
         } finally {
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.READ_LOCK);}
+                {doc.getUpdateLock().release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -4537,7 +4537,7 @@ public class RpcConnection implements RpcAPI {
         Txn transaction = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            doc = broker.getXMLResource(docURI, Lock.WRITE_LOCK);
+            doc = broker.getXMLResource(docURI, LockMode.WRITE_LOCK);
             if (doc == null)
                 {throw new EXistException("Resource " + docURI + " not found");}
             if (!doc.getPermissions().validate(user, Permission.WRITE))
@@ -4560,7 +4560,7 @@ public class RpcConnection implements RpcAPI {
 
         } finally {
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+                {doc.getUpdateLock().release(LockMode.WRITE_LOCK);}
             transact.close(transaction);
             factory.getBrokerPool().release(broker);
         }
@@ -4774,7 +4774,7 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("collection " + collUri + " not found");}
             final Occurrences occurrences[] = broker.getElementIndex().scanIndexedElements(collection,
@@ -4792,7 +4792,7 @@ public class RpcConnection implements RpcAPI {
             return result;
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -4834,7 +4834,7 @@ public class RpcConnection implements RpcAPI {
         Collection collection = null;
         try {
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(collUri, Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, LockMode.READ_LOCK);
             if (collection == null)
                 {throw new EXistException("collection " + collUri + " not found");}
             final MutableDocumentSet docs = new DefaultDocumentSet();
@@ -4844,7 +4844,7 @@ public class RpcConnection implements RpcAPI {
             return result;
         } finally {
             if(collection != null)
-                {collection.release(Lock.READ_LOCK);}
+                {collection.release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -5044,12 +5044,12 @@ public class RpcConnection implements RpcAPI {
         try {
         	//TODO : use  transaction.registerLock(collection.getLock(), Lock.WRITE_LOCK);
             broker = factory.getBrokerPool().get(user);
-            collection = broker.openCollection(docUri.removeLastSegment(), move ? Lock.WRITE_LOCK : Lock.READ_LOCK);
+            collection = broker.openCollection(docUri.removeLastSegment(), move ? LockMode.WRITE_LOCK : LockMode.READ_LOCK);
             if (collection == null) {
                 transact.abort(transaction);
                 throw new EXistException("Collection " + docUri.removeLastSegment() + " not found");
             }           
-            doc = collection.getDocumentWithLock(broker, docUri.lastSegment(), Lock.WRITE_LOCK);
+            doc = collection.getDocumentWithLock(broker, docUri.lastSegment(), LockMode.WRITE_LOCK);
             if(doc == null) {
                 transact.abort(transaction);
                 throw new EXistException("Document " + docUri + " not found");
@@ -5057,7 +5057,7 @@ public class RpcConnection implements RpcAPI {
             //TODO : register the lock within the transaction ?
             
             // get destination collection
-            destination = broker.openCollection(destUri, Lock.WRITE_LOCK);
+            destination = broker.openCollection(destUri, LockMode.WRITE_LOCK);
             if(destination == null) {
                 transact.abort(transaction);
                 throw new EXistException("Destination collection " + destUri + " not found");
@@ -5073,21 +5073,17 @@ public class RpcConnection implements RpcAPI {
             transact.abort(transaction);
             throw new PermissionDeniedException("Could not acquire lock on document " + docUri);
 
-        } catch (final IOException e) {
+        } catch (final IOException | TriggerException e) {
             transact.abort(transaction);
             throw new EXistException("Get exception ["+e.getMessage()+"] on document " + docUri);
             
-        } catch (final TriggerException e) {
-            transact.abort(transaction);
-            throw new EXistException("Get exception ["+e.getMessage()+"] on document " + docUri);
-
         } finally {
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+                {doc.getUpdateLock().release(LockMode.WRITE_LOCK);}
             if(collection != null)
-                {collection.release(move ? Lock.WRITE_LOCK : Lock.READ_LOCK);}
+                {collection.release(move ? LockMode.WRITE_LOCK : LockMode.READ_LOCK);}
             if(destination != null)
-                {destination.release(Lock.WRITE_LOCK);}
+                {destination.release(LockMode.WRITE_LOCK);}
             transact.close(transaction);
             factory.getBrokerPool().release(broker);
         }
@@ -5135,13 +5131,13 @@ public class RpcConnection implements RpcAPI {
             broker = factory.getBrokerPool().get(user);
             // get source document
             //TODO : use  transaction.registerLock(collection.getLock(), Lock.WRITE_LOCK);
-            collection = broker.openCollection(collUri, move ? Lock.WRITE_LOCK : Lock.READ_LOCK);
+            collection = broker.openCollection(collUri, move ? LockMode.WRITE_LOCK : LockMode.READ_LOCK);
             if (collection == null) {
                 transact.abort(transaction);
                 throw new EXistException("Collection " + collUri + " not found");
             }            
             // get destination collection
-            destination = broker.openCollection(destUri, Lock.WRITE_LOCK);
+            destination = broker.openCollection(destUri, LockMode.WRITE_LOCK);
             if(destination == null) {
                 transact.abort(transaction);
                 throw new EXistException("Destination collection " + destUri + " not found");
@@ -5155,18 +5151,15 @@ public class RpcConnection implements RpcAPI {
         } catch (final LockException e) {
             transact.abort(transaction);
             throw new PermissionDeniedException(e.getMessage());
-        } catch (final IOException e) {
+        } catch (final IOException | TriggerException e) {
             transact.abort(transaction);
             throw new EXistException(e.getMessage());
-        } catch (final TriggerException e) {
-            transact.abort(transaction);
-            throw new EXistException(e.getMessage());
-		} finally {
+        } finally {
             transact.close(transaction);
             if(collection != null)
-                {collection.release(move ? Lock.WRITE_LOCK : Lock.READ_LOCK);}
+                {collection.release(move ? LockMode.WRITE_LOCK : LockMode.READ_LOCK);}
             if(destination != null)
-                {destination.release(Lock.WRITE_LOCK);}
+                {destination.release(LockMode.WRITE_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -5311,7 +5304,7 @@ public class RpcConnection implements RpcAPI {
         
         try {
             broker = factory.getBrokerPool().get(user);
-            doc = broker.getXMLResource(docUri, Lock.READ_LOCK);
+            doc = broker.getXMLResource(docUri, LockMode.READ_LOCK);
             if (doc == null) {
                 LOG.debug("document " + docUri + " not found!");
                 throw new EXistException("document not found");
@@ -5343,7 +5336,7 @@ public class RpcConnection implements RpcAPI {
             return vector;
         } finally {
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.READ_LOCK);}
+                {doc.getUpdateLock().release(LockMode.READ_LOCK);}
             factory.getBrokerPool().release(broker);
         }
     }
@@ -5384,7 +5377,7 @@ public class RpcConnection implements RpcAPI {
         final Txn transaction = transact.beginTransaction();
         try {
             broker = factory.getBrokerPool().get(user);
-            doc = broker.getXMLResource(docUri, Lock.WRITE_LOCK);          
+            doc = broker.getXMLResource(docUri, LockMode.WRITE_LOCK);
             if (doc == null) {
             	transact.abort(transaction);
                 throw new EXistException("Resource " + docUri + " not found");
@@ -5413,7 +5406,7 @@ public class RpcConnection implements RpcAPI {
 
         } finally {
             if(doc != null)
-                {doc.getUpdateLock().release(Lock.WRITE_LOCK);}
+                {doc.getUpdateLock().release(LockMode.WRITE_LOCK);}
             transact.close(transaction);
             factory.getBrokerPool().release(broker);
         }

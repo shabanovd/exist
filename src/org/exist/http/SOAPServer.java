@@ -79,6 +79,7 @@ import org.exist.source.StringSource;
 import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.serializers.WSDLFilter;
 import org.exist.util.MimeType;
@@ -936,24 +937,15 @@ public class SOAPServer
     	 */
     	public boolean isValid()
     	{
-    		BinaryDocument docXQWS = null;
-    		
     		try
     		{
-    			docXQWS = getXQWS(broker, XQWSPath);
+				BinaryDocument docXQWS = getXQWS(broker, XQWSPath);
     			return (docXQWS.getMetadata().getLastModified() == lastModifiedXQWS);
     		}
     		catch(final PermissionDeniedException e)
     		{
     			LOG.debug(e.getMessage());
     			return false;
-    		}
-    		finally
-    		{
-    			if(docXQWS != null)
-    			{
-    				docXQWS.getUpdateLock().release(Lock.READ_LOCK);
-    			}
     		}
     	}
     	
@@ -994,7 +986,7 @@ public class SOAPServer
     		try
     		{
 	    		//get the WSDL StyleSheet
-    			docStyleSheet = broker.getXMLResource(XmldbURI.create(XSLT_WEBSERVICE_WSDL), Lock.READ_LOCK);
+    			docStyleSheet = broker.getXMLResource(XmldbURI.create(XSLT_WEBSERVICE_WSDL), LockMode.READ_LOCK);
 	    		
 	    		//has the stylesheet changed, or is this the first call for this version
 	    		if(docStyleSheet.getMetadata().getLastModified() != lastModifiedWSDL || descriptionWSDL[wsdlIndex] == null)
@@ -1017,7 +1009,7 @@ public class SOAPServer
     			if(docStyleSheet != null)
     			{
 	        		//close the Stylesheet Document and release the read lock
-	    			docStyleSheet.getUpdateLock().release(Lock.READ_LOCK);
+	    			docStyleSheet.getUpdateLock().release(LockMode.READ_LOCK);
     			}
     		}
     	}
@@ -1035,7 +1027,7 @@ public class SOAPServer
     		try
     		{
 	    		//get the Human Description StyleSheet
-	    		docStyleSheet = broker.getXMLResource(XmldbURI.create(XSLT_WEBSERVICE_HUMAN_DESCRIPTION), Lock.READ_LOCK);
+	    		docStyleSheet = broker.getXMLResource(XmldbURI.create(XSLT_WEBSERVICE_HUMAN_DESCRIPTION), LockMode.READ_LOCK);
 	    		
 	    		//has the stylesheet changed, or is this the first call for this version
 	    		if(docStyleSheet.getMetadata().getLastModified() != lastModifiedHuman || descriptionHuman == null)
@@ -1053,7 +1045,7 @@ public class SOAPServer
     			if(docStyleSheet != null)
     			{
 		    		//close the Stylesheet Document and release the read lock
-	    			docStyleSheet.getUpdateLock().release(Lock.READ_LOCK);
+	    			docStyleSheet.getUpdateLock().release(LockMode.READ_LOCK);
     			}
     		}
     	}
@@ -1073,7 +1065,7 @@ public class SOAPServer
     		try
     		{
 	    		//get the Function Description StyleSheet
-    			docStyleSheet = broker.getXMLResource(XmldbURI.create(XSLT_WEBSERVICE_FUNCTION_DESCRIPTION), Lock.READ_LOCK);
+    			docStyleSheet = broker.getXMLResource(XmldbURI.create(XSLT_WEBSERVICE_FUNCTION_DESCRIPTION), LockMode.READ_LOCK);
 	    		
 	    		//has the stylesheet changed?
 	    		if(docStyleSheet.getMetadata().getLastModified() != lastModifiedFunction)
@@ -1102,7 +1094,7 @@ public class SOAPServer
     			if(docStyleSheet != null)
     			{
 		    		//close the Stylesheet Document and release the read lock
-	    			docStyleSheet.getUpdateLock().release(Lock.READ_LOCK);
+	    			docStyleSheet.getUpdateLock().release(LockMode.READ_LOCK);
     			}
     		}
    		}
@@ -1275,17 +1267,23 @@ public class SOAPServer
     	 */
     	public byte[] getSOAPResponse(String functionName, Sequence functionResult, HttpServletRequest request,boolean isRpcEncoded) throws XPathException, PermissionDeniedException, TransformerConfigurationException, SAXException
     	{
-    		//get the Result StyleSheet for the SOAP Response
-    		final DocumentImpl docStyleSheet = broker.getXMLResource(XmldbURI.create(XSLT_WEBSERVICE_SOAP_RESPONSE), Lock.READ_LOCK);
-    		
-    		//Get an internal description, containg just a single function with its result
-    		final org.exist.memtree.DocumentImpl docResult = describeWebService(modXQWS, xqwsFileURI, request, XQWSPath, functionName, functionResult);
-    		
-    		//return the SOAP Response
-	    	final Properties params = new Properties();
-	    	params.put("isDocumentLiteral", isRpcEncoded ? "false" : "true");
-    		return Transform(docResult, docStyleSheet, params);
-    	}
+            //get the Result StyleSheet for the SOAP Response
+            final DocumentImpl docStyleSheet = broker.getXMLResource(XmldbURI.create(XSLT_WEBSERVICE_SOAP_RESPONSE), LockMode.READ_LOCK);
+
+            try {
+                //Get an internal description, containg just a single function with its result
+                final org.exist.memtree.DocumentImpl docResult = describeWebService(modXQWS, xqwsFileURI, request, XQWSPath, functionName, functionResult);
+
+                //return the SOAP Response
+                final Properties params = new Properties();
+                params.put("isDocumentLiteral", isRpcEncoded ? "false" : "true");
+                return Transform(docResult, docStyleSheet, params);
+            } finally {
+                if (docStyleSheet != null) {
+                    docStyleSheet.getUpdateLock().release(LockMode.READ_LOCK);
+                }
+            }
+        }
     	
     	/**
     	 * Creates the internal Description of the XQWS
@@ -1334,7 +1332,7 @@ public class SOAPServer
             try
             {
             	final XmldbURI pathUri = XmldbURI.create(path);        
-            	docXQWS = (BinaryDocument) broker.getXMLResource(pathUri, Lock.READ_LOCK);
+            	docXQWS = (BinaryDocument) broker.getXMLResource(pathUri, LockMode.READ_LOCK);
             	return docXQWS;
             }
             finally
@@ -1342,7 +1340,7 @@ public class SOAPServer
                 //close the XQWS Document and release the read lock
         	    if(docXQWS != null)
         	    {
-        	    	docXQWS.getUpdateLock().release(Lock.READ_LOCK);
+        	    	docXQWS.getUpdateLock().release(LockMode.READ_LOCK);
                 }            	
             }
         }

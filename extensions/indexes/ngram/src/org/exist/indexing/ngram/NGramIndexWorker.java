@@ -72,6 +72,7 @@ import org.exist.storage.index.BFile;
 import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.io.VariableByteOutputStream;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
 import org.exist.util.serializer.AttrList;
@@ -211,7 +212,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 continue;
             Lock lock = index.bf.getLock();
             try {
-                lock.acquire(Lock.WRITE_LOCK);
+                lock.acquire(LockMode.WRITE_LOCK);
 
                 NGramQNameKey value = new NGramQNameKey(currentDoc.getCollection().getId(), key.qname,
                         index.getDatabase().getSymbols(), key.term);
@@ -223,7 +224,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             } catch (ReadOnlyException e) {
                 LOG.warn("Read-only error for file " + index.bf.getFile().getName(), e);
             } finally {
-                lock.release(Lock.WRITE_LOCK);
+                lock.release(LockMode.WRITE_LOCK);
                 os.clear();
             }
         }
@@ -241,7 +242,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
 
             Lock lock = index.bf.getLock();
             try {
-                lock.acquire(Lock.WRITE_LOCK);
+                lock.acquire(LockMode.WRITE_LOCK);
 
                 NGramQNameKey value = new NGramQNameKey(currentDoc.getCollection().getId(), key.qname,
                         index.getDatabase().getSymbols(), key.term);
@@ -336,7 +337,7 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             } catch (ReadOnlyException e) {
                 LOG.warn("Read-only error for file " + index.bf.getFile().getName(), e);
             } finally {
-                lock.release(Lock.WRITE_LOCK);
+                lock.release(LockMode.WRITE_LOCK);
                 os.clear();
             }
         }
@@ -349,18 +350,16 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
             LOG.debug("Dropping NGram index for collection " + collection.getURI());
         final Lock lock = index.bf.getLock();
         try {
-            lock.acquire(Lock.WRITE_LOCK);
+            lock.acquire(LockMode.WRITE_LOCK);
             // remove generic index
             Value value = new NGramQNameKey(collection.getId());
             index.bf.removeAll(null, new IndexQuery(IndexQuery.TRUNC_RIGHT, value));
         } catch (LockException e) {
             LOG.warn("Failed to acquire lock for '" + index.bf.getFile().getName() + "'", e);
-        } catch (BTreeException e) {
-            LOG.error(e.getMessage(), e);
-        } catch (IOException e) {
+        } catch (BTreeException | IOException e) {
             LOG.error(e.getMessage(), e);
         } finally {
-            lock.release(Lock.WRITE_LOCK);
+            lock.release(LockMode.WRITE_LOCK);
         }
     }
 
@@ -376,18 +375,16 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                 NGramQNameKey key = new NGramQNameKey(collectionId, qname, index.getDatabase().getSymbols(), query);
                 final Lock lock = index.bf.getLock();
                 try {
-                    lock.acquire(Lock.READ_LOCK);
+                    lock.acquire(LockMode.READ_LOCK);
                     SearchCallback cb = new SearchCallback(contextId, query, ngram, docs, contextSet, context, result, axis == NodeSet.ANCESTOR);
                     int op = query.codePointCount(0, query.length()) < getN() ? IndexQuery.TRUNC_RIGHT : IndexQuery.EQ;
                     index.bf.query(new IndexQuery(op, key), cb);
                 } catch (LockException e) {
                     LOG.warn("Failed to acquire lock for '" + index.bf.getFile().getName() + "'", e);
-                } catch (IOException e) {
-                    LOG.error(e.getMessage() + " in '" + index.bf.getFile().getName() + "'", e);
-                } catch (BTreeException e) {
+                } catch (IOException | BTreeException e) {
                     LOG.error(e.getMessage() + " in '" + index.bf.getFile().getName() + "'", e);
                 } finally {
-                    lock.release(Lock.READ_LOCK);
+                    lock.release(LockMode.READ_LOCK);
                 }
             }
         }
@@ -459,18 +456,16 @@ public class NGramIndexWorker implements OrderedValuesIndex, QNamedKeysIndex {
                     query = new IndexQuery(IndexQuery.BW, startRef, endRef);
                 }
                 try {
-                    lock.acquire(Lock.READ_LOCK);
+                    lock.acquire(LockMode.READ_LOCK);
                     index.bf.query(query, cb);
                 } catch (LockException e) {
                     LOG.warn("Failed to acquire lock for '" + index.bf.getFile().getName() + "'", e);
-                } catch (IOException e) {
-                    LOG.error(e.getMessage(), e);
-                } catch (BTreeException e) {
+                } catch (IOException | BTreeException e) {
                     LOG.error(e.getMessage(), e);
                 } catch (TerminatedException e) {
                     LOG.warn(e.getMessage(), e);
                 } finally {
-                    lock.release(Lock.READ_LOCK);
+                    lock.release(LockMode.READ_LOCK);
                 }
             }
         }

@@ -45,6 +45,7 @@ import org.exist.storage.io.VariableByteArrayInput;
 import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.io.VariableByteOutputStream;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
 import org.exist.util.ByteConversion;
 import org.exist.util.Collations;
@@ -364,7 +365,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
         final Lock lock = dbValues.getLock();
 
         try {
-            lock.acquire( Lock.WRITE_LOCK );
+            lock.acquire( LockMode.WRITE_LOCK );
             dbValues.flush();
         }
         catch( final LockException e ) {
@@ -376,7 +377,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
             //TODO : throw an exception ? -pb
         }
         finally {
-            lock.release( Lock.WRITE_LOCK );
+            lock.release( LockMode.WRITE_LOCK );
         }
     }
 
@@ -434,7 +435,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                 os.writeFixedInt( nodeIDsLength, os.position() - nodeIDsLength - LENGTH_NODE_IDS );
 
                 try {
-                    lock.acquire( Lock.WRITE_LOCK );
+                    lock.acquire( LockMode.WRITE_LOCK );
                     Value v;
 
                     if( section == IDX_GENERIC ) {
@@ -467,7 +468,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                     return;
                 }
                 finally {
-                    lock.release( Lock.WRITE_LOCK );
+                    lock.release( LockMode.WRITE_LOCK );
                     os.clear();
                 }
             }
@@ -499,7 +500,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                 os.clear();
 
                 try {
-                    lock.acquire( Lock.WRITE_LOCK );
+                    lock.acquire( LockMode.WRITE_LOCK );
 
                     //Compute a key for the value
                     Value searchKey;
@@ -608,7 +609,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                     LOG.error( e.getMessage(), e );
                 }
                 finally {
-                    lock.release( Lock.WRITE_LOCK );
+                    lock.release( LockMode.WRITE_LOCK );
                     os.clear();
                 }
             }
@@ -637,7 +638,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
         final Lock lock = dbValues.getLock();
 
         try {
-            lock.acquire( Lock.WRITE_LOCK );
+            lock.acquire( LockMode.WRITE_LOCK );
 
             //TODO : flush ? -pb
             // remove generic index
@@ -658,7 +659,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
             LOG.error( e.getMessage(), e );
         }
         finally {
-            lock.release( Lock.WRITE_LOCK );
+            lock.release( LockMode.WRITE_LOCK );
         }
     }
 
@@ -673,7 +674,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
         final Lock lock         = dbValues.getLock();
 
         try {
-            lock.acquire( Lock.WRITE_LOCK );
+            lock.acquire( LockMode.WRITE_LOCK );
 
             for( int section = 0; section <= IDX_QNAME; section++ ) {
 
@@ -753,7 +754,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
         }
         finally {
             os.clear();
-            lock.release( Lock.WRITE_LOCK );
+            lock.release( LockMode.WRITE_LOCK );
         }
     }
 
@@ -838,7 +839,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
             if( qnames == null ) {
 
                 try {
-                    lock.acquire( Lock.READ_LOCK );
+                    lock.acquire( LockMode.READ_LOCK );
                     searchKey = new SimpleValue( collectionId, value );
                     prefixKey = new SimplePrefixValue( collectionId, value.getType() );
                     final IndexQuery query = new IndexQuery( idxOp, searchKey );
@@ -862,7 +863,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                     LOG.error( e.getMessage(), e );
                 }
                 finally {
-                    lock.release( Lock.READ_LOCK );
+                    lock.release( LockMode.READ_LOCK );
                 }
             } else {
 
@@ -870,7 +871,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                     final QName qname = ( QName )qnames.get( i );
 
                     try {
-                        lock.acquire( Lock.READ_LOCK );
+                        lock.acquire( LockMode.READ_LOCK );
 
                         //Compute a key for the value in the collection
                         searchKey = new QNameValue( collectionId, qname, value, broker.getBrokerPool().getSymbols() );
@@ -897,7 +898,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                         LOG.error( e.getMessage(), e );
                     }
                     finally {
-                        lock.release( Lock.READ_LOCK );
+                        lock.release( LockMode.READ_LOCK );
                     }
                 }
             }
@@ -1055,7 +1056,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
             if( qnames == null ) {
 
                 try {
-                    lock.acquire( Lock.READ_LOCK );
+                    lock.acquire( LockMode.READ_LOCK );
 
                     if( startTerm != null ) {
 
@@ -1079,7 +1080,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                     LOG.error( e.getMessage(), e );
                 }
                 finally {
-                    lock.release( Lock.READ_LOCK );
+                    lock.release( LockMode.READ_LOCK );
                 }
             } else {
 
@@ -1087,7 +1088,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                     final QName qname = ( QName )qnames.get( i );
 
                     try {
-                        lock.acquire( Lock.READ_LOCK );
+                        lock.acquire( LockMode.READ_LOCK );
 
                         if( startTerm != null ) {
                             searchKey = new QNameValue( collectionId, qname, startTerm, broker.getBrokerPool().getSymbols() );
@@ -1108,7 +1109,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                         LOG.error( e.getMessage(), e );
                     }
                     finally {
-                        lock.release( Lock.READ_LOCK );
+                        lock.release( LockMode.READ_LOCK );
                     }
                 }
             }
@@ -1127,7 +1128,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
         for( final Iterator<Collection> i = docs.getCollectionIterator(); i.hasNext(); ) {
 
             try {
-                lock.acquire( Lock.READ_LOCK );
+                lock.acquire( LockMode.READ_LOCK );
                 final Collection c            = ( Collection )i.next();
                 final int        collectionId = c.getId();
 
@@ -1159,7 +1160,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                 LOG.warn( e.getMessage(), e );
             }
             finally {
-                lock.release( Lock.READ_LOCK );
+                lock.release( LockMode.READ_LOCK );
             }
         }
         final Map<AtomicValue, ValueOccurrences> map = cb.map;
@@ -1198,7 +1199,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
             for( final Iterator<Collection> i = docs.getCollectionIterator(); i.hasNext(); ) {
 
                 try {
-                    lock.acquire( Lock.READ_LOCK );
+                    lock.acquire( LockMode.READ_LOCK );
                     final int collectionId = ( ( Collection )i.next() ).getId();
 
                     //Compute a key for the start value in the collection
@@ -1229,7 +1230,7 @@ public class NativeValueIndex implements ContentLoadingObserver {
                     LOG.warn( e.getMessage(), e );
                 }
                 finally {
-                    lock.release( Lock.READ_LOCK );
+                    lock.release( LockMode.READ_LOCK );
                 }
             }
         }

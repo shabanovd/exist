@@ -29,6 +29,7 @@ import org.exist.storage.btree.BTreeCallback;
 import org.exist.storage.btree.IndexQuery;
 import org.exist.storage.btree.Value;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.txn.Txn;
 import org.exist.util.ByteConversion;
 import org.exist.util.DatabaseConfigurationException;
@@ -99,7 +100,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             final byte[] toKey = computeKey(type, qname, range.end + 1);
             final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
             try {
-                lock.acquire(Lock.READ_LOCK);
+                lock.acquire(LockMode.READ_LOCK);
                 index.btree.query(query, callback);
             } catch (final LockException e) {
                 NativeStructuralIndex.LOG.warn("Lock problem while searching structural index: " + e.getMessage(), e);
@@ -108,7 +109,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             } catch (final Exception e) {
                 NativeStructuralIndex.LOG.error("Error while searching structural index: " + e.getMessage(), e);
             } finally {
-                lock.release(Lock.READ_LOCK);
+                lock.release(LockMode.READ_LOCK);
             }
         }
         return result;
@@ -171,7 +172,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         final NewArrayNodeSet result = new NewArrayNodeSet();
         final FindDescendantsCallback callback = new FindDescendantsCallback(type, axis, qname, contextId, result, parent);
         try {
-            lock.acquire(Lock.READ_LOCK);
+            lock.acquire(LockMode.READ_LOCK);
             for (final NodeProxy ancestor : contextSet) {
                 final DocumentImpl doc = ancestor.getDocument();
                 final NodeId ancestorId = ancestor.getNodeId();
@@ -194,7 +195,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         } catch (final LockException e) {
             NativeStructuralIndex.LOG.warn("Lock problem while searching structural index: " + e.getMessage(), e);
         } finally {
-            lock.release(Lock.READ_LOCK);
+            lock.release(LockMode.READ_LOCK);
         }
         result.updateNoSort();
         return result;
@@ -205,7 +206,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         final Lock lock = index.btree.getLock();
         final NewArrayNodeSet result = new NewArrayNodeSet();
         try {
-            lock.acquire(Lock.READ_LOCK);
+            lock.acquire(LockMode.READ_LOCK);
             for (final NodeProxy descendant : contextSet) {
                 NodeId parentId;
                 if (axis == Constants.ANCESTOR_SELF_AXIS || axis == Constants.SELF_AXIS)
@@ -239,7 +240,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         } catch (final Exception e) {
             NativeStructuralIndex.LOG.error("Error while searching structural index: " + e.getMessage(), e);
         } finally {
-            lock.release(Lock.READ_LOCK);
+            lock.release(LockMode.READ_LOCK);
         }
         result.sort(true);
         return result;
@@ -255,7 +256,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             final NodeId ancestorId = ancestor.getNodeId();
             final List<QName> qnames = getQNamesForDoc(doc);
             try {
-	            lock.acquire(Lock.READ_LOCK);
+	            lock.acquire(LockMode.READ_LOCK);
 	            for (final QName qname : qnames) {
 	            	if (test.getName() == null || test.matches(qname)) {
 	            		callback.setAncestor(doc, ancestor);
@@ -278,7 +279,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             } catch (final LockException e) {
                 NativeStructuralIndex.LOG.warn("Lock problem while searching structural index: " + e.getMessage(), e);
             } finally {
-                lock.release(Lock.READ_LOCK);
+                lock.release(LockMode.READ_LOCK);
             }
         }
 //        result.updateNoSort();
@@ -475,7 +476,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             for (final Map.Entry<QName,List<NodeProxy>> entry: pending.entrySet()) {
                 final QName qname = entry.getKey();
                 try {
-                    lock.acquire(Lock.WRITE_LOCK);
+                    lock.acquire(LockMode.WRITE_LOCK);
                     final List<NodeProxy> nodes = entry.getValue();
                     for (final NodeProxy proxy : nodes) {
                         final NodeId nodeId = proxy.getNodeId();
@@ -487,7 +488,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
                 } catch (final Exception e) {
                     NativeStructuralIndex.LOG.warn("Exception caught while writing to structural index: " + e.getMessage(), e);
                 } finally {
-                    lock.release(Lock.WRITE_LOCK);
+                    lock.release(LockMode.WRITE_LOCK);
                 }
             }
         } finally {
@@ -505,7 +506,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
             final Lock lock = index.btree.getLock();
             try {
-                lock.acquire(Lock.WRITE_LOCK);
+                lock.acquire(LockMode.WRITE_LOCK);
                 index.btree.remove(query, null);
             } catch (final LockException e) {
                 NativeStructuralIndex.LOG.warn("Failed to lock structural index: " + e.getMessage(), e);
@@ -513,7 +514,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
                 NativeStructuralIndex.LOG.warn("Exception caught while removing structural index for document " +
                     docToRemove.getURI() + ": " + e.getMessage(), e);
             } finally {
-                lock.release(Lock.WRITE_LOCK);
+                lock.release(LockMode.WRITE_LOCK);
             }
         }
         removeQNamesForDoc(docToRemove);
@@ -525,7 +526,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
         final Lock lock = index.btree.getLock();
         try {
-            lock.acquire(Lock.WRITE_LOCK);
+            lock.acquire(LockMode.WRITE_LOCK);
             index.btree.remove(query, null);
         } catch (final LockException e) {
             NativeStructuralIndex.LOG.warn("Failed to lock structural index: " + e.getMessage(), e);
@@ -533,7 +534,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             NativeStructuralIndex.LOG.warn("Exception caught while reading structural index for document " +
                 doc.getURI() + ": " + e.getMessage(), e);
         } finally {
-            lock.release(Lock.WRITE_LOCK);
+            lock.release(LockMode.WRITE_LOCK);
         }
     }
 
@@ -546,7 +547,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
         final IndexQuery query = new IndexQuery(IndexQuery.RANGE, new Value(fromKey), new Value(toKey));
         final Lock lock = index.btree.getLock();
         try {
-            lock.acquire(Lock.WRITE_LOCK);
+            lock.acquire(LockMode.WRITE_LOCK);
             index.btree.query(query, new BTreeCallback() {
                 public boolean indexInfo(Value value, long pointer) throws TerminatedException {
                     final QName qname = readQName(value.getData());
@@ -560,7 +561,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             NativeStructuralIndex.LOG.warn("Exception caught while reading structural index for document " +
                 doc.getURI() + ": " + e.getMessage(), e);
         } finally {
-            lock.release(Lock.WRITE_LOCK);
+            lock.release(LockMode.WRITE_LOCK);
         }
         return qnames;
     }
@@ -605,7 +606,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
 
                 final Lock lock = index.btree.getLock();
                 try {
-                    lock.acquire(Lock.READ_LOCK);
+                    lock.acquire(LockMode.READ_LOCK);
                     index.btree.query(query, new BTreeCallback() {
                         public boolean indexInfo(Value value, long pointer) throws TerminatedException {
                             Occurrences oc = occurrences.get(name);
@@ -627,7 +628,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
                     NativeStructuralIndex.LOG.warn("Exception caught while reading structural index for document " +
                             doc.getURI() + ": " + e.getMessage(), e);
                 } finally {
-                    lock.release(Lock.READ_LOCK);
+                    lock.release(LockMode.READ_LOCK);
                 }
             }
         }
@@ -676,7 +677,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
             for (final Map.Entry<QName,List<NodeProxy>> entry: pending.entrySet()) {
                 final QName qname = entry.getKey();
                 try {
-                    lock.acquire(Lock.WRITE_LOCK);
+                    lock.acquire(LockMode.WRITE_LOCK);
                     final List<NodeProxy> nodes = entry.getValue();
                     for (final NodeProxy proxy : nodes) {
                         final NodeId nodeId = proxy.getNodeId();
@@ -694,7 +695,7 @@ public class NativeStructuralIndexWorker implements IndexWorker, StructuralIndex
                 } catch (final Exception e) {
                     NativeStructuralIndex.LOG.warn("Exception caught while writing to structural index: " + e.getMessage(), e);
                 } finally {
-                    lock.release(Lock.WRITE_LOCK);
+                    lock.release(LockMode.WRITE_LOCK);
                 }
             }
         } finally {

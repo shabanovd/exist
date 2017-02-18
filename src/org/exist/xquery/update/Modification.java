@@ -43,6 +43,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.storage.DBBroker;
 import org.exist.storage.StorageAddress;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionException;
 import org.exist.storage.txn.TransactionManager;
@@ -83,7 +84,7 @@ public abstract class Modification extends AbstractExpression
 		super(context);
 		this.select = select;
 		this.value = value;
-        this.triggers = new Int2ObjectHashMap<DocumentTrigger>(10);
+        this.triggers = new Int2ObjectHashMap<>(10);
     }
 
 	public int getCardinality() {
@@ -140,7 +141,7 @@ public abstract class Modification extends AbstractExpression
 		XPathException, TriggerException {
 	    final Lock globalLock = context.getBroker().getBrokerPool().getGlobalUpdateLock();
 	    try {
-	        globalLock.acquire(Lock.READ_LOCK);
+	        globalLock.acquire(LockMode.READ_LOCK);
 	       
 	        lockedDocuments = nodes.getDocumentSet();
 	        
@@ -168,7 +169,7 @@ public abstract class Modification extends AbstractExpression
 			}
 			return ql;
 	    } finally {
-	        globalLock.release(Lock.READ_LOCK);
+	        globalLock.release(LockMode.READ_LOCK);
 	    }
 	}
 	
@@ -270,10 +271,10 @@ public abstract class Modification extends AbstractExpression
                 final DocumentImpl next = i.next();
                 if(next.getMetadata().getSplitCount() > splitCount)
                     {try {
-                        next.getUpdateLock().acquire(Lock.WRITE_LOCK);
+                        next.getUpdateLock().acquire(LockMode.WRITE_LOCK);
                         broker.defragXMLResource(transaction, next);
                     } finally {
-                        next.getUpdateLock().release(Lock.WRITE_LOCK);
+                        next.getUpdateLock().release(LockMode.WRITE_LOCK);
                     }}
                 broker.checkXMLResourceConsistency(next);
             }

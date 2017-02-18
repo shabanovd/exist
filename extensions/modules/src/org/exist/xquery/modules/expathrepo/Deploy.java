@@ -2,7 +2,6 @@ package org.exist.xquery.modules.expathrepo;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.dom.BinaryDocument;
 import org.exist.dom.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.memtree.MemTreeBuilder;
@@ -10,7 +9,7 @@ import org.exist.repo.Deployment;
 import org.exist.repo.PackageLoader;
 import org.exist.security.PermissionDeniedException;
 import org.exist.storage.NativeBroker;
-import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
 import org.exist.xquery.value.*;
@@ -174,7 +173,7 @@ public class Deploy extends BasicFunction {
         XmldbURI docPath = XmldbURI.createInternal(path);
         DocumentImpl doc = null;
         try {
-            doc = context.getBroker().getXMLResource(docPath, Lock.READ_LOCK);
+            doc = context.getBroker().getXMLResource(docPath, LockMode.READ_LOCK);
             if (doc.getResourceType() != DocumentImpl.BINARY_FILE)
                 throw new XPathException(this, EXPathErrorCode.EXPDY001, path + " is not a valid .xar", new StringValue(path));
 
@@ -184,15 +183,11 @@ public class Deploy extends BasicFunction {
                 loader = new RepoPackageLoader(repoURI);
             Deployment deployment = new Deployment(context.getBroker());
             return deployment.installAndDeploy(file, loader);
-        } catch (PackageException e) {
-            throw new XPathException(this, EXPathErrorCode.EXPDY007, e.getMessage());
-        } catch (IOException e) {
-            throw new XPathException(this, EXPathErrorCode.EXPDY007, e.getMessage());
-        } catch (PermissionDeniedException e) {
+        } catch (PackageException | IOException | PermissionDeniedException e) {
             throw new XPathException(this, EXPathErrorCode.EXPDY007, e.getMessage());
         } finally {
             if (doc != null)
-                doc.getUpdateLock().release(Lock.READ_LOCK);
+                doc.getUpdateLock().release(LockMode.READ_LOCK);
         }
     }
 
