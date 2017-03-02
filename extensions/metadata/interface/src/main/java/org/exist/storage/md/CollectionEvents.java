@@ -111,44 +111,44 @@ public class CollectionEvents implements CollectionTrigger {
         index(collection);
     }
 
-    private void deleteCollectionRecursive(DBBroker broker, Collection collection) throws PermissionDeniedException {
-
-        MetaData md = MDStorageManager.get().md;
-
-        for (Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext();) {
-            DocumentImpl doc = i.next();
-            try {
-                md.delMetas(doc.getURI());
-            } catch (Throwable e) {
-                MDStorageManager.LOG.fatal(e,e);
-            }
-        }
-
-        md.delMetas(collection.getURI());
-
-//        final XmldbURI uri = collection.getURI();
-
-//        for (Iterator<XmldbURI> i = collection.collectionIterator(broker); i.hasNext();) {
-//            final XmldbURI childName = i.next();
-//            // TODO : resolve URIs !!! name.resolve(childName)
-//            final Collection child = broker.openCollection(uri.append(childName), Lock.NO_LOCK);
-//            if (child == null) {
-//                // LOG.warn("Child collection " + childName + " not found");
-//            } else {
-//                deleteCollectionRecursive(broker, child);
+//    private void deleteCollectionRecursive(DBBroker broker, Collection collection) throws PermissionDeniedException {
+//
+//        MetaData md = MDStorageManager.get().md;
+//
+//        for (Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext();) {
+//            DocumentImpl doc = i.next();
+//            try {
+//                md.delMetas(doc.getURI());
+//            } catch (Throwable e) {
+//                MDStorageManager.LOG.fatal(e,e);
 //            }
 //        }
-        // removeBinary(collection.getURI());
-    }
+//
+//        md.delMetas(collection.getURI());
+//
+////        final XmldbURI uri = collection.getURI();
+//
+////        for (Iterator<XmldbURI> i = collection.collectionIterator(broker); i.hasNext();) {
+////            final XmldbURI childName = i.next();
+////            // TODO : resolve URIs !!! name.resolve(childName)
+////            final Collection child = broker.openCollection(uri.append(childName), Lock.NO_LOCK);
+////            if (child == null) {
+////                // LOG.warn("Child collection " + childName + " not found");
+////            } else {
+////                deleteCollectionRecursive(broker, child);
+////            }
+////        }
+//        // removeBinary(collection.getURI());
+//    }
 
     @Override
     public void beforeDeleteCollection(DBBroker broker, Txn txn, Collection collection) throws TriggerException {
         // System.out.println("beforeDeleteCollection "+collection.getURI());
-        try {
-            deleteCollectionRecursive(broker, collection);
-        } catch (PermissionDeniedException e) {
-            throw new TriggerException(e);
-        }
+//        try {
+//            deleteCollectionRecursive(broker, collection);
+//        } catch (PermissionDeniedException e) {
+//            throw new TriggerException(e);
+//        }
     }
 
     @Override
