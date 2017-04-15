@@ -714,4 +714,18 @@ public class ElementImpl extends NodeImpl implements ElementAtExist {
         }
         return( result.toString() );
     }
+
+    public String getTextContent() throws DOMException {
+        final StringBuilder result = new StringBuilder();
+        for( int i = 0; i < this.getChildCount(); i++ ) {
+            final Node child = getChildNodes().item( i );
+            if( child instanceof Text ) {
+                if( i > 0 ) {
+                    result.append( " " );
+                }
+                result.append( ( (Text)child ).getData() );
+            }
+        }
+        return( result.toString() );
+    }
 }

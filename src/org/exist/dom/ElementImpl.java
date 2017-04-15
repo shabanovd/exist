@@ -990,15 +990,10 @@ public class ElementImpl extends NamedNode implements Element, ElementAtExist {
     @Override
     public String getNodeValue() /*throws DOMException*/ {
         //TODO : parametrize the boolean value ?
-        DBBroker broker = null;
-        try {
-            broker = ownerDocument.getBrokerPool().get(null);
+        try (DBBroker broker = ownerDocument.getBrokerPool().getBroker()) {
             return broker.getNodeValue(this, false);
         } catch (final EXistException e) {
             LOG.warn("Exception while reading node value: " + e.getMessage(), e);
-        } finally {
-        	if (broker != null)
-        		broker.release();
         }
         return "";
     }
@@ -1754,8 +1749,7 @@ public class ElementImpl extends NamedNode implements Element, ElementAtExist {
      */
     @Override
     public String getTextContent() throws DOMException {
-        throw new DOMException(DOMException.NOT_SUPPORTED_ERR,
-            "getTextContent() not implemented on class " + getClass().getName());
+        return getNodeValue();
     }
 
     /** ? @see org.w3c.dom.Node#setTextContent(java.lang.String)
