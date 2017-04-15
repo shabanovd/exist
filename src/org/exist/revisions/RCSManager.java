@@ -91,16 +91,23 @@ public class RCSManager implements Plug {
     }
 
     private void open() throws IOException {
-        data_folder = getDataDir().resolve(INDEX_DIR_NAME);
 
-        if (Files.notExists(data_folder)) {
-            ver = 1;
-            data_folder = getDataDir().resolve(DIR_NAME);
+        String folder = System.getProperty("rcs.location", "");
+        if (folder == null || folder.isEmpty()) {
+            data_folder = getDataDir().resolve(INDEX_DIR_NAME);
 
             if (Files.notExists(data_folder)) {
-                ver = 2;
-                data_folder = getDataDir().resolve(INDEX_DIR_NAME);
+                ver = 1;
+                data_folder = getDataDir().resolve(DIR_NAME);
+
+                if (Files.notExists(data_folder)) {
+                    ver = 2;
+                    data_folder = getDataDir().resolve(INDEX_DIR_NAME);
+                }
             }
+        } else {
+            ver = 2;
+            data_folder = getDataDir().resolve(folder);
         }
 
         Files.createDirectories(data_folder);
