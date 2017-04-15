@@ -349,7 +349,7 @@ public class RCSHolder implements Constants {
                     if (action.id() != null) log.writeAttribute("id", action.id());
 
                     boolean toWriteURL = true;
-                    if (action.uri() != null) {
+                    if (action.isUriSet()) {
                         log.writeAttribute("uri", action.uri().toString());
                         toWriteURL = false;
                     }
@@ -431,12 +431,12 @@ public class RCSHolder implements Constants {
 
         } else {
 
-            XmldbURI url = action.uri();
-
-            if (url == null || url == CommitLog.UNKNOWN_URI) {
+            if (!action.isUriSet()) {
                 action.uri(uri(id, h));
 
-                if (action.uri() == null || action.uri() == CommitLog.UNKNOWN_URI) return null;
+                if (!action.isUriSet()) {
+                    return null;
+                }
             }
 
             DocumentImpl doc = broker.getXMLResource(action.uri(), Lock.READ_LOCK);
@@ -483,7 +483,7 @@ public class RCSHolder implements Constants {
             if (h != null) h.error(id, "uri '"+uri+"' is not XmldbURI one");
         }
 
-        return CommitLog.UNKNOWN_URI;
+        return Change.UNKNOWN_URI;
     }
 
     protected String uuid(XmldbURI uri, Handler h) {

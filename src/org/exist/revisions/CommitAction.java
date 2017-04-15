@@ -55,6 +55,11 @@ public class CommitAction implements Change {
         return op;
     }
 
+    @Override
+    public boolean isUriSet() {
+        return !(uri == null || uri == UNKNOWN_URI || uri.equals(UNKNOWN_URI));
+    }
+
     public XmldbURI uri() {
         return uri;
     }

@@ -27,9 +27,13 @@ import org.exist.xmldb.XmldbURI;
  */
 public interface Change {
 
+    XmldbURI UNKNOWN_URI = XmldbURI.create("");
+
     String id();
 
     Operation operation();
+
+    boolean isUriSet();
 
     XmldbURI uri();
 
