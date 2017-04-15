@@ -79,8 +79,12 @@ public class XACMLSource
 			final String type = (source instanceof ClassLoaderSource) ? XACMLConstants.CLASSLOADER_SOURCE_TYPE : XACMLConstants.URL_SOURCE_TYPE; 
 			return new XACMLSource(type, key);
 		}
-		if(source instanceof StringSource || source instanceof StringSourceWithMapKey)
-			{return new XACMLSource(XACMLConstants.STRING_SOURCE_TYPE, XACMLConstants.STRING_SOURCE_TYPE);}
+		if(source instanceof StringSource) {
+			return new XACMLSource(XACMLConstants.STRING_SOURCE_TYPE, ((StringSource)source).getContent());
+		}
+		if(source instanceof StringSourceWithMapKey) {
+			return new XACMLSource(XACMLConstants.STRING_SOURCE_TYPE, XACMLConstants.STRING_SOURCE_TYPE);
+		}
 
         // Cocoon classes are not on classpath during compile time.
         Class<?> class1;

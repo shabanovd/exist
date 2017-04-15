@@ -85,7 +85,7 @@ public class StringSource extends AbstractSource {
     /* (non-Javadoc)
      * @see org.exist.source.Source#getContent()
      */
-    public String getContent() throws IOException {
+    public String getContent() {
         return data;
     }
 
