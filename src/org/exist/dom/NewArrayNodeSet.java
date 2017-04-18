@@ -910,8 +910,9 @@ public class NewArrayNodeSet extends AbstractNodeSet implements ExtNodeSet, Docu
         for (final NodeProxy reference : contextSet) {
             final NodeId parentId = reference.getNodeId().getParentId();
             final int docIdx = findDoc(reference.getDocument());
-            if (docIdx < 0)
-                {return NodeSet.EMPTY_SET;} //BUG: can't be null, make trouble @LocationStep line 388 -shabanovd 
+            if (docIdx < 0) {
+                continue;
+            }
             // do a binary search to pick some node in the range of valid
             // child ids
             int low = documentOffsets[docIdx];
