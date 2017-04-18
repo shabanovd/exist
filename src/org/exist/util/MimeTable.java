@@ -131,6 +131,10 @@ public class MimeTable {
     //TODO: deprecate?
     public MimeType getContentTypeFor(String fileName) {
         final String ext = getExtension(fileName);
+        return contentTypeForExtention(ext);
+    }
+
+    public MimeType contentTypeForExtention(String ext) {
         final MimeType mt = (ext == null) ? defaultMime : extensions.get(ext);
         return (mt == null) ? defaultMime : mt;
     }
@@ -198,12 +202,12 @@ public class MimeTable {
     		mime.isXMLType();
     }
     
-    private String getExtension(String fileName) {
+    public String getExtension(String fileName) {
         final Path path = Paths.get(fileName);
         fileName = FileUtils.fileName(path);
         final int p = fileName.lastIndexOf('.');
         if(p < 0 || p + 1 == fileName.length()) {
-            return null;
+            return "";
         }
         return fileName.substring(p).toLowerCase();
     }

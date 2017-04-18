@@ -1668,12 +1668,14 @@ public class InteractiveClient {
             ((Observable) uploadRootCollection).addObserver(upload.getObserver());
         }
         upload.setTotalSize(FileUtils.sizeQuietly(files));
+
+        Set<String> unknownExtensions = new HashSet<>();
         for (final Path file : files) {
             if (upload.isCancelled()) {
                 break;
             }
             // should replace the lines above
-            store(uploadRootCollection, file, upload);
+            store(uploadRootCollection, file, upload, unknownExtensions);
         }
         if (uploadRootCollection instanceof Observable) {
             ((Observable) uploadRootCollection).deleteObservers();
@@ -1689,7 +1691,7 @@ public class InteractiveClient {
      * recursively
      */
 
-    private void store(final Collection collection, final Path file, final UploadDialog upload) {
+    private void store(final Collection collection, final Path file, final UploadDialog upload, Set<String> unknownExtensions) {
 
         // cancel, stop crawl
         if (upload.isCancelled()) {
@@ -1732,7 +1734,7 @@ public class InteractiveClient {
             // maybe a depth or recurs flag could be added here
             final Collection childCollection = c;
             try(final Stream<Path> children = Files.list(file)) {
-                children.forEach(child -> store(childCollection, child, upload));
+                children.forEach(child -> store(childCollection, child, upload, unknownExtensions));
             } catch (final IOException e) {
                 upload.showMessage("Impossible to upload " + file.toAbsolutePath() + ": " + e.getMessage());
                 e.printStackTrace();
@@ -1748,12 +1750,16 @@ public class InteractiveClient {
             final long fileSize = FileUtils.sizeQuietly(file);
             upload.setCurrentSize(fileSize);
 
-            MimeType mimeType = MimeTable.getInstance().getContentTypeFor(FileUtils.fileName(file));
-            // unknown mime type, here prefered is to do nothing
+            MimeTable mimes = MimeTable.getInstance();
+            String ext = mimes.getExtension(FileUtils.fileName(file));
+            MimeType mimeType = mimes.contentTypeForExtention(ext);
+            // unknown mime type, here preferred is to do nothing
             if (mimeType == null) {
-                upload.showMessage(file.toAbsolutePath() +
-                        " - unknown suffix. No matching mime-type found in : " +
-                        MimeTable.getInstance().getSrc());
+                if (unknownExtensions.add(ext)) {
+                    upload.showMessage("'" + ext + "' " +
+                            " - unknown suffix. No matching mime-type found in : " +
+                            MimeTable.getInstance().getSrc());
+                }
 
                 // if some one prefers to store it as binary by default, but dangerous
                 mimeType = MimeType.BINARY_TYPE;
