@@ -445,7 +445,14 @@ public class NativeValueIndex implements ContentLoadingObserver {
                     }
 
                     if( dbValues.append( v, os.data() ) == BFile.UNKNOWN_ADDRESS ) {
-                        LOG.warn( "Could not append index data for key '" + key + "'" );
+                        if (LOG.isDebugEnabled()) {
+                            String str = key == null ? "NULL" : key.toString();
+                            if (str.length() > 100) {
+                                LOG.debug("Could not append index data for key '" + str.substring(0, 90) + "...");
+                            } else {
+                                LOG.debug("Could not append index data for key '" + str + "'");
+                            }
+                        }
                         //TODO : throw exception ?
                     }
                 }
