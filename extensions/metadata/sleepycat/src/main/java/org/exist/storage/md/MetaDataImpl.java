@@ -78,6 +78,24 @@ public class MetaDataImpl extends MetaData {
 		EnvironmentConfig envConfig = new EnvironmentConfig();
 		envConfig.setAllowCreate(true);
 		envConfig.setTransactional(false);
+
+    envConfig.setConfigParam(EnvironmentConfig.CLEANER_THREADS, "2");
+
+    if (Runtime.getRuntime().maxMemory() > 256 * 1024 * 1024) {
+      //bigger read buffers for better checkpointer and cleaner performance.
+      envConfig.setConfigParam(EnvironmentConfig.CLEANER_LOOK_AHEAD_CACHE_SIZE,
+          String.valueOf(2 * 1024 * 1024));
+
+      envConfig.setConfigParam(EnvironmentConfig.LOG_ITERATOR_READ_SIZE,
+          String.valueOf(2 * 1024 * 1024));
+
+      envConfig.setConfigParam(EnvironmentConfig.LOG_FAULT_READ_SIZE,
+          String.valueOf(4 * 1024));
+
+      //envConfig.setConfigParam(EnvironmentConfig.MAX_MEMORY, String.valueOf(16 * 1024 * 1024));
+    } else {
+      //envConfig.setConfigParam("je.maxMemory", String.valueOf(5 * 1024 * 1024));
+    }
 		env = new Environment(dataDirectory, envConfig);
 
 		LOG.debug("environment ... ");

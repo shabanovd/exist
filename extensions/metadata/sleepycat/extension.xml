@@ -59,7 +59,7 @@
       <taskdef name="fetch" classname="nl.ow.dilemma.ant.fetch.FetchTask" classpathref="classpath.core"/>
 
       <fetch classpathref="classpath.core" dest="${existhome.dir}/${lib.user}"
-         url="http://download.oracle.com/maven/com/sleepycat/je/5.0.58/je-5.0.58.jar"
+         url="http://download.oracle.com/maven/com/sleepycat/je/7.3.7/je-7.3.7.jar"
          classname="com.sleepycat.je.Database" usecache="true"/>
    </target>
 
