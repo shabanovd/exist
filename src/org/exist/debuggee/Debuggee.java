@@ -30,15 +30,17 @@ import org.exist.xquery.CompiledXQuery;
  */
 public interface Debuggee {
 
-	public static final String NAMESPACE_URI = "http://www.xdebug.org/";
-	public static final String PREFIX = "DBGp";
+  String NAMESPACE_URI = "http://www.xdebug.org/";
+  String PREFIX = "DBGp";
 
-	public static final QName SESSION = new QName("session", NAMESPACE_URI, PREFIX);
-	public static final QName IDEKEY = new QName("idekey", NAMESPACE_URI, PREFIX);
-	
-	public boolean joint(CompiledXQuery compiledXQuery);
+  QName SESSION = new QName("session", NAMESPACE_URI, PREFIX);
+  QName IDEKEY = new QName("idekey", NAMESPACE_URI, PREFIX);
 
-	public String start(String uri) throws Exception;
+  String SESSION_KEY = Debuggee.PREFIX+":session";
 
-	public Session getSession(String id);
+  boolean joint(CompiledXQuery compiledXQuery);
+
+  String start(String uri) throws Exception;
+
+  Session getSession(String id);
 }

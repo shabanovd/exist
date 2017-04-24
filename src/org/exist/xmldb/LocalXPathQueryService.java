@@ -33,6 +33,7 @@ import org.exist.security.xacml.NullAccessContextException;
 import org.exist.source.DBSource;
 import org.exist.source.FileSource;
 import org.exist.source.Source;
+import org.exist.source.StringSource;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.XQueryPool;
@@ -173,60 +174,57 @@ public class LocalXPathQueryService implements XPathQueryServiceImpl, XQueryServ
 		}
 	}
 	
-	public ResourceSet execute(Source source) 
-		throws XMLDBException {
-			final long start = System.currentTimeMillis();
-	    	final Subject preserveSubject = brokerPool.getSubject();
-			DBBroker broker = null;
-			Sequence result;
-			try {
-				broker = brokerPool.get(user);
-//				DocumentSet docs = collection.getCollection().allDocs(broker, new DocumentSet(), true, true);
-				final XmldbURI[] docs = new XmldbURI[] { XmldbURI.create(collection.getName()) };
+  public ResourceSet execute(Source source) throws XMLDBException {
+    final long start = System.currentTimeMillis();
 
-				final XQuery xquery = broker.getXQueryService();
-				final XQueryPool pool = xquery.getXQueryPool();
-				XQueryContext context;
-				CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
-				if(compiled == null)
-				    {context = xquery.newContext(accessCtx);}
-				else
-				    {context = compiled.getContext();}
-				//context.setBackwardsCompatibility(xpathCompatible);
-				context.setStaticallyKnownDocuments(docs);
+    final Subject preserveSubject = brokerPool.getSubject();
+    DBBroker broker = null;
 
-				if (variableDecls.containsKey(Debuggee.PREFIX+":session")) {
-					context.declareVariable(Debuggee.SESSION, variableDecls.get(Debuggee.PREFIX+":session"));
-					variableDecls.remove(Debuggee.PREFIX+":session");
-				}
+    Sequence result;
+    try {
+      broker = brokerPool.get(user);
+      final XmldbURI[] docs = new XmldbURI[] { XmldbURI.create(collection.getName()) };
 
-				setupContext(source, context);
-				
-				if(compiled == null)
-				    {compiled = xquery.compile(context, source);}
-				try {
-				    result = xquery.execute(compiled, null, properties);
-				} finally {
-				    pool.returnCompiledXQuery(source, compiled);
-				}
-			} catch (final EXistException e) {
-				throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-			} catch (final XPathException e) {
-				throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-			} catch (final IOException e) {
-			    throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-            } catch (final PermissionDeniedException e) {
-			    throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-			} finally {
-				brokerPool.release(broker);
-	            brokerPool.setSubject(preserveSubject);
-			}
-			LOG.debug("query took " + (System.currentTimeMillis() - start) + " ms.");
-			if(result != null)
-				{return new LocalResourceSet(user, brokerPool, collection, properties, result, null);}
-			else
-				{return null;}
-		}
+      final XQuery xquery = broker.getXQueryService();
+      final XQueryPool pool = xquery.getXQueryPool();
+
+      CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
+
+      XQueryContext context = compiled == null ? xquery.newContext(accessCtx) : compiled.getContext();
+
+      //context.setBackwardsCompatibility(xpathCompatible);
+      context.setStaticallyKnownDocuments(docs);
+
+      if (variableDecls.containsKey(Debuggee.SESSION_KEY)) {
+        context.declareVariable(Debuggee.SESSION, variableDecls.get(Debuggee.SESSION_KEY));
+        variableDecls.remove(Debuggee.SESSION_KEY);
+      }
+
+      setupContext(source, context);
+
+      if(compiled == null) {
+        compiled = xquery.compile(context, source);
+      }
+      try {
+          result = xquery.execute(compiled, null, properties);
+      } finally {
+          pool.returnCompiledXQuery(source, compiled);
+      }
+    } catch (final EXistException | XPathException | IOException | PermissionDeniedException e) {
+      throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+    } finally {
+      brokerPool.release(broker);
+      brokerPool.setSubject(preserveSubject);
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("query took " + (System.currentTimeMillis() - start) + " ms.");
+    }
+    if(result != null) {
+      return new LocalResourceSet(user, brokerPool, collection, properties, result, null);
+    } else {
+      return null;
+    }
+  }
 	
     @Override
     public ResourceSet executeStoredQuery(final String uri) throws XMLDBException {
@@ -261,30 +259,35 @@ public class LocalXPathQueryService implements XPathQueryServiceImpl, XQueryServ
 		}
 	}
 
-    public CompiledExpression compileAndCheck(String query) throws XMLDBException, XPathException {
-    	final Subject preserveSubject = brokerPool.getSubject();
-        DBBroker broker = null;
-        try {
-            final long start = System.currentTimeMillis();
-            broker = brokerPool.get(user);
-            final XQuery xquery = broker.getXQueryService();
-            final XQueryContext context = xquery.newContext(accessCtx);
-            setupContext(null, context);
-            final CompiledXQuery expr = xquery.compile(context, query);
-//            checkPragmas(context);
-            LOG.debug("compilation took "  +  (System.currentTimeMillis() - start));
-            return expr;
-        } catch (final EXistException e) {
-            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-        } catch (final IllegalArgumentException e) {
-            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-        } catch (final PermissionDeniedException e) {
-            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-		} finally {
-            brokerPool.release(broker);
-            brokerPool.setSubject(preserveSubject);
-        }
+  public CompiledExpression compileAndCheck(String query) throws XMLDBException, XPathException {
+
+    final long start = System.currentTimeMillis();
+
+    final Subject preserveSubject = brokerPool.getSubject();
+    DBBroker broker = null;
+    try {
+      broker = brokerPool.get(user);
+
+      final XQuery xquery = broker.getXQueryService();
+      final XQueryContext context = xquery.newContext(accessCtx);
+
+      setupContext(null, context);
+
+      final CompiledXQuery expr = xquery.compile(context, query);
+      //checkPragmas(context);
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("compilation took " + (System.currentTimeMillis() - start));
+      }
+
+      return expr;
+    } catch (final EXistException | IllegalArgumentException | PermissionDeniedException e) {
+        throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+    } finally {
+      brokerPool.release(broker);
+      brokerPool.setSubject(preserveSubject);
     }
+  }
     
     public ResourceSet queryResource(String resource, String query)
     	throws XMLDBException {
@@ -356,15 +359,64 @@ public class LocalXPathQueryService implements XPathQueryServiceImpl, XQueryServ
 //		}
 //	}
 
-	private ResourceSet doQuery(
-		String query,
-		XmldbURI[] docs,
-		Sequence contextSet,
-		String sortExpr)
-		throws XMLDBException {
-		final CompiledExpression expr = compile(query);
-		return execute(docs, contextSet, expr, sortExpr);
-	}
+  public ResourceSet doQuery(String query,
+      XmldbURI[] docs,
+      Sequence contextSet,
+      String sortExpr)
+      throws XMLDBException {
+
+    Source source = new StringSource(query);
+
+    final long start = System.currentTimeMillis();
+    final Subject preserveSubject = brokerPool.getSubject();
+    DBBroker broker = null;
+
+    Sequence result;
+    try {
+      broker = brokerPool.get(user);
+
+      final XQuery xquery = broker.getXQueryService();
+      final XQueryPool pool = xquery.getXQueryPool();
+
+      CompiledXQuery compiled = pool.borrowCompiledXQuery(broker, source);
+
+      XQueryContext context = compiled == null ? xquery.newContext(accessCtx) : compiled.getContext();
+
+      //context.setBackwardsCompatibility(xpathCompatible);
+      context.setStaticallyKnownDocuments(docs);
+
+      if (variableDecls.containsKey(Debuggee.SESSION_KEY)) {
+        context.declareVariable(Debuggee.SESSION, variableDecls.get(Debuggee.SESSION_KEY));
+        variableDecls.remove(Debuggee.SESSION_KEY);
+      }
+
+      setupContext(null, context);
+
+      if(compiled == null) {
+        compiled = xquery.compile(context, source);
+      }
+      try {
+        result = xquery.execute(compiled, contextSet, properties);
+      } finally {
+        pool.returnCompiledXQuery(source, compiled);
+      }
+    } catch (final EXistException | XPathException | IOException | PermissionDeniedException e) {
+      throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+    } finally {
+      brokerPool.release(broker);
+      brokerPool.setSubject(preserveSubject);
+    }
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("query took " + (System.currentTimeMillis() - start) + " ms.");
+    }
+
+    if(result != null) {
+      return new LocalResourceSet(user, brokerPool, collection, properties, result, sortExpr);
+    } else {
+      return null;
+    }
+  }
 
 	/**
 	 * Execute all following queries in a protected environment.
@@ -430,47 +482,54 @@ public class LocalXPathQueryService implements XPathQueryServiceImpl, XQueryServ
 		}
 	}
 
-    private ResourceSet execute(XmldbURI[] docs, 
-		Sequence contextSet, CompiledExpression expression, String sortExpr) 
-    throws XMLDBException {
-    	final long start = System.currentTimeMillis();
-        final CompiledXQuery expr = (CompiledXQuery)expression;
-    	final Subject preserveSubject = brokerPool.getSubject();
-    	DBBroker broker = null;
-    	Sequence result;
-    	final XQueryContext context = expr.getContext();
-        try {
-    		broker = brokerPool.get(user);
+  private ResourceSet execute(
+      XmldbURI[] docs,
+      Sequence contextSet,
+      CompiledExpression expression,
+      String sortExpr) throws XMLDBException {
 
-    		//context.setBackwardsCompatibility(xpathCompatible);
-    		context.setStaticallyKnownDocuments(docs);
-            if (lockedDocuments != null)
-                {context.setProtectedDocs(lockedDocuments);}
-            setupContext(null, context);
-//    		checkPragmas(context);
-    		    
-    		final XQuery xquery = broker.getXQueryService();
-    		result = xquery.execute(expr, contextSet, properties);
-    	} catch (final EXistException e) {
-            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-    	} catch (final XPathException e) {
-            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-    	} catch (final Exception e) {
-    	    // need to catch all runtime exceptions here to be able to release locked documents
-            throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
-    	} finally {
-//            if (keepLocks)
-//                reservedBroker = broker;
-//            else
-                brokerPool.release(broker);
-                brokerPool.setSubject(preserveSubject);
-    	}
-    	LOG.debug("query took " + (System.currentTimeMillis() - start) + " ms.");
-    	if(result != null)
-    		{return new LocalResourceSet(user, brokerPool, collection, properties, result, sortExpr);}
-    	else
-    		{return null;}
+    final long start = System.currentTimeMillis();
+
+    final CompiledXQuery expr = (CompiledXQuery)expression;
+
+    final Subject preserveSubject = brokerPool.getSubject();
+    DBBroker broker = null;
+
+    Sequence result;
+    final XQueryContext context = expr.getContext();
+    try {
+      broker = brokerPool.get(user);
+
+      //context.setBackwardsCompatibility(xpathCompatible);
+      context.setStaticallyKnownDocuments(docs);
+
+      if (lockedDocuments != null) {
+        context.setProtectedDocs(lockedDocuments);
+      }
+
+      setupContext(null, context);
+      //checkPragmas(context);
+
+      final XQuery xquery = broker.getXQueryService();
+      result = xquery.execute(expr, contextSet, properties);
+    } catch (final Exception e) {
+      // need to catch all runtime exceptions here to be able to release locked documents
+      throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
+    } finally {
+      brokerPool.release(broker);
+      brokerPool.setSubject(preserveSubject);
     }
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("query took " + (System.currentTimeMillis() - start) + " ms.");
+    }
+
+    if(result != null) {
+      return new LocalResourceSet(user, brokerPool, collection, properties, result, sortExpr);
+    } else {
+      return null;
+    }
+  }
     
 	public void setCollection(Collection col) throws XMLDBException {
 	}
