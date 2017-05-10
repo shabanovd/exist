@@ -33,25 +33,27 @@ import java.net.URLDecoder;
 import java.security.Principal;
 import java.util.*;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.util.MimeType;
 import org.exist.util.VirtualTempFile;
 
 /** A wrapper for HttpServletRequest
  * - differentiates between POST parameters in the URL or Content Body
- * - keeps content Body of the POST request, making it available many times 
+ * - keeps content Body of the POST request, making it available many times
  * 		through {@link #getContentBodyInputStream()} .
- * 
+ *
  * A method of differentiating between POST parameters in the URL or Content Body of the request was needed.
  * The standard javax.servlet.http.HTTPServletRequest does not differentiate between URL or content body parameters,
  * this class does, the type is indicated in RequestParameter.type.
- * 
+ *
  * To differentiate manually we need to read the URL (getQueryString()) and the Content body (getInputStream()),
- * this is problematic with the standard javax.servlet.http.HTTPServletRequest as parameter functions (getParameterMap(), getParameterNames(), getParameter(String), getParameterValues(String)) 
+ * this is problematic with the standard javax.servlet.http.HTTPServletRequest as parameter functions (getParameterMap(), getParameterNames(), getParameter(String), getParameterValues(String))
  * affect the  input stream functions (getInputStream(), getReader()) and vice versa.
- * 
+ *
  * This class solves this by reading the Request Parameters initially from both the URL and the Content Body of the Request
  * and storing them in the private variable params for later use.
- * 
+ *
  * @author Adam Retter <adam.retter@devon.gov.uk>
  * @serial 2006-02-28
  * @version 1.1
@@ -63,12 +65,14 @@ import org.exist.util.VirtualTempFile;
 
 public class HttpServletRequestWrapper implements HttpServletRequest
 {
+	protected final static Logger LOG = LogManager.getLogger(HttpServletRequestWrapper.class);
+
 	/** Simple Enumeration implementation for String's, needed for getParameterNames() */
-	private class StringEnumeration implements Enumeration
+	private static class StringEnumeration implements Enumeration
 	{
 		private String[] strings = null;	//Strings in the Enumeration
 		int aryPos = -1;					//Current Position in Enumeration
-		
+
 		/**
 		 * StringEnumeration Constructor
 		 * @param strings 	an array of strings for the Enumeration
@@ -90,7 +94,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 				}
 			}
 		}
-		
+
 		/**
 		 * @see java.util.Enumeration#hasMoreElements
 		 */
@@ -105,7 +109,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 			}
 			return false;
 		}
-		
+
 		/**
 		 * @see java.util.Enumeration#nextElement
 		 */
@@ -130,16 +134,16 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 			}
 		}
 	}
-	
+
 	/** Simple class to hold the value and type of a request parameter */
-	private class RequestParamater
+	private static class RequestParamater
 	{
 		public final static int PARAM_TYPE_URL = 1;		//parameter from the URL of the request
 		public final static int PARAM_TYPE_CONTENT = 2;	//parameter from the Content of the request
 
 		private String value = null;	//parameter value
 		private int type = 0;			//parameter type, either PARAM_TYPE_URL or PARAM_TYPE_CONTENT
-		
+
 		/**
 		 * RequestParameter Constructor
 		 * @param value 	Value of the Request Parameter
@@ -150,16 +154,16 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 			this.value = value;
 			this.type = type;
 		}
-		
+
 		/**
 		 * Request parameter value accessor
-		 * @return		Value of Request parameter 
+		 * @return		Value of Request parameter
 		 */
 		public String getValue()
 		{
 			return(value);
 		}
-		
+
 		/**
 		 * Request parameter type accessor
 		 * @return		Type of Request parameter
@@ -169,29 +173,29 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 			return(type);
 		}
 	}
-	
-	
+
+
 	//Members
 	private HttpServletRequest request = null;		//The Request
 	/** The encoding for the Request */
 	private String formEncoding = null;
-	
+
 	/** The Request Parameters
-	 * 
+	 *
 	 * params LinkedHashMap
 	 * ====================
 	 * params keys are String
 	 * params values are Vector of RequestParamater's
 	 */
-	private LinkedHashMap<String, Vector<RequestParamater>> params = null;			
+	private LinkedHashMap<String, Vector<RequestParamater>> params = null;
 
-	/** the content Body of the POST request; 
-	 * it must be stored because once the Servlet input stream has been 
+	/** the content Body of the POST request;
+	 * it must be stored because once the Servlet input stream has been
 	 * consumed, the content Body is no more readable. */
 	private String contentBodyAsString;
 	VirtualTempFile contentBody;
 
-	
+
 	/**
 	 * HttpServletRequestWrapper Constructor
 	 * @param request		The HttpServletRequest to wrap
@@ -202,10 +206,10 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 		this.request = request;
 		this.formEncoding = formEncoding;
 		params = new LinkedHashMap<String, Vector<RequestParamater>>();
-		
+
 		initialiseWrapper();
 	}
-	
+
 	//Initalises the wrapper, setup encoding and parameter hashtable
 	private void initialiseWrapper() throws UnsupportedEncodingException
 	{
@@ -218,10 +222,10 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 		{
 			formEncoding = getCharacterEncoding();
 		}
-		
+
 		//Parse out parameters from the URL
 		parseURLParameters(this.request.getQueryString());
-		
+
 		//If POST request, Parse out parameters from the Content Body
 		if("POST".equals(request.getMethod().toUpperCase()))
 		{
@@ -231,16 +235,16 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 			{
 				// If a form POST , and not a document POST
 				String contentType = request.getContentType().toLowerCase();
-                final int semicolon = contentType.indexOf(';');
-                if (semicolon>0) {
-                    contentType = contentType.substring(0,semicolon).trim();
-                }
+				final int semicolon = contentType.indexOf(';');
+				if (semicolon>0) {
+					contentType = contentType.substring(0,semicolon).trim();
+				}
 				if( "application/x-www-form-urlencoded".equals(contentType)
 						&& request.getHeader("ContentType") == null )
 				{
 					//Parse out parameters from the Content Body
 					parseContentBodyParameters();
-					
+
 				} else if (contentType.equals(MimeType.XML_TYPE.getName())) {
 					// if an XML-RPC
 					try {
@@ -254,7 +258,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 			}
 		}
 	}
-	
+
 	//Stores parameters from the QueryString of the request
 	private void parseURLParameters(String querystring)
 	{
@@ -264,13 +268,13 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 			parseParameters(querystring, RequestParamater.PARAM_TYPE_URL);
 		}
 	}
-	
+
 	/** Stores parameters from the Content Body of the Request */
 	private void parseContentBodyParameters()
 	{
 		try {
 			final String content = getContentBody();
-	
+
 			//Parse any parameters from the Content Body
 			parseParameters( content, RequestParamater.PARAM_TYPE_CONTENT);
 		} catch(final IOException ioe) {
@@ -282,24 +286,24 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 
 	private String getContentBody() throws IOException {
 		recordContentBody();
-		
+
 		final StringBuilder result=new StringBuilder();
 		appendContentBody(result);
-		
+
 		return result.toString();
 	}
-	
+
 	/** Parses Parameters into param objects and stores them in a vector in params */
 	private void parseParameters(String parameters, int type)
 	{
 		//Split parameters into an array
 		final String[] nameValuePairs = parameters.split("&");
-		
+
 		for (int k = 0; k < nameValuePairs.length; k++)
 		{
 			//Split parameter into name and value
 			final String[] thePair = nameValuePairs[k].split("=");
-			
+
 			try
 			{
 				//URL Decode the parameter name and value
@@ -314,20 +318,20 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 				//TODO: handle this properly
 				uee.printStackTrace();
 			}
-			
+
 			//Have we encountered a parameter with this name?
 			if(params.containsKey(thePair[0]))
 			{
 				//key exists in hash map, add value and type to vector
 				final Vector<RequestParamater> vecValues = params.get(thePair[0]);
-				vecValues.add(new RequestParamater((thePair.length == 2 ? thePair[1] : new String()), type));
+				vecValues.add(new RequestParamater((thePair.length == 2 ? thePair[1] : ""), type));
 				params.put(thePair[0], vecValues);
 			}
 			else
 			{
 				//not in hash map so add a vector with the initial value
 				final Vector<RequestParamater> vecValues = new Vector<RequestParamater>();
-				vecValues.add(new RequestParamater((thePair.length == 2 ? thePair[1] : new String()), type));
+				vecValues.add(new RequestParamater((thePair.length == 2 ? thePair[1] : ""), type));
 				params.put(thePair[0], vecValues);
 			}
 		}
@@ -385,7 +389,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	 * @see javax.servlet.http.HttpServletRequest#getIntHeader
 	 */
 	public int getIntHeader(String name)
-	{ 
+	{
 		return request.getIntHeader(name);
 	}
 
@@ -473,7 +477,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	 * @see javax.servlet.http.HttpServletRequest#getRequestURL
 	 */
 	public StringBuffer getRequestURL()
-	{	
+	{
 		return request.getRequestURL();
 	}
 
@@ -499,6 +503,11 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	public HttpSession getSession()
 	{
 		return request.getSession();
+	}
+
+	@Override
+	public String changeSessionId() {
+		return request.changeSessionId();
 	}
 
 	/**
@@ -527,39 +536,44 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 
 	/**
 	 * @deprecated use isRequestedSessionIdFromURL() instead.
-     * @see javax.servlet.http.HttpServletRequest#isRequestedSessionIdFromUrl
+	 * @see javax.servlet.http.HttpServletRequest#isRequestedSessionIdFromUrl
 	 */
 	public boolean isRequestedSessionIdFromUrl()
-	{	
+	{
 		return request.isRequestedSessionIdFromUrl();
 	}
 
-    @Override
-    public boolean authenticate(HttpServletResponse httpServletResponse) throws IOException, ServletException {
-        return request.authenticate(httpServletResponse);
-    }
+	@Override
+	public boolean authenticate(HttpServletResponse httpServletResponse) throws IOException, ServletException {
+		return request.authenticate(httpServletResponse);
+	}
 
-    @Override
-    public void login(String s, String s1) throws ServletException {
-        request.login(s, s1);
-    }
+	@Override
+	public void login(String s, String s1) throws ServletException {
+		request.login(s, s1);
+	}
 
-    @Override
-    public void logout() throws ServletException {
-        request.logout();
-    }
+	@Override
+	public void logout() throws ServletException {
+		request.logout();
+	}
 
-    @Override
-    public Collection<Part> getParts() throws IOException, ServletException {
-        return request.getParts();
-    }
+	@Override
+	public Collection<Part> getParts() throws IOException, ServletException {
+		return request.getParts();
+	}
 
-    @Override
-    public Part getPart(String s) throws IOException, ServletException {
-        return request.getPart(s);
-    }
+	@Override
+	public Part getPart(String s) throws IOException, ServletException {
+		return request.getPart(s);
+	}
 
-    /**
+	@Override
+	public <T extends HttpUpgradeHandler> T upgrade(Class<T> clazz) throws IOException, ServletException {
+		return request.upgrade(clazz);
+	}
+
+	/**
 	 * @see javax.servlet.http.HttpServletRequest#getAttribute
 	 */
 	public Object getAttribute(String name)
@@ -599,11 +613,16 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 		return request.getContentLength();
 	}
 
+	@Override
+	public long getContentLengthLong() {
+		return request.getContentLengthLong();
+	}
+
 	/**
 	 * @see javax.servlet.http.HttpServletRequest#getContentType
 	 */
 	public String getContentType()
-	{	
+	{
 		return request.getContentType();
 	}
 
@@ -612,11 +631,11 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	 */
 	public ServletInputStream getInputStream() throws IOException
 	{
-        if (contentBodyRecorded())
-            {return new CachingServletInputStream();}
-        else
-            {return request.getInputStream();}
-    }
+		if (contentBodyRecorded())
+		{return new CachingServletInputStream();}
+		else
+		{return request.getInputStream();}
+	}
 
 //	public InputStream getStringBufferInputStream() throws IOException {
 //		return new StringBufferInputStream( contentBodyAsString );
@@ -625,20 +644,20 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	/** making the content Body of the POST request available many times, for processing by , e.g. Rpc processor . */
 	public InputStream getContentBodyInputStream() throws IOException {
 		recordContentBody();
-		
+
 		return contentBody.getByteStream();
 	}
-	
+
 	private void recordContentBody() throws IOException {
-		
+
 		if(contentBody==null) {
 			//Read the Content Body into the buffer
 			final InputStream is = request.getInputStream();
-			
+
 			long clen = request.getContentLength();
 			final String lenstr = request.getHeader("Content-Length");
 			if(lenstr!=null)
-				{clen = Long.parseLong(lenstr);}
+			{clen = Long.parseLong(lenstr);}
 			contentBody = new VirtualTempFile();
 			contentBody.setTempPrefix("existWRP");
 			contentBody.setTempPostfix(".tmp");
@@ -646,19 +665,19 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 			contentBody.close();
 		}
 	}
-	
+
 	private void appendContentBody(Appendable buf)
-		throws IOException
+			throws IOException
 	{
 		recordContentBody();
-		
+
 		final BufferedReader br = getReader();
 		String line;
 		while((line=br.readLine())!=null) {
 			buf.append(line);
 		}
 	}
-	
+
 	/**
 	 * get the value of a Request parameter by its name from the local parameter store
 	 * @param name		The name of the Request parameter to get the value for
@@ -686,16 +705,16 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	 * @return		An enumeration of string values representing the Request parameters names
 	 */
 	public Enumeration getParameterNames()
-	{	
+	{
 		//get the key set as an array
 		final Object[] keySet = params.keySet().toArray();
-		
-		//create a new string array, the same size as the ket set array 
+
+		//create a new string array, the same size as the ket set array
 		final String[] strKeySet = new String[keySet.length];
-		
+
 		//copy the data from the key set to the string key set
 		System.arraycopy(keySet, 0, strKeySet, 0, keySet.length);
-		
+
 		//return an enumeration of strings of the keys
 		return new StringEnumeration(strKeySet);
 	}
@@ -712,16 +731,16 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 		{
 			//Get the parameters vector of values
 			final Vector<RequestParamater> vecParameterValues = params.get(name);
-			
+
 			//Create a string array to hold the values
 			final String[] values = new String[vecParameterValues.size()];
-			
+
 			//Copy each value into the string array
 			for(int i = 0; i < vecParameterValues.size(); i++)
 			{
 				values[i] = vecParameterValues.get(i).getValue();
 			}
-			
+
 			//return the string array of values
 			return(values);
 		}
@@ -739,18 +758,18 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	{
 		//Map to hold the parameters
 		final LinkedHashMap<String, String[]> mapParameters = new LinkedHashMap<String, String[]>();
-		
+
 		final Set<Map.Entry<String, Vector<RequestParamater>>> setParams = params.entrySet();
-		
+
 		//iterate through the Request Parameters
 		for(final Map.Entry<String, Vector<RequestParamater>> me : setParams)
 		{
 			//Get the parameters values
 			final Vector<RequestParamater> vecParamValues = me.getValue();
-			
+
 			//Create a string array to hold the parameter values
 			final String[] values = new String[vecParamValues.size()];
-			
+
 			//Copy the parameter values into a string array
 			int i = 0;
 			for(final Iterator<RequestParamater> itParamValues = vecParamValues.iterator(); itParamValues.hasNext(); i++)
@@ -799,10 +818,10 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 		if (contentBodyRecorded()) {
 			String encoding = request.getCharacterEncoding();
 			if(encoding==null)
-				{encoding = "UTF-8";}
+			{encoding = "UTF-8";}
 			return new BufferedReader(new InputStreamReader(getContentBodyInputStream(),encoding));
 		} else
-		    {return request.getReader();}
+		{return request.getReader();}
 	}
 
 	/**
@@ -870,7 +889,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	}
 
 	/**
-     * @deprecated use use ServletContext#getRealPath(java.lang.String) instead.
+	 * @deprecated use use ServletContext#getRealPath(java.lang.String) instead.
 	 * @see javax.servlet.http.HttpServletRequest#getRealPath
 	 */
 	public String getRealPath(String path)
@@ -890,7 +909,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	 * @see javax.servlet.http.HttpServletRequest#getLocalName
 	 */
 	public String getLocalName()
-	{	
+	{
 		return request.getLocalName();
 	}
 
@@ -906,46 +925,46 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	 * @see javax.servlet.http.HttpServletRequest#getLocalPort
 	 */
 	public int getLocalPort()
-	{	
+	{
 		return request.getLocalPort();
 	}
 
-    @Override
-    public ServletContext getServletContext() {
-        return request.getServletContext();
-    }
+	@Override
+	public ServletContext getServletContext() {
+		return request.getServletContext();
+	}
 
-    @Override
-    public AsyncContext startAsync() throws IllegalStateException {
-        return request.startAsync();
-    }
+	@Override
+	public AsyncContext startAsync() throws IllegalStateException {
+		return request.startAsync();
+	}
 
-    @Override
-    public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException {
-        return request.startAsync(servletRequest, servletResponse);
-    }
+	@Override
+	public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException {
+		return request.startAsync(servletRequest, servletResponse);
+	}
 
-    @Override
-    public boolean isAsyncStarted() {
-        return request.isAsyncStarted();
-    }
+	@Override
+	public boolean isAsyncStarted() {
+		return request.isAsyncStarted();
+	}
 
-    @Override
-    public boolean isAsyncSupported() {
-        return request.isAsyncSupported();
-    }
+	@Override
+	public boolean isAsyncSupported() {
+		return request.isAsyncSupported();
+	}
 
-    @Override
-    public AsyncContext getAsyncContext() {
-        return request.getAsyncContext();
-    }
+	@Override
+	public AsyncContext getAsyncContext() {
+		return request.getAsyncContext();
+	}
 
-    @Override
-    public DispatcherType getDispatcherType() {
-        return request.getDispatcherType();
-    }
+	@Override
+	public DispatcherType getDispatcherType() {
+		return request.getDispatcherType();
+	}
 
-    /**
+	/**
 	 * Similar to javax.servlet.http.HttpServletRequest.toString() ,
 	 * except it includes output of the Request parameters from the Request's Content Body
 	 * @return		String representation of HttpServletRequestWrapper
@@ -956,12 +975,12 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 		if (	    "POST".equals(request.getMethod().toUpperCase())
 				&&  (request.getContentLength() > 0 || request.getContentLength()==-1)
 				&& !request.getContentType().toUpperCase().startsWith(
-						"MULTIPART/")
+				"MULTIPART/")
 				&& ! contentBodyRecorded() ) {
-			
-			// Also return the content parameters, these are not part 
+
+			// Also return the content parameters, these are not part
 			// of the standard HttpServletRequest.toString() output
-			final StringBuffer buf = new StringBuffer( request.toString());
+			final StringBuilder buf = new StringBuilder( request.toString());
 
 			final Set<Map.Entry<String, Vector<RequestParamater>>> setParams = params.entrySet();
 
@@ -972,7 +991,7 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 
 					if (p.type == RequestParamater.PARAM_TYPE_CONTENT) {
 						if (buf.charAt(buf.length() - 1) != '\n')
-							{buf.append("&");}
+						{buf.append("&");}
 						buf.append((String) me.getKey());
 						buf.append("=");
 						buf.append(p.getValue());
@@ -980,13 +999,12 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 				}
 			}
 
-			buf.append(	System.getProperty("line.separator") +
-						System.getProperty("line.separator") );
+			buf.append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
 			return buf.toString();
 
 		} else if ( contentBodyRecorded() ) {
-			
+
 			// XML-RPC request or plain XML REST POST
 			final StringBuilder buf = new StringBuilder( request.toString() );
 			try {
@@ -996,9 +1014,8 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 				System.err.println( "Error Reading the Content Body into the buffer: " + ioe );
 				ioe.printStackTrace();
 			}
-			
-			buf.append(	System.getProperty("line.separator") +
-						System.getProperty("line.separator") );
+
+			buf.append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 			return buf.toString();
 
 		} else {
@@ -1008,37 +1025,56 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	}
 
 	private boolean contentBodyRecorded() {
-		return contentBody != null 
-			&& contentBody.length() > 0;
+		return contentBody != null
+				&& contentBody.length() > 0;
 	}
 
-    private class CachingServletInputStream extends ServletInputStream {
+	private class CachingServletInputStream extends ServletInputStream {
+		private InputStream istream;
 
-        private InputStream istream;
+		public CachingServletInputStream()
+				throws IOException
+		{
+			if (contentBody == null)
+			{istream = new ByteArrayInputStream(new byte[0]);}
+			else
+			{istream = contentBody.getByteStream();}
+		}
 
-        public CachingServletInputStream()
-            throws IOException
-        {
-            if (contentBody == null)
-                {istream = new ByteArrayInputStream(new byte[0]);}
-            else
-                {istream = contentBody.getByteStream();}
-        }
-        
-        public int read() throws IOException {
-           return istream.read();
-        }
+		public int read() throws IOException {
+			return istream.read();
+		}
 
-        public int read(byte b[]) throws IOException {
-            return istream.read(b);
-        }
+		public int read(byte b[]) throws IOException {
+			return istream.read(b);
+		}
 
-        public int read(byte b[], int off, int len) throws IOException {
-            return istream.read(b, off, len);
-        }
+		public int read(byte b[], int off, int len) throws IOException {
+			return istream.read(b, off, len);
+		}
 
-        public int available() throws IOException {
-            return istream.available();
-        }
-    }
+		public int available() throws IOException {
+			return istream.available();
+		}
+
+		@Override
+		public boolean isFinished() {
+			try {
+				return istream.available() == 0;
+			} catch(final IOException ioe) {
+				LOG.error(ioe);
+				return true;
+			}
+		}
+
+		@Override
+		public boolean isReady() {
+			return true;
+		}
+
+		@Override
+		public void setReadListener(final ReadListener readListener) {
+			throw new UnsupportedOperationException();
+		}
+	}
 }
