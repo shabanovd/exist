@@ -4,7 +4,7 @@
   ~ Author betterFORM team ( info AT betterform.de )
   -->
 
-<project name="betterFORM extension for eXist" default="install" basedir=".">
+<project name="betterFORM extension for eXist" default="install" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
     <property name="exist.rootdir" value="${basedir}/../.."/>
     <property name="exist.web.xml" value="${exist.rootdir}/webapp/WEB-INF/web.xml"/>
 
@@ -33,7 +33,7 @@
                   fork="true">
                 <classpath>
                     <fileset dir="${exist.rootdir}/lib/endorsed">
-                        <include name="saxon*.jar"/>
+                        <include name="Saxon*.jar"/>
                     </fileset>
                 </classpath>
                 <arg value="@{in}"/>
@@ -49,8 +49,13 @@
         <pathelement path="${exist.rootdir}/exist.jar"/>
         <pathelement path="${exist.rootdir}/exist-optional.jar"/>
     </path>
+    
+    <target name="resolve" description="Use ivy to resolve betterform.jar">
+        <ivy:resolve/>
+        <ivy:retrieve pattern="main/lib/[artifact]-[revision].[ext]"/>
+    </target>
 
-    <target name="install" description="install betterFORM into an existing eXist XML DB installation"
+    <target name="install" depends="resolve" description="install betterFORM into an existing eXist XML DB installation"
             if="include.feature.betterform.config">
         <echo>
             Add betterFORM config parameters to eXist to ${exist.web.xml}
@@ -80,6 +85,9 @@
         <delete file="${exist.rootdir}/webapp/WEB-INF/dwr.xml" />
         <delete file="${exist.rootdir}/webapp/WEB-INF/dwr20.dtd" />
         <delete file="${exist.rootdir}/webapp/WEB-INF/classes/infinispan.xml"/>
+	<delete>
+	  <fileset dir="${betterform.lib}" includes="*.jar" excludes="dwr-3.0.RC2.jar"/>
+	</delete>
 
         <!-- restore web.xml -->
         <move file="${betterform.home}/uninstall/web.xml" tofile="${exist.rootdir}/webapp/WEB-INF/web.xml" overwrite="true" failonerror="false"/>
