@@ -47,54 +47,54 @@ import com.siemens.ct.exi.EXIFactory;
 import com.siemens.ct.exi.GrammarFactory;
 import com.siemens.ct.exi.api.sax.SAXDecoder;
 import com.siemens.ct.exi.exceptions.EXIException;
-import com.siemens.ct.exi.grammar.Grammar;
+import com.siemens.ct.exi.grammars.Grammars;
 import com.siemens.ct.exi.helpers.DefaultEXIFactory;
 
 /**
  * eXist EXI Module Extension DecodeExiFunction.
- * 
+ *
  * Decodes an Efficient XML Interchange (EXI) source to XML.
- * 
+ *
  * @author Rob Walpole
  * @version 1.0
  *
  */
 public class DecodeExiFunction extends BasicFunction {
 
-    public final static FunctionSignature[] signatures = {
-		new FunctionSignature(
-				new QName("decode-to-xml", ExiModule.NAMESPACE_URI, ExiModule.PREFIX),
-				"A function which returns XML from a decoded EXI source",
-				new SequenceType[] {
-					new FunctionParameterSequenceType("source-exi", Type.BASE64_BINARY, Cardinality.EXACTLY_ONE, "the EXI source")},
-				new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_ONE, "the XML result")
-		),
-		new FunctionSignature(
-				new QName("decode-to-xml", ExiModule.NAMESPACE_URI, ExiModule.PREFIX),
-				"A function which return XML from a schema decoded EXI source",
-				new SequenceType[] {
-					new FunctionParameterSequenceType("source-exi", Type.BASE64_BINARY, Cardinality.EXACTLY_ONE, "the EXI source"),
-					new FunctionParameterSequenceType("schema-location", Type.ITEM, Cardinality.EXACTLY_ONE, "the XSD schema location")
-				},
-				new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_ONE, "the XML result")
-		)
-    };
+	public final static FunctionSignature[] signatures = {
+			new FunctionSignature(
+					new QName("decode-to-xml", ExiModule.NAMESPACE_URI, ExiModule.PREFIX),
+					"A function which returns XML from a decoded EXI source",
+					new SequenceType[] {
+							new FunctionParameterSequenceType("source-exi", Type.BASE64_BINARY, Cardinality.EXACTLY_ONE, "the EXI source")},
+					new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_ONE, "the XML result")
+			),
+			new FunctionSignature(
+					new QName("decode-to-xml", ExiModule.NAMESPACE_URI, ExiModule.PREFIX),
+					"A function which return XML from a schema decoded EXI source",
+					new SequenceType[] {
+							new FunctionParameterSequenceType("source-exi", Type.BASE64_BINARY, Cardinality.EXACTLY_ONE, "the EXI source"),
+							new FunctionParameterSequenceType("schema-location", Type.ITEM, Cardinality.EXACTLY_ONE, "the XSD schema location")
+					},
+					new FunctionReturnSequenceType(Type.NODE, Cardinality.ZERO_OR_ONE, "the XML result")
+			)
+	};
 
-    public DecodeExiFunction(XQueryContext context, FunctionSignature signature) {
-    	super(context, signature);
+	public DecodeExiFunction(XQueryContext context, FunctionSignature signature) {
+		super(context, signature);
 	}
 
 	@Override
 	public Sequence eval(Sequence[] args, Sequence contextSequence)
 			throws XPathException {
 		if(args[0].isEmpty()) {
-            return Sequence.EMPTY_SEQUENCE;
-        }
+			return Sequence.EMPTY_SEQUENCE;
+		}
 		try {
 			BinaryValue exiBinary = ((BinaryValue)args[0].itemAt(0));
-			
+
 			MemTreeBuilder builder = context.getDocumentBuilder();
-			
+
 			// create default factory and EXI grammar for schema
 			EXIFactory exiFactory = DefaultEXIFactory.newInstance();
 			if(args.length > 1) {
@@ -102,26 +102,20 @@ public class DecodeExiFunction extends BasicFunction {
 					Item xsdItem = args[1].itemAt(0);
 					InputStream xsdInputStream = EXIUtils.getInputStream(xsdItem, context);
 					GrammarFactory grammarFactory = GrammarFactory.newInstance();
-					Grammar grammar = grammarFactory.createGrammar(xsdInputStream);
-					exiFactory.setGrammar(grammar);
+					Grammars grammar = grammarFactory.createGrammars(xsdInputStream);
+					exiFactory.setGrammars(grammar);
 				}
 			}
 			SAXDecoder decoder = new SAXDecoder(exiFactory);
 			SAXAdapter adapter = new AppendingSAXAdapter(builder);
-            decoder.setContentHandler(adapter);
-            decoder.parse(new InputSource(exiBinary.getInputStream()));
-		    
-		    NodeValue node  = (NodeValue)builder.getDocument().getDocumentElement();
-		    return node;
+			decoder.setContentHandler(adapter);
+			decoder.parse(new InputSource(exiBinary.getInputStream()));
+
+			NodeValue node  = (NodeValue)builder.getDocument().getDocumentElement();
+			return node;
 		}
-		catch(EXIException exie) {
+		catch(EXIException | SAXException | IOException exie) {
 			throw new XPathException(this, new JavaErrorCode(exie.getCause()), exie.getMessage());
-		}
-		catch(SAXException saxe) {
-			throw new XPathException(this, new JavaErrorCode(saxe.getCause()), saxe.getMessage());
-		}
-		catch(IOException ioex) {
-			throw new XPathException(this, new JavaErrorCode(ioex.getCause()), ioex.getMessage());
 		}
 	}
 
