@@ -2,6 +2,9 @@
 // Copyright (c) 2002 Mort Bay Consulting (Australia) Pty. Ltd.
 // $Id$
 // ========================================================================
+
+//Modified for eXist-db
+
 /**
  * This is an adopted version of the corresponding classes shipped
  * with Jetty.
@@ -11,10 +14,17 @@ package org.exist.start;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Jan Hlavaty (hlavac@code.cz)
@@ -23,14 +33,18 @@ import java.util.StringTokenizer;
  *          <p/>
  *          TODO:
  *          - finish possible jetty.home locations
- *          - use File.toURI.toURL() on JDK 1.4+
  *          - better handling of errors (i.e. when jetty.home cannot be autodetected...)
  *          - include entries from lib _when needed_
  */
 public class Main {
 
+    private final static String START_CONFIG = "start.config";
+
+    public static final String STANDARD_ENABLED_JETTY_CONFIGS = "standard.enabled-jetty-configs";
+    public static final String STANDALONE_ENABLED_JETTY_CONFIGS = "standalone.enabled-jetty-configs";
+
     private String _classname = null;
-    
+
     private String _mode = "jetty";
 
     private static Main exist;
@@ -45,7 +59,7 @@ public class Main {
     // classpath.
     private final LatestFileResolver jarFileResolver = new LatestFileResolver();
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         try {
             getMain().run(args);
 
@@ -71,25 +85,25 @@ public class Main {
     private Main() {
     }
 
-    public Main(String mode) {
+    public Main(final String mode) {
         this._mode = mode;
     }
 
-    static File getDirectory(String name) {
+    static Path getDirectory(final String name) {
         try {
             if (name != null) {
-                final File dir = new File(name).getCanonicalFile();
-                if (dir.isDirectory()) {
+                final Path dir = Paths.get(name).normalize().toAbsolutePath();
+                if (Files.isDirectory(dir)) {
                     return dir;
                 }
             }
-        } catch (final IOException e) {
+        } catch (final InvalidPathException e) {
             // NOP
         }
         return null;
     }
 
-    boolean isAvailable(String classname, Classpath classpath) {
+    boolean isAvailable(final String classname, final Classpath classpath) {
         try {
             Class.forName(classname);
             return true;
@@ -110,9 +124,9 @@ public class Main {
         return false;
     }
 
-    public static void invokeMain(ClassLoader classloader, String classname, String[] args)
-            throws IllegalAccessException, InvocationTargetException,
-            NoSuchMethodException, ClassNotFoundException {
+    public static void invokeMain(final ClassLoader classloader, final String classname, final String[] args)
+        throws IllegalAccessException, InvocationTargetException,
+        NoSuchMethodException, ClassNotFoundException {
 
         final Class<?> invoked_class = classloader.loadClass(classname);
 
@@ -126,22 +140,21 @@ public class Main {
         main.invoke(null, method_params);
     }
 
-    void configureClasspath(String home, Classpath classpath, InputStream config, String[] args, String mode) {
+    void configureClasspath(final Path home, final Classpath classpath, final InputStream config, final String[] args, final String mode) {
 
         // Any files referenced in start.config that don't exist or cannot be resolved
         // are placed in this list.
-        final List<String> invalidJars = new ArrayList<String>();
+        final List<Path> invalidJars = new ArrayList<>();
 
-        try {
-            final BufferedReader cfg = new BufferedReader(new InputStreamReader(config, "ISO-8859-1"));
+        try(final BufferedReader cfg = new BufferedReader(new InputStreamReader(config, StandardCharsets.UTF_8))) {
             final Version java_version = new Version(System.getProperty("java.version"));
             final Version ver = new Version();
 
             // JAR's already processed
-            final Hashtable<String, String> done = new Hashtable<String, String>();
-            String line = cfg.readLine();
+            final Set<Path> done = new HashSet<>();
 
-            while (line != null) {
+            String line;
+            while ((line = cfg.readLine()) != null) {
                 try {
                     if ((line.length() > 0) && (!line.startsWith("#"))) {
 
@@ -176,31 +189,31 @@ public class Main {
                                 final String version = st.nextToken();
                                 ver.parse(version);
                                 include_subject &= ("<".equals(operator) && java_version.compare(ver) < 0)
-                                        || (">".equals(operator) && java_version.compare(ver) > 0)
-                                        || ("<=".equals(operator) && java_version.compare(ver) <= 0)
-                                        || ("=<".equals(operator) && java_version.compare(ver) <= 0)
-                                        || ("=>".equals(operator) && java_version.compare(ver) >= 0)
-                                        || (">=".equals(operator) && java_version.compare(ver) >= 0)
-                                        || ("==".equals(operator) && java_version.compare(ver) == 0)
-                                        || ("!=".equals(operator) && java_version.compare(ver) != 0);
+                                    || (">".equals(operator) && java_version.compare(ver) > 0)
+                                    || ("<=".equals(operator) && java_version.compare(ver) <= 0)
+                                    || ("=<".equals(operator) && java_version.compare(ver) <= 0)
+                                    || ("=>".equals(operator) && java_version.compare(ver) >= 0)
+                                    || (">=".equals(operator) && java_version.compare(ver) >= 0)
+                                    || ("==".equals(operator) && java_version.compare(ver) == 0)
+                                    || ("!=".equals(operator) && java_version.compare(ver) != 0);
 
                             } else if ("nargs".equals(condition)) {
                                 final String operator = st.nextToken();
                                 final int number = Integer.parseInt(st.nextToken());
                                 include_subject &= ("<".equals(operator) && args.length < number)
-                                        || (">".equals(operator) && args.length > number)
-                                        || ("<=".equals(operator) && args.length <= number)
-                                        || ("=<".equals(operator) && args.length <= number)
-                                        || ("=>".equals(operator) && args.length >= number)
-                                        || (">=".equals(operator) && args.length >= number)
-                                        || ("==".equals(operator) && args.length == number)
-                                        || ("!=".equals(operator) && args.length != number);
+                                    || (">".equals(operator) && args.length > number)
+                                    || ("<=".equals(operator) && args.length <= number)
+                                    || ("=<".equals(operator) && args.length <= number)
+                                    || ("=>".equals(operator) && args.length >= number)
+                                    || (">=".equals(operator) && args.length >= number)
+                                    || ("==".equals(operator) && args.length == number)
+                                    || ("!=".equals(operator) && args.length != number);
 
                             } else if ("mode".equals(condition)) {
                                 final String operator = st.nextToken();
                                 final String m = st.nextToken();
                                 include_subject &= ("==".equals(operator) && mode.equals(m))
-                                        || ("!=".equals(operator) && (!mode.equals(m)));
+                                    || ("!=".equals(operator) && (!mode.equals(m)));
 
                             } else {
                                 System.err.println("ERROR: Unknown condition: " + condition);
@@ -208,35 +221,31 @@ public class Main {
                         }
 
                         final String file =
-                                subject.startsWith("/")
+                            subject.startsWith("/")
                                 ? subject.replace('/', File.separatorChar)
-                                : home + File.separatorChar + subject.replace('/', File.separatorChar);
+                                : home.toAbsolutePath().toString() + File.separatorChar + subject.replace('/', File.separatorChar);
+
 
                         if (_debug) {
                             System.err.println("subject=" + subject + " file=" + file
-                                    + " condition=" + condition + " include_subject=" + include_subject);
+                                + " condition=" + condition + " include_subject=" + include_subject);
                         }
 
                         // ok, should we include?
                         if (subject.endsWith("/*")) {
                             // directory of JAR files
-                            final File extdir = new File(file.substring(0, file.length() - 1));
-                            final File[] jars = extdir.listFiles(new FilenameFilter() {
-                                public boolean accept(File dir, String name) {
-                                    String namelc = name.toLowerCase();
-                                    return namelc.endsWith(".jar") || name.endsWith(".zip");
-                                }
-                            });
+                            final Path extdir = Paths.get(file.substring(0, file.length() - 1));
+                            final List<Path> jars = list(extdir, p -> fileName(p).toLowerCase().endsWith(".jar") || fileName(p).toLowerCase().endsWith(".zip"));
 
                             if (jars != null) {
-                                for (int i = 0; i < jars.length; i++) {
+                                for (final Path jarFile : jars) {
 
-                                    final String jar = jars[i].getCanonicalPath();
-                                    if (!done.containsKey(jar)) {
+                                    final Path canonicalPath = jarFile.toAbsolutePath();
+                                    if (!done.contains(canonicalPath)) {
                                         if (include_subject) {
-                                            done.put(jar, jar);
-                                            if (classpath.addComponent(jar) && _debug) {
-                                                System.err.println("Adding JAR from directory: " + jar);
+                                            done.add(canonicalPath);
+                                            if (classpath.addComponent(canonicalPath.toFile()) && _debug) {
+                                                System.err.println("Adding JAR from directory: " + canonicalPath);
                                             }
                                         }
                                     }
@@ -246,13 +255,12 @@ public class Main {
 
                         } else if (subject.endsWith("/")) {
                             // class directory
-                            final File cd = new File(file);
-                            final String d = cd.getCanonicalPath();
-                            if (!done.containsKey(d)) {
-                                done.put(d, d);
+                            final Path p = Paths.get(file).toAbsolutePath();
+                            if (!done.contains(p)) {
+                                done.add(p);
                                 if (include_subject) {
-                                    if (classpath.addComponent(d) && _debug) {
-                                        System.err.println("Adding directory: " + d);
+                                    if (classpath.addComponent(p.toFile()) && _debug) {
+                                        System.err.println("Adding directory: " + p);
                                     }
                                 }
                             }
@@ -265,18 +273,18 @@ public class Main {
                             // single JAR file
                             final String resolvedFile = jarFileResolver.getResolvedFileName(file);
 
-                            final File f = new File(resolvedFile);
+                            final Path f = Paths.get(resolvedFile);
                             if (include_subject) {
-                                if (!f.exists()) {
-                                    invalidJars.add(f.getAbsolutePath());
+                                if (!Files.exists(f)) {
+                                    invalidJars.add(f.toAbsolutePath());
                                 }
                             }
 
-                            final String d = f.getCanonicalPath();
-                            if (!done.containsKey(d)) {
+                            final Path d = f.toAbsolutePath();
+                            if (!done.contains(d)) {
                                 if (include_subject) {
-                                    done.put(d, d);
-                                    if (classpath.addComponent(d) && _debug) {
+                                    done.add(d);
+                                    if (classpath.addComponent(d.toFile()) && _debug) {
                                         System.err.println("Adding single JAR: " + d);
                                     }
                                 }
@@ -290,7 +298,6 @@ public class Main {
                         e.printStackTrace();
                     }
                 }
-                line = cfg.readLine();
             }
 
         } catch (final Exception e) {
@@ -299,11 +306,11 @@ public class Main {
 
         // Print message if any files from start.config were added
         // to the classpath but they could not be found.
-        if (invalidJars.size() > 0) {
-            final StringBuilder nonexistentJars = new StringBuilder();
-            for (final String invalidJar : invalidJars) {
-                nonexistentJars.append("    " + invalidJar + "\n");
-            }
+//        if (invalidJars.size() > 0) {
+//            final StringBuilder nonexistentJars = new StringBuilder();
+//            for (final String invalidJar : invalidJars) {
+//                nonexistentJars.append("    " + invalidJar + "\n");
+//            }
             /*
             System.err.println(
             "\nWARN: The following JAR file entries from '"
@@ -312,7 +319,7 @@ public class Main {
             + nonexistentJars
             );
              */
-        }
+//        }
     }
 
     public void run(String[] args) {
@@ -359,7 +366,7 @@ public class Main {
             System.err.println("mode = " + _mode);
         }
 
-        final File _home_dir = detectHome();
+        final Path _home_dir = detectHome();
 
         //TODO: more attempts here...
 
@@ -370,68 +377,69 @@ public class Main {
             }
 
             // DWES #### can this be removed?
-            System.setProperty("exist.home", _home_dir.getPath());
-            System.setProperty("user.dir", _home_dir.getPath());
+            System.setProperty("exist.home", _home_dir.toString());
+            System.setProperty("user.dir", _home_dir.toString());
 
             // try to find Jetty
             if ("jetty".equals(_mode) || "standalone".equals(_mode)) {
                 if (System.getProperty("jetty.home") == null) {
 
-                    final File _tools_dir = new File(_home_dir.getAbsolutePath() + File.separatorChar + "tools");
-                    if (!_tools_dir.exists()) {
-                        System.err.println("ERROR: tools directory not found in " + _home_dir.getAbsolutePath());
+                    final Path _tools_dir = _home_dir.resolve("tools");
+                    if (!Files.exists(_tools_dir)) {
+                        System.err.println("ERROR: tools directory not found in " + _home_dir.toAbsolutePath());
                         return;
                     }
 
-                    String _jetty_dir = null;
-                    final String _dirs[] = _tools_dir.list();
+                    try {
+                        final List<Path> _dirs = list(_tools_dir, p -> Files.isDirectory(p) && fileName(p).startsWith("jetty"));
 
-                    for (int i = 0; i < _dirs.length; i++) {
-                        if (_dirs[i].startsWith("jetty")) {
-                            _jetty_dir = _dirs[i];
-                            break;
+                        if(_dirs.size() > 0) {
+                            System.setProperty("jetty.home", _dirs.get(0).toAbsolutePath().toString());
+                        } else {
+                            System.err.println("ERROR: Jetty could not be found in " + _tools_dir.toAbsolutePath());
+                            return;
                         }
-                    }
-
-                    if (_jetty_dir == null) {
-                        System.err.println("ERROR: Jetty could not be found in " + _tools_dir.getPath());
+                    } catch(final IOException e) {
+                        System.err.println("ERROR: Jetty could not be found in " + _tools_dir.toAbsolutePath());
+                        e.printStackTrace();
                         return;
                     }
-
-                    System.setProperty("jetty.home",
-                            _tools_dir.getAbsolutePath() + File.separatorChar + _jetty_dir);
                 }
 
-                String config;
+                final String config;
                 if ("jetty".equals(_mode)) {
-                    config = "jetty.xml";
-
+                    config = STANDARD_ENABLED_JETTY_CONFIGS;
                 } else {
-                    config = "standalone.xml";
+                    config = STANDALONE_ENABLED_JETTY_CONFIGS;
                 }
 
                 args = new String[]{System.getProperty("jetty.home") + File.separatorChar + "etc"
-                            + File.separatorChar + config};
+                    + File.separatorChar + config};
             }
 
             // find log4j.xml
-            String log4j = System.getProperty("log4j.configuration");
-            if (log4j == null) {
-                log4j = _home_dir.getPath() + File.separatorChar + "log4j.xml";
-                final File lf = new File(log4j);
-                if (lf.canRead()) {
-                    System.setProperty("log4j.configuration", lf.toURI().toASCIIString());
-                }
+            final Path log4j = Optional.ofNullable(System.getProperty("log4j.configurationFile"))
+                .map(Paths::get)
+                .orElseGet(() -> _home_dir.resolve("log4j.xml"));
+
+            if (Files.isReadable(log4j)) {
+                System.setProperty("log4j.configurationFile", log4j.toUri().toASCIIString());
             }
+
+            //redirect JUL to log4j unless otherwise specified
+            System.setProperty("java.util.logging.manager",
+                Optional.ofNullable(System.getProperty("java.util.logging.manager"))
+                    .orElse("org.apache.logging.log4j.jul.LogManager")
+            );
 
             // clean up tempdir for Jetty...
             try {
-                final File tmpdir = new File(System.getProperty("java.io.tmpdir")).getCanonicalFile();
-                if (tmpdir.isDirectory()) {
-                    System.setProperty("java.io.tmpdir", tmpdir.getPath());
+                final Path tmpdir = Paths.get(System.getProperty("java.io.tmpdir")).toAbsolutePath();
+                if (Files.isDirectory(tmpdir)) {
+                    System.setProperty("java.io.tmpdir", tmpdir.toString());
                 }
 
-            } catch (final IOException e) {
+            } catch (final InvalidPathException e) {
                 // ignore
             }
 
@@ -453,35 +461,34 @@ public class Main {
 
         } else {
             // if not, warn user
-            System.err.println("ERROR: exist.home cound not be autodetected, bailing out.");
+            System.err.println("ERROR: exist.home could not be autodetected, bailing out.");
             System.err.flush();
         }
     }
 
     /**
      */
-    public File detectHome() {
+    public Path detectHome() {
         //--------------------
         // detect exist.home:
         //--------------------
 
         // DWES #### use Configuration.getExistHome() ?
-        File _home_dir = getDirectory(System.getProperty("exist.home"));
+        Path _home_dir = getDirectory(System.getProperty("exist.home"));
         if (_home_dir == null) {
 
             // if eXist is deployed as web application, try to find WEB-INF first
-            final File webinf = new File("WEB-INF");
+            final Path webinf = Paths.get("WEB-INF");
             if (_debug) {
-                System.err.println("trying " + webinf.getAbsolutePath());
+                System.err.println("trying " + webinf.toAbsolutePath());
             }
 
-            if (webinf.exists()) {
-                final File jar = new File(webinf.getPath() + File.separatorChar + "lib"
-                        + File.separatorChar + "exist.jar");
-                if (jar.exists()) {
+            if (Files.exists(webinf)) {
+                final Path jar = webinf.resolve("lib").resolve("exist.jar");
+                if (Files.exists(jar)) {
                     try {
-                        _home_dir = webinf.getCanonicalFile();
-                    } catch (final IOException e) {
+                        _home_dir = webinf.toAbsolutePath();
+                    } catch (final InvalidPathException e) {
                         // ignore
                     }
                 }
@@ -490,15 +497,15 @@ public class Main {
 
         if (_home_dir == null) {
             // failed: try exist.jar in current directory
-            final File jar = new File("exist.jar");
+            final Path jar = Paths.get("exist.jar");
             if (_debug) {
-                System.err.println("trying " + jar.getAbsolutePath());
+                System.err.println("trying " + jar.toAbsolutePath());
             }
 
-            if (jar.canRead()) {
+            if (Files.isReadable(jar)) {
                 try {
-                    _home_dir = new File(".").getCanonicalFile();
-                } catch (final IOException e) {
+                    _home_dir = Paths.get(".").normalize().toAbsolutePath();
+                } catch (final InvalidPathException e) {
                     // ignore
                 }
             }
@@ -506,14 +513,14 @@ public class Main {
 
         if (_home_dir == null) {
             // failed: try ../exist.jar
-            final File jar = new File(".." + File.separatorChar + "exist.jar");
+            final Path jar = Paths.get("..").resolve("exist.jar").normalize();
             if (_debug) {
-                System.err.println("trying " + jar.getAbsolutePath());
+                System.err.println("trying " + jar.toAbsolutePath());
             }
-            if (jar.exists()) {
+            if (Files.exists(jar)) {
                 try {
-                    _home_dir = new File("..").getCanonicalFile();
-                } catch (final IOException e) {
+                    _home_dir = jar.getParent().toAbsolutePath();
+                } catch (final InvalidPathException e) {
                     // ignore
                 }
             }
@@ -522,15 +529,15 @@ public class Main {
         // searching exist.jar failed, try conf.xml to have the configuration at least
         if (_home_dir == null) {
             // try conf.xml in current dir
-            final File jar = new File("conf.xml");
+            final Path jar = Paths.get("conf.xml");
             if (_debug) {
-                System.err.println("trying " + jar.getAbsolutePath());
+                System.err.println("trying " + jar.toAbsolutePath());
             }
 
-            if (jar.canRead()) {
+            if (Files.isReadable(jar)) {
                 try {
-                    _home_dir = new File(".").getCanonicalFile();
-                } catch (final IOException e) {
+                    _home_dir = Paths.get(".").toAbsolutePath();
+                } catch (final InvalidPathException e) {
                     // ignore
                 }
             }
@@ -538,15 +545,15 @@ public class Main {
 
         if (_home_dir == null) {
             // try ../conf.xml
-            final File jar = new File(".." + File.separatorChar + "conf.xml");
+            final Path jar = Paths.get("..").resolve("conf.xml").normalize();
             if (_debug) {
-                System.err.println("trying " + jar.getAbsolutePath());
+                System.err.println("trying " + jar.toAbsolutePath());
             }
 
-            if (jar.exists()) {
+            if (Files.exists(jar)) {
                 try {
-                    _home_dir = new File("..").getCanonicalFile();
-                } catch (final IOException e) {
+                    _home_dir = jar.getParent().toAbsolutePath();
+                } catch (final InvalidPathException e) {
                     // ignore
                 }
             }
@@ -557,7 +564,7 @@ public class Main {
     /**
      * @param args
      */
-    public Classpath constructClasspath(File homeDir, String[] args) {
+    public Classpath constructClasspath(final Path homeDir, final String[] args) {
         // set up classpath:
         final Classpath _classpath = new Classpath();
 
@@ -572,41 +579,37 @@ public class Main {
         // be smart about it
 
         try {
-            InputStream cpcfg = null;
-            // start.config can be found in two locations.
-            String configFilePath1 = "";
-            String configFilePath2 = "";
-            try {
-                configFilePath1 = homeDir.getPath() + File.separatorChar + "start.config";
-                cpcfg = new java.io.FileInputStream(configFilePath1);
-                startConfigFileName = configFilePath1;
+            final BiConsumer<String, InputStream> configureClasspath = (path, is) -> {
+                if (_debug) {
+                    System.err.println("Configuring classpath from: " + path);
+                }
+                configureClasspath(homeDir, _classpath, is, args, _mode);
+            };
 
-            } catch (final java.io.FileNotFoundException e) {
-                cpcfg = null;
-            }
-
-            if (cpcfg == null) {
+            // start.config can be found in one of two locations...
+            final Path configFilePath1 = homeDir.resolve(START_CONFIG);
+            if(Files.exists(configFilePath1)) {
+                try(final InputStream cpcfg = Files.newInputStream(configFilePath1)) {
+                    final String cfgPath = configFilePath1.toAbsolutePath().toString();
+                    configureClasspath.accept(cfgPath, cpcfg);
+                    this.startConfigFileName = cfgPath;
+                }
+            } else {
                 if (_debug) {
                     System.err.println("Configuring classpath from default resource");
                 }
 
-                configFilePath2 = "org/exist/start/start.config";
-                cpcfg = getClass().getClassLoader().getResourceAsStream(configFilePath2);
-                startConfigFileName = configFilePath2;
+                final String configFilePath2 = "org/exist/start/" + START_CONFIG;
+                final URL configFilePath2Url = getClass().getClassLoader().getResource(configFilePath2);
+                if(configFilePath2Url != null) {
+                    try(final InputStream cpcfg = getClass().getClassLoader().getResourceAsStream(configFilePath2)) {
+                        configureClasspath.accept(configFilePath2, cpcfg);
+                        this.startConfigFileName = configFilePath2;
+                    }
+                } else {
+                    throw new RuntimeException(START_CONFIG + " not found at " + configFilePath1 + " or " + configFilePath2 + ", Bailing out.");
+                }
             }
-
-            if (cpcfg == null) {
-                throw new RuntimeException(
-                        "start.config not found at " + configFilePath1 + " or "
-                        + configFilePath2 + ", Bailing out.");
-            }
-
-            if (_debug) {
-                System.err.println("Configuring classpath from: " + startConfigFileName);
-            }
-
-            configureClasspath(homeDir.getPath(), _classpath, cpcfg, args, _mode);
-            cpcfg.close();
 
         } catch (final IOException e) {
             e.printStackTrace();
@@ -615,27 +618,27 @@ public class Main {
         // try to find javac and add it in classpaths
         final String java_home = System.getProperty("java.home");
         if (java_home != null) {
-            File jdk_home = null;
+            Path jdk_home = null;
             try {
-                jdk_home = new File(java_home).getParentFile().getCanonicalFile();
+                jdk_home = Paths.get(java_home).getParent().toAbsolutePath();
 
-            } catch (final IOException e) {
+            } catch (final InvalidPathException e) {
                 // ignore
             }
 
             if (jdk_home != null) {
-                File tools_jar_file = null;
+                Path tools_jar_file = null;
                 try {
-                    tools_jar_file = new File(jdk_home, "lib" + File.separator + "tools.jar").getCanonicalFile();
-                    
-                } catch (final IOException e) {
+                    tools_jar_file = jdk_home.resolve("lib").resolve("tools.jar").toAbsolutePath();
+
+                } catch (final InvalidPathException e) {
                     // ignore
                 }
 
-                if ((tools_jar_file != null) && tools_jar_file.isFile()) {
+                if ((tools_jar_file != null) && Files.isRegularFile(tools_jar_file)) {
                     // OK, found tools.jar in java.home/../lib
                     // add it in
-                    _classpath.addComponent(tools_jar_file);
+                    _classpath.addComponent(tools_jar_file.toFile());
                     if (_debug) {
                         System.err.println("JAVAC = " + tools_jar_file);
                     }
@@ -655,17 +658,32 @@ public class Main {
     public void shutdown() {
         // only used in test suite
         try {
-            Class brokerPool = Class.forName("org.exist.storage.BrokerPool");
-            Method stopAll = brokerPool.getDeclaredMethod("stopAll", boolean.class);
+            final Class brokerPool = Class.forName("org.exist.storage.BrokerPools");
+            final Method stopAll = brokerPool.getDeclaredMethod("stopAll", boolean.class);
+            stopAll.setAccessible(true);
             stopAll.invoke(null, false);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (final ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Copied from {@link org.exist.util.FileUtils#list(Path, Predicate)}
+     * as org.exist.start is compiled into a separate Jar and doesn't have
+     * the rest of eXist available on the classpath
+     */
+    static List<Path> list(final Path directory, final Predicate<Path> filter) throws IOException {
+        try(final Stream<Path> entries = Files.list(directory).filter(filter)) {
+            return entries.collect(Collectors.toList());
+        }
+    }
+
+    /**
+     * Copied from {@link org.exist.util.FileUtils#fileName(Path)}
+     * as org.exist.start is compiled into a separate Jar and doesn't have
+     * the rest of eXist available on the classpath
+     */
+    static String fileName(final Path path) {
+        return path.getFileName().toString();
     }
 }
