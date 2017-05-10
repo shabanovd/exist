@@ -36,30 +36,30 @@ import com.siemens.ct.exi.EXIFactory;
 import com.siemens.ct.exi.GrammarFactory;
 import com.siemens.ct.exi.api.sax.SAXEncoder;
 import com.siemens.ct.exi.exceptions.EXIException;
-import com.siemens.ct.exi.grammar.Grammar;
+import com.siemens.ct.exi.grammars.Grammars;
 import com.siemens.ct.exi.helpers.DefaultEXIFactory;
 
 public class EXISerializer implements ContentHandler, Receiver {
-	
+
 	static final String UNKNOWN_TYPE = "";
-	
+
 	private SAXEncoder encoder;
-	
+
 	public EXISerializer(OutputStream exiOutputStream) throws EXIException, IOException {
 		final EXIFactory exiFactory = DefaultEXIFactory.newInstance();
 		encoder = new SAXEncoder(exiFactory);
 		encoder.setOutputStream(exiOutputStream);
 	}
-	
+
 	public EXISerializer(OutputStream exiOutputStream, InputStream xsdInputStream) throws EXIException, IOException {
 		final EXIFactory exiFactory = DefaultEXIFactory.newInstance();
 		final GrammarFactory grammarFactory = GrammarFactory.newInstance();
-		final Grammar g = grammarFactory.createGrammar(xsdInputStream);
-		exiFactory.setGrammar(g);
+		final Grammars g = grammarFactory.createGrammars(xsdInputStream);
+		exiFactory.setGrammars(g);
 		encoder = new SAXEncoder(exiFactory);
 		encoder.setOutputStream(exiOutputStream);
 	}
-	
+
 	public void startDocument() throws SAXException {
 		encoder.startDocument();
 	}
@@ -87,20 +87,20 @@ public class EXISerializer implements ContentHandler, Receiver {
 			for(int x=0; x < attribs.size; x++) {
 				final QName attribQName = attribs.getQName(x);
 				attributes.addAttribute(attribQName.getNamespaceURI(),
-						attribQName.getLocalName(),
+						attribQName.getLocalPart(),
 						attribQName.getStringValue(),
 						UNKNOWN_TYPE,
 						attribs.getValue(x));
 			}
 		}
-		encoder.startElement(qname.getNamespaceURI(), qname.getLocalName(), null, attributes);
-		
+		encoder.startElement(qname.getNamespaceURI(), qname.getLocalPart(), null, attributes);
+
 	}
 
 	@Override
 	public void endElement(QName qname) throws SAXException {
-		encoder.endElement(qname.getNamespaceURI(), qname.getLocalName(), null);
-		
+		encoder.endElement(qname.getNamespaceURI(), qname.getLocalPart(), null);
+
 	}
 
 	@Override
@@ -112,7 +112,7 @@ public class EXISerializer implements ContentHandler, Receiver {
 	@Override
 	public void attribute(QName qname, String value) throws SAXException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -135,19 +135,19 @@ public class EXISerializer implements ContentHandler, Receiver {
 	public void documentType(String name, String publicId, String systemId)
 			throws SAXException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void highlightText(CharSequence seq) throws SAXException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void setCurrentNode(StoredNode node) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -159,43 +159,43 @@ public class EXISerializer implements ContentHandler, Receiver {
 	@Override
 	public void setDocumentLocator(Locator locator) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void startElement(String uri, String localName, String qName,
 			Attributes atts) throws SAXException {
 		encoder.startElement(uri, localName, null, atts);
-		
+
 	}
 
 	@Override
 	public void endElement(String uri, String localName, String qName)
 			throws SAXException {
 		encoder.endElement(uri, localName, null);
-		
+
 	}
 
 	@Override
 	public void characters(char[] ch, int start, int length)
 			throws SAXException {
 		encoder.characters(ch, start, length);
-		
+
 	}
 
 	@Override
 	public void ignorableWhitespace(char[] ch, int start, int length)
 			throws SAXException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void skippedEntity(String name) throws SAXException {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
+
 	void setEncoder(SAXEncoder encoder) {
 		this.encoder = encoder;
 	}
