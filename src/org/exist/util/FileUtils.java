@@ -15,8 +15,10 @@ import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Optional;
 
 /**
  *
@@ -170,4 +172,17 @@ public class FileUtils
             return FileVisitResult.CONTINUE;
         }
     }
+
+  /**
+   * Attempts to resolve the child
+   * against the parent.
+   *
+   * If there is no parent, then the child
+   * is resolved relative to the CWD
+   *
+   * @return The resolved path
+   */
+  public static Path resolve(final Optional<Path> parent, final String child) {
+    return parent.map(p -> p.resolve(child)).orElse(Paths.get(child));
+  }
 }

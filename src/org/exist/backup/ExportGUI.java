@@ -126,7 +126,7 @@ public class ExportGUI extends javax.swing.JFrame
         }
 
         try {
-            final Configuration config = new Configuration( confFile.getAbsolutePath(), null );
+            final Configuration config = new Configuration( confFile.getAbsolutePath() );
             BrokerPool.configure( 1, 5, config );
             pool = BrokerPool.getInstance();
             return( true );

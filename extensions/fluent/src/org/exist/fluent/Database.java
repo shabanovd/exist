@@ -59,16 +59,14 @@ public class Database {
 		try {
 			if (isStarted()) throw new IllegalStateException("database already started");
 			configFile = configFile.getAbsoluteFile();
-			Configuration config = new Configuration(configFile.getName(), configFile.getParentFile().getAbsolutePath());
+			Configuration config = new Configuration(configFile.getName(), Optional.of(configFile.getParentFile().toPath()));
 			BrokerPool.configure(dbName, 1, 5, config);
 			pool = BrokerPool.getInstance(dbName);
 			txManager = pool.getTransactionManager();
 			configureRootCollection(configFile);
 			defragmenter.start();
 			QueryService.statistics().reset();
-		} catch (DatabaseConfigurationException e) {
-			throw new DatabaseException(e);
-		} catch (EXistException e) {
+		} catch (DatabaseConfigurationException | EXistException e) {
 			throw new DatabaseException(e);
 		}
 	}

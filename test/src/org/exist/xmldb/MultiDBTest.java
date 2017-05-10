@@ -16,11 +16,13 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
  */
 package org.exist.xmldb;
 
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.exist.util.MimeTable;
 import org.exist.util.MimeType;
 import org.exist.util.SingleInstanceConfiguration;
@@ -33,7 +35,6 @@ import org.xmldb.api.modules.CollectionManagementService;
 import org.xmldb.api.modules.XMLResource;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import junit.framework.TestCase;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -117,30 +118,23 @@ public class MultiDBTest extends TestCase {
        throws Exception
     {
        System.out.println("Setting up "+INSTANCE_COUNT+" databases...");
-       String homeDir = SingleInstanceConfiguration.getPath();
-       if (homeDir == null) {
-          homeDir = ".";
-       } else {
-          homeDir = (new File(homeDir)).getParent();
-       }
-       File testDir = new File(homeDir + File.separatorChar + "test" + File.separatorChar + "temp");
-       if (!testDir.canWrite()) {
-          testDir.mkdirs();
-       }
+       Path homeDir = SingleInstanceConfiguration.getPath().map(Path::getParent).orElse(Paths.get("."));
+       Path testDir = homeDir.resolve("test").resolve("temp");
+       Files.createDirectories(testDir);
+
        // initialize database drivers
        Class<?> cl = Class.forName("org.exist.xmldb.DatabaseImpl");
        for (int i = 0; i < INSTANCE_COUNT; i++) {
-          File dir = new File(testDir, "db" + i);
-          dir.mkdirs();
-          System.out.println("Storing database test" + i + " in " + dir.getAbsolutePath());
-          File conf = new File(dir, "conf.xml");
-          FileOutputStream os = new FileOutputStream(conf);
-          os.write(CONFIG.getBytes(UTF_8));
-          os.close();
+          Path dir = testDir.resolve("db" + i);
+          Files.createDirectories(dir);
+          Path conf = dir.resolve("conf.xml");
+          try(final OutputStream os = Files.newOutputStream(conf)) {
+            os.write(CONFIG.getBytes(UTF_8));
+          }
 
           Database database = (Database) cl.newInstance();
           database.setProperty("create-database", "true");
-          database.setProperty("configuration", conf.getAbsolutePath());
+          database.setProperty("configuration", conf.toAbsolutePath().toString());
           database.setProperty("database-id", "test" + i);
           DatabaseManager.registerDatabase(database);
        }

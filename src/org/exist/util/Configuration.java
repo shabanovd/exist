@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2009-2010 The eXist Project
+ *  Copyright (C) 2001-2016 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,11 +16,10 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.util;
 
+import java.io.File;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,11 +40,9 @@ import org.xml.sax.XMLReader;
 import org.exist.Indexer;
 import org.exist.indexing.IndexManager;
 import org.exist.memtree.SAXAdapter;
-import org.exist.protocolhandler.eXistURLStreamHandlerFactory;
 import org.exist.scheduler.JobConfig;
 import org.exist.scheduler.JobException;
 import org.exist.security.internal.RealmImpl;
-import org.exist.security.xacml.XACMLConstants;
 import org.exist.storage.BrokerFactory;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.CollectionCacheManager;
@@ -68,21 +65,16 @@ import org.exist.xquery.XQueryContext;
 import org.exist.xquery.XQueryWatchDog;
 import org.exist.xslt.TransformerFactoryAllocator;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.net.MalformedURLException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
@@ -95,34 +87,36 @@ import org.exist.xquery.Module;
 
 public class Configuration implements ErrorHandler
 {
-    private final static Logger       LOG            = LogManager.getLogger( Configuration.class ); //Logger
-    protected String                  configFilePath = null;
-    protected File                    existHome      = null;
+    private final static Logger       LOG            = LogManager.getLogger(Configuration.class); //Logger
+    protected Optional<Path>          configFilePath = Optional.empty();
+    protected Optional<Path>          existHome      = Optional.empty();
 
     protected DocumentBuilder         builder        = null;
-    protected HashMap<String, Object> config         = new HashMap<String, Object>(); //Configuration
+    protected HashMap<String, Object> config         = new HashMap<>(); //Configuration
 
     private static final String XQUERY_CONFIGURATION_ELEMENT_NAME = "xquery";
     private static final String XQUERY_BUILTIN_MODULES_CONFIGURATION_MODULES_ELEMENT_NAME = "builtin-modules";
     private static final String XQUERY_BUILTIN_MODULES_CONFIGURATION_MODULE_ELEMENT_NAME = "module";
-    
+
     public final static String BINARY_CACHE_CLASS_PROPERTY = "binary.cache.class";
-    
-    public Configuration() throws DatabaseConfigurationException
-    {
-        this( DatabaseImpl.CONF_XML, null );
+
+    public Configuration() throws DatabaseConfigurationException {
+        this(DatabaseImpl.CONF_XML, Optional.empty());
     }
 
 
-    public Configuration( String configFilename ) throws DatabaseConfigurationException
-    {
-        this( configFilename, null );
+    public Configuration(final String configFilename) throws DatabaseConfigurationException {
+        this(configFilename, Optional.empty());
     }
 
 
     public Configuration(String configFilename, String existHomeDirname) throws DatabaseConfigurationException {
+        this(configFilename, Optional.of(Paths.get(existHomeDirname)));
+    }
+
+    public Configuration(String configFilename, Optional<Path> existHomeDirname) throws DatabaseConfigurationException {
+        InputStream is = null;
         try {
-            InputStream is = null;
 
             if(configFilename == null) {
                 // Default file name
@@ -146,41 +140,43 @@ public class Configuration implements ErrorHandler
             // otherwise, secondly try to read configuration from file. Guess the
             // location if necessary
             if(is == null) {
-                existHome = (existHomeDirname != null) ? new File(existHomeDirname) : ConfigurationHelper.getExistHome(configFilename);
+                existHome = existHomeDirname.map(Optional::of).orElse(ConfigurationHelper.existHome(configFilename));
 
-                if(existHome == null) {
+                if(!existHome.isPresent()) {
 
                     // EB: try to create existHome based on location of config file
                     // when config file points to absolute file location
-                    final File absoluteConfigFile = new File(configFilename);
+                    final Path absoluteConfigFile = Paths.get(configFilename);
 
-                    if(absoluteConfigFile.isAbsolute() && absoluteConfigFile.exists() && absoluteConfigFile.canRead()) {
-                        existHome = absoluteConfigFile.getParentFile();
-                        configFilename = absoluteConfigFile.getName();
+                    if(absoluteConfigFile.isAbsolute() && Files.exists(absoluteConfigFile) && Files.isReadable(absoluteConfigFile)) {
+                        existHome = Optional.of(absoluteConfigFile.getParent());
+                        configFilename = FileUtils.fileName(absoluteConfigFile);
                     }
                 }
-                File configFile = new File(configFilename);
 
-                if(!configFile.isAbsolute() && (existHome != null)) {
+
+                Path configFile = Paths.get(configFilename);
+
+                if(!configFile.isAbsolute() && existHome.isPresent()) {
 
                     // try the passed or constructed existHome first
-                    configFile = new File(existHome, configFilename);
+                    configFile = existHome.get().resolve(configFilename);
                 }
 
                 //if( configFile == null ) {
                 //    configFile = ConfigurationHelper.lookup( configFilename );
                 //}
 
-                if(!configFile.exists() || !configFile.canRead()) {
-                    throw( new DatabaseConfigurationException( "Unable to read configuration file at " + configFile ) );
+                if(!Files.exists(configFile) || !Files.isReadable(configFile)) {
+                    throw new DatabaseConfigurationException("Unable to read configuration file at " + configFile);
                 }
-                
-                configFilePath = configFile.getAbsolutePath();
-                is = new FileInputStream(configFile);
+
+                configFilePath = Optional.of(configFile.toAbsolutePath());
+                is = Files.newInputStream(configFile);
 
                 // set dbHome to parent of the conf file found, to resolve relative
                 // path from conf file
-                existHomeDirname = configFile.getParentFile().getCanonicalPath();
+                existHomeDirname = Optional.of(configFile.getParent());
                 LOG.info("Reading configuration from file " + configFile);
             }
 
@@ -229,7 +225,7 @@ public class Configuration implements ErrorHandler
             if(binaryManager.getLength() > 0) {
                 configureBinaryManager((Element)binaryManager.item(0));
             }
-            
+
             //transformer settings
             final NodeList transformers = doc.getElementsByTagName(TransformerFactoryAllocator.CONFIGURATION_ELEMENT_NAME);
             if( transformers.getLength() > 0 ) {
@@ -254,13 +250,6 @@ public class Configuration implements ErrorHandler
                 configureXQuery((Element)xquery.item(0));
             }
 
-            //XACML settings
-            final NodeList xacml = doc.getElementsByTagName(XACMLConstants.CONFIGURATION_ELEMENT_NAME);
-            //TODO : check that we have only one element
-            if(xacml.getLength() > 0) {
-                configureXACML((Element)xacml.item(0));
-            }
-
             //Validation
             final NodeList validations = doc.getElementsByTagName(XMLReaderObjectFactory.CONFIGURATION_ELEMENT_NAME);
             if(validations.getLength() > 0) {
@@ -268,17 +257,17 @@ public class Configuration implements ErrorHandler
             }
 
         }
-        catch(final SAXException e) {
+        catch(final SAXException | IOException | ParserConfigurationException e) {
             LOG.warn("error while reading config file: " + configFilename, e);
-            throw new DatabaseConfigurationException(e.getMessage());
-        }
-        catch(final ParserConfigurationException cfg) {
-            LOG.warn("error while reading config file: " + configFilename, cfg);
-            throw new DatabaseConfigurationException(cfg.getMessage());
-        }
-        catch(final IOException io) {
-            LOG.warn("error while reading config file: " + configFilename, io);
-            throw new DatabaseConfigurationException(io.getMessage());
+            throw new DatabaseConfigurationException(e.getMessage(), e);
+        } finally {
+            if(is != null) {
+                try {
+                    is.close();
+                } catch(final IOException ioe) {
+                    LOG.warn(ioe);
+                }
+            }
         }
     }
 
@@ -286,7 +275,7 @@ public class Configuration implements ErrorHandler
         String root = element.getAttribute("root");
         if (root != null && root.length() > 0) {
             if (!root.endsWith("/"))
-                {root += "/";}
+            {root += "/";}
             config.put(Deployment.PROPERTY_APP_ROOT, root);
         }
     }
@@ -301,7 +290,7 @@ public class Configuration implements ErrorHandler
             LOG.debug(BINARY_CACHE_CLASS_PROPERTY + ": " + config.get(BINARY_CACHE_CLASS_PROPERTY));
         }
     }
-    
+
     private void configureXQuery( Element xquery ) throws DatabaseConfigurationException
     {
         //java binding
@@ -325,9 +314,9 @@ public class Configuration implements ErrorHandler
 
         final String enforceIndexUse = getConfigAttributeValue( xquery, XQueryContext.ENFORCE_INDEX_USE_ATTRIBUTE );
         if (enforceIndexUse != null) {
-        	config.put( XQueryContext.PROPERTY_ENFORCE_INDEX_USE, enforceIndexUse );
+            config.put( XQueryContext.PROPERTY_ENFORCE_INDEX_USE, enforceIndexUse );
         }
-        
+
         final String backwardCompatible = getConfigAttributeValue( xquery, XQueryContext.XQUERY_BACKWARD_COMPATIBLE_ATTRIBUTE );
 
         if( ( backwardCompatible != null ) && ( backwardCompatible.length() > 0 ) ) {
@@ -448,7 +437,7 @@ public class Configuration implements ErrorHandler
 
             if( !( Module.class.isAssignableFrom( mClass ) ) ) {
                 throw( new DatabaseConfigurationException( "Failed to load module: " + uri
-                        + ". Class " + clazz + " is not an instance of org.exist.xquery.Module." ) );
+                    + ". Class " + clazz + " is not an instance of org.exist.xquery.Module." ) );
             }
 
         } catch( final ClassNotFoundException e ) {
@@ -456,29 +445,16 @@ public class Configuration implements ErrorHandler
             // Note: can't throw an exception here since this would create
             // problems with test cases and jar dependencies
             LOG.error( "Configuration problem: class not found for module '" + uri
-                    + "' (ClassNotFoundException); class:'" + clazz 
-                    + "'; message:'" + e.getMessage() + "'", e);
+                + "' (ClassNotFoundException); class:'" + clazz
+                + "'; message:'" + e.getMessage() + "'");
 
         } catch( final NoClassDefFoundError e ) {
             LOG.error( "Module " + uri + " could not be initialized due to a missing "
-                    + "dependancy (NoClassDefFoundError): " + e.getMessage(), e );
+                + "dependancy (NoClassDefFoundError): " + e.getMessage(), e );
         }
 
         return mClass;
     }
-
-
-    public void configureXACML( Element xacml )
-    {
-        final String enable = getConfigAttributeValue( xacml, XACMLConstants.ENABLE_XACML_ATTRIBUTE );
-        config.put( XACMLConstants.ENABLE_XACML_PROPERTY, Configuration.parseBoolean( enable, XACMLConstants.ENABLE_XACML_BY_DEFAULT ) );
-        LOG.debug( XACMLConstants.ENABLE_XACML_PROPERTY + ": " + config.get( XACMLConstants.ENABLE_XACML_PROPERTY ) );
-
-        final String loadDefaults = getConfigAttributeValue( xacml, XACMLConstants.LOAD_DEFAULT_POLICIES_ATTRIBUTE );
-        config.put( XACMLConstants.LOAD_DEFAULT_POLICIES_PROPERTY, Configuration.parseBoolean( loadDefaults, true ) );
-        LOG.debug( XACMLConstants.LOAD_DEFAULT_POLICIES_PROPERTY + ": " + config.get( XACMLConstants.LOAD_DEFAULT_POLICIES_PROPERTY ) );
-    }
-
 
     /**
      * DOCUMENT ME!
@@ -701,7 +677,7 @@ public class Configuration implements ErrorHandler
             }
 
             final String jobUnschedule = getConfigAttributeValue(job, JobConfig.JOB_UNSCHEDULE_ON_EXCEPTION);
-            
+
             //create the job config
             try {
                 final JobConfig jobConfig = new JobConfig(jobType, jobName, jobResource, jobSchedule, jobUnschedule);
@@ -722,12 +698,12 @@ public class Configuration implements ErrorHandler
 
                 final NodeList nlParam = job.getElementsByTagName(ParametersExtractor.PARAMETER_ELEMENT_NAME);
                 final Map<String, List<? extends Object>> params = ParametersExtractor.extract(nlParam);
-                
+
                 for(final Entry<String, List<? extends Object>> param : params.entrySet()) {
                     final List<? extends Object> values = param.getValue();
                     if(values != null && values.size() > 0) {
                         jobConfig.addParameter(param.getKey(), values.get(0).toString());
-                        
+
                         if(values.size() > 1) {
                             LOG.warn("Parameter '" + param.getKey() + "' for job '" + jobName + "' has more than one value, ignoring further values.");
                         }
@@ -752,7 +728,7 @@ public class Configuration implements ErrorHandler
             config.put(JobConfig.PROPERTY_SCHEDULER_JOBS, configs);
         }
     }
-    
+
 
     /**
      * DOCUMENT ME!
@@ -762,7 +738,7 @@ public class Configuration implements ErrorHandler
      *
      * @throws  DatabaseConfigurationException
      */
-    private void configureBackend( String dbHome, Element con ) throws DatabaseConfigurationException
+    private void configureBackend( final Optional<Path> dbHome, Element con ) throws DatabaseConfigurationException
     {
         final String mysql = getConfigAttributeValue( con, BrokerFactory.PROPERTY_DATABASE );
 
@@ -774,17 +750,17 @@ public class Configuration implements ErrorHandler
         // directory for database files
         final String dataFiles = getConfigAttributeValue( con, BrokerPool.DATA_DIR_ATTRIBUTE );
 
-        if( dataFiles != null ) {
-            final File df = ConfigurationHelper.lookup( dataFiles, dbHome );
-
-            if( !df.canRead() ) {
-                final boolean mkdirs = df.mkdirs();
-                if (!(mkdirs && df.canRead())) {
-                    throw( new DatabaseConfigurationException( "cannot read data directory: " + df.getAbsolutePath() ) );
+        if (dataFiles != null) {
+            final Path df = ConfigurationHelper.lookup( dataFiles, dbHome );
+            if (!Files.isReadable(df)) {
+                try {
+                    Files.createDirectories(df);
+                } catch (final IOException ioe) {
+                    throw new DatabaseConfigurationException("cannot read data directory: " + df.toAbsolutePath().toString(), ioe);
                 }
             }
-            config.put( BrokerPool.PROPERTY_DATA_DIR, df.getAbsolutePath() );
-            LOG.debug( BrokerPool.PROPERTY_DATA_DIR + ": " + config.get( BrokerPool.PROPERTY_DATA_DIR ) );
+            config.put(BrokerPool.PROPERTY_DATA_DIR, df.toAbsolutePath().toString());
+            LOG.debug(BrokerPool.PROPERTY_DATA_DIR + ": " + config.get(BrokerPool.PROPERTY_DATA_DIR));
         }
 
         String cacheMem = getConfigAttributeValue( con, DefaultCacheManager.CACHE_SIZE_ATTRIBUTE );
@@ -803,15 +779,15 @@ public class Configuration implements ErrorHandler
                 LOG.warn( nfe );
             }
         }
-        
+
         // Process the Check Max Cache value
-        
+
         String checkMaxCache = getConfigAttributeValue( con, DefaultCacheManager.CACHE_CHECK_MAX_SIZE_ATTRIBUTE );
-        
+
         if( checkMaxCache == null ) {
             checkMaxCache = DefaultCacheManager.DEFAULT_CACHE_CHECK_MAX_SIZE_STRING;
         }
-        
+
         config.put( DefaultCacheManager.PROPERTY_CACHE_CHECK_MAX_SIZE, parseBoolean( checkMaxCache, true ) );
         LOG.debug( DefaultCacheManager.PROPERTY_CACHE_CHECK_MAX_SIZE + ": " + config.get( DefaultCacheManager.PROPERTY_CACHE_CHECK_MAX_SIZE ) );
 
@@ -832,17 +808,33 @@ public class Configuration implements ErrorHandler
             }
         }
 
-        String collectionCache = getConfigAttributeValue( con, CollectionCacheManager.CACHE_SIZE_ATTRIBUTE );
-
-        if( collectionCache != null ) {
-
-            if( collectionCache.endsWith( "M" ) || collectionCache.endsWith( "m" ) ) {
-                collectionCache = collectionCache.substring( 0, collectionCache.length() - 1 );
-            }
+        String collectionCache = getConfigAttributeValue(con, CollectionCacheManager.CACHE_SIZE_ATTRIBUTE);
+        if(collectionCache != null) {
+            collectionCache = collectionCache.toLowerCase();
 
             try {
-                config.put( CollectionCacheManager.PROPERTY_CACHE_SIZE, Integer.valueOf(collectionCache) );
-                LOG.debug( CollectionCacheManager.PROPERTY_CACHE_SIZE + ": " + config.get( CollectionCacheManager.PROPERTY_CACHE_SIZE ) + "m" );
+                final int collectionCacheBytes;
+                if(collectionCache.endsWith("k")) {
+                    collectionCacheBytes = 1024 * Integer.valueOf(collectionCache.substring(0, collectionCache.length() - 1));
+                } else if(collectionCache.endsWith("kb")) {
+                    collectionCacheBytes = 1024 * Integer.valueOf(collectionCache.substring(0, collectionCache.length() - 2));
+                } else if(collectionCache.endsWith("m")) {
+                    collectionCacheBytes = 1024 * 1024 * Integer.valueOf(collectionCache.substring(0, collectionCache.length() - 1));
+                } else if(collectionCache.endsWith("mb")) {
+                    collectionCacheBytes = 1024 * 1024 * Integer.valueOf(collectionCache.substring(0, collectionCache.length() - 2));
+                } else if(collectionCache.endsWith("g")) {
+                    collectionCacheBytes = 1024 * 1024 * 1024 * Integer.valueOf(collectionCache.substring(0, collectionCache.length() - 1));
+                } else if(collectionCache.endsWith("gb")) {
+                    collectionCacheBytes = 1024 * 1024 * 1024 * Integer.valueOf(collectionCache.substring(0, collectionCache.length() - 2));
+                } else {
+                    collectionCacheBytes = Integer.valueOf(collectionCache);
+                }
+
+                config.put(CollectionCacheManager.PROPERTY_CACHE_SIZE_BYTES, collectionCacheBytes);
+
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("Set config {} = {}", CollectionCacheManager.PROPERTY_CACHE_SIZE_BYTES, config.get(CollectionCacheManager.PROPERTY_CACHE_SIZE_BYTES));
+                }
             }
             catch( final NumberFormatException nfe ) {
                 LOG.warn( nfe );
@@ -892,9 +884,9 @@ public class Configuration implements ErrorHandler
 
         final String docIds = con.getAttribute(BrokerPool.DOC_ID_MODE_ATTRIBUTE);
         if (docIds != null) {
-        	config.put(BrokerPool.DOC_ID_MODE_PROPERTY, docIds);
+            config.put(BrokerPool.DOC_ID_MODE_PROPERTY, docIds);
         }
-        
+
         //Unused !
         final String buffers = getConfigAttributeValue( con, "buffers" );
 
@@ -1017,7 +1009,7 @@ public class Configuration implements ErrorHandler
             final List<StartupTriggerConfig> startupTriggers = new ArrayList<StartupTriggerConfig>();
             config.put(BrokerPool.PROPERTY_STARTUP_TRIGGERS, startupTriggers);
         }
-        
+
         final NodeList poolConf = con.getElementsByTagName( BrokerPool.CONFIGURATION_POOL_ELEMENT_NAME );
 
         if( poolConf.getLength() > 0 ) {
@@ -1044,7 +1036,7 @@ public class Configuration implements ErrorHandler
     }
 
 
-    private void configureRecovery( String dbHome, Element recovery ) throws DatabaseConfigurationException
+    private void configureRecovery( final Optional<Path> dbHome, Element recovery ) throws DatabaseConfigurationException
     {
         String option = getConfigAttributeValue( recovery, BrokerPool.RECOVERY_ENABLED_ATTRIBUTE );
         setProperty( BrokerPool.PROPERTY_RECOVERY_ENABLED, parseBoolean( option, true ) );
@@ -1060,16 +1052,15 @@ public class Configuration implements ErrorHandler
 
         option = getConfigAttributeValue( recovery, Journal.RECOVERY_JOURNAL_DIR_ATTRIBUTE );
 
-        if( option != null ) {
-
+        if(option != null) {
             //DWES
-            final File rf = ConfigurationHelper.lookup( option, dbHome );
+            final Path rf = ConfigurationHelper.lookup( option, dbHome );
 
-            if( !rf.canRead() ) {
-                throw( new DatabaseConfigurationException( "cannot read data directory: " + rf.getAbsolutePath() ) );
+            if(!Files.isReadable(rf)) {
+                throw new DatabaseConfigurationException( "cannot read data directory: " + rf.toAbsolutePath());
             }
-            setProperty( Journal.PROPERTY_RECOVERY_JOURNAL_DIR, rf.getAbsolutePath() );
-            LOG.debug( Journal.PROPERTY_RECOVERY_JOURNAL_DIR + ": " + config.get( Journal.PROPERTY_RECOVERY_JOURNAL_DIR ) );
+            setProperty(Journal.PROPERTY_RECOVERY_JOURNAL_DIR, rf.toAbsolutePath().toString());
+            LOG.debug(Journal.PROPERTY_RECOVERY_JOURNAL_DIR + ": " + config.get(Journal.PROPERTY_RECOVERY_JOURNAL_DIR));
         }
 
         option = getConfigAttributeValue( recovery, Journal.RECOVERY_SIZE_LIMIT_ATTRIBUTE );
@@ -1081,7 +1072,7 @@ public class Configuration implements ErrorHandler
             }
 
             try {
-                final Integer size = new Integer( option );
+                final Integer size = Integer.valueOf( option );
                 setProperty( Journal.PROPERTY_RECOVERY_SIZE_LIMIT, size );
                 LOG.debug( Journal.PROPERTY_RECOVERY_SIZE_LIMIT + ": " + config.get( Journal.PROPERTY_RECOVERY_SIZE_LIMIT ) + "m" );
             }
@@ -1096,7 +1087,7 @@ public class Configuration implements ErrorHandler
         if( option != null ) {
             value = "yes".equals(option);
         }
-        setProperty( TransactionManager.PROPERTY_RECOVERY_FORCE_RESTART, new Boolean( value ) );
+        setProperty( TransactionManager.PROPERTY_RECOVERY_FORCE_RESTART, value );
         LOG.debug( TransactionManager.PROPERTY_RECOVERY_FORCE_RESTART + ": " + config.get( TransactionManager.PROPERTY_RECOVERY_FORCE_RESTART ) );
 
         option = getConfigAttributeValue( recovery, BrokerPool.RECOVERY_POST_RECOVERY_CHECK );
@@ -1105,7 +1096,7 @@ public class Configuration implements ErrorHandler
         if( option != null ) {
             value = "yes".equals(option);
         }
-        setProperty( BrokerPool.PROPERTY_RECOVERY_CHECK, new Boolean( value ) );
+        setProperty( BrokerPool.PROPERTY_RECOVERY_CHECK, value );
         LOG.debug( BrokerPool.PROPERTY_RECOVERY_CHECK + ": " + config.get( BrokerPool.PROPERTY_RECOVERY_CHECK ) );
     }
 
@@ -1203,8 +1194,8 @@ public class Configuration implements ErrorHandler
             }
         }
     }
-    
-    public class StartupTriggerConfig {
+
+    public static class StartupTriggerConfig {
         private final String clazz;
         private final Map<String, List<? extends Object>> params;
 
@@ -1225,34 +1216,34 @@ public class Configuration implements ErrorHandler
     private void configureStartup(final Element startup) {
         // Retrieve <triggers>
         final NodeList nlTriggers = startup.getElementsByTagName("triggers");
-        
+
         // If <triggers> exists
         if(nlTriggers != null && nlTriggers.getLength() > 0) {
             // Get <triggers>
             final Element triggers = (Element)nlTriggers.item(0);
-            
+
             // Get <trigger>
             final NodeList nlTrigger = triggers.getElementsByTagName("trigger");
-            
+
             // If <trigger> exists and there are more than 0
             if(nlTrigger != null && nlTrigger.getLength() > 0) {
-                
+
                 // Initialize trigger configuration
                 List<StartupTriggerConfig> startupTriggers = (List<StartupTriggerConfig>)config.get(BrokerPool.PROPERTY_STARTUP_TRIGGERS);
                 if(startupTriggers == null) {
                     startupTriggers = new ArrayList<StartupTriggerConfig>();
                     config.put(BrokerPool.PROPERTY_STARTUP_TRIGGERS, startupTriggers);
                 }
-                
+
                 // Iterate over <trigger> elements
                 for(int i = 0; i < nlTrigger.getLength(); i++) {
-                    
+
                     // Get <trigger> element
                     final Element trigger = (Element)nlTrigger.item(i);
-                    
+
                     // Get @class
                     final String startupTriggerClass = trigger.getAttribute("class");
-                    
+
                     boolean isStartupTrigger = false;
                     try {
                         // Verify if class is StartupTrigger
@@ -1266,19 +1257,19 @@ public class Configuration implements ErrorHandler
                         // if it actually is a StartupTrigger
                         if(isStartupTrigger) {
                             // Parse additional parameters
-                            final Map<String, List<? extends Object>> params 
-                                    = ParametersExtractor.extract(trigger.getElementsByTagName(ParametersExtractor.PARAMETER_ELEMENT_NAME));
-                            
+                            final Map<String, List<? extends Object>> params
+                                = ParametersExtractor.extract(trigger.getElementsByTagName(ParametersExtractor.PARAMETER_ELEMENT_NAME));
+
                             // Register trigger
                             startupTriggers.add(new StartupTriggerConfig(startupTriggerClass, params));
-                            
+
                             // Done
                             LOG.info("Registered StartupTrigger: " + startupTriggerClass);
-                            
+
                         } else {
                             LOG.warn("StartupTrigger: " + startupTriggerClass + " does not implement org.exist.storage.StartupTrigger. IGNORING!");
                         }
-                        
+
                     } catch(final ClassNotFoundException cnfe) {
                         LOG.error("Could not find StartupTrigger class: " + startupTriggerClass + ". " + cnfe.getMessage(), cnfe);
                     }
@@ -1286,7 +1277,7 @@ public class Configuration implements ErrorHandler
             }
         }
     }
-    
+
 
     /**
      * DOCUMENT ME!
@@ -1349,7 +1340,7 @@ public class Configuration implements ErrorHandler
     }
 
 
-    private void configureIndexer( String dbHome, Document doc, Element indexer ) throws DatabaseConfigurationException, MalformedURLException
+    private void configureIndexer( final Optional<Path> dbHome, Document doc, Element indexer ) throws DatabaseConfigurationException, MalformedURLException
     {
         final String caseSensitive = getConfigAttributeValue( indexer, NativeValueIndex.INDEX_CASE_SENSITIVE_ATTRIBUTE );
 
@@ -1428,12 +1419,8 @@ public class Configuration implements ErrorHandler
     }
 
 
-    private void configureValidation( String dbHome, Document doc, Element validation ) throws DatabaseConfigurationException
+    private void configureValidation( final Optional<Path> dbHome, Document doc, Element validation ) throws DatabaseConfigurationException
     {
-        // Register custom protocol URL
-        // TODO DWES move to different location?
-        eXistURLStreamHandlerFactory.init();
-
         // Determine validation mode
         final String mode = getConfigAttributeValue( validation, XMLReaderObjectFactory.VALIDATION_MODE_ATTRIBUTE );
 
@@ -1459,21 +1446,19 @@ public class Configuration implements ErrorHandler
             // Determine webapps directory. SingleInstanceConfiguration cannot
             // be used at this phase. Trick is to check wether dbHOME is
             // pointing to a WEB-INF directory, meaning inside war file)
-            File webappHome = null;
 
-            if( dbHome == null ) { /// DWES Why? let's make jUnit happy
-                webappHome = new File( "webapp" ).getAbsoluteFile();
+            final Path webappHome = dbHome.map(h -> {
+                if(FileUtils.fileName(h).endsWith("WEB-INF")) {
+                    return h.getParent().toAbsolutePath();
+                } else {
+                    return h.resolve("webapp").toAbsolutePath();
+                }
+            }).orElse(Paths.get("webapp").toAbsolutePath());
 
-            } else if( dbHome.endsWith( "WEB-INF" ) ) {
-                webappHome = new File( dbHome ).getParentFile().getAbsoluteFile();
-
-            } else {
-                webappHome = new File( dbHome, "webapp" ).getAbsoluteFile();
-            }
-            LOG.debug( "using webappHome=" + webappHome.toURI().toString() );
+            LOG.debug("using webappHome=" + webappHome.toString());
 
             // Get and store all URIs
-            final List<String> allURIs = new ArrayList<String>();
+            final List<String> allURIs = new ArrayList<>();
 
             for( int i = 0; i < catalogs.getLength(); i++ ) {
                 String uri = ( (Element)catalogs.item( i ) ).getAttribute( "uri" );
@@ -1482,10 +1467,10 @@ public class Configuration implements ErrorHandler
 
                     // Substitute string, creating an uri from a local file
                     if( uri.indexOf( "${WEBAPP_HOME}" ) != -1 ) {
-                        uri = uri.replaceAll( "\\$\\{WEBAPP_HOME\\}", webappHome.toURI().toString() );
+                        uri = uri.replaceAll( "\\$\\{WEBAPP_HOME\\}", webappHome.toUri().toString() );
                     }
                     if( uri.indexOf( "${EXIST_HOME}" ) != -1 ) {
-                        uri = uri.replaceAll( "\\$\\{EXIST_HOME\\}", dbHome );
+                        uri = uri.replaceAll( "\\$\\{EXIST_HOME\\}", dbHome.toString() );
                     }
 
                     // Add uri to confiuration
@@ -1509,8 +1494,8 @@ public class Configuration implements ErrorHandler
         config.put( XMLReaderObjectFactory.GRAMMER_POOL, gp );
 
     }
-    
-     /**
+
+    /**
      * Gets the value of a configuration attribute
      *
      * The value typically is specified in the conf.xml file, but can be overriden with using a System Property
@@ -1522,29 +1507,29 @@ public class Configuration implements ErrorHandler
      */
     private String getConfigAttributeValue( Element element, String attributeName )
     {
-    	String value = null;
-    	
-    	if( element != null && attributeName != null ) {
-    		final String property = getAttributeSystemPropertyName( element, attributeName );
-    		
-    		value = System.getProperty( property );
-    		
-    		// If the value has not been overriden in a system property, then get it from the configuration
-    		
-    		if( value != null ) {
-    			LOG.warn( "Configuration value overriden by system property: " + property + ", with value: " + value );
-    		} else {
-    			value = element.getAttribute( attributeName );
-    		}
-    	}
-    	
-    	return( value );
+        String value = null;
+
+        if( element != null && attributeName != null ) {
+            final String property = getAttributeSystemPropertyName( element, attributeName );
+
+            value = System.getProperty( property );
+
+            // If the value has not been overriden in a system property, then get it from the configuration
+
+            if( value != null ) {
+                LOG.warn( "Configuration value overriden by system property: " + property + ", with value: " + value );
+            } else {
+                value = element.getAttribute( attributeName );
+            }
+        }
+
+        return( value );
     }
-    
+
     /**
      * Generates a suitable system property name from the given config attribute and parent element.
      *
-     * values are of the form org.element.element.....attribute and follow the heirarchical structure of the conf.xml file. 
+     * values are of the form org.element.element.....attribute and follow the heirarchical structure of the conf.xml file.
      * For example, the db-connection cacheSize property name would be org.exist.db-connection.cacheSize
      *
      * @param   element        The attribute's parent element
@@ -1554,66 +1539,62 @@ public class Configuration implements ErrorHandler
      */
     private String getAttributeSystemPropertyName( Element element, String attributeName )
     {
-    	final StringBuilder  	property 	= new StringBuilder( attributeName );
-    	Node			parent		= element.getParentNode();
-    	
-    	property.insert( 0, "." );
-    	property.insert( 0,  element.getLocalName() );
-    	
-    	while( parent != null && parent instanceof Element ) {
-    		final String parentName = ((Element)parent).getLocalName();
-    		
-    		property.insert( 0, "." );
-    		property.insert( 0, parentName );
-    		
-    		parent   = parent.getParentNode();
-    	}
-    	
-    	property.insert( 0, "org." );
-    	
-    	return( property.toString() );
+        final StringBuilder  	property 	= new StringBuilder( attributeName );
+        Node			parent		= element.getParentNode();
+
+        property.insert( 0, "." );
+        property.insert( 0,  element.getLocalName() );
+
+        while( parent != null && parent instanceof Element ) {
+            final String parentName = ((Element)parent).getLocalName();
+
+            property.insert( 0, "." );
+            property.insert( 0, parentName );
+
+            parent   = parent.getParentNode();
+        }
+
+        property.insert( 0, "org." );
+
+        return( property.toString() );
     }
 
 
-    public String getConfigFilePath()
-    {
-        return( configFilePath );
+    public Optional<Path> configFilePath() {
+        return configFilePath;
+    }
+
+    public String getConfigFilePath() {
+        return configFilePath.get().toAbsolutePath().toString();
+    }
+
+    public File getExistHome() {
+        return existHome.get().toFile();
+    }
+
+    public Optional<Path> existHome() {
+        return existHome;
     }
 
 
-    public File getExistHome()
-    {
-        return( existHome );
+    public Object getProperty(final String name) {
+        return config.get(name);
+    }
+
+    public <T> T getProperty(final String name, final T defaultValue) {
+        return Optional.ofNullable((T)config.get(name)).orElse(defaultValue);
+    }
+
+    public boolean hasProperty(final String name) {
+        return config.containsKey(name);
     }
 
 
-    public Object getProperty( String name )
-    {
-        return( config.get( name ) );
+    public void setProperty(final String name, final Object obj) {
+        config.put(name, obj);
     }
 
-    public Object getProperty( String name, Object defaultValue )
-    {
-    	final Object value = config.get( name );
-    	
-    	if (value == null)
-    		{return defaultValue;}
-        
-    	return value;
-    }
-
-    public boolean hasProperty( String name )
-    {
-        return( config.containsKey( name ) );
-    }
-
-
-    public void setProperty( String name, Object obj )
-    {
-        config.put( name, obj );
-    }
-
-    public void removeProperty(String name) {
+    public void removeProperty(final String name) {
         config.remove(name);
     }
 
@@ -1626,24 +1607,17 @@ public class Configuration implements ErrorHandler
      *
      * @return  The parsed <code>Boolean</code>
      */
-    public static Boolean parseBoolean(final String value, final boolean defaultValue)
-    {
-        if(value == null) {
-            return Boolean.valueOf(defaultValue);
-        }
-        return Boolean.valueOf("yes".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value));
+    public static boolean parseBoolean(final String value, final boolean defaultValue) {
+        return Optional.ofNullable(value)
+            .map(v -> v.equalsIgnoreCase("yes") || v.equalsIgnoreCase("true"))
+            .orElse(defaultValue);
     }
 
-
-    public int getInteger( String name )
-    {
-        final Object obj = getProperty( name );
-
-        if( ( obj == null ) || !( obj instanceof Integer ) ) {
-            return( -1 );
-        }
-
-        return( ( (Integer)obj ).intValue() );
+    public int getInteger(final String name) {
+        return Optional.ofNullable(getProperty(name))
+            .filter(v -> v instanceof Integer)
+            .map(v -> (int)v)
+            .orElse(-1);
     }
 
 
@@ -1656,9 +1630,10 @@ public class Configuration implements ErrorHandler
      *
      * @see     org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
      */
+    @Override
     public void error( SAXParseException exception ) throws SAXException
     {
-        System.err.println( "error occured while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage() );
+        LOG.error( "error occurred while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage(), exception );
     }
 
 
@@ -1671,9 +1646,10 @@ public class Configuration implements ErrorHandler
      *
      * @see     org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
      */
+    @Override
     public void fatalError( SAXParseException exception ) throws SAXException
     {
-        System.err.println( "error occured while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage() );
+        LOG.error("error occurred while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage(), exception);
     }
 
 
@@ -1686,23 +1662,27 @@ public class Configuration implements ErrorHandler
      *
      * @see     org.xml.sax.ErrorHandler#warning(org.xml.sax.SAXParseException)
      */
+    @Override
     public void warning( SAXParseException exception ) throws SAXException
     {
-        System.err.println( "error occured while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage() );
+        LOG.error( "error occurred while reading configuration file " + "[line: " + exception.getLineNumber() + "]:" + exception.getMessage(), exception );
     }
-    
 
-    public static final class IndexModuleConfig
-    {
-        protected String  id;
-        protected String  className;
-        protected Element config;
 
-        public IndexModuleConfig( String id, String className, Element config )
-        {
-            this.id        = id;
+    public static final class IndexModuleConfig {
+        private final String id;
+        private final String className;
+        private final Element config;
+
+        public IndexModuleConfig(final String id, final String className, final Element config) {
+            this.id = id;
             this.className = className;
-            this.config    = config;
+            this.config = config;
+        }
+
+        public String getId()
+        {
+            return( id );
         }
 
         public String getClassName()
@@ -1710,16 +1690,9 @@ public class Configuration implements ErrorHandler
             return( className );
         }
 
-
         public Element getConfig()
         {
             return( config );
-        }
-
-
-        public String getId()
-        {
-            return( id );
         }
     }
 

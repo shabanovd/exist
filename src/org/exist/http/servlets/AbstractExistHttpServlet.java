@@ -16,13 +16,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software Foundation
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *  
- *  $Id: EXistServlet.java 14945 2011-07-22 20:05:08Z deliriumsky $
  */
 package org.exist.http.servlets;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -43,7 +44,6 @@ import org.xmldb.api.base.Database;
 import org.xmldb.api.base.XMLDBException;
 import org.exist.security.SecurityManager;
 import org.exist.security.XmldbPrincipal;
-import org.exist.security.internal.AccountImpl;
 
 /**
  *
@@ -95,35 +95,30 @@ public abstract class AbstractExistHttpServlet extends HttpServlet {
         if(BrokerPool.isConfigured(BrokerPool.DEFAULT_INSTANCE_NAME)) {
             getLog().info("Database already started. Skipping configuration ...");
         } else {
-            String confFile = config.getInitParameter("configuration");
-            String dbHome = config.getInitParameter("basedir");
-            final String start = config.getInitParameter("start");
-            if(confFile == null) {
-                confFile = "conf.xml";
-            }
+            final String confFile = Optional.ofNullable(config.getInitParameter("configuration")).orElse("conf.xml");
 
-            if (dbHome == null) {
-                dbHome = config.getServletContext().getRealPath("/");
-            } else {
-                dbHome = config.getServletContext().getRealPath(dbHome);
-                if (dbHome == null) {
-                    // tomcat 8 workaround: returns null on getRealPath("WEB-INF").
-                    // try to detect it differently:
-                    String dir = config.getServletContext().getRealPath("/");
-                    if (dir != null) {
-                        dbHome = new File(dir, "WEB-INF").getAbsolutePath();
-                    }
-                }
-            }
-            getLog().info("EXistServlet: exist.home=" + dbHome);
+            final Optional<Path> dbHome = Optional.ofNullable(config.getInitParameter("basedir"))
+                .map(baseDir ->
+                    Optional.ofNullable(config.getServletContext().getRealPath(baseDir))
+                        .map(rp -> Optional.of(Paths.get(rp)))
+                        .orElse(
+                            Optional.ofNullable(config.getServletContext().getRealPath("/"))
+                                .map(dir -> Paths.get(dir).resolve("WEB-INF").toAbsolutePath())
+                        )
+                )
+                .orElse(Optional.ofNullable(config.getServletContext().getRealPath("/")).map(Paths::get));
 
-            final File f = new File(dbHome + File.separator + confFile);
-            getLog().info("Reading configuration from " + f.getAbsolutePath());
-            if (!f.canRead()) {
+            getLog().info("EXistServlet: exist.home=" + dbHome.map(Path::toString).orElse("null"));
+
+            final Path cf = dbHome.map(h -> h.resolve(confFile)).orElse(Paths.get(confFile));
+            getLog().info("Reading configuration from " + cf.toAbsolutePath().toString());
+            if (!Files.isReadable(cf)) {
                 throw new ServletException("Configuration file " + confFile + " not found or not readable");
             }
 
             final Configuration configuration = new Configuration(confFile, dbHome);
+
+            final String start = config.getInitParameter("start");
             if(start != null && "true".equals(start)) {
                 doDatabaseStartup(configuration);
             }

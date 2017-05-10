@@ -17,13 +17,11 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *  
- *  $Id$
  */
 package org.exist.wrapper;
 
-import java.io.File;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.Observer;
 import java.util.Observable;
 
@@ -71,7 +69,7 @@ public class Main implements WrapperListener, Observer {
 			// use the bootstrap loader to autodetect EXIST_HOME and
 			// construct a correct classpath
 			org.exist.start.Main loader = new org.exist.start.Main(args[0]);
-			File homeDir = loader.detectHome();
+			Path homeDir = loader.detectHome();
 			Classpath classpath = loader.constructClasspath(homeDir, args);
 			ClassLoader cl = classpath.getClassLoader(null);
 			Thread.currentThread().setContextClassLoader(cl);
