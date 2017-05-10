@@ -19,6 +19,7 @@
  */
 package org.exist.storage;
 
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.collections.CollectionCache;
@@ -31,24 +32,22 @@ public class CollectionCacheManager implements CacheManager {
 
     private static final Logger LOG = LogManager.getLogger(CollectionCacheManager.class);
 
-    public static final String CACHE_SIZE_ATTRIBUTE = "collectionCache";
-    public static final String PROPERTY_CACHE_SIZE = "db-connection.collection-cache-mem";
+    private static final int DEFAULT_CACHE_SIZE = 64;
+    private static final int DEFAULT_CACHE_SIZE_BYTES = DEFAULT_CACHE_SIZE * 1024 * 1024;   // 64 MB
 
-    private static final int DEFAULT_CACHE_SIZE = 8;
+    public static final String CACHE_SIZE_ATTRIBUTE = "collectionCache";
+    public static final String PROPERTY_CACHE_SIZE_BYTES = "db-connection.collection-cache-mem";
 
     private int maxCacheSize;
 
     private CollectionCache collectionCache;
 
     public CollectionCacheManager(BrokerPool pool, CollectionCache cache) {
-        int cacheSize;
-        
-        if((cacheSize = pool.getConfiguration().getInteger(PROPERTY_CACHE_SIZE)) < 0){
-            cacheSize = DEFAULT_CACHE_SIZE;
-        }
 
-        this.maxCacheSize = cacheSize * 1024 * 1024;
-        
+        this.maxCacheSize = Optional.of(pool.getConfiguration().getInteger(PROPERTY_CACHE_SIZE_BYTES))
+            .filter(size -> size > 0)
+            .orElse(DEFAULT_CACHE_SIZE_BYTES);
+
         if(LOG.isDebugEnabled()){
             LOG.debug("collection collectionCache will be using " + this.maxCacheSize + " bytes max.");
         }
@@ -128,8 +127,8 @@ public class CollectionCacheManager implements CacheManager {
         }
         }
 
-	@Override
-	public int getDefaultInitialSize() {
-		return DEFAULT_CACHE_SIZE;
-	}
+    @Override
+    public int getDefaultInitialSize() {
+        return DEFAULT_CACHE_SIZE;
+    }
 }

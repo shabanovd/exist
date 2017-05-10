@@ -85,5 +85,5 @@ public interface CacheManager {
      *
      * @return  Default initial size.
      */
-	int getDefaultInitialSize();
+    int getDefaultInitialSize();
 }
