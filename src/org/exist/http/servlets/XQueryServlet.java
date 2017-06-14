@@ -620,9 +620,11 @@ public class XQueryServlet extends AbstractExistHttpServlet {
         out.print("<div class='request'><b>Request: </b>");
         out.print(XMLUtil.encodeAttrMarkup(request.getRequestURI()));
         out.println("</div>");
-        out.print("<div class='message'><b>Message: </b>");
-        out.print(XMLUtil.encodeAttrMarkup(message));
-        out.print("</div>");
+        if (message != null) {
+            out.print("<div class='message'><b>Message: </b>");
+            out.print(XMLUtil.encodeAttrMarkup(message));
+            out.print("</div>");
+        }
 //        out.print("<div class='description'><pre>");
 //        out.print(XMLUtil.encodeAttrMarkup(description));
 //        out.print("</pre></div>");
