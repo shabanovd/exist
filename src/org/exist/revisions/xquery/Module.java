@@ -39,7 +39,10 @@ public class Module extends AbstractInternalModule {
 
     public static final FunctionDef[] functions = {
         new FunctionDef(FnConvert.signatures[0], FnConvert.class),
-        new FunctionDef(FnCommit.signatures[0], FnCommit.class)
+        new FunctionDef(FnCommit.signatures[0], FnCommit.class),
+        new FunctionDef(FnRevision.signatures[0], FnRevision.class),
+        new FunctionDef(FnRevision.signatures[1], FnRevision.class),
+        new FunctionDef(FnRevisions.signatures[0], FnRevisions.class)
     };
     
     public Module(Map<String, List<? extends Object>> parameters) {
