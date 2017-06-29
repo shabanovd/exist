@@ -36,7 +36,7 @@ public class Module extends AbstractInternalModule {
 
     public static final FunctionDef[] functions = {
             new FunctionDef(CleanupMetadata.signatures[0], CleanupMetadata.class),
-            new FunctionDef(CleanupRemove.signatures[0], CleanupRemove.class),
+            new FunctionDef(CleanupRemoveDocument.signatures[0], CleanupRemoveDocument.class),
             new FunctionDef(FnImportChanges.signatures[0], FnImportChanges.class),
             new FunctionDef(FnBackupsDiffs.signatures[0], FnBackupsDiffs.class)
     };

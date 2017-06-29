@@ -34,8 +34,8 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 
-public class CleanupRemove extends BasicFunction {
-    protected static final Logger logger = LogManager.getLogger(CleanupRemove.class);
+public class CleanupRemoveDocument extends BasicFunction {
+    protected static final Logger logger = LogManager.getLogger(CleanupRemoveDocument.class);
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
             new QName("cleanup-remove", Module.NAMESPACE_URI, Module.PREFIX),
@@ -48,7 +48,7 @@ public class CleanupRemove extends BasicFunction {
         )
     };
 
-    public CleanupRemove(XQueryContext context, FunctionSignature signature) {
+    public CleanupRemoveDocument(XQueryContext context, FunctionSignature signature) {
         super(context, signature);
     }
 
