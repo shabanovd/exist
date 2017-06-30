@@ -55,13 +55,29 @@ public class CleanupRestoreBinaryFromRCS extends BasicFunction {
             "Restore binary resource fs state from RCS commit. " +
                 XMLDBModule.COLLECTION_URI,
             new SequenceType[]{
+                new FunctionParameterSequenceType("organization-id", Type.STRING, Cardinality.EXACTLY_ONE, "The organization id"),
+
                 new FunctionParameterSequenceType("collection-uri", Type.STRING, Cardinality.EXACTLY_ONE, "The collection URI"),
                 new FunctionParameterSequenceType("resource", Type.STRING, Cardinality.EXACTLY_ONE, "The resource"),
 
                 new FunctionParameterSequenceType("resource-uuid", Type.STRING, Cardinality.EXACTLY_ONE, "The resource UUID"),
-                new FunctionParameterSequenceType("revision-id", Type.STRING, Cardinality.EXACTLY_ONE, "The resource revision id"),
+                new FunctionParameterSequenceType("revision-id", Type.STRING, Cardinality.EXACTLY_ONE, "The resource revision id")
 
-                new FunctionParameterSequenceType("organization-id", Type.STRING, Cardinality.EXACTLY_ONE, "The organization id")
+            },
+            new SequenceType(Type.ITEM, Cardinality.EMPTY)
+        ),
+        new FunctionSignature(
+            new QName("cleanup-restore-binary-from-last-RCS-revision", Module.NAMESPACE_URI, Module.PREFIX),
+            "Restore binary resource fs state from RCS commit. " +
+                XMLDBModule.COLLECTION_URI,
+            new SequenceType[]{
+                new FunctionParameterSequenceType("organization-id", Type.STRING, Cardinality.EXACTLY_ONE, "The organization id"),
+
+                new FunctionParameterSequenceType("collection-uri", Type.STRING, Cardinality.EXACTLY_ONE, "The collection URI"),
+                new FunctionParameterSequenceType("resource", Type.STRING, Cardinality.EXACTLY_ONE, "The resource"),
+
+                new FunctionParameterSequenceType("resource-uuid", Type.STRING, Cardinality.EXACTLY_ONE, "The resource UUID"),
+
             },
             new SequenceType(Type.ITEM, Cardinality.EMPTY)
         )
@@ -76,18 +92,15 @@ public class CleanupRestoreBinaryFromRCS extends BasicFunction {
             throw new XPathException( this,
                 "Permission denied, calling user '" + context.getSubject().getName() + "' must be a DBA");
 
-        final XmldbURI colURL = XmldbURI.create(args[0].itemAt(0).getStringValue());
-        final XmldbURI docURL = XmldbURI.createInternal(args[1].itemAt(0).getStringValue());
-
-        final String uuid = args[2].getStringValue();
-
-        final long revId = Long.valueOf( args[3].getStringValue() );
-
-        final String oid = args[4].getStringValue();
+        final String oid = args[0].getStringValue();
         final RCSHolder holder = RCSManager.get().getHolder(oid);
 
         if (holder == null) throw new XPathException(this, "No organisation  '"+oid+"'.");
 
+        final XmldbURI colURL = XmldbURI.create(args[1].itemAt(0).getStringValue());
+        final XmldbURI docURL = XmldbURI.createInternal(args[2].itemAt(0).getStringValue());
+
+        final String uuid = args[3].getStringValue();
 
         DBBroker broker = context.getBroker();
 
@@ -106,10 +119,20 @@ public class CleanupRestoreBinaryFromRCS extends BasicFunction {
 
                 RCSResource resource = holder.resource(uuid);
 
-                Revision rev = resource.revision(revId);
+                Revision rev;
 
-                try (InputStream stream = rev.getData()) {
-                    Files.copy(stream, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                if (args.length >= 5) {
+                    final long revId = Long.valueOf(args[4].getStringValue());
+                    rev = resource.revision(revId);
+
+                } else {
+                    rev = resource.lastRevision();
+                }
+
+                if (rev != null) {
+                    try (InputStream stream = rev.getData()) {
+                        Files.copy(stream, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
                 }
             }
 

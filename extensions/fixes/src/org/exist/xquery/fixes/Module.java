@@ -40,6 +40,7 @@ public class Module extends AbstractInternalModule {
             new FunctionDef(CleanupRemoveDocument.signatures[0], CleanupRemoveDocument.class),
 
             new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[0], CleanupRestoreBinaryFromRCS.class),
+            new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[1], CleanupRestoreBinaryFromRCS.class),
 
             new FunctionDef(FnImportChanges.signatures[0], FnImportChanges.class),
             new FunctionDef(FnBackupsDiffs.signatures[0], FnBackupsDiffs.class)
