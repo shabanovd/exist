@@ -167,8 +167,7 @@ public class MemoryMappedFileFilterInputStreamCache implements FilterInputStream
         buf.force();
         channel.close();
         raf.close();
-        //System.gc();
-        
+
         if(tempFile != null && (!externalFile)) {
            TemporaryFileManager.getInstance().returnTemporaryFile(tempFile);
         }

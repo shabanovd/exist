@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 
 import javax.xml.stream.XMLStreamException;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.DoAbort;
@@ -2852,11 +2853,12 @@ public class NativeBroker extends DBBroker {
             if (!binFile.renameTo(binBackupFile)) {
                 // Workaround for Java bug 6213298 - renameTo() sometimes doesn't work
                 // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6213298
-                System.gc();
-                try {
-                    Thread.sleep(50);
-                } catch (final Exception e) {
-                    //ignore
+                if (SystemUtils.IS_OS_WINDOWS) {
+                    System.gc();
+                    try {
+                        Thread.sleep(50);
+                    } catch (final Exception ignore) {
+                    }
                 }
                 if (!binFile.renameTo(binBackupFile)) {
                     throw new IOException("Cannot move file " + binFile

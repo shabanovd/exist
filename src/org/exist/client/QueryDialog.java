@@ -505,7 +505,6 @@ public class QueryDialog extends JFrame {
 		resultDisplay.setText("");
 		final QueryThread q = new QueryThread(xpath);
 		q.start();
-		System.gc();
 		return q;
 	}
 	
