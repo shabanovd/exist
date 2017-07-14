@@ -59,7 +59,7 @@ public class SAXAdapter implements ContentHandler, LexicalHandler
         this.builder = builder;
     }
 
-    public Document getDocument()
+    public DocumentImpl getDocument()
     {
         return( builder.getDocument() );
     }

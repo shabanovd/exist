@@ -175,7 +175,7 @@ public class XQTS_To_junit {
                 //info.getDocument().getMetadata().setMimeType();
                 FileInputStream is = new FileInputStream(file);
                 try {
-                    col.store(txn, broker, info, new InputSource(is), false);
+                    col.store(txn, broker, info, new InputSource(is));
                 } finally {
                     is.close();
                 }

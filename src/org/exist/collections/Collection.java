@@ -46,6 +46,7 @@ import org.exist.storage.index.BFile;
 import org.exist.storage.io.VariableByteInput;
 import org.exist.storage.io.VariableByteOutputStream;
 import org.exist.storage.lock.*;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.sync.Sync;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
@@ -279,6 +280,11 @@ public class Collection extends Observable implements Resource, Comparable<Colle
         return list;
     }
 
+    public CollectionEntry getChildCollectionEntry(final DBBroker broker, final String name) throws PermissionDeniedException {
+        return getSubCollectionEntry(broker, name);
+    }
+
+    @Deprecated
     public CollectionEntry getSubCollectionEntry(final DBBroker broker, final String name) throws PermissionDeniedException {
         if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.READ)) {
             throw new PermissionDeniedException("Permission denied to read collection: " + path);
@@ -312,6 +318,10 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * Closes the collection, i.e. releases the lock held by
      * the current thread. This is a shortcut for getLock().release().
      */
+    public void release(final LockMode mode) {
+        getLock().release(mode.mode());
+    }
+
     public void release(final int mode) {
         getLock().release(mode);
     }
@@ -498,6 +508,10 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             }
         }
         return docs;
+    }
+
+    public DocumentSet allDocs(final DBBroker broker, final MutableDocumentSet docs, final boolean recursive, final LockedDocumentMap lockMap, final LockMode lockType) throws LockException, PermissionDeniedException {
+        return allDocs(broker, docs, recursive, lockMap, lockType.mode());
     }
 
     public DocumentSet allDocs(final DBBroker broker, final MutableDocumentSet docs, final boolean recursive, final LockedDocumentMap lockMap, final int lockType) throws LockException, PermissionDeniedException {
@@ -804,6 +818,11 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @return The document that was locked.
      * @throws LockException
      */
+    public DocumentImpl getDocumentWithLock(final DBBroker broker, final XmldbURI uri, final LockMode lockMode) throws LockException, PermissionDeniedException {
+        return getDocumentWithLock(broker, uri, lockMode.mode());
+    }
+
+    @Deprecated
     public DocumentImpl getDocumentWithLock(final DBBroker broker, final XmldbURI uri, final int lockMode) throws LockException, PermissionDeniedException {
         try {
             getLock().acquire(Lock.READ_LOCK);
@@ -848,6 +867,11 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      *
      * @param doc
      */
+    public void releaseDocument(final DocumentImpl doc, final LockMode lockMode) {
+        releaseDocument(doc, lockMode.mode());
+    }
+
+    @Deprecated
     public void releaseDocument(final DocumentImpl doc, final int mode) {
         if(doc != null) {
             doc.getUpdateLock().release(mode);
@@ -1357,9 +1381,9 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @throws SAXException
      * @throws LockException
      */
-    public void store(final Txn transaction, final DBBroker broker, final IndexInfo info, final InputSource source, boolean privileged) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException {
+    public void store(final Txn transaction, final DBBroker broker, final IndexInfo info, final InputSource source) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException {
         
-        storeXMLInternal(transaction, broker, info, privileged, new StoreBlock() {
+        storeXMLInternal(transaction, broker, info, new StoreBlock() {
             @Override
             public void run() throws EXistException, SAXException {
                 try {
@@ -1398,7 +1422,6 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @param broker
      * @param info
      * @param data
-     * @param privileged
      * 
      * @throws EXistException
      * @throws PermissionDeniedException
@@ -1406,9 +1429,9 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @throws SAXException
      * @throws LockException
      */
-    public void store(final Txn transaction, final DBBroker broker, final IndexInfo info, final String data, boolean privileged) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException {
+    public void store(final Txn transaction, final DBBroker broker, final IndexInfo info, final String data) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException {
         
-        storeXMLInternal(transaction, broker, info, privileged, new StoreBlock() {
+        storeXMLInternal(transaction, broker, info, new StoreBlock() {
             @Override
             public void run() throws SAXException, EXistException {
                 final CollectionConfiguration colconf = info.getDocument().getCollection().getConfiguration(broker);
@@ -1434,7 +1457,6 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @param broker
      * @param info
      * @param node
-     * @param privileged
      * 
      * @throws EXistException
      * @throws PermissionDeniedException
@@ -1442,13 +1464,13 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @throws SAXException
      * @throws LockException
      */  
-    public void store(final Txn transaction, final DBBroker broker, final IndexInfo info, final Node node, boolean privileged) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException {
+    public void store(final Txn transaction, final DBBroker broker, final IndexInfo info, final Node node) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException {
         
         if(!getPermissionsNoLock().validate(broker.getSubject(), Permission.WRITE)) {
             throw new PermissionDeniedException("Permission denied to write collection: " + path);
         }
         
-        storeXMLInternal(transaction, broker, info, privileged, new StoreBlock() {
+        storeXMLInternal(transaction, broker, info, new StoreBlock() {
             @Override
             public void run() throws EXistException, SAXException {
                 info.getDOMStreamer().serialize(node, true);
@@ -1468,13 +1490,12 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @param txn
      * @param broker
      * @param info
-     * @param privileged
      * @param doParse
      * 
      * @throws EXistException
      * @throws SAXException
      */
-    private void storeXMLInternal(final Txn txn, final DBBroker broker, final IndexInfo info, final boolean privileged, final StoreBlock doParse) throws EXistException, SAXException, PermissionDeniedException {
+    private void storeXMLInternal(final Txn txn, final DBBroker broker, final IndexInfo info, final StoreBlock doParse) throws EXistException, SAXException, PermissionDeniedException {
         
         final DocumentImpl document = info.getIndexer().getDocument();
         

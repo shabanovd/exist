@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.exist.Transaction;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.util.LockException;
 
 /**
@@ -65,7 +66,12 @@ public class Txn implements Transaction {
     public long getId() {
         return id;
     }
-    
+
+    public void registerLock(Lock lock, LockMode lockMode) {
+        registerLock(lock, lockMode.mode());
+    }
+
+    @Deprecated
     public void registerLock(Lock lock, int lockMode) {
         locksHeld.add(new LockInfo(lock, lockMode));
     }

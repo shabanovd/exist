@@ -853,11 +853,11 @@ public class LocalCollection extends AbstractLocal implements CollectionImpl {
             }
             
             if (uri != null || res.inputSource!=null) {
-                collection.store(txn, broker, info, (uri!=null) ? new InputSource(uri):res.inputSource, false);
+                collection.store(txn, broker, info, (uri!=null) ? new InputSource(uri):res.inputSource);
             } else if (res.root != null) {
-                collection.store(txn, broker, info, res.root, false);
+                collection.store(txn, broker, info, res.root);
             } else {
-                collection.store(txn, broker, info, res.content, false);
+                collection.store(txn, broker, info, res.content);
             }
             
             //Notice : the document should now have its update lock released

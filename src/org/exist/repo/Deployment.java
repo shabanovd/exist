@@ -508,7 +508,7 @@ public class Deployment {
             final Permission permission = info.getDocument().getPermissions();
             setPermissions(false, MimeType.XML_TYPE, permission);
 
-            collection.store(txn, broker, info, updatedXML, false);
+            collection.store(txn, broker, info, updatedXML);
 
             mgr.commit(txn);
         } catch (final Exception e) {
@@ -643,7 +643,7 @@ public class Deployment {
                         final Permission permission = info.getDocument().getPermissions();
                         setPermissions(false, mime, permission);
 
-                        targetCollection.store(txn, broker, info, is, false);
+                        targetCollection.store(txn, broker, info, is);
                     } else {
                         final long size = file.length();
                         final FileInputStream is = new FileInputStream(file);

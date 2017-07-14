@@ -700,7 +700,7 @@ public class RCSTest {
                         if (resource.mimeType != null)
                             info.getDocument().getMetadata().setMimeType(resource.mimeType);
 
-                        root.store(txn, broker, info, resource.data, false);
+                        root.store(txn, broker, info, resource.data);
 
                         docs.add(info.getDocument());
 

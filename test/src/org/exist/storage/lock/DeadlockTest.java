@@ -175,7 +175,7 @@ public class DeadlockTest {
 			IndexInfo info = test.validateXMLResource(transaction, broker,
 					XmldbURI.create("hamlet.xml"), is);
 			assertNotNull(info);
-			test.store(transaction, broker, info, is, false);
+			test.store(transaction, broker, info, is);
 			transact.commit(transaction);
 
 			// initialize XML:DB driver
@@ -291,7 +291,7 @@ public class DeadlockTest {
 								broker, XmldbURI.create("test" + fileCount
 										+ ".xml"), is);
 						assertNotNull(info);
-						coll.store(transaction, broker, info, is, false);
+						coll.store(transaction, broker, info, is);
                         transact.commit(transaction);
                     }
 					generator.releaseAll();

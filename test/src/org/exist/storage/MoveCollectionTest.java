@@ -101,7 +101,7 @@ public class MoveCollectionTest {
             assertNotNull(f);
             IndexInfo info = test.validateXMLResource(transaction, broker, TestConstants.TEST_XML_URI, new InputSource(f.toURI().toASCIIString()));
             assertNotNull(info);
-            test.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+            test.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
 
             Collection dest = broker.getOrCreateCollection(transaction, TestConstants.DESTINATION_COLLECTION_URI);
             assertNotNull(dest);
@@ -160,7 +160,7 @@ public class MoveCollectionTest {
                 assertNotNull(f);
                 IndexInfo info = test2.validateXMLResource(transaction, broker, TestConstants.TEST_XML_URI, new InputSource(f.toURI().toASCIIString()));
                 assertNotNull(info);
-                test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
 
                 transact.commit(transaction);
             }

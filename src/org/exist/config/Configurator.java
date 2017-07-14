@@ -1253,7 +1253,7 @@ public class Configurator {
             doc.getPermissions().setMode(Permission.DEFAULT_SYSTSEM_RESOURCE_PERM);
             fullURI = getFullURI(broker.getBrokerPool(), doc.getURI());
             saving.add(fullURI);
-            collection.store(txn, broker, info, data, false);
+            collection.store(txn, broker, info, data);
             broker.saveCollection(txn, doc.getCollection());
             transact.commit(txn);
             txn = null;

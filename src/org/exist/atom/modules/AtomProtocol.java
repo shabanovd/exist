@@ -233,7 +233,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 					final IndexInfo info = collection.validateXMLResource(transaction, broker, FEED_DOCUMENT_URI, doc);
 					setPermissions(broker, root, info.getDocument());
 					// TODO : We should probably unlock the collection here
-					collection.store(transaction, broker, info, doc, false);
+					collection.store(transaction, broker, info, doc);
 					transact.commit(transaction);
 					response.setStatusCode(204);
 					response.setHeader("Location", request.getModuleBase() + request.getPath());
@@ -315,7 +315,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 					final IndexInfo info = collection.validateXMLResource(transaction, broker, entryURI, doc);
 					setPermissions(broker, root, info.getDocument());
 					// TODO : We should probably unlock the collection here
-					collection.store(transaction, broker, info, doc, false);
+					collection.store(transaction, broker, info, doc);
 
 					// Update the updated element
 					DOMDB.replaceTextElement(transaction, feedRoot,
@@ -422,7 +422,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 					is = new FileInputStream(tempFile);
 					
 					collection.store(transaction, broker, info, 
-							new InputSource(new InputStreamReader(is, charset)), false);
+							new InputSource(new InputStreamReader(is, charset)));
 					
 					is.close();
 				} else {
@@ -456,7 +456,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 
 					final IndexInfo info = collection.validateXMLResource(transaction, broker, entryURI, mediaEntry);
 					// TODO : We should probably unlock the collection here
-					collection.store(transaction, broker, info, mediaEntry, false);
+					collection.store(transaction, broker, info, mediaEntry);
 					// Update the updated element
 					DOMDB.replaceTextElement(
 							transaction, feedRoot, Atom.NAMESPACE_STRING, "updated", 
@@ -766,7 +766,7 @@ public class AtomProtocol extends AtomFeeds implements Atom {
 					is = new FileInputStream(tempFile);
 					
 					collection.store(transaction, broker, info, 
-						new InputSource(new InputStreamReader(is, charset)), false);
+						new InputSource(new InputStreamReader(is, charset)));
 					
 					is.close();
 				} else {

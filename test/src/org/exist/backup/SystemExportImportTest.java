@@ -218,17 +218,17 @@ public class SystemExportImportTest {
                 System.out.println("store " + doc01uri);
                 IndexInfo info = root.validateXMLResource(tx, broker, doc01uri.lastSegment(), XML1);
                 assertNotNull(info);
-                root.store(tx, broker, info, XML1, false);
+                root.store(tx, broker, info, XML1);
 
                 System.out.println("store " + doc02uri);
                 info = root.validateXMLResource(tx, broker, doc02uri.lastSegment(), XML2);
                 assertNotNull(info);
-                root.store(tx, broker, info, XML2, false);
+                root.store(tx, broker, info, XML2);
 
                 System.out.println("store " + doc03uri);
                 info = root.validateXMLResource(tx, broker, doc03uri.lastSegment(), XML3);
                 assertNotNull(info);
-                root.store(tx, broker, info, XML3, false);
+                root.store(tx, broker, info, XML3);
 
                 System.out.println("store " + doc11uri);
                 root.addBinaryResource(tx, broker, doc11uri.lastSegment(), BINARY.getBytes(), null);
@@ -240,7 +240,7 @@ public class SystemExportImportTest {
                 System.out.println("store " + doc21uri);
                 info = col.validateXMLResource(tx, broker, doc21uri.lastSegment(), XML1);
                 assertNotNull(info);
-                col.store(tx, broker, info, XML1, false);
+                col.store(tx, broker, info, XML1);
 
 //                System.out.println("store " + doc22uri);
 //                col.addBinaryResource(tx, broker, doc22uri.lastSegment(), BINARY.getBytes(), null);

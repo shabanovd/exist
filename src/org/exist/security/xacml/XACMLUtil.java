@@ -609,7 +609,7 @@ public class XACMLUtil implements UpdateListener
 		{
 			final IndexInfo info = collection.validateXMLResource(txn, broker, docName, content);
 			//TODO : unlock the collection here ?
-			collection.store(txn, broker, info, content, false);
+			collection.store(txn, broker, info, content);
 			transact.commit(txn);
 		}
 		catch(final Exception e)

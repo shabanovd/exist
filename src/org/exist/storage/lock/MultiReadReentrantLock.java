@@ -258,6 +258,10 @@ public class MultiReadReentrantLock implements Lock {
         release(Lock.READ_LOCK);
     }
 
+    public void release(LockMode mode) {
+        release(mode.mode());
+    }
+
     public void release(int mode) {
         switch (mode) {
         case Lock.NO_LOCK:

@@ -76,7 +76,7 @@ public class ReindexTest {
                     try {
                         info = root.validateXMLResource(transaction, broker, XmldbURI.create(f.getName()), new InputSource(f.toURI().toASCIIString()));
                         assertNotNull(info);
-                        root.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                        root.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
                     } catch (SAXException e) {
                         System.err.println("Error found while parsing document: " + f.getName() + ": " + e.getMessage());
                     }

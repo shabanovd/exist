@@ -106,7 +106,7 @@ public class RecoveryTest2 extends TestCase {
                 assertNotNull(f); 
                 info = test2.validateXMLResource(transaction, broker, XmldbURI.create(f.getName()), new InputSource(f.toURI().toASCIIString()));
                 assertNotNull(info); 
-                test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
             }
             
             transact.commit(transaction);

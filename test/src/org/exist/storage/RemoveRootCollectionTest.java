@@ -66,7 +66,7 @@ public class RemoveRootCollectionTest {
 		assertNotNull(is);
 		IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create("hamlet.xml"), is);
 		assertNotNull(info);
-		root.store(transaction, broker, info, is, false);
+		root.store(transaction, broker, info, is);
 		transact.commit(transaction);
 	}
 	

@@ -96,7 +96,7 @@ public class RecoveryTest3 extends TestCase {
                 try {
                     info = test2.validateXMLResource(transaction, broker, XmldbURI.create(f.getName()), new InputSource(f.toURI().toASCIIString()));
                     assertNotNull(info);
-                    test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                    test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
                 } catch (SAXException e) {
                 	//TODO : why store invalid documents ?
                     System.err.println("Error found while parsing document: " + f.getName() + ": " + e.getMessage());
@@ -166,7 +166,7 @@ public class RecoveryTest3 extends TestCase {
                 try {
                     info = test2.validateXMLResource(transaction, broker, XmldbURI.create(f.getName()), new InputSource(f.toURI().toASCIIString()));
                     assertNotNull(info);
-                    test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                    test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
                 } catch (SAXException e) {
                     System.err.println("Error found while parsing document: " + f.getName() + ": " + e.getMessage());
                 }

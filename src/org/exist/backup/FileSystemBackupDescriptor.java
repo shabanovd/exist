@@ -81,7 +81,7 @@ public class FileSystemBackupDescriptor extends AbstractBackupDescriptor
 
     public EXistInputSource getInputSource()
     {
-        return( new FileInputSource( descriptor ) );
+        return( new FileInputSource( descriptor.toPath() ) );
     }
 
 
@@ -91,7 +91,7 @@ public class FileSystemBackupDescriptor extends AbstractBackupDescriptor
         EXistInputSource is    = null;
 
         if( child.isFile() && child.canRead() ) {
-            is = new FileInputSource( child );
+            is = new FileInputSource( child.toPath() );
         }
 
         return( is );
