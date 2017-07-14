@@ -623,7 +623,7 @@ public class MatchDocumentsTest {
             IndexInfo info = root.validateXMLResource(txn, broker, doc1uri.lastSegment(), XML1);
             assertNotNull(info);
             System.out.println("STORING DOCUMENT....SECOND ROUND....");
-            root.store(txn, broker, info, XML1, false);
+            root.store(txn, broker, info, XML1);
             assertNotNull(info.getDocument());
             System.out.println("STORING DOCUMENT....DONE.");
 
@@ -631,7 +631,7 @@ public class MatchDocumentsTest {
 
             info = root.validateXMLResource(txn, broker, doc2uri.lastSegment(), XML2);
             assertNotNull(info);
-            root.store(txn, broker, info, XML2, false);
+            root.store(txn, broker, info, XML2);
 
             doc2 = info.getDocument();
 

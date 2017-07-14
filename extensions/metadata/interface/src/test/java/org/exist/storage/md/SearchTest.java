@@ -209,7 +209,7 @@ public class SearchTest {
         IndexInfo info = col.validateXMLResource(txn, broker, uri.lastSegment(), data);
         assertNotNull(info);
         System.out.println("STORING DOCUMENT....SECOND ROUND....");
-        col.store(txn, broker, info, data, false);
+        col.store(txn, broker, info, data);
         assertNotNull(info.getDocument());
         System.out.println("STORING DOCUMENT....DONE.");
 
