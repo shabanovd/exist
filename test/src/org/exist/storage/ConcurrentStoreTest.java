@@ -160,7 +160,7 @@ public class ConcurrentStoreTest extends TestCase {
                     f = files[i];
                     try {
                         info = test.validateXMLResource(transaction, broker, XmldbURI.create(f.getName()), new InputSource(f.toURI().toASCIIString()));
-                        test.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                        test.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
                     } catch (SAXException e) {
                         System.err.println("Error found while parsing document: " + f.getName() + ": " + e.getMessage());
                     }
@@ -203,7 +203,7 @@ public class ConcurrentStoreTest extends TestCase {
                 File f = new File(dir + File.separator + "hamlet.xml");
                 try {
                     IndexInfo info = test.validateXMLResource(transaction, broker, XmldbURI.create("test.xml"), new InputSource(f.toURI().toASCIIString()));
-                    test.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                    test.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
                 } catch (SAXException e) {
                     System.err.println("Error found while parsing document: " + f.getName() + ": " + e.getMessage());
                 }

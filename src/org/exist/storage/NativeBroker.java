@@ -93,6 +93,7 @@ import org.exist.storage.journal.Journal;
 import org.exist.storage.journal.LogEntryTypes;
 import org.exist.storage.journal.Loggable;
 import org.exist.storage.lock.Lock;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.NativeSerializer;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.sync.Sync;
@@ -823,6 +824,11 @@ public class NativeBroker extends DBBroker {
     @Override
     public Collection getCollection(XmldbURI uri) throws PermissionDeniedException {
         return openCollection(uri, Lock.NO_LOCK);
+    }
+
+    @Override
+    public Collection openCollection(XmldbURI uri, LockMode lockMode) throws PermissionDeniedException {
+        return openCollection(uri, BFile.UNKNOWN_ADDRESS, lockMode.mode());
     }
 
     @Override
@@ -2267,6 +2273,11 @@ public class NativeBroker extends DBBroker {
             }
         }
         return doc;
+    }
+
+    @Override
+    public DocumentImpl getXMLResource(XmldbURI fileName, LockMode lockMode) throws PermissionDeniedException {
+        return getXMLResource(fileName, lockMode.mode());
     }
 
     @Override

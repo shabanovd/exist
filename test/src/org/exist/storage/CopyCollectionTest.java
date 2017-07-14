@@ -114,7 +114,7 @@ public class CopyCollectionTest {
             final File f = getSampleData();
             final IndexInfo info = test.validateXMLResource(transaction, broker, XmldbURI.create("test.xml"),
                     new InputSource(f.toURI().toASCIIString()));
-            test.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+            test.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
 
             final Collection dest = broker.getOrCreateCollection(transaction, XmldbURI.ROOT_COLLECTION_URI.append("destination"));
             broker.saveCollection(transaction, dest);
@@ -175,7 +175,7 @@ public class CopyCollectionTest {
                 final File f = getSampleData();
 
                 IndexInfo info = test2.validateXMLResource(transaction, broker, XmldbURI.create("test.xml"), new InputSource(f.toURI().toASCIIString()));
-                test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
 
                 transact.commit(transaction);
             }

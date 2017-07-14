@@ -82,7 +82,7 @@ public class MoveResourceTest {
 			assertNotNull(f);
 			IndexInfo info = test2.validateXMLResource(transaction, broker, TestConstants.TEST_XML_URI, new InputSource(f.toURI().toASCIIString()));
 			assertNotNull(info);
-			test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+			test2.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
 
             System.out.println("Moving document test.xml to new_test.xml ...");
 			broker.moveResource(transaction, info.getDocument(), root, XmldbURI.create("new_test.xml"));
@@ -177,7 +177,7 @@ public class MoveResourceTest {
             IndexInfo info = test2.validateXMLResource(transaction, broker, XmldbURI.create("new_test2.xml"),
 					new InputSource(f.toURI().toASCIIString()));
 			test2.store(transaction, broker, info, new InputSource(f.toURI()
-					.toASCIIString()), false);
+					.toASCIIString()));
 
 			transact.commit(transaction);
 

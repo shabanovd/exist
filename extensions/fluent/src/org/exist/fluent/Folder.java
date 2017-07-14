@@ -346,7 +346,7 @@ public class Folder extends NamedResource implements Cloneable {
 						name.setContext(handle);
 						IndexInfo info = handle.validateXMLResource(tx.tx, broker, XmldbURI.create(name.get()), node);
 						changeLock(Lock.NO_LOCK);
-						handle.store(tx.tx, broker, info, node, false);
+						handle.store(tx.tx, broker, info, node);
 						commit();
 					} catch (EXistException e) {
 						throw new DatabaseException(e);
@@ -410,7 +410,7 @@ public class Folder extends NamedResource implements Cloneable {
 				name.setContext(handle);
 				IndexInfo info = handle.validateXMLResource(tx.tx, broker, XmldbURI.create(name.get()), source.toInputSource());
 				changeLock(Lock.NO_LOCK);
-				handle.store(tx.tx, broker, info, source.toInputSource(), false);
+				handle.store(tx.tx, broker, info, source.toInputSource());
 				commit();
 			} catch (EXistException e) {
 				throw new DatabaseException("failed to create document '" + name + "' from source " + source, e);

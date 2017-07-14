@@ -99,7 +99,7 @@ public class CopyResourceTest {
 			assertNotNull(f);
 			IndexInfo info = subTestCollection.validateXMLResource(transaction, broker, XmldbURI.create("test.xml"), new InputSource(f.toURI().toASCIIString()));
 			assertNotNull(info);
-			subTestCollection.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+			subTestCollection.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
 
 			broker.copyResource(transaction, info.getDocument(), testCollection, XmldbURI.create("new_test.xml"));
 			broker.saveCollection(transaction, testCollection);
@@ -174,7 +174,7 @@ public class CopyResourceTest {
 			assertNotNull(f);
 			IndexInfo info = subTestCollection.validateXMLResource(transaction, broker, XmldbURI.create("test2.xml"), new InputSource(f.toURI().toASCIIString()));
 			assertNotNull(info);
-			subTestCollection.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+			subTestCollection.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
 
 			transact.commit(transaction);
 			System.out.println("Transaction commited ...");

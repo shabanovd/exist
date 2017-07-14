@@ -801,7 +801,7 @@ public class ImportDiffsOnlyHandler extends DefaultHandler {
 
                         rh.startRestore(resource, atts);
 
-                        currentCollection.store(txn, broker, info, is, false);
+                        currentCollection.store(txn, broker, info, is);
 
                     } else {
                         master.updatedBIN.incrementAndGet();

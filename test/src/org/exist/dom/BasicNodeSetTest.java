@@ -446,11 +446,11 @@ public class BasicNodeSetTest {
             // store some documents.
             for(File f : dir.listFiles(new XMLFilenameFilter())) {
                 IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create(f.getName()), new InputSource(f.toURI().toASCIIString()));
-                root.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()), false);
+                root.store(transaction, broker, info, new InputSource(f.toURI().toASCIIString()));
             }
 
             IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create("nested.xml"), NESTED_XML);
-            root.store(transaction, broker, info, NESTED_XML, false);
+            root.store(transaction, broker, info, NESTED_XML);
             transact.commit(transaction);
             
             

@@ -123,7 +123,7 @@ public class DLNStorageTest extends TestCase {
             //TODO : unlock the collection here ?
             assertNotNull(info);
 
-            test.store(transaction, broker, info, TEST_XML, false);
+            test.store(transaction, broker, info, TEST_XML);
 
             transact.commit(transaction);
             System.out.println("Transaction commited ...");

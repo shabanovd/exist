@@ -107,7 +107,7 @@ public class UpdateRecoverTest {
             assertNotNull(info);
             //TODO : unlock the collection here ?
             
-            test2.store(transaction, broker, info, TEST_XML, false);
+            test2.store(transaction, broker, info, TEST_XML);
             
             transact.commit(transaction);
             System.out.println("Transaction commited ...");

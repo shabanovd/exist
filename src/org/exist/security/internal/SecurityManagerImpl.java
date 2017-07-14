@@ -21,6 +21,7 @@
  */
 package org.exist.security.internal;
 
+import java.util.concurrent.locks.Lock;
 import org.exist.scheduler.JobDescription;
 import org.exist.security.AbstractRealm;
 import java.util.ArrayList;
@@ -872,7 +873,51 @@ public class SecurityManagerImpl implements SecurityManager {
         }
         throw new ConfigurationException("The realm id = '" + realmId + "' not found.");
     }
-    
+
+    @Override
+    public Group addGroup(final DBBroker broker, final Group group) throws PermissionDeniedException, EXistException {
+        if(group.getRealmId() == null) {
+            throw new ConfigurationException("Group must have realm id.");
+        }
+
+        if(group.getName() == null || group.getName().isEmpty()) {
+            throw new ConfigurationException("Group must have name.");
+        }
+
+        final int id;
+        if(group.getId() != Group.UNDEFINED_ID) {
+            id = group.getId();
+        } else {
+            id = getNextGroupId();
+        }
+
+        final AbstractRealm registeredRealm = (AbstractRealm)findRealmForRealmId(group.getRealmId());
+        if (registeredRealm.hasGroup(group.getName())) {
+            throw new ConfigurationException("The group '" + group.getName() + "' at realm '" + group.getRealmId() + "' already exist.");
+        }
+
+        final GroupImpl newGroup = new GroupImpl(registeredRealm, id, group.getName(), group.getManagers());
+        for(final SchemaType metadataKey : group.getMetadataKeys()) {
+            final String metadataValue = group.getMetadataValue(metadataKey);
+            newGroup.setMetadataValue(metadataKey, metadataValue);
+        }
+
+        final Lock lock = groupLocks.getWriteLock(newGroup);
+        lock.lock();
+        try {
+            groupsById.modify(principalDb -> principalDb.put(id, newGroup));
+
+            registeredRealm.registerGroup(newGroup);
+
+            save(broker);
+            newGroup.save(broker);
+
+            return newGroup;
+        } finally {
+            lock.unlock();
+        }
+    }
+
     @Override
     public void addGroup(final int id, final Group group) {
         groupsById.modify(new PrincipalDbModify<Group>(){

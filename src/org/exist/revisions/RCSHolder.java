@@ -1071,52 +1071,86 @@ public class RCSHolder implements Constants {
                 docType = doc.getDoctype();
             }
 
-            EXistInputSource is = new FileInputSource( data_path(readHash(rev)).toFile() );
+            try (EXistInputSource is = new FileInputSource( data_path(readHash(rev)) )) {
 
-            IndexInfo info = parent.validateXMLResource(tx, broker, name, is );
+                IndexInfo info = parent.validateXMLResource(tx, broker, name, is);
 
-            resource = info.getDocument();
+                resource = info.getDocument();
 
-//            if((publicid != null) || (systemid != null)) {
-//                final DocumentType docType = new DocumentTypeImpl(namedoctype, publicid, systemid);
-//                meta.setDocType(docType);
-//            }
+//                if((publicid != null) || (systemid != null)) {
+//                    final DocumentType docType = new DocumentTypeImpl(namedoctype, publicid, systemid);
+//                    meta.setDocType(docType);
+//                }
 
-            rh.startRestore(resource, dh.uuid);
+                rh.startRestore(resource, dh.uuid);
 
-            restoreMetas(broker, resource, rev, dh);
+                restoreMetas(broker, resource, rev, dh);
 
-            DocumentMetadata meta = resource.getMetadata();
-            if (dh.mimeType != null) meta.setMimeType(dh.mimeType);
-            if (dh.createdTime != null) meta.setCreated(dh.createdTime);
-            if (dh.lastModified != null) meta.setLastModified(dh.lastModified);
+                DocumentMetadata meta = resource.getMetadata();
+                if (dh.mimeType != null) {
+                    meta.setMimeType(dh.mimeType);
+                }
+                if (dh.createdTime != null) {
+                    meta.setCreated(dh.createdTime);
+                }
+                if (dh.lastModified != null) {
+                    meta.setLastModified(dh.lastModified);
+                }
 
-            parent.store(tx, broker, info, is, false);
+                parent.store(tx, broker, info, is);
 
-            if (docType != null) {
-                docType = new DocumentTypeImpl(docType.getName(), docType.getPublicId(), docType.getSystemId());
-                resource.setDocumentType(docType);
+                if (docType != null) {
+                    docType = new DocumentTypeImpl(
+                        docType.getName(),
+                        docType.getPublicId(),
+                        docType.getSystemId()
+                    );
+                    resource.setDocumentType(docType);
 
-                broker.storeXMLResource(tx, resource);
+                    broker.storeXMLResource(tx, resource);
+                }
             }
 
         } else {
             // store as binary resource
 
-            EXistInputSource is = new FileInputSource( data_path(readHash(rev)).toFile() );
+            try (EXistInputSource is = new FileInputSource( data_path(readHash(rev)) )) {
 
-            resource = parent.validateBinaryResource(tx, broker, url.lastSegment(), is.getByteStream(), dh.mimeType, is.getByteStreamLength(), new Date(dh.createdTime), new Date(dh.lastModified));
+                resource = parent.validateBinaryResource(
+                    tx, broker,
+                    url.lastSegment(),
+                    is.getByteStream(),
+                    dh.mimeType,
+                    is.getByteStreamLength(),
+                    new Date(dh.createdTime),
+                    new Date(dh.lastModified)
+                );
 
-            rh.startRestore(resource, dh.uuid);
+                rh.startRestore(resource, dh.uuid);
 
-            restoreMetas(broker, resource, rev, dh);
+                restoreMetas(broker, resource, rev, dh);
 
-            DocumentMetadata meta = resource.getMetadata();
-            if (dh.mimeType != null) meta.setMimeType(dh.mimeType);
-            if (dh.createdTime != null) meta.setCreated(dh.createdTime);
-            if (dh.lastModified != null) meta.setLastModified(dh.lastModified);
+                DocumentMetadata meta = resource.getMetadata();
+                if (dh.mimeType != null) {
+                    meta.setMimeType(dh.mimeType);
+                }
+                if (dh.createdTime != null) {
+                    meta.setCreated(dh.createdTime);
+                }
+                if (dh.lastModified != null) {
+                    meta.setLastModified(dh.lastModified);
+                }
 
-            resource = parent.addBinaryResource(tx, broker, (BinaryDocument)resource, is.getByteStream(), dh.mimeType, is.getByteStreamLength(), new Date(dh.createdTime), new Date(dh.lastModified));
+                resource = parent.addBinaryResource(
+                    tx, broker,
+                    (BinaryDocument) resource,
+                    is.getByteStream(),
+                    dh.mimeType,
+                    is.getByteStreamLength(),
+                    new Date(dh.createdTime),
+                    new Date(dh.lastModified)
+                );
+            }
         }
 
         rh.endRestore(resource);

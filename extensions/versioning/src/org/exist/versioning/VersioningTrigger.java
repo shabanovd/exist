@@ -231,7 +231,7 @@ public class VersioningTrigger extends FilteringTrigger {
     					}
 
     					IndexInfo info = vCollection.validateXMLResource(transaction, broker, diffUri, editscript);
-    					vCollection.store(transaction, broker, info, editscript, false); 
+    					vCollection.store(transaction, broker, info, editscript);
     				}
     			} catch (Exception e) {
     				LOG.warn("Caught exception in VersioningTrigger: " + e.getMessage(), e);
@@ -408,7 +408,7 @@ public class VersioningTrigger extends FilteringTrigger {
     					}
 
     					IndexInfo info = vCollection.validateXMLResource(transaction, broker, diffUri, editscript);
-    					vCollection.store(transaction, broker, info, editscript, false);                    
+    					vCollection.store(transaction, broker, info, editscript);
     				}
     			} catch (Exception e) {
     				LOG.warn("Caught exception in VersioningTrigger: " + e.getMessage(), e);

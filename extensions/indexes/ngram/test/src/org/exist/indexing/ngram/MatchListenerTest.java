@@ -725,7 +725,7 @@ public class MatchListenerTest {
 
             IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create("test_matches.xml"), xml);
             assertNotNull(info);
-            root.store(transaction, broker, info, xml, false);
+            root.store(transaction, broker, info, xml);
             
             transact.commit(transaction);
         } catch (Exception e) {

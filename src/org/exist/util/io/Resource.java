@@ -477,13 +477,13 @@ public class Resource extends File {
             tm = db.getTransactionManager();
             txn = tm.beginTransaction();
 
-            FileInputSource is = new FileInputSource(file);
+            FileInputSource is = new FileInputSource(file.toPath());
 	        
             final IndexInfo info = collection.validateXMLResource(txn, broker, uri.lastSegment(), is);
 //	        info.getDocument().getMetadata().setMimeType(mimeType.getName());
 	
-	        is = new FileInputSource(file);
-	        collection.store(txn, broker, info, is, false);
+	        is = new FileInputSource(file.toPath());
+	        collection.store(txn, broker, info, is);
 
             tm.commit(txn);
             
@@ -523,13 +523,13 @@ public class Resource extends File {
                 
                 final File file = broker.getBinaryFile((BinaryDocument) doc);
 
-                FileInputSource is = new FileInputSource(file);
+                FileInputSource is = new FileInputSource(file.toPath());
                 
                 final IndexInfo info = destination.validateXMLResource(txn, broker, newName, is);
                 info.getDocument().getMetadata().setMimeType(mimeType.getName());
 
-                is = new FileInputSource(file);
-                destination.store(txn, broker, info, is, false);
+                is = new FileInputSource(file.toPath());
+                destination.store(txn, broker, info, is);
                 
                 source.removeBinaryResource(txn, broker, doc);
             }
@@ -709,7 +709,7 @@ public class Resource extends File {
 					final IndexInfo info = collection.validateXMLResource(transaction, broker, fileName, str);
 					info.getDocument().getMetadata().setMimeType(mimeType.getName());
 					info.getDocument().getPermissions().setMode(DEFAULT_RESOURCE_PERM);
-					collection.store(transaction, broker, info, str, false);
+					collection.store(transaction, broker, info, str);
 	
 				} else {
 					// store as binary resource

@@ -1522,7 +1522,7 @@ public class InteractiveClient {
 		    }
                     message("storing document " + compressedName + " (" + i + " of " + files.length + ") " + "...");
                     document = collection.createResource(URIUtils.urlEncodeUtf8(compressedName), mimeType.getXMLDBType());
-                    document.setContent(isCompressed?new GZIPInputSource(files[i]):files[i]);
+                    document.setContent(isCompressed?new GZIPInputSource(files[i].toPath()):files[i]);
                     ((EXistResource)document).setMimeType(mimeType.getName());
                     collection.storeResource(document);
                     ++filesCount;
@@ -1601,7 +1601,7 @@ public class InteractiveClient {
             document = current.createResource(compressedName,mimeType.getXMLDBType());
             message("storing document " + compressedName + " (" + (i + 1)
             + " of " + files.length + ") ...");
-            document.setContent(isCompressed?new GZIPInputSource(files[i]):files[i]);
+            document.setContent(isCompressed?new GZIPInputSource(files[i].toPath()):files[i]);
             ((EXistResource)document).setMimeType(mimeType.getName());
             current.storeResource(document);
             messageln("done.");

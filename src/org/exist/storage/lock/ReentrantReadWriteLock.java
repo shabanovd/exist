@@ -254,6 +254,10 @@ public class ReentrantReadWriteLock implements Lock {
         return this.owner_;
     }
 
+    public void release(LockMode mode) {
+        release(mode.mode());
+    }
+
     /* (non-Javadoc)
      * @see org.exist.util.Lock#release(int)
      */

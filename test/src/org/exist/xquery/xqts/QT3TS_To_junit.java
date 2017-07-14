@@ -172,7 +172,7 @@ public class QT3TS_To_junit {
         	
         	FileInputStream is = new FileInputStream(file);
         	try {
-        	    col.store(null, broker, info, new InputSource(is), false);
+        	    col.store(null, broker, info, new InputSource(is));
         	} finally {
         	    is.close();
         	}

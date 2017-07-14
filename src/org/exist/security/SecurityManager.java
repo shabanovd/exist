@@ -117,6 +117,9 @@ public interface SecurityManager extends Configurable {
    
    Subject getSubjectBySessionId(String sessionid);
 
+   Group addGroup(final DBBroker broker, final Group group) throws PermissionDeniedException, EXistException;
+
+   @Deprecated
    void addGroup(int id, Group group);
 
    void addUser(int id, Account account);

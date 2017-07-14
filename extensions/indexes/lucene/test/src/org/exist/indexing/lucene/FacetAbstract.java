@@ -102,7 +102,7 @@ public class FacetAbstract {
                         IndexInfo info = root.validateXMLResource(txn, broker, XmldbURI.create(resource.docName), resource.data);
                         assertNotNull(info);
 
-                        root.store(txn, broker, info, resource.data, false);
+                        root.store(txn, broker, info, resource.data);
 
                         docs.add(info.getDocument());
 

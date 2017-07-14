@@ -27,9 +27,27 @@ import org.exist.util.LockException;
 
 public interface Lock extends Debuggable {
 
-	public final static int READ_LOCK = 0;
-	public final static int WRITE_LOCK = 1;
-	public final static int NO_LOCK = -1;
+  int READ_LOCK = 0;
+  int WRITE_LOCK = 1;
+  int NO_LOCK = -1;
+
+  /**
+   * The modes of a {@link Lock}
+   */
+  enum LockMode {
+    NO_LOCK(-1),
+    READ_LOCK(0),
+    WRITE_LOCK(1);
+
+    int mode;
+    LockMode(int mode) {
+      this.mode = mode;
+    }
+
+    public int mode() {
+      return mode;
+    }
+  }
 	
 	/**
 	 * Acquire a lock for read.
@@ -61,6 +79,9 @@ public interface Lock extends Debuggable {
      * 
      * @param mode
      */
+    public void release( LockMode mode );
+
+    @Deprecated
     public void release( int mode );
     
     public void release(int mode, int count);

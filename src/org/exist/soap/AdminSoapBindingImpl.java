@@ -248,7 +248,7 @@ public class AdminSoapBindingImpl implements org.exist.soap.Admin {
 //          IndexInfo info = collection.validate(txn, broker, path, new InputSource(new ByteArrayInputStream(data)));
             final IndexInfo info = collection.validateXMLResource(txn, broker, docUri, new InputSource(new ByteArrayInputStream(data)));
             info.getDocument().getMetadata().setMimeType(MimeType.XML_TYPE.getName());
-            collection.store(txn, broker, info, new InputSource(new ByteArrayInputStream(data)), false);
+            collection.store(txn, broker, info, new InputSource(new ByteArrayInputStream(data)));
             transact.commit(txn);
             LOG.debug(
                     "parsing "

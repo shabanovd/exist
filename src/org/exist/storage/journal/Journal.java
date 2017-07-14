@@ -29,8 +29,11 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.DateFormat;
 
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -363,17 +366,18 @@ public class Journal {
     }
 
     public void clearBackupFiles() {
-       fsJournalDir.listFiles(
-           new FileFilter() {
-               public boolean accept(File file) {
-                   LOG.info("Checkpoint deleting "+file);
-                   if (!FileUtils.delete(file)) {
-                       LOG.fatal("Cannot delete file "+file+" from backup journal.");
-                   }
-                   return false;
-               }
-           }
-       );
+        if(Files.exists(fsJournalDir.toPath())) {
+            try (final Stream<Path> backupFiles = Files.list(fsJournalDir.toPath())) {
+                backupFiles.forEach(p -> {
+                    LOG.info("Checkpoint deleting: " + p.toAbsolutePath().toString());
+                    if (!FileUtils.deleteQuietly(p)) {
+                        LOG.fatal("Cannot delete file '" + p.toAbsolutePath().toString() + "' from backup journal.");
+                    }
+                });
+            } catch (final IOException ioe) {
+                LOG.error("Could not clear fs.journal backup files", ioe);
+            }
+        }
     }
 
     /**

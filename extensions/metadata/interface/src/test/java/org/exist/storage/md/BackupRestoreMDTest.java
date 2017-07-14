@@ -241,7 +241,7 @@ public class BackupRestoreMDTest extends TestCase {
             System.out.println("store "+doc1uri);
             IndexInfo info = root.validateXMLResource(transaction, broker, doc1uri.lastSegment(), XML);
             assertNotNull(info);
-            root.store(transaction, broker, info, XML, false);
+            root.store(transaction, broker, info, XML);
 
             System.out.println("store "+doc2uri);
             BinaryDocument doc = root.addBinaryResource(transaction, broker, doc2uri.lastSegment(), BINARY.getBytes(), null);

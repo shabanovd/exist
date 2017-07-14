@@ -38,6 +38,7 @@ import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
 import org.exist.stax.EmbeddedXMLStreamReader;
 import org.exist.storage.btree.BTreeCallback;
+import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.Txn;
 import org.exist.util.Configuration;
@@ -310,6 +311,8 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
      */
     public abstract Collection openCollection(XmldbURI uri, int lockMode) throws PermissionDeniedException;
 
+    public abstract Collection openCollection(XmldbURI uri, LockMode lockMode) throws PermissionDeniedException;
+
     public abstract List<String> findCollectionsMatching(String regexp);
     
     /**
@@ -400,6 +403,10 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
      * @return the document or null if no document could be found at the
      *         specified location.
      */
+    public abstract DocumentImpl getXMLResource(XmldbURI docURI, LockMode lockMode)
+        throws PermissionDeniedException;
+
+    @Deprecated
     public abstract DocumentImpl getXMLResource(XmldbURI docURI, int lockMode)
         throws PermissionDeniedException;
 

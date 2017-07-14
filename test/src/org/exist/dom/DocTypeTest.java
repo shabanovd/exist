@@ -87,14 +87,14 @@ public class DocTypeTest extends XMLTestCase {
 			broker = pool.get(pool.getSecurityManager().getSystemSubject());
 			assertNotNull(broker);
 			
-			InputSource is = new FileInputSource(testFile);
+			InputSource is = new FileInputSource(testFile.toPath());
 			transact = pool.getTransactionManager();
 			assertNotNull(transact);
 			transaction = transact.beginTransaction();
 			IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create("test2.xml"), is);
 			
 			assertNotNull(info);
-			root.store(transaction, broker, info, is, false);
+			root.store(transaction, broker, info, is);
 
 			transact.commit(transaction);
 
@@ -185,7 +185,7 @@ public class DocTypeTest extends XMLTestCase {
             IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create("test.xml"), XML);
             //TODO : unlock the collection here ?
             assertNotNull(info);
-            root.store(transaction, broker, info, XML, false);
+            root.store(transaction, broker, info, XML);
             
             transact.commit(transaction);
             System.out.println("NodeTest#setUp finished.");
