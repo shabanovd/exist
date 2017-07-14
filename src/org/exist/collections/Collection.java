@@ -1373,7 +1373,6 @@ public class Collection extends Observable implements Resource, Comparable<Colle
      * @param broker
      * @param info
      * @param source
-     * @param privileged
      * 
      * @throws EXistException
      * @throws PermissionDeniedException
