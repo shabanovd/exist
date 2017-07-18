@@ -67,7 +67,7 @@ public class TwoDatabasesTest extends TestCase
       // Setup the log4j configuration
       String log4j = System.getProperty("log4j.configuration");
       if (log4j == null) {
-         File lf = new File("log4j.xml");
+         File lf = new File("log4j2.xml");
          if (lf.canRead()) {
             System.setProperty("log4j.configuration", lf.toURI().toASCIIString());
          }

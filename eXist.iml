@@ -27,6 +27,12 @@
       <sourceFolder url="file://$MODULE_DIR$/extensions/security/saml/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/extensions/webdav/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/resources" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/fixes/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/messaging-replication/java/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/messaging-replication/java/test" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/messaging-replication/pubsub/jms-light/src/test/resources" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tools/yajsw/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/extensions/modules/src/org/exist/xquery/modules/cqlparser" />
       <excludeFolder url="file://$MODULE_DIR$/extensions/modules/src/org/exist/xquery/modules/jfreechart" />
       <excludeFolder url="file://$MODULE_DIR$/extensions/modules/src/org/exist/xquery/modules/memcached" />
@@ -62,5 +68,7 @@
     <orderEntry type="library" name="exquery-core" level="project" />
     <orderEntry type="library" name="joda-time-2.2" level="project" />
     <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="library" name="replication" level="project" />
+    <orderEntry type="library" name="pubsub" level="project" />
   </component>
 </module>

@@ -103,10 +103,96 @@
     <option name="USER" value="" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9c94c8a9-f5ba-4ada-96fc-bdc14754ba2b" name="Default" comment="">
+    <list default="true" id="9c94c8a9-f5ba-4ada-96fc-bdc14754ba2b" name="Default" comment="switch log level">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/extensions/messaging-replication" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/lib/user/je-7.3.7.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/lib/user/mapdb-1.0.8.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/lib/user/uuid-3.3.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/aspectj/lib/aspectjrt-1.8.9.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/aspectj/lib/aspectjtools-1.8.9.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/aspectj/lib/aspectjweaver-1.8.9.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/commons/commons-cli-1.3.1.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/commons/commons-collections-3.2.2.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/commons/commons-configuration2-2.0.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/commons/commons-io-1.3.1.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/commons/commons-lang-2.4.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/commons/commons-lang3-3.4.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/commons/commons-logging-1.1.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/commons/commons-vfs2-2.0.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/jna/jna-4.2.2.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/jna/jna-platform-4.2.2.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/netty/netty-all-4.0.35.Final.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/core/yajsw/ahessian.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/extended/groovy/groovy-all-2.3.11.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/extended/groovy/groovy-patch.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/extended/velocity/velocity-1.7.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/extended/yajsw/hessian4.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/lib/extended/yajsw/srvmgr.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/wrapper.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/wrapperApp.jar" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/VERSION.txt.tmpl" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/build/scripts/git-support.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/LICENSE.txt" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/installDaemon.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/installDaemonNoPriv.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/installService.bat" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/queryDaemon.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/queryDaemonNoPriv.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/queryService.bat" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/runConsole.bat" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/runConsole.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/setenv.bat" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/setenv.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/startDaemon.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/startDaemonNoPriv.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/startService.bat" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/stopDaemon.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/stopDaemonNoPriv.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/stopService.bat" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/uninstallDaemon.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/uninstallDaemonNoPriv.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/uninstallService.bat" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/wrapper.bat" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/wrapper.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/bin/wrapperW.bat" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/build.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/conf/log4j2.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/conf/wrapper.conf" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/conf/wrapper.conf.in" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/conf/wrapper.conf.install" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/conf/yajsw.policy" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/src/org/exist/yajsw/Main.java" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/templates/daemon.vm" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/templates/launchd.plist.vm" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/templates/systemd.vm" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/tmp/.DO_NOT_DELETE" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tools/yajsw/wrapper-log4j.xsl" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/VERSION.txt" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/tools/aspectj/lib/aspectjrt-1.8.2.jar" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/tools/aspectj/lib/aspectjtools-1.8.2.jar" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/tools/aspectj/lib/aspectjweaver-1.8.2.jar" afterPath="" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/log4j.xml" afterPath="$PROJECT_DIR$/log4j2.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build.sh" afterPath="$PROJECT_DIR$/build.sh" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build/scripts/build-impl.xml" afterPath="$PROJECT_DIR$/build/scripts/build-impl.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build/scripts/dist-war-log4j.xsl" afterPath="$PROJECT_DIR$/build/scripts/dist-war-log4j.xsl" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build/scripts/dist.xml" afterPath="$PROJECT_DIR$/build/scripts/dist.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build/scripts/macosx.xml" afterPath="$PROJECT_DIR$/build/scripts/macosx.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build/scripts/minimal.xml" afterPath="$PROJECT_DIR$/build/scripts/minimal.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build/scripts/performance.xml" afterPath="$PROJECT_DIR$/build/scripts/performance.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/eXist.iml" afterPath="$PROJECT_DIR$/eXist.iml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/eXist.ipr" afterPath="$PROJECT_DIR$/eXist.ipr" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/eXist.iws" afterPath="$PROJECT_DIR$/eXist.iws" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/betterform-config.xml" afterPath="$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/betterform-config.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/extensions/modules/ivy.xml" afterPath="$PROJECT_DIR$/extensions/modules/ivy.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/installer/install.xml.tmpl" afterPath="$PROJECT_DIR$/installer/install.xml.tmpl" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/exist/start/Main.java" afterPath="$PROJECT_DIR$/src/org/exist/start/Main.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/src/org/exist/config/TwoDatabasesTest.java" afterPath="$PROJECT_DIR$/test/src/org/exist/config/TwoDatabasesTest.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/ircbot/run.sh" afterPath="$PROJECT_DIR$/tools/ircbot/run.sh" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/jetty/etc/standalone/WEB-INF/web.xml" afterPath="$PROJECT_DIR$/tools/jetty/etc/standalone/WEB-INF/web.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/wrapper/build.xml" afterPath="$PROJECT_DIR$/tools/wrapper/build.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/wrapper/conf/wrapper.conf.in" afterPath="$PROJECT_DIR$/tools/wrapper/conf/wrapper.conf.in" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/wrapper/wrapper-log4j.xsl" afterPath="$PROJECT_DIR$/tools/wrapper/wrapper-log4j.xsl" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/webapp/WEB-INF/web.xml.tmpl" afterPath="$PROJECT_DIR$/webapp/WEB-INF/web.xml.tmpl" />
     </list>
     <ignored path="$USER_HOME$/.grails/" />
     <ignored path="$USER_HOME$/.griffon/" />
@@ -215,11 +301,112 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="log4j.xml" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/log4j.xml">
+      <file leaf-file-name="Main.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/org/exist/start/Main.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="435">
-              <caret line="29" column="60" lean-forward="true" selection-start-line="29" selection-start-column="60" selection-end-line="29" selection-end-column="60" />
+            <state relative-caret-position="226">
+              <caret line="559" column="21" lean-forward="false" selection-start-line="559" selection-start-column="21" selection-end-line="559" selection-end-column="21" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="web.xml" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/webapp/WEB-INF/web.xml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="198">
+              <caret line="42" column="0" lean-forward="false" selection-start-line="42" selection-start-column="0" selection-end-line="42" selection-end-column="0" />
+              <folding>
+                <marker date="1500383434000" expanded="true" signature="43:306" ph="..." />
+                <marker date="1500383434000" expanded="true" signature="12001:17390" ph="..." />
+                <marker date="1500383434000" expanded="true" signature="12012:12091" ph="..." />
+                <marker date="1500383434000" expanded="true" signature="12104:12739" ph="..." />
+                <marker date="1500383434000" expanded="true" signature="12797:12912" ph="..." />
+                <marker date="1500383434000" expanded="true" signature="12943:13101" ph="..." />
+                <marker date="1500383434000" expanded="true" signature="13132:13275" ph="..." />
+                <marker date="1500383434000" expanded="true" signature="13348:13490" ph="..." />
+                <marker date="1500383434000" expanded="true" signature="13535:14131" ph="..." />
+                <marker date="1500383434000" expanded="true" signature="14144:14224" ph="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="wrapper.conf.in" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/wrapper/conf/wrapper.conf.in">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="132">
+              <caret line="79" column="47" lean-forward="false" selection-start-line="79" selection-start-column="47" selection-end-line="79" selection-end-column="47" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="web.xml" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/jetty/etc/standalone/WEB-INF/web.xml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="132">
+              <caret line="27" column="39" lean-forward="false" selection-start-line="27" selection-start-column="39" selection-end-line="27" selection-end-column="39" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="run.sh" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/ircbot/run.sh">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="195">
+              <caret line="13" column="56" lean-forward="false" selection-start-line="13" selection-start-column="56" selection-end-line="13" selection-end-column="56" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="betterform-config.xml" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/betterform-config.xml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="132">
+              <caret line="15" column="52" lean-forward="false" selection-start-line="15" selection-start-column="52" selection-end-line="15" selection-end-column="52" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="install.xml.tmpl" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/installer/install.xml.tmpl">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="123">
+              <caret line="136" column="31" lean-forward="false" selection-start-line="136" selection-start-column="31" selection-end-line="136" selection-end-column="31" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Main.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/yajsw/src/org/exist/yajsw/Main.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="300">
+              <caret line="26" column="82" lean-forward="false" selection-start-line="26" selection-start-column="82" selection-end-line="26" selection-end-column="82" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Module.java" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/extensions/fixes/src/org/exist/xquery/fixes/Module.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="255">
+              <caret line="41" column="0" lean-forward="false" selection-start-line="41" selection-start-column="0" selection-end-line="41" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TwoDatabasesTest.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/test/src/org/exist/config/TwoDatabasesTest.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="124">
+              <caret line="69" column="29" lean-forward="false" selection-start-line="69" selection-start-column="29" selection-end-line="69" selection-end-column="29" />
               <folding />
             </state>
           </provider>
@@ -227,35 +414,67 @@
       </file>
     </leaf>
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>Source</find>
-      <find>isValid</find>
-      <find>newTransformer</find>
-      <find>Transformer</find>
-      <find>getListener</find>
-      <find>import org.apache.log4j.Logger;</find>
-      <find>= Logger.getLogger(</find>
-      <find>Log4jInit</find>
-      <find>DOMConfigurator</find>
-      <find>BasicConfigurator</find>
+      <find>close</find>
+      <find>lookup(String name)</find>
+      <find>Object lookup(String name)</find>
+      <find>initialContext</find>
+      <find>VirtualTempFileInputSource</find>
+      <find>cglib-nodep</find>
+      <find>modules</find>
+      <find>PubSubConnectionFactory</find>
+      <find>getServiceHost</find>
+      <find>BaseIntegrationTest</find>
+      <find>messageConsumer</find>
+      <find>java.naming.provider.url</find>
+      <find>content</find>
+      <find>getBody</find>
+      <find>length</find>
+      <find>wrap</find>
+      <find>defaultBuilder</find>
+      <find>setCredentialsProvider</find>
+      <find>DEFAULT_RETRY_SETTINGS</find>
+      <find>acknowledge</find>
+      <find>pull</find>
+      <find>createSubscriptionAdminClient</find>
+      <find>MessageListener</find>
+      <find>closed</find>
+      <find>local</find>
+      <find>convertPrimitiveTypeToWrapperType</find>
+      <find>getSt</find>
+      <find>&quot;type&quot;</find>
+      <find>acknowledged</find>
+      <find>.flatMap(f -&gt; f.fold(l -&gt; Optional.of(l.</find>
     </findStrings>
     <replaceStrings>
       <replace>import org.apache.logging.log4j.LogManager; import org.apache.logging.log4j.Logger;</replace>
       <replace>import org.apache.logging.log4j.LogManager;import org.apache.logging.log4j.Logger;</replace>
       <replace>import org.apache.logging.log4j.LogManager;\nimport org.apache.logging.log4j.Logger;</replace>
       <replace>= LogManager.getLogger(</replace>
+      <replace>throw new OperationNotSupportedException();</replace>
     </replaceStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$/extensions/security/saml/src</dir>
-      <dir>$PROJECT_DIR$/src</dir>
       <dir>$PROJECT_DIR$</dir>
+      <dir>$PROJECT_DIR$/src</dir>
+      <dir>$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light</dir>
     </dirStrings>
   </component>
   <component name="FindManager">
     <FindUsagesManager>
       <setting name="OPEN_NEW_TAB" value="false" />
     </FindUsagesManager>
+  </component>
+  <component name="Git.Rebase.Settings">
+    <option name="ONTO" value="HEAD~3" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -264,6 +483,7 @@
         <entry key="$PROJECT_DIR$" value="2.1.0-RC70" />
       </map>
     </option>
+    <option name="RESET_MODE" value="HARD" />
   </component>
   <component name="GitLogSettings">
     <option name="myDateState">
@@ -273,57 +493,57 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/src/org/exist/protocolhandler/embedded/EmbeddedDownloadThread.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/httpclient/DELETEFunction.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/httpclient/BaseHTTPClientFunction.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBCreateUser.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/security/xacml/XACMLUtil.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xquery/functions/response/StreamBinary.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/mail/MailStoreFunctions.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/datetime/FormatTimeFunction.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/ftpclient/GetConnectionFunction.java" />
-        <option value="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java" />
-        <option value="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndex.java" />
-        <option value="$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneMatchListener.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xquery/functions/util/BaseConverter.java" />
-        <option value="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/RangeIndex.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/storage/CreateBinaryLoggable.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/storage/RenameBinaryLoggable.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/datetime/TimeFromDateTimeFunction.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBMatchCollection.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/backup/restore/SystemImportHandler.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/client/xacml/DatabaseInterface.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/datetime/DateRangeFunctions.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBCreateCollection.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBPermissions.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/client/InteractiveClient.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xquery/functions/fn/FunConcat.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/file/FileIsReadable.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xmldb/RemoteCollection.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/SystemProperties.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/atom/modules/AtomFeeds.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/atom/modules/AtomProtocol.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/atom/modules/Query.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/httpclient/ClearFunction.java" />
-        <option value="$PROJECT_DIR$/extensions/versioning/src/org/exist/versioning/StandardDiff.java" />
-        <option value="$PROJECT_DIR$/samples/src/org/exist/examples/triggers/ExampleTrigger.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/cache/ClearFunction.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/file/FileMove.java" />
-        <option value="$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/ComplexRangeIndexConfigElement.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/datetime/ParseTimeFunction.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/httpclient/SetOptionsFunction.java" />
-        <option value="$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/compression/AbstractCompressFunction.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/management/client/JMXtoXML.java" />
-        <option value="$PROJECT_DIR$/extensions/contentextraction/src/org/exist/contentextraction/ContentReceiver.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xmldb/LocalCollectionManagementService.java" />
-        <option value="$PROJECT_DIR$/src/org/exist/xmldb/LocalXUpdateQueryService.java" />
-        <option value="$PROJECT_DIR$/test/src/org/exist/validation/CollectionConfigurationValidationModeTest.java" />
-        <option value="$PROJECT_DIR$/test/src/org/exist/validation/ValidationFunctions_DTD_Test.java" />
-        <option value="$PROJECT_DIR$/test/src/org/exist/xquery/StoredModuleTest.java" />
-        <option value="$PROJECT_DIR$/test/src/org/exist/xmlrpc/MoveResourceTest.java" />
-        <option value="$PROJECT_DIR$/test/src/org/exist/validation/CollectionConfigurationTest.java" />
-        <option value="$PROJECT_DIR$/test/src/org/exist/test/EmbeddedExistTester.java" />
-        <option value="$PROJECT_DIR$/log4j.xml" />
+        <option value="$PROJECT_DIR$/src/org/exist/start/start.config" />
+        <option value="$PROJECT_DIR$/build.sh" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/shared/receive/Receiver.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/shared/JmsConfiguration.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/shared/send/Sender.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/pubsub/PubSubInitialContextFactory.java" />
+        <option value="$PROJECT_DIR$/extensions/modules/ivy.xml" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/PubSubConnection.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/PubSubTopicConnection.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/replication/publish/JMSMessageSender.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/PubSubConnectionFactory.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/consumer/PubSubMessageConsumer.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionConsumerCreator.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/message/PubSubTextMessage.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionBrowserCreator.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionMessageCreator.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionQueueCreator.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionTopicCreator.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/replication/subscribe/ReplicationJmsListener.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/message/AbstractPropertyMessage.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/PubSubMessageProducer.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/PubSubSession.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionProducerCreator.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/message/AbstractPubSubMessage.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/consumer/PubSubMessageSubscriber.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionSubscriberCreator.java" />
+        <option value="$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/message/PubSubBytesMessage.java" />
+        <option value="$PROJECT_DIR$/build/classes/org/exist/util/VirtualTempFileInputSource.class" />
+        <option value="$PROJECT_DIR$/src/org/exist/util/VirtualTempFileInputSource.java" />
+        <option value="$PROJECT_DIR$/build/scripts/build-impl.xml" />
+        <option value="$PROJECT_DIR$/build/scripts/git-support.xml" />
+        <option value="$PROJECT_DIR$/tools/yajsw/build.xml" />
+        <option value="$PROJECT_DIR$/build/scripts/minimal.xml" />
+        <option value="$PROJECT_DIR$/tools/wrapper/build.xml" />
+        <option value="$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/betterform-config.xml" />
+        <option value="$PROJECT_DIR$/build/scripts/performance.xml" />
+        <option value="$PROJECT_DIR$/build/scripts/macosx.xml" />
+        <option value="$PROJECT_DIR$/build/scripts/dist.xml" />
+        <option value="$PROJECT_DIR$/tools/yajsw/wrapper-log4j.xsl" />
+        <option value="$PROJECT_DIR$/tools/wrapper/wrapper-log4j.xsl" />
+        <option value="$PROJECT_DIR$/src/org/exist/start/Main.java" />
+        <option value="$PROJECT_DIR$/build/scripts/dist-war-log4j.xsl" />
+        <option value="$PROJECT_DIR$/webapp/WEB-INF/web.xml.tmpl" />
+        <option value="$PROJECT_DIR$/webapp/WEB-INF/web.xml" />
+        <option value="$PROJECT_DIR$/installer/install.xml.tmpl" />
+        <option value="$PROJECT_DIR$/test/src/org/exist/config/TwoDatabasesTest.java" />
+        <option value="$PROJECT_DIR$/tools/wrapper/conf/wrapper.conf.in" />
+        <option value="$PROJECT_DIR$/tools/jetty/etc/standalone/WEB-INF/web.xml" />
+        <option value="$PROJECT_DIR$/tools/ircbot/run.sh" />
+        <option value="$PROJECT_DIR$/tools/yajsw/src/org/exist/yajsw/Main.java" />
+        <option value="$PROJECT_DIR$/extensions/fixes/src/org/exist/xquery/fixes/Module.java" />
       </list>
     </option>
   </component>
@@ -364,12 +584,10 @@
           <State>
             <id />
           </State>
-        </expanded-state>
-        <selected-state>
           <State>
-            <id>Abstraction issues</id>
+            <id>XQuery</id>
           </State>
-        </selected-state>
+        </expanded-state>
       </profile-state>
     </entry>
   </component>
@@ -531,9 +749,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
-      <pane id="Scratches" />
-      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -556,7 +771,11 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
+              <option name="myItemId" value="tools" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="yajsw" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -570,21 +789,11 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
+              <option name="myItemId" value="tools" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
+              <option name="myItemId" value="yajsw" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
@@ -592,11 +801,7 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="plugin" />
+              <option name="myItemId" value="yajsw" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -610,73 +815,7 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="http" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="http" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="servlets" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lib" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="eXist" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="exist-dmitriy" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lib" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="core" />
+              <option name="myItemId" value="tools" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -708,7 +847,7 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="indexes" />
+              <option name="myItemId" value="fixes" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -726,11 +865,19 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="indexes" />
+              <option name="myItemId" value="fixes" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="lucene" />
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="exist" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="xquery" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -748,20 +895,57 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="indexes" />
+              <option name="myItemId" value="fixes" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="lucene" />
+              <option name="myItemId" value="src" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="lib" />
+              <option name="myItemId" value="exist" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="xquery" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="fixes" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="eXist" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="exist-dmitriy" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="extensions" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="fixes" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="exist" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scratches" />
+      <pane id="Scope" />
+      <pane id="PackagesPane" />
       <pane id="Favorites">
         <subPane subId="eXist">
           <PATH>
@@ -991,10 +1175,9 @@
     <property name="MemberChooser.copyJavadoc" value="false" />
     <property name="TEMP_MODULE_EXPLODED_DIR_FOR_eXist/web/Web" value="/private/tmp/webExplodedDir6263tmp" />
     <property name="FileHistory.org.jetbrains.idea.svn.history.SvnHistoryProvider_flatWidth1" value="73" />
-    <property name="project.structure.last.edited" value="Project" />
+    <property name="project.structure.last.edited" value="SDKs" />
     <property name="FileHistory.org.jetbrains.idea.svn.history.SvnHistoryProvider_flatWidth0" value="71" />
     <property name="FileHistory.org.jetbrains.idea.svn.history.SvnHistoryProvider_flatWidth3" value="37" />
-    <property name="OverrideImplement.combined" value="true" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="FileHistory.org.jetbrains.idea.svn.history.SvnHistoryProvider_flatWidth2" value="76" />
     <property name="FileHistory.org.jetbrains.idea.svn.history.SvnHistoryProvider_flatOrder1" value="1" />
@@ -1025,25 +1208,17 @@
     <property name="cvs_file_history_flatOrder1" value="1" />
     <property name="FileHistory.org.jetbrains.idea.svn.history.SvnHistoryProvider_treeOrder2" value="2" />
     <property name="FileHistory.org.jetbrains.idea.svn.history.SvnHistoryProvider_treeOrder0" value="0" />
-    <property name="restartRequiresConfirmation" value="true" />
     <property name="GenerateAntBuildDialog.backupFiles" value="true" />
     <property name="options.searchVisible" value="true" />
     <property name="dynamic.classpath" value="false" />
+    <property name="settings.editor.selected.configurable" value="project.propCompiler" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/webapp/repo/packages/app-example/myapp" />
-      <recent name="$PROJECT_DIR$/webapp/repo/packages/app-example/myApp/lib" />
-      <recent name="$PROJECT_DIR$/webapp/repo/packages/json-example" />
-      <recent name="$PROJECT_DIR$/webapp/repo/packages/functx-example" />
+    <key name="CreateClassDialog.RecentsKey">
+      <recent name="org.exist.jms.pubsub" />
     </key>
     <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
       <recent name="org.exist.revisions" />
-    </key>
-    <key name="CopyClassDialog.RECENTS_KEY">
-      <recent name="org.exist.revisions.xquery" />
-      <recent name="org.exist.xquery.functions.util" />
-      <recent name="org.exist.xquery.functions.text" />
     </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/resources/org/exist/xquery/functions" />
@@ -1051,6 +1226,32 @@
       <recent name="$PROJECT_DIR$/extensions/betterform/src/main/lib" />
       <recent name="$PROJECT_DIR$/lib/user" />
     </key>
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="com.google.pubsub.jms.light.consumer" />
+      <recent name="com.google.pubsub.jms.light.message" />
+      <recent name="org.exist.xquery.fixes" />
+      <recent name="org.exist.revisions.xquery" />
+      <recent name="org.exist.xquery.functions.util" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/extensions/messaging-replication/pubsub/libs" />
+      <recent name="$PROJECT_DIR$/webapp/repo/packages/app-example/myapp" />
+      <recent name="$PROJECT_DIR$/webapp/repo/packages/app-example/myApp/lib" />
+      <recent name="$PROJECT_DIR$/webapp/repo/packages/json-example" />
+      <recent name="$PROJECT_DIR$/webapp/repo/packages/functx-example" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
   </component>
   <component name="RunManager" selected="Application.eXist Client">
     <configuration default="false" name="ResourceTest.setContentAsDOM_1" type="JUnit" factoryName="JUnit" temporary="true">
@@ -1314,6 +1515,8 @@
       <setting name="testName" value="" />
       <setting name="testKind" value="Class" />
       <setting name="showProgressMessages" value="true" />
+      <setting name="useSbt" value="false" />
+      <setting name="useUiWithSbt" value="false" />
       <classRegexps />
       <testRegexps />
       <envs />
@@ -1331,6 +1534,8 @@
       <setting name="testName" value="" />
       <setting name="testKind" value="Class" />
       <setting name="showProgressMessages" value="true" />
+      <setting name="useSbt" value="false" />
+      <setting name="useUiWithSbt" value="false" />
       <classRegexps />
       <testRegexps />
       <envs />
@@ -1373,6 +1578,23 @@
       </variables>
       <method />
     </configuration>
+    <configuration default="true" type="executeSpecs" factoryName="Gauge Execution">
+      <setting name="environment" value="" />
+      <setting name="specsToExecute" value="" />
+      <setting name="tags" value="" />
+      <setting name="parallelNodes" value="" />
+      <setting name="execInParallel" value="false" />
+      <setting name="programParameters" value="" />
+      <setting name="workingDirectory" value="" />
+      <setting name="moduleName" value="" />
+      <envMap />
+      <setting name="rowsRange" value="" />
+      <method />
+    </configuration>
+    <configuration default="true" type="jmh-id" factoryName="Jmh">
+      <module name="" />
+      <method />
+    </configuration>
     <configuration default="true" type="uTestRunConfiguration" factoryName="utest">
       <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
       <module name="" />
@@ -1385,6 +1607,8 @@
       <setting name="testName" value="" />
       <setting name="testKind" value="Class" />
       <setting name="showProgressMessages" value="true" />
+      <setting name="useSbt" value="false" />
+      <setting name="useUiWithSbt" value="false" />
       <classRegexps />
       <testRegexps />
       <envs />
@@ -1404,29 +1628,6 @@
       <module name="eXist" />
       <envs />
       <RunnerSettings RunnerId="Run" />
-      <ConfigurationWrapper RunnerId="Run" />
-      <method />
-    </configuration>
-    <configuration default="false" name="eXist Client" type="Application" factoryName="Application">
-      <extension name="coverage" enabled="false" merge="false" runner="emma" />
-      <option name="MAIN_CLASS_NAME" value="org.exist.start.Main" />
-      <option name="VM_PARAMETERS" value="-Djava.endorsed.dirs=lib/endorsed -Dexist.home=$PROJECT_DIR$/../eXist-1.3  -Xmx128m" />
-      <option name="PROGRAM_PARAMETERS" value="client -l" />
-      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
-      <option name="ALTERNATIVE_JRE_PATH" value="" />
-      <option name="ENABLE_SWING_INSPECTOR" value="false" />
-      <option name="ENV_VARIABLES" />
-      <option name="PASS_PARENT_ENVS" value="true" />
-      <module name="eXist" />
-      <envs />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="1525" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <RunnerSettings RunnerId="Run" />
-      <ConfigurationWrapper RunnerId="Debug" />
       <ConfigurationWrapper RunnerId="Run" />
       <method />
     </configuration>
@@ -1579,15 +1780,38 @@
       <ConfigurationWrapper RunnerId="Run" />
       <method />
     </configuration>
+    <configuration default="false" name="eXist Client" type="Application" factoryName="Application">
+      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
+      <option name="MAIN_CLASS_NAME" value="org.exist.start.Main" />
+      <option name="VM_PARAMETERS" value="-Djava.endorsed.dirs=lib/endorsed  -Xmx128m" />
+      <option name="PROGRAM_PARAMETERS" value="client -l" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <module name="eXist" />
+      <envs />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="1525" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Debug" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method />
+    </configuration>
     <list size="13">
       <item index="0" class="java.lang.String" itemvalue="Application.RetrieveChunked" />
-      <item index="1" class="java.lang.String" itemvalue="Application.eXist Client" />
-      <item index="2" class="java.lang.String" itemvalue="Application.Server" />
-      <item index="3" class="java.lang.String" itemvalue="JUnit.AllXmlRpcTests" />
-      <item index="4" class="java.lang.String" itemvalue="JUnit.EntitiesTest" />
-      <item index="5" class="java.lang.String" itemvalue="JUnit.DtdEntityTest" />
-      <item index="6" class="java.lang.String" itemvalue="JUnit.AntUnitTestRunner" />
-      <item index="7" class="java.lang.String" itemvalue="JUnit.ONVDLTest" />
+      <item index="1" class="java.lang.String" itemvalue="Application.Server" />
+      <item index="2" class="java.lang.String" itemvalue="JUnit.AllXmlRpcTests" />
+      <item index="3" class="java.lang.String" itemvalue="JUnit.EntitiesTest" />
+      <item index="4" class="java.lang.String" itemvalue="JUnit.DtdEntityTest" />
+      <item index="5" class="java.lang.String" itemvalue="JUnit.AntUnitTestRunner" />
+      <item index="6" class="java.lang.String" itemvalue="JUnit.ONVDLTest" />
+      <item index="7" class="java.lang.String" itemvalue="Application.eXist Client" />
       <item index="8" class="java.lang.String" itemvalue="JUnit.ResourceTest.setContentAsDOM_1" />
       <item index="9" class="java.lang.String" itemvalue="JUnit.ResourceTest.setContentAsDOM_01" />
       <item index="10" class="java.lang.String" itemvalue="JUnit.ResourceTest.setContentAsDOM_03" />
@@ -1869,16 +2093,12 @@
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="9c94c8a9-f5ba-4ada-96fc-bdc14754ba2b" name="Default" comment="[documentation] adding more testing related doc" />
-      <changelist id="" name="local" comment="" />
-      <changelist id="" name="xproc" comment="" />
-      <changelist id="" name="Revert: [ignore]  update idea project" comment="" />
       <created>1258752091419</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1347368406247</updated>
     </task>
     <task id="LOCAL-00001" summary="[feature] added ant task to extract XQuery module documentation and store into the db. (Pre-Tested Commit)">
-      <changelist id="" name="[feature] added ant task to extract XQuery module documentation and store into the db. (Pre-Tested Commit)" comment="[feature] added ant task to extract XQuery module documentation and store into the db." />
       <created>1278753104546</created>
       <option name="number" value="00001" />
       <option name="presentableId" value="LOCAL-00001" />
@@ -2025,7 +2245,112 @@
       <option name="project" value="LOCAL" />
       <updated>1484562513580</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="rename CleanupRemove to CleanupRemoveDocument">
+      <created>1498746781407</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1498746781407</updated>
+    </task>
+    <task id="LOCAL-00027" summary="cleanup function to remove sub collection">
+      <created>1498747666007</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1498747666007</updated>
+    </task>
+    <task id="LOCAL-00028" summary="restore binary fs state from RCS">
+      <created>1498833403371</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1498833403371</updated>
+    </task>
+    <task id="LOCAL-00029" summary="restore binary resource fs state from last revision">
+      <created>1498837665347</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1498837665347</updated>
+    </task>
+    <task id="LOCAL-00030" summary="port fad729c549ddff7a571cda8ac891776f90082f52">
+      <created>1498900021471</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1498900021471</updated>
+    </task>
+    <task id="LOCAL-00031" summary="cleanup `System.gc();`">
+      <created>1498900345861</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1498900345861</updated>
+    </task>
+    <task id="LOCAL-00032" summary="upgrade to commons-lang3 3.5 and commons-net 3.5">
+      <created>1500023678067</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1500023678067</updated>
+    </task>
+    <task id="LOCAL-00033" summary="add j8fu 1.4.1">
+      <created>1500023691775</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1500023691775</updated>
+    </task>
+    <task id="LOCAL-00034" summary="sync with latest develop branch EXistInputSource and implementations">
+      <created>1500030556758</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1500030556758</updated>
+    </task>
+    <task id="LOCAL-00035" summary="sync RPC with latest develop branch">
+      <created>1500030595227</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1500030595227</updated>
+    </task>
+    <task id="LOCAL-00036" summary="sync RPC with latest develop branch">
+      <created>1500030668811</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1500030668811</updated>
+    </task>
+    <task id="LOCAL-00037" summary="cleanup">
+      <created>1500030721021</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1500030721021</updated>
+    </task>
+    <task id="LOCAL-00038" summary="upgrade ant">
+      <created>1500379244352</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1500379244352</updated>
+    </task>
+    <task id="LOCAL-00039" summary="remove RCS">
+      <created>1500380417780</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1500380417780</updated>
+    </task>
+    <task id="LOCAL-00040" summary="cleanup">
+      <created>1500383390359</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1500383390359</updated>
+    </task>
+    <option name="localTasksCounter" value="41" />
     <servers />
   </component>
   <component name="TodoView" selected-index="0">
@@ -2050,36 +2375,40 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1440" height="821" extended-state="6" />
-    <editor active="false" />
     <layout>
+      <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.35135135" sideWeight="0.0" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="FindBugs-IDEA" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.41563785" sideWeight="0.49427754" order="14" side_tool="false" content_ui="tabs" />
       <window_info id="Palette&#9;" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.41563785" sideWeight="0.50572246" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33333334" sideWeight="0.5028612" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32373112" sideWeight="0.5" order="13" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3402778" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.34019205" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.6186557" sideWeight="0.5" order="13" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3190272" sideWeight="0.505698" order="0" side_tool="false" content_ui="combo" x="72" y="49" width="451" height="485" />
       <window_info id="Run with VisualVM" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24828532" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3490701" sideWeight="0.505698" order="0" side_tool="false" content_ui="combo" x="72" y="49" width="451" height="485" />
+      <window_info id="Tail" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="14" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.42249656" sideWeight="0.49427754" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.23162939" sideWeight="0.5740741" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="true" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.19141914" sideWeight="0.6141141" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33058986" sideWeight="0.49713877" order="4" side_tool="false" content_ui="tabs" x="2" y="25" width="822" height="573" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33333334" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" x="2" y="25" width="822" height="573" />
       <window_info id="Debug with VisualVM" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Maven projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug Logs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="13" side_tool="false" content_ui="tabs" />
       <window_info id="IDEtalk" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3443435" sideWeight="0.59375" order="3" side_tool="true" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39780018" sideWeight="0.80755395" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="SVN Properties" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.33333334" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Execute Anonymous" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="13" side_tool="false" content_ui="tabs" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.22082585" sideWeight="0.5" order="15" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24959481" sideWeight="0.6514132" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Module Dependencies" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="EclipseImporter" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="20" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.31687242" sideWeight="0.49427754" order="14" side_tool="false" content_ui="tabs" />
       <window_info id="Data Sources" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.102658115" sideWeight="0.28521127" order="9" side_tool="true" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="JetGradle" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -2089,13 +2418,12 @@
       <window_info id="EJB" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="File View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="CVS" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="18" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Color Browser" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Duplicates" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="17" side_tool="false" content_ui="tabs" />
       <window_info id="TeamCity" active="false" anchor="bottom" auto_hide="true" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.53518516" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Salesforce" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="13" side_tool="false" content_ui="tabs" />
       <window_info id="Log4jMonitor" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.5105634" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Changes" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.29722223" sideWeight="0.5" order="16" side_tool="false" content_ui="tabs" />
       <window_info id="SBT Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -2158,6 +2486,32 @@
     <option name="CUSTOMIZE_VIEW" value="true" />
     <option name="SHOW_FILE_HISTORY_AS_TREE" value="true" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="RECENTLY_FILTERED_USER_GROUPS">
+                <collection />
+              </option>
+              <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
+                <collection />
+              </option>
+              <option name="COLUMN_ORDER">
+                <list>
+                  <option value="0" />
+                  <option value="1" />
+                  <option value="2" />
+                  <option value="3" />
+                </list>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="Vcs.Log.UiProperties">
     <option name="RECENTLY_FILTERED_USER_GROUPS">
       <collection />
@@ -2173,24 +2527,11 @@
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="PERFORM_UPDATE_IN_BACKGROUND" value="false" />
     <option name="PERFORM_COMMIT_IN_BACKGROUND" value="false" />
-    <MESSAGE value="workaround for the xerces's getPrefix()" />
-    <MESSAGE value="Revert: [ignore]  update idea project" />
-    <MESSAGE value="[bugfix] workaround for the xerces's getPrefix()" />
-    <MESSAGE value="test" />
-    <MESSAGE value="[feature] Enable compression from the File System via an URI like &quot;file:///...&quot;" />
-    <MESSAGE value="[ignore]  update idea project" />
-    <MESSAGE value="avoid &quot;category path exceeds maximum allowed path length&quot; exception" />
-    <MESSAGE value="bugfix: db corruption after delete of resource under /db/config/*" />
-    <MESSAGE value="'trash' feature" />
-    <MESSAGE value="javadocs" />
-    <MESSAGE value="account update required realm id to function properly" />
-    <MESSAGE value="reload index controller when index configuration changed" />
     <MESSAGE value="fix CollectionEntry uri" />
     <MESSAGE value="convertor prototype" />
     <MESSAGE value="active commits feature" />
     <MESSAGE value="remove active commit after close done" />
     <MESSAGE value="convert versions storage to RCS" />
-    <MESSAGE value="cleanup" />
     <MESSAGE value="fix ClassCastException" />
     <MESSAGE value="check xquery to be valid (unchanged), not only modules" />
     <MESSAGE value="fix cache key for controller and add 'model-view-cache' parameter to disable model-view caching" />
@@ -2198,7 +2539,20 @@
     <MESSAGE value="Update to log4j 2.7" />
     <MESSAGE value="add lucene analyzers jar" />
     <MESSAGE value="resources to run in IDEA" />
-    <option name="LAST_COMMIT_MESSAGE" value="resources to run in IDEA" />
+    <MESSAGE value="rename CleanupRemove to CleanupRemoveDocument" />
+    <MESSAGE value="cleanup function to remove sub collection" />
+    <MESSAGE value="restore binary fs state from RCS" />
+    <MESSAGE value="restore binary resource fs state from last revision" />
+    <MESSAGE value="port fad729c549ddff7a571cda8ac891776f90082f52" />
+    <MESSAGE value="cleanup `System.gc();`" />
+    <MESSAGE value="upgrade to commons-lang3 3.5 and commons-net 3.5" />
+    <MESSAGE value="add j8fu 1.4.1" />
+    <MESSAGE value="sync with latest develop branch EXistInputSource and implementations" />
+    <MESSAGE value="sync RPC with latest develop branch" />
+    <MESSAGE value="upgrade ant" />
+    <MESSAGE value="remove RCS" />
+    <MESSAGE value="cleanup" />
+    <option name="LAST_COMMIT_MESSAGE" value="cleanup" />
   </component>
   <component name="VssConfiguration">
     <option name="CLIENT_PATH" value="" />
@@ -2236,9 +2590,33 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="9" />
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>jar://$PROJECT_DIR$/extensions/messaging-replication/pubsub/libs/google-cloud-pubsub-0.9.3-alpha.jar!/com/google/cloud/pubsub/spi/v1/Publisher.class</url>
+          <line>276</line>
+          <properties />
+          <option name="timeStamp" value="31" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/consumer/PubSubMessageConsumer.java</url>
+          <line>188</line>
+          <properties />
+          <option name="timeStamp" value="32" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/xquery/management/RegisterReceiver.java</url>
+          <line>66</line>
+          <properties />
+          <option name="timeStamp" value="33" />
+        </line-breakpoint>
+      </breakpoints>
+      <option name="time" value="43" />
     </breakpoint-manager>
-    <watches-manager />
+    <watches-manager>
+      <configuration name="Application">
+        <watch expression="throwable" />
+      </configuration>
+    </watches-manager>
   </component>
   <component name="XPathView.XPathProjectComponent">
     <history />
@@ -2395,493 +2773,389 @@
     <option name="myLastEditedConfigurable" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBCreateUser.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/pubsub/ReadOnlyContext.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="52" column="53" lean-forward="false" selection-start-line="52" selection-start-column="53" selection-end-line="52" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="false" />
-          </folding>
+        <state relative-caret-position="149">
+          <caret line="75" column="0" lean-forward="false" selection-start-line="75" selection-start-column="0" selection-end-line="75" selection-end-column="0" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/security/xacml/XACMLUtil.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionBrowserCreator.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="147">
-          <caret line="303" column="24" lean-forward="true" selection-start-line="303" selection-start-column="24" selection-end-line="303" selection-end-column="24" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="366">
+          <caret line="38" column="46" lean-forward="false" selection-start-line="38" selection-start-column="46" selection-end-line="38" selection-end-column="46" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xquery/functions/response/StreamBinary.java">
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_77.jdk/Contents/Home/src.zip!/java/util/Objects.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="46" column="53" lean-forward="false" selection-start-line="46" selection-start-column="53" selection-end-line="46" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="200">
+          <caret line="263" column="26" lean-forward="false" selection-start-line="263" selection-start-column="26" selection-end-line="263" selection-end-column="26" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/mail/MailStoreFunctions.java">
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_77.jdk/Contents/Home/src.zip!/java/util/Enumeration.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="147">
-          <caret line="57" column="53" lean-forward="false" selection-start-line="57" selection-start-column="53" selection-end-line="57" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="289">
+          <caret line="60" column="17" lean-forward="false" selection-start-line="60" selection-start-column="17" selection-end-line="60" selection-end-column="17" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/datetime/FormatTimeFunction.java">
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_77.jdk/Contents/Home/src.zip!/java/util/Hashtable.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="47" column="53" lean-forward="false" selection-start-line="47" selection-start-column="53" selection-end-line="47" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="171">
+          <caret line="224" column="10" lean-forward="false" selection-start-line="224" selection-start-column="10" selection-end-line="224" selection-end-column="10" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/ftpclient/GetConnectionFunction.java">
+    <entry file="jar://$PROJECT_DIR$/extensions/messaging-replication/content/activemq-client-5.14.1.jar!/org/apache/activemq/command/ActiveMQMessage.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="33" column="48" lean-forward="false" selection-start-line="33" selection-start-column="48" selection-end-line="33" selection-end-column="48" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="190">
+          <caret line="256" column="28" lean-forward="false" selection-start-line="256" selection-start-column="20" selection-end-line="256" selection-end-column="28" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndexWorker.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/PubSubMessageProducer.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="134" column="47" lean-forward="false" selection-start-line="134" selection-start-column="47" selection-end-line="134" selection-end-column="47" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="157">
+          <caret line="74" column="0" lean-forward="false" selection-start-line="74" selection-start-column="0" selection-end-line="74" selection-end-column="0" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneIndex.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/shared/send/Sender.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="61" column="50" lean-forward="false" selection-start-line="61" selection-start-column="50" selection-end-line="61" selection-end-column="50" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="-349">
+          <caret line="423" column="17" lean-forward="false" selection-start-line="423" selection-start-column="17" selection-end-line="423" selection-end-column="17" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/indexes/lucene/src/org/exist/indexing/lucene/LuceneMatchListener.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/message/AbstractPropertyMessage.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="51" column="48" lean-forward="false" selection-start-line="51" selection-start-column="48" selection-end-line="51" selection-end-column="48" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="395">
+          <caret line="103" column="0" lean-forward="false" selection-start-line="103" selection-start-column="0" selection-end-line="103" selection-end-column="0" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xquery/functions/util/BaseConverter.java">
+    <entry file="jar://$USER_HOME$/.ideaLibSources/javax.jms-api-2.0.1-sources.jar!/javax/jms/Message.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="46" column="53" lean-forward="false" selection-start-line="46" selection-start-column="53" selection-end-line="46" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="121">
+          <caret line="1581" column="4" lean-forward="false" selection-start-line="1581" selection-start-column="4" selection-end-line="1581" selection-end-column="4" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/RangeIndex.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/message/PubSubTextMessage.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="38" column="48" lean-forward="false" selection-start-line="38" selection-start-column="48" selection-end-line="38" selection-end-column="48" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="121">
+          <caret line="19" column="9" lean-forward="false" selection-start-line="19" selection-start-column="9" selection-end-line="19" selection-end-column="9" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/storage/CreateBinaryLoggable.java">
+    <entry file="jar://$PROJECT_DIR$/extensions/messaging-replication/pubsub/libs/google-cloud-pubsub-0.20.1-beta.jar!/com/google/cloud/pubsub/v1/AckReplyConsumer.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="25" column="49" lean-forward="false" selection-start-line="25" selection-start-column="49" selection-end-line="25" selection-end-column="49" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="75">
+          <caret line="8" column="7" lean-forward="false" selection-start-line="8" selection-start-column="7" selection-end-line="8" selection-end-column="7" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/storage/RenameBinaryLoggable.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/message/PubSubBytesMessage.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="25" column="49" lean-forward="false" selection-start-line="25" selection-start-column="49" selection-end-line="25" selection-end-column="49" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="153">
+          <caret line="63" column="19" lean-forward="false" selection-start-line="63" selection-start-column="19" selection-end-line="63" selection-end-column="19" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/datetime/TimeFromDateTimeFunction.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/shared/eXistMessage.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="179">
-          <caret line="43" column="53" lean-forward="false" selection-start-line="43" selection-start-column="53" selection-end-line="43" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="1200">
+          <caret line="125" column="16" lean-forward="false" selection-start-line="125" selection-start-column="16" selection-end-line="125" selection-end-column="16" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBMatchCollection.java">
+    <entry file="jar://$USER_HOME$/.ideaLibSources/protobuf-java-3.3.0-sources.jar!/com/google/protobuf/ByteString.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="25" column="53" lean-forward="false" selection-start-line="25" selection-start-column="53" selection-end-line="25" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="304">
+          <caret line="218" column="22" lean-forward="false" selection-start-line="218" selection-start-column="22" selection-end-line="218" selection-end-column="22" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/backup/restore/SystemImportHandler.java">
+    <entry file="jar://$USER_HOME$/.ideaLibSources/javax.jms-api-2.0.1-sources.jar!/javax/jms/BytesMessage.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="207">
-          <caret line="78" column="48" lean-forward="false" selection-start-line="78" selection-start-column="48" selection-end-line="78" selection-end-column="48" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="159">
+          <caret line="340" column="4" lean-forward="false" selection-start-line="340" selection-start-column="4" selection-end-line="340" selection-end-column="4" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/client/xacml/DatabaseInterface.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/java/src/org/exist/jms/replication/subscribe/ReplicationJmsListener.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="33" column="48" lean-forward="false" selection-start-line="33" selection-start-column="48" selection-end-line="33" selection-end-column="48" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/datetime/DateRangeFunctions.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="48" column="53" lean-forward="false" selection-start-line="48" selection-start-column="53" selection-end-line="48" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBCreateCollection.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="46" column="51" lean-forward="false" selection-start-line="46" selection-start-column="51" selection-end-line="46" selection-end-column="51" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xquery/functions/xmldb/XMLDBPermissions.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="53" column="53" lean-forward="false" selection-start-line="53" selection-start-column="53" selection-end-line="53" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/client/InteractiveClient.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="124">
-          <caret line="215" column="48" lean-forward="false" selection-start-line="215" selection-start-column="48" selection-end-line="215" selection-end-column="48" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xquery/functions/fn/FunConcat.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="124">
-          <caret line="56" column="53" lean-forward="false" selection-start-line="56" selection-start-column="53" selection-end-line="56" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/file/FileIsReadable.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="49" column="51" lean-forward="false" selection-start-line="49" selection-start-column="51" selection-end-line="49" selection-end-column="51" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xmldb/RemoteCollection.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="117">
-          <caret line="66" column="50" lean-forward="false" selection-start-line="66" selection-start-column="50" selection-end-line="66" selection-end-column="50" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xmldb/RemoteXMLResource.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="23" column="0" lean-forward="false" selection-start-line="23" selection-start-column="0" selection-end-line="24" selection-end-column="39" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/SystemProperties.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
+        <state relative-caret-position="181">
+          <caret line="219" column="21" lean-forward="false" selection-start-line="219" selection-start-column="21" selection-end-line="219" selection-end-column="21" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/atom/modules/AtomFeeds.java">
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/PubSubSession.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="149">
+          <caret line="39" column="19" lean-forward="false" selection-start-line="39" selection-start-column="4" selection-end-line="39" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionProducerCreator.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="160">
+          <caret line="18" column="2" lean-forward="false" selection-start-line="18" selection-start-column="2" selection-end-line="18" selection-end-column="77" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/session/AbstractSessionSubscriberCreator.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="500">
+          <caret line="62" column="32" lean-forward="false" selection-start-line="62" selection-start-column="32" selection-end-line="62" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/consumer/PubSubMessageSubscriber.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="410">
+          <caret line="198" column="20" lean-forward="true" selection-start-line="198" selection-start-column="20" selection-end-line="198" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/messaging-replication/pubsub/jms-light/src/main/java/com/google/pubsub/jms/light/message/AbstractPubSubMessage.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="135">
-          <caret line="29" column="0" lean-forward="false" selection-start-line="29" selection-start-column="0" selection-end-line="30" selection-end-column="39" />
+          <caret line="13" column="22" lean-forward="false" selection-start-line="13" selection-start-column="22" selection-end-line="13" selection-end-column="22" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$PROJECT_DIR$/lib/user/je-7.3.7.jar!/com/sleepycat/je/dbi/EnvironmentImpl.class" />
+    <entry file="file://$PROJECT_DIR$/extensions/fixes/src/org/exist/xquery/fixes/CleanupRestoreBinaryFromRCS.java" />
+    <entry file="file://$PROJECT_DIR$/build/classes/org/exist/util/VirtualTempFileInputSource.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="368">
+          <caret line="166" column="17" lean-forward="false" selection-start-line="166" selection-start-column="17" selection-end-line="166" selection-end-column="17" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/atom/modules/AtomProtocol.java">
+    <entry file="file://$PROJECT_DIR$/src/org/exist/util/VirtualTempFileInputSource.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="241">
+          <caret line="168" column="21" lean-forward="false" selection-start-line="168" selection-start-column="21" selection-end-line="168" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build/scripts/git-support.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1545">
+          <caret line="103" column="10" lean-forward="false" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build/scripts/build-impl.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1418">
+          <caret line="867" column="10" lean-forward="false" selection-start-line="867" selection-start-column="10" selection-end-line="867" selection-end-column="10" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/VERSION.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/yajsw/build.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-32">
+          <caret line="40" column="8" lean-forward="false" selection-start-line="40" selection-start-column="8" selection-end-line="40" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/log4j2.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build/scripts/minimal.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="174">
+          <caret line="58" column="62" lean-forward="false" selection-start-line="58" selection-start-column="62" selection-end-line="58" selection-end-column="62" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/wrapper/build.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="174">
+          <caret line="55" column="61" lean-forward="false" selection-start-line="55" selection-start-column="61" selection-end-line="55" selection-end-column="61" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build/scripts/performance.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="132">
+          <caret line="39" column="67" lean-forward="false" selection-start-line="39" selection-start-column="67" selection-end-line="39" selection-end-column="67" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build/scripts/macosx.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="147">
+          <caret line="86" column="37" lean-forward="false" selection-start-line="86" selection-start-column="37" selection-end-line="86" selection-end-column="37" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build/scripts/dist.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="139">
+          <caret line="211" column="37" lean-forward="false" selection-start-line="211" selection-start-column="37" selection-end-line="211" selection-end-column="37" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/yajsw/wrapper-log4j.xsl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="23" lean-forward="false" selection-start-line="4" selection-start-column="23" selection-end-line="4" selection-end-column="23" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/wrapper/wrapper-log4j.xsl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="23" lean-forward="false" selection-start-line="4" selection-start-column="23" selection-end-line="4" selection-end-column="23" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_77.jdk/Contents/Home/src.zip!/java/io/File.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="132">
+          <caret line="510" column="18" lean-forward="false" selection-start-line="510" selection-start-column="18" selection-end-line="510" selection-end-column="18" />
+          <folding>
+            <element signature="e#21135#21136#0" expanded="false" />
+            <element signature="e#21162#21163#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build/scripts/dist-war-log4j.xsl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="23" lean-forward="false" selection-start-line="4" selection-start-column="23" selection-end-line="4" selection-end-column="23" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/webapp/WEB-INF/web.xml.tmpl">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="165">
-          <caret line="42" column="0" lean-forward="false" selection-start-line="42" selection-start-column="0" selection-end-line="42" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/atom/modules/Query.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="173">
           <caret line="36" column="0" lean-forward="false" selection-start-line="36" selection-start-column="0" selection-end-line="36" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/httpclient/ClearFunction.java">
+    <entry file="file://$PROJECT_DIR$/webapp/WEB-INF/web.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="50" column="69" lean-forward="false" selection-start-line="50" selection-start-column="69" selection-end-line="50" selection-end-column="69" />
+        <state relative-caret-position="198">
+          <caret line="42" column="0" lean-forward="false" selection-start-line="42" selection-start-column="0" selection-end-line="42" selection-end-column="0" />
           <folding>
-            <element signature="imports" expanded="true" />
+            <marker date="1500383434000" expanded="true" signature="43:306" ph="..." />
+            <marker date="1500383434000" expanded="true" signature="12001:17390" ph="..." />
+            <marker date="1500383434000" expanded="true" signature="12012:12091" ph="..." />
+            <marker date="1500383434000" expanded="true" signature="12104:12739" ph="..." />
+            <marker date="1500383434000" expanded="true" signature="12797:12912" ph="..." />
+            <marker date="1500383434000" expanded="true" signature="12943:13101" ph="..." />
+            <marker date="1500383434000" expanded="true" signature="13132:13275" ph="..." />
+            <marker date="1500383434000" expanded="true" signature="13348:13490" ph="..." />
+            <marker date="1500383434000" expanded="true" signature="13535:14131" ph="..." />
+            <marker date="1500383434000" expanded="true" signature="14144:14224" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/versioning/src/org/exist/versioning/StandardDiff.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="29" column="48" lean-forward="false" selection-start-line="29" selection-start-column="48" selection-end-line="29" selection-end-column="48" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/samples/src/org/exist/examples/triggers/ExampleTrigger.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="62" column="37" lean-forward="false" selection-start-line="62" selection-start-column="37" selection-end-line="62" selection-end-column="37" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/cache/ClearFunction.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="45" column="51" lean-forward="false" selection-start-line="45" selection-start-column="51" selection-end-line="45" selection-end-column="51" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/file/FileMove.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="49" column="51" lean-forward="false" selection-start-line="49" selection-start-column="51" selection-end-line="49" selection-end-column="51" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/indexes/range/src/org/exist/indexing/range/ComplexRangeIndexConfigElement.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="40" column="48" lean-forward="false" selection-start-line="40" selection-start-column="48" selection-end-line="40" selection-end-column="48" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/datetime/ParseTimeFunction.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="420">
-          <caret line="28" column="53" lean-forward="false" selection-start-line="28" selection-start-column="53" selection-end-line="28" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/httpclient/SetOptionsFunction.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="28" column="59" lean-forward="false" selection-start-line="28" selection-start-column="59" selection-end-line="28" selection-end-column="59" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/modules/src/org/exist/xquery/modules/compression/AbstractCompressFunction.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="59" column="51" lean-forward="false" selection-start-line="59" selection-start-column="51" selection-end-line="59" selection-end-column="51" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/management/client/JMXtoXML.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="182">
-          <caret line="67" column="59" lean-forward="false" selection-start-line="67" selection-start-column="35" selection-end-line="67" selection-end-column="59" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/extensions/contentextraction/src/org/exist/contentextraction/ContentReceiver.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="49" column="35" lean-forward="false" selection-start-line="49" selection-start-column="35" selection-end-line="49" selection-end-column="35" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/http/servlets/Log4jInit.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="60" column="13" lean-forward="false" selection-start-line="60" selection-start-column="13" selection-end-line="60" selection-end-column="13" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xmldb/LocalCollectionManagementService.java">
+    <entry file="file://$PROJECT_DIR$/extensions/betterform/main/webapp/WEB-INF/betterform-config.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="132">
-          <caret line="56" column="42" lean-forward="false" selection-start-line="56" selection-start-column="42" selection-end-line="56" selection-end-column="42" />
+          <caret line="15" column="52" lean-forward="false" selection-start-line="15" selection-start-column="52" selection-end-line="15" selection-end-column="52" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/xmldb/LocalXUpdateQueryService.java">
+    <entry file="file://$PROJECT_DIR$/tools/wrapper/conf/wrapper.conf.in">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="117">
-          <caret line="36" column="48" lean-forward="false" selection-start-line="36" selection-start-column="48" selection-end-line="36" selection-end-column="48" />
+        <state relative-caret-position="132">
+          <caret line="79" column="47" lean-forward="false" selection-start-line="79" selection-start-column="47" selection-end-line="79" selection-end-column="47" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test/src/org/exist/validation/CollectionConfigurationValidationModeTest.java">
+    <entry file="file://$PROJECT_DIR$/tools/jetty/etc/standalone/WEB-INF/web.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-420">
-          <caret line="26" column="0" lean-forward="true" selection-start-line="26" selection-start-column="0" selection-end-line="26" selection-end-column="0" />
+        <state relative-caret-position="132">
+          <caret line="27" column="39" lean-forward="false" selection-start-line="27" selection-start-column="39" selection-end-line="27" selection-end-column="39" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test/src/org/exist/validation/ValidationFunctions_DTD_Test.java">
+    <entry file="file://$PROJECT_DIR$/tools/ircbot/run.sh">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="100">
-          <caret line="163" column="51" lean-forward="false" selection-start-line="163" selection-start-column="51" selection-end-line="163" selection-end-column="51" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test/src/org/exist/xquery/StoredModuleTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="109">
-          <caret line="75" column="13" lean-forward="false" selection-start-line="75" selection-start-column="13" selection-end-line="75" selection-end-column="13" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test/src/org/exist/xmlrpc/MoveResourceTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="109">
-          <caret line="28" column="44" lean-forward="false" selection-start-line="28" selection-start-column="44" selection-end-line="28" selection-end-column="44" />
-          <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#1013#1014#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test/src/org/exist/validation/CollectionConfigurationTest.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="62" column="0" lean-forward="false" selection-start-line="62" selection-start-column="0" selection-end-line="62" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test/src/org/exist/test/EmbeddedExistTester.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="810">
-          <caret line="74" column="0" lean-forward="false" selection-start-line="74" selection-start-column="0" selection-end-line="74" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/exist/http/servlets/DatabaseAdminServlet.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-583">
-          <caret line="26" column="13" lean-forward="false" selection-start-line="26" selection-start-column="13" selection-end-line="26" selection-end-column="13" />
+        <state relative-caret-position="195">
+          <caret line="13" column="56" lean-forward="false" selection-start-line="13" selection-start-column="56" selection-end-line="13" selection-end-column="56" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/log4j.xml">
+    <entry file="file://$PROJECT_DIR$/test/src/org/exist/config/TwoDatabasesTest.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="435">
-          <caret line="29" column="60" lean-forward="true" selection-start-line="29" selection-start-column="60" selection-end-line="29" selection-end-column="60" />
+        <state relative-caret-position="124">
+          <caret line="69" column="29" lean-forward="false" selection-start-line="69" selection-start-column="29" selection-end-line="69" selection-end-column="29" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/installer/install.xml.tmpl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="123">
+          <caret line="136" column="31" lean-forward="false" selection-start-line="136" selection-start-column="31" selection-end-line="136" selection-end-column="31" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/exist/start/Main.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="226">
+          <caret line="559" column="21" lean-forward="false" selection-start-line="559" selection-start-column="21" selection-end-line="559" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/yajsw/src/org/exist/yajsw/Main.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="26" column="82" lean-forward="false" selection-start-line="26" selection-start-column="82" selection-end-line="26" selection-end-column="82" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/extensions/fixes/src/org/exist/xquery/fixes/Module.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="41" column="0" lean-forward="false" selection-start-line="41" selection-start-column="0" selection-end-line="41" selection-end-column="0" />
           <folding />
         </state>
       </provider>
@@ -2927,7 +3201,7 @@
       </state>
       <state key="JdkListConfigurable.UI">
         <settings>
-          <last-edited>1.7</last-edited>
+          <last-edited>1.8</last-edited>
           <splitter-proportions>
             <option name="proportions">
               <list>
@@ -2952,7 +3226,7 @@
       </state>
       <state key="ProjectLibrariesConfigurable.UI">
         <settings>
-          <last-edited>ant</last-edited>
+          <last-edited>pubsub</last-edited>
           <splitter-proportions>
             <option name="proportions">
               <list>
@@ -2960,6 +3234,22 @@
               </list>
             </option>
           </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ScopeChooserConfigurable.UI">
+        <settings>
+          <last-edited>src</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+          <order>
+            <scope name="src" />
+            <scope name="src" />
+          </order>
         </settings>
       </state>
     </states>

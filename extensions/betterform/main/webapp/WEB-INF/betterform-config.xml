@@ -13,7 +13,7 @@
 
         <property name="initLogging" value="true" description="'true' if logging should be initialized by betterform, false otherwise"/>
 
-        <property name="log4j.file" value="WEB-INF/log4j.xml"
+        <property name="log4j2.file" value="WEB-INF/log4j2.xml"
                   description="the location of the log4j configuration file relative to context"/>
 
         <property name="defaultRequestEncoding" value="UTF-8"

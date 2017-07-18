@@ -83,8 +83,8 @@
                 <include name="descriptor.xml.tmpl"/>
                 <include name="descriptor.xml"/>
                 <include name="collection.xconf.init"/>
-                <include name="log4j.xml"/>
-                <include name="log4j.dtd"/>
+                <include name="log4j2.xml"/>
+                <include name="log4j2.dtd"/>
                 <include name="LICENSE"/>
                 <include name="README"/>
                 <include name="VERSION.txt"/>

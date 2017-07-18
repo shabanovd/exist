@@ -1,4 +1,5 @@
 #eXist build info
-project.version=1.0.0dev
-project.build=20010101
-svn.revision=0000
+project.version=2.1
+project.built=20170718131018
+scm.branch=2.1.0-RC84.1
+scm.revision=8092f93

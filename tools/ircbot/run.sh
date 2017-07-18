@@ -11,4 +11,4 @@ CP="$EXIST/exist.jar:$EXIST/tools/ircbot/lib/pircbot.jar:$EXIST/lib/core/log4j-1
 
 echo $CP
 
-$JAVA_HOME/bin/java -classpath $CP -Dlog4j.configuration=file:log4j.xml org.exist.irc.XBot
+$JAVA_HOME/bin/java -classpath $CP -Dlog4j.configuration=file:log4j2.xml org.exist.irc.XBot

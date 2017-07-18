@@ -414,10 +414,10 @@ public class Main {
                             + File.separatorChar + config};
             }
 
-            // find log4j.xml
+            // find log4j2.xml
             String log4j = System.getProperty("log4j.configuration");
             if (log4j == null) {
-                log4j = _home_dir.getPath() + File.separatorChar + "log4j.xml";
+                log4j = _home_dir.getPath() + File.separatorChar + "log4j2.xml";
                 final File lf = new File(log4j);
                 if (lf.canRead()) {
                     System.setProperty("log4j.configuration", lf.toURI().toASCIIString());
