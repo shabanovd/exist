@@ -180,16 +180,14 @@ class UploadDialog extends JFrame {
 		getContentPane().add(scroll);
 
 		closeBtn = new JButton(Messages.getString("UploadDialog.9")); //$NON-NLS-1$
-		closeBtn.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (Messages.getString("UploadDialog.20").equals(closeBtn.getText())) //$NON-NLS-1$
-					{setVisible(false);}
-				else {
-					cancelled = true;
-					closeBtn.setText(Messages.getString("UploadDialog.11")); //$NON-NLS-1$
-				}
-			}
-		});
+		closeBtn.addActionListener(e -> {
+            if (Messages.getString("UploadDialog.20").equals(closeBtn.getText())) //$NON-NLS-1$
+                {setVisible(false);}
+            else {
+                cancelled = true;
+                closeBtn.setText(Messages.getString("UploadDialog.11")); //$NON-NLS-1$
+            }
+        });
 		c.gridx = 0;
 		c.gridy = 6;
 		c.gridwidth = 2;
@@ -260,12 +258,11 @@ class UploadDialog extends JFrame {
 
 	class UploadProgressObserver implements Observer {
 
-		int mode = 0;
-
 		public void update(Observable o, Object arg) {
 			progress.setIndeterminate(false);
 			final ProgressIndicator ind = (ProgressIndicator) arg;
 			progress.setValue(ind.getPercentage());
+
 			if (o instanceof ElementIndex)
 				{progress.setString(Messages.getString("UploadDialog.18"));} //$NON-NLS-1$
 			else
