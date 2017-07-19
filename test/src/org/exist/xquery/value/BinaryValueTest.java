@@ -1,11 +1,11 @@
 package org.exist.xquery.value;
 
 
-import org.easymock.classextension.EasyMock;
-import static org.easymock.classextension.EasyMock.replay;
-import static org.easymock.classextension.EasyMock.verify;
-import static org.easymock.classextension.EasyMock.expect;
-import static org.easymock.classextension.EasyMock.isA;
+import org.easymock.EasyMock;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.isA;
 import org.exist.xquery.XPathException;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
@@ -20,9 +20,9 @@ public class BinaryValueTest {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
 
         final BinaryValue mockBase64BinaryValue = EasyMock.createMockBuilder(BinaryValue.class)
-                .withConstructor(BinaryValueManager.class, BinaryValueType.class)
-                .withArgs(binaryValueManager, new Base64BinaryValueType())
-                .createMock();
+            .withConstructor(BinaryValueManager.class, BinaryValueType.class)
+            .withArgs(binaryValueManager, new Base64BinaryValueType())
+            .createMock();
 
         replay(mockBase64BinaryValue);
 
@@ -38,15 +38,15 @@ public class BinaryValueTest {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
 
         final BinaryValue mockBase64BinaryValue = EasyMock.createMockBuilder(BinaryValue.class)
-                .withConstructor(BinaryValueManager.class, BinaryValueType.class)
-                .withArgs(binaryValueManager, new Base64BinaryValueType())
-                .addMockedMethod("convertTo", BinaryValueType.class)
-                .createMock();
+            .withConstructor(BinaryValueManager.class, BinaryValueType.class)
+            .withArgs(binaryValueManager, new Base64BinaryValueType())
+            .addMockedMethod("convertTo", BinaryValueType.class)
+            .createMock();
 
         final BinaryValue mockHexBinaryValue = EasyMock.createMockBuilder(BinaryValue.class)
-                .withConstructor(BinaryValueManager.class, BinaryValueType.class)
-                .withArgs(binaryValueManager, new HexBinaryValueType())
-                .createMock();
+            .withConstructor(BinaryValueManager.class, BinaryValueType.class)
+            .withArgs(binaryValueManager, new HexBinaryValueType())
+            .createMock();
 
         expect(mockBase64BinaryValue.convertTo(isA(HexBinaryValueType.class))).andReturn(mockHexBinaryValue);
 
@@ -65,15 +65,15 @@ public class BinaryValueTest {
         final BinaryValueManager binaryValueManager = new MockBinaryValueManager();
 
         final BinaryValue mockHexBinaryValue = EasyMock.createMockBuilder(BinaryValue.class)
-                .withConstructor(BinaryValueManager.class, BinaryValueType.class)
-                .withArgs(binaryValueManager, new HexBinaryValueType())
-                .addMockedMethod("convertTo", BinaryValueType.class)
-                .createMock();
+            .withConstructor(BinaryValueManager.class, BinaryValueType.class)
+            .withArgs(binaryValueManager, new HexBinaryValueType())
+            .addMockedMethod("convertTo", BinaryValueType.class)
+            .createMock();
 
         final BinaryValue mockBase64BinaryValue = EasyMock.createMockBuilder(BinaryValue.class)
-                .withConstructor(BinaryValueManager.class, BinaryValueType.class)
-                .withArgs(binaryValueManager, new Base64BinaryValueType())
-                .createMock();
+            .withConstructor(BinaryValueManager.class, BinaryValueType.class)
+            .withArgs(binaryValueManager, new Base64BinaryValueType())
+            .createMock();
 
         expect(mockHexBinaryValue.convertTo(isA(Base64BinaryValueType.class))).andReturn(mockBase64BinaryValue);
 

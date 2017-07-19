@@ -3,6 +3,8 @@ package org.exist.util;
 import java.io.File;
 import java.net.URL;
 
+import java.nio.file.Path;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.storage.BrokerPool;
@@ -27,6 +29,10 @@ public class ConfigurationHelper {
      */
     public static File getExistHome() {
     	return getExistHome(DatabaseImpl.CONF_XML);
+    }
+
+    public static Optional<Path> getExistHome_() {
+      return Optional.ofNullable(ConfigurationHelper.getExistHome()).map(File::toPath);
     }
 
     /**

@@ -17,13 +17,14 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  *  $Id$
  */
 package org.exist.source;
 
 import java.io.*;
 
+import java.nio.file.Path;
 import org.exist.dom.QName;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.Subject;
@@ -32,7 +33,7 @@ import org.exist.storage.DBBroker;
 
 /**
  * A source implementation reading from the file system.
- * 
+ *
  * @author wolf
  */
 public class FileSource extends AbstractSource {
@@ -42,7 +43,11 @@ public class FileSource extends AbstractSource {
     private long lastModified;
     private String encoding;
     private boolean checkEncoding = false;
-    
+
+    public FileSource(final Path path, final boolean checkXQEncoding) {
+      this(path.toFile(), "UTF-8", checkXQEncoding);
+    }
+
     public FileSource(File file, String encoding, boolean checkXQEncoding) {
         this.file = file;
         this.filePath = file.getAbsolutePath();
@@ -50,14 +55,14 @@ public class FileSource extends AbstractSource {
         this.encoding = encoding;
         this.checkEncoding = checkXQEncoding;
     }
-    
+
     /* (non-Javadoc)
      * @see org.exist.source.Source#getKey()
      */
     public Object getKey() {
         return filePath;
     }
-    
+
     public String getFilePath() {
     	return filePath;
     }
@@ -114,7 +119,7 @@ public class FileSource extends AbstractSource {
 			is.close();
 		}
     }
-    
+
     private void checkEncoding() throws IOException {
         if (checkEncoding) {
             final FileInputStream is = new FileInputStream(filePath);

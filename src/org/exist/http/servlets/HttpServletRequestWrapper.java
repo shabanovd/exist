@@ -33,6 +33,8 @@ import java.net.URLDecoder;
 import java.security.Principal;
 import java.util.*;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.exist.util.MimeType;
 import org.exist.util.VirtualTempFile;
 
@@ -63,6 +65,9 @@ import org.exist.util.VirtualTempFile;
 
 public class HttpServletRequestWrapper implements HttpServletRequest
 {
+
+	protected final static Logger LOG = LogManager.getLogger(HttpServletRequestWrapper.class);
+
 	/** Simple Enumeration implementation for String's, needed for getParameterNames() */
 	private class StringEnumeration implements Enumeration
 	{
@@ -501,6 +506,11 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 		return request.getSession();
 	}
 
+	@Override
+	public String changeSessionId() {
+		return request.changeSessionId();
+	}
+
 	/**
 	 * @see javax.servlet.http.HttpServletRequest#isRequestedSessionIdValid
 	 */
@@ -559,7 +569,13 @@ public class HttpServletRequestWrapper implements HttpServletRequest
         return request.getPart(s);
     }
 
-    /**
+	@Override
+	public <T extends HttpUpgradeHandler> T upgrade(Class<T> clazz)
+			throws IOException, ServletException {
+		return request.upgrade(clazz);
+	}
+
+	/**
 	 * @see javax.servlet.http.HttpServletRequest#getAttribute
 	 */
 	public Object getAttribute(String name)
@@ -597,6 +613,11 @@ public class HttpServletRequestWrapper implements HttpServletRequest
 	public int getContentLength()
 	{
 		return request.getContentLength();
+	}
+
+	@Override
+	public long getContentLengthLong() {
+		return request.getContentLengthLong();
 	}
 
 	/**
@@ -1024,8 +1045,28 @@ public class HttpServletRequestWrapper implements HttpServletRequest
             else
                 {istream = contentBody.getByteStream();}
         }
-        
-        public int read() throws IOException {
+
+			@Override
+			public boolean isFinished() {
+				try {
+					return istream.available() == 0;
+				} catch(final IOException ioe) {
+					LOG.error(ioe);
+					return true;
+				}
+			}
+
+			@Override
+			public boolean isReady() {
+				return true;
+			}
+
+			@Override
+			public void setReadListener(ReadListener readListener) {
+				throw new UnsupportedOperationException();
+			}
+
+			public int read() throws IOException {
            return istream.read();
         }
 

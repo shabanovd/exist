@@ -9,22 +9,25 @@
 
 package org.exist.repo;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
-import javax.xml.transform.stream.StreamSource;
+import javax.xml.transform.Source;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.exist.EXistException;
 import org.exist.storage.BrokerPool;
+import org.exist.storage.BrokerPoolServiceException;
 import org.exist.storage.NativeBroker;
 import org.exist.util.Configuration;
+import org.exist.util.FileUtils;
 import org.exist.xquery.Module;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
@@ -41,29 +44,55 @@ import org.expath.pkg.repo.URISpace;
  *
  * @author Florent Georges
  * @author Wolfgang Meier
+ * @author Adam Retter
  * @since  2010-09-22
  */
-public class ExistRepository extends Observable {
+public class ExistRepository extends Observable { //implements BrokerPoolService {
 
+    private final static Logger LOG = LogManager.getLogger(ExistRepository.class);
     public final static String EXPATH_REPO_DIR = "expathrepo";
-
     public final static String EXPATH_REPO_DEFAULT = "webapp/WEB-INF/" + EXPATH_REPO_DIR;
 
-    public final static Logger LOG = LogManager.getLogger(ExistRepository.class);
+    /** The wrapped EXPath repository. */
+    private Path expathDir;
+    private Repository myParent;
 
-    public ExistRepository(FileSystemStorage storage) throws PackageException {
-        myParent = new Repository(storage);
-        myParent.registerExtension(new ExistPkgExtension());
+  //    @Override
+    public void configure(final Configuration configuration) throws BrokerPoolServiceException {
+        final Path dataDir = Optional.ofNullable((Path) configuration.getProperty(BrokerPool.PROPERTY_DATA_DIR))
+            .orElse(Paths.get(NativeBroker.DEFAULT_DATA_DIR));
+        this.expathDir = dataDir.resolve(EXPATH_REPO_DIR);
+    }
+
+//    @Override
+    public void prepare(final BrokerPool brokerPool) throws BrokerPoolServiceException {
+        if(!Files.exists(expathDir)) {
+            moveOldRepo(Optional.of(brokerPool.getConfiguration().getExistHome().toPath()), expathDir);
+        }
+        try {
+            Files.createDirectories(expathDir);
+        } catch(final IOException e) {
+            throw new BrokerPoolServiceException("Unable to access EXPath repository", e);
+        }
+
+        LOG.info("Using directory " + expathDir.toAbsolutePath().toString() + " for expath package repository");
+
+        try {
+            final FileSystemStorage storage = new FileSystemStorage(expathDir.toFile());
+            storage.setErrorIfNoContentDir(false);
+            this.myParent = new Repository(storage);
+            myParent.registerExtension(new ExistPkgExtension());
+        } catch(final PackageException e) {
+            throw new BrokerPoolServiceException("Unable to prepare EXPath Package Repository: " + expathDir.toAbsolutePath().toString(), e);
+        }
     }
 
     public Repository getParentRepo() {
         return myParent;
     }
 
-    public Module resolveJavaModule(String namespace, XQueryContext ctxt)
-            throws XPathException {
-        // the URI
-        URI uri;
+    public Module resolveJavaModule(final String namespace, final XQueryContext ctxt) throws XPathException {
+        final URI uri;
         try {
             uri = new URI(namespace);
         }
@@ -86,10 +115,10 @@ public class ExistRepository extends Observable {
     /**
      * Load a module instance from its class name.  Check the namespace is consistent.
      */
-    private Module getModule(String name, String namespace, XQueryContext ctxt)
-            throws XPathException {
+    private Module getModule(final String name, final String namespace, final XQueryContext ctxt)
+        throws XPathException {
         try {
-            final Class clazz = Class.forName(name);
+            final Class<Module> clazz = (Class<Module>)Class.forName(name);
             final Module module = instantiateModule(clazz);
             final String ns = module.getNamespaceURI();
             if (!ns.equals(namespace)) {
@@ -98,34 +127,30 @@ public class ExistRepository extends Observable {
                     namespace + " - " + ns);
             }
             return ctxt.loadBuiltInModule(namespace, name);
-        } catch ( final ClassNotFoundException ex ) {
+        } catch (final ClassNotFoundException ex) {
             throw new XPathException("Cannot find module class from EXPath repository: " + name, ex);
-        } catch ( final InstantiationException ex ) {
+        } catch (final InstantiationException | InvocationTargetException | IllegalAccessException ex) {
             throw new XPathException("Problem instantiating module class from EXPath repository: " + name, ex);
-        } catch ( final IllegalAccessException ex ) {
-            throw new XPathException("Problem instantiating module class from EXPath repository: " + name, ex);
-        } catch ( final InvocationTargetException ex ) {
-            throw new XPathException("Problem instantiating module class from EXPath repository: " + name, ex);
-        } catch ( final ClassCastException ex ) {
+        } catch (final ClassCastException ex) {
             throw new XPathException("The class configured in EXPath repository is not a Module: " + name, ex);
-        } catch ( final IllegalArgumentException ex ) {
+        } catch (final IllegalArgumentException ex) {
             throw new XPathException("Illegal argument passed to the module ctor", ex);
         }
     }
 
     /**
-     * Try to instantiate the class using the constructor with a Map parameter, 
+     * Try to instantiate the class using the constructor with a Map parameter,
      * or the default constructor.
      */
-    private Module instantiateModule(Class clazz) throws XPathException,
+    private Module instantiateModule(final Class<Module> clazz) throws XPathException,
         InstantiationException, IllegalAccessException, InvocationTargetException {
         try {
-            final Constructor ctor = clazz.getConstructor(Map.class);
-            return (Module) ctor.newInstance(EMPTY_MAP);
+            final Constructor<Module> ctor = clazz.getConstructor(Map.class);
+            return ctor.newInstance(Collections.emptyMap());
         } catch (final NoSuchMethodException ex) {
             try {
-                final Constructor ctor = clazz.getConstructor();
-                return (Module) ctor.newInstance();
+                final Constructor<Module> ctor = clazz.getConstructor();
+                return ctor.newInstance();
             }
             catch (final NoSuchMethodException exx) {
                 throw new XPathException("Cannot find suitable constructor " +
@@ -134,9 +159,8 @@ public class ExistRepository extends Observable {
         }
     }
 
-    public File resolveXQueryModule(String namespace) throws XPathException {
-        // the URI
-        URI uri;
+    public Path resolveXQueryModule(final String namespace) throws XPathException {
+        final URI uri;
         try {
             uri = new URI(namespace);
         } catch (final URISyntaxException ex) {
@@ -150,15 +174,15 @@ public class ExistRepository extends Observable {
             if (info != null) {
                 final String f = info.getXQuery(uri);
                 if (f != null) {
-                    return resolver.resolveComponentAsFile(f);
+                    return resolver.resolveComponentAsFile(f).toPath();
                 }
             }
             String sysid = null; // declared here to be used in catch
             try {
-                final StreamSource src = pkg.resolve(namespace, URISpace.XQUERY);
+                final Source src = pkg.resolve(namespace, URISpace.XQUERY);
                 if (src != null) {
                     sysid = src.getSystemId();
-                    return new File(new URI(sysid));
+                    return Paths.get(new URI(sysid));
                 }
             } catch (final URISyntaxException ex) {
                 throw new XPathException("Error parsing the URI of the query library: " + sysid, ex);
@@ -170,7 +194,7 @@ public class ExistRepository extends Observable {
     }
 
     public List<URI> getJavaModules() {
-        final List<URI> modules = new ArrayList<URI>(13);
+        final List<URI> modules = new ArrayList<>();
         for (final Packages pp : myParent.listPackages()) {
             final Package pkg = pp.latest();
             final ExistPkgInfo info = (ExistPkgInfo) pkg.getInfo("exist");
@@ -181,66 +205,51 @@ public class ExistRepository extends Observable {
         return modules;
     }
 
-    public static ExistRepository getRepository(Configuration config) throws PackageException {
-        final File expathDir = getRepositoryDir(config);
+    public static Path getRepositoryDir(final Configuration config) throws IOException {
+        final Path dataDir = Optional.ofNullable((Path) config.getProperty(BrokerPool.PROPERTY_DATA_DIR))
+            .orElse(Paths.get(NativeBroker.DEFAULT_DATA_DIR));
+        final Path expathDir = dataDir.resolve(EXPATH_REPO_DIR);
 
-        LOG.info("Using directory " + expathDir.getAbsolutePath() + " for expath package repository");
-        final FileSystemStorage storage = new FileSystemStorage(expathDir);
-        return new ExistRepository(storage);
-    }
-
-    public static File getRepositoryDir(Configuration config) {
-        String dataDirPath = (String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR);
-        if (dataDirPath == null)
-            {dataDirPath = NativeBroker.DEFAULT_DATA_DIR;}
-        final File dataDir = new File(dataDirPath);
-        final File expathDir = new File(dataDir, EXPATH_REPO_DIR);
-        if (!expathDir.exists()) {
-            moveOldRepo(config.getExistHome(), expathDir);
+        if(!Files.exists(expathDir)) {
+            moveOldRepo(Optional.of(config.getExistHome().toPath()), expathDir);
         }
-        expathDir.mkdir();
+        Files.createDirectories(expathDir);
         return expathDir;
     }
 
-    private static void moveOldRepo(File home, File newRepo) {
-        File repo_dir = null;
-        if (home != null){
-            if ("WEB-INF".equals(home.getName()))
-                {repo_dir = new File(home, EXPATH_REPO_DIR);}
-            else
-                {repo_dir = new File(home, EXPATH_REPO_DEFAULT);}
-        } else {
-            repo_dir = new File(System.getProperty("java.io.tmpdir"), EXPATH_REPO_DIR);
-        }
-        if (repo_dir.exists() && repo_dir.canRead()) {
-            LOG.info("Found old expathrepo directory. Moving to new default location: " + newRepo.getAbsolutePath());
+    private static void moveOldRepo(final Optional<Path> home, final Path newRepo) {
+        final Path repo_dir = home.map(h -> {
+            if(FileUtils.fileName(h).equals("WEB-INF")) {
+                return h.resolve(EXPATH_REPO_DIR);
+            } else {
+                return h.resolve( EXPATH_REPO_DEFAULT);
+            }
+        }).orElse(Paths.get(System.getProperty("java.io.tmpdir")).resolve(EXPATH_REPO_DIR));
+
+        if (Files.isReadable(repo_dir)) {
+            LOG.info("Found old expathrepo directory. Moving to new default location: " + newRepo.toAbsolutePath().toString());
             try {
-                FileUtils.moveDirectory(repo_dir, newRepo);
+                Files.move(repo_dir, newRepo, StandardCopyOption.ATOMIC_MOVE);
             } catch (final IOException e) {
                 LOG.error("Failed to move old expathrepo directory to new default location. Keeping it.", e);
             }
         }
     }
 
-    public void reportAction(Action action, String packageURI) {
+    public void reportAction(final Action action, final String packageURI) {
         notifyObservers(new Notification(action, packageURI));
         setChanged();
     }
-
-    /** The wrapped EXPath repository. */
-    private Repository myParent;
-    /** An empty map for constructors expecting a parameter map. */
-    private static final Map<String, List<Object>> EMPTY_MAP = new HashMap<String, List<Object>>();
 
     public enum Action {
         INSTALL, UNINSTALL
     }
 
     public final static class Notification {
-        private Action action;
-        private String packageURI;
+        private final Action action;
+        private final String packageURI;
 
-        public Notification(Action action, String packageURI) {
+        public Notification(final Action action, final String packageURI) {
             this.action = action;
             this.packageURI = packageURI;
         }
@@ -272,5 +281,5 @@ public class ExistRepository extends Observable {
 /*                                                                          */
 /*  The Initial Developer of the Original Code is Florent Georges.          */
 /*                                                                          */
-/*  Contributor(s): none.                                                   */
+/*  Contributor(s): Wolfgang Meier, Adam Retter                             */
 /* ------------------------------------------------------------------------ */

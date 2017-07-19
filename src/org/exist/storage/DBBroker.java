@@ -182,6 +182,40 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
         return subject;
     }
 
+    /**
+     * Change the state that the broker performs actions as
+     *
+     * @param subject The new state for the broker to perform actions as
+     */
+    public void pushSubject(final Subject subject) {
+//        if(LOG.isTraceEnabled()) {
+//            subjectChangeTrace.add(TraceableSubjectChange.push(subject, getId()));
+//        }
+//        this.subject.addFirst(subject);
+    }
+
+    /**
+     * Restore the previous state for the broker to perform actions as
+     *
+     * @return The state which has been popped
+     */
+    public Subject popSubject() {
+//        final Subject subject = this.subject.removeFirst();
+//        if(LOG.isTraceEnabled()) {
+//            subjectChangeTrace.add(TraceableSubjectChange.pop(subject, getId()));
+//        }
+        return subject;
+    }
+
+    /**
+     * The state that is currently using this DBBroker object
+     *
+     * @return The current state that the broker is executing as
+     */
+    public Subject getCurrentSubject() {
+        return subject;
+    }
+
     public IndexController getIndexController() {
         return indexController;
     }

@@ -28,6 +28,9 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import javax.xml.transform.TransformerException;
 
 import org.apache.logging.log4j.LogManager;
@@ -223,6 +226,24 @@ public class XMLUtil {
         // read the file into a string
         return readFile(new FileInputStream(file), defaultEncoding);
     }
+
+  @Deprecated
+  public static String readFile(final Path file, final Charset defaultEncoding)
+      throws IOException {
+    // read the file into a string
+    return readFile(Files.readAllBytes(file), defaultEncoding);
+  }
+
+  @Deprecated
+  public static String readFile(final byte[] in, final Charset defaultEncoding)
+      throws IOException {
+
+    String xmlEnc = getEncoding(getXMLDecl(in));
+
+    final Charset enc = xmlEnc == null ? defaultEncoding : Charset.forName(xmlEnc);
+
+    return new String(in, enc);
+  }
 
     public static String readFile(InputSource is) throws IOException {
         // read the file into a string

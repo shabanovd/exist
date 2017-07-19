@@ -27,7 +27,7 @@ import org.expath.pkg.repo.URISpace;
  * @since  2010-09-21
  */
 public class ExistPkgInfo
-        extends PackageInfo
+    extends PackageInfo
 {
     public ExistPkgInfo(Package pkg)
     {
@@ -36,7 +36,7 @@ public class ExistPkgInfo
 
     @Override
     public StreamSource resolve(String href, URISpace space)
-            throws PackageException
+        throws PackageException
     {
         // TODO: Really?  Probably to refactor in accordance with ExistRepository...
         return null;

@@ -31,6 +31,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 
+import javax.servlet.ReadListener;
+import javax.servlet.WriteListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -1503,6 +1505,16 @@ public class XQueryURLRewrite extends HttpServlet {
         public void write(byte b[], int off, int len) throws IOException {
             ostream.write(b, off, len);
         }
+
+      @Override
+      public boolean isReady() {
+        return true;
+      }
+
+      @Override
+      public void setWriteListener(WriteListener writeListener) {
+        throw new UnsupportedOperationException();
+      }
     }
 
     private static class CachingServletInputStream extends ServletInputStream {
@@ -1535,5 +1547,20 @@ public class XQueryURLRewrite extends HttpServlet {
         public int available() throws IOException {
             return istream.available(); 
         }
+
+      @Override
+      public boolean isFinished() {
+        return istream.available() == 0;
+      }
+
+      @Override
+      public boolean isReady() {
+        return true;
+      }
+
+      @Override
+      public void setReadListener(ReadListener readListener) {
+        throw new UnsupportedOperationException();
+      }
     }
 }

@@ -21,7 +21,7 @@
  */
 package org.exist.xquery.functions.securitymanager;
 
-import org.easymock.classextension.EasyMock;
+import org.easymock.EasyMock;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.Sequence;
@@ -35,48 +35,48 @@ import org.junit.Test;
  */
 public class PermissionFunctionsTest {
 
-    /**
-     * Test of eval method, of class PermissionsFunctions.
-     */
-    @Test
-    public void modeToOctal() throws XPathException {
-       final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
+  /**
+   * Test of eval method, of class PermissionsFunctions.
+   */
+  @Test
+  public void modeToOctal() throws XPathException {
+    final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
 
-       final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_MODE_TO_OCTAL);
-       Sequence args[] = {
-           new StringValue("rwxr-x---")
-       };
-       
-       final Sequence result = permissionsFunctions.eval(args, null);
-       
-       assertEquals(1, result.getItemCount());
-       assertEquals("0750", result.itemAt(0).toString());
-    }
-    
-    @Test(expected=XPathException.class)
-    public void modeToOctal_invalidMode() throws XPathException {
-       final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
+    final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_MODE_TO_OCTAL);
+    Sequence args[] = {
+        new StringValue("rwxr-x---")
+    };
 
-       final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_MODE_TO_OCTAL);
-       Sequence args[] = {
-           new StringValue("invalid")
-       };
-       
-       permissionsFunctions.eval(args, null);
-    }
-    
-    @Test
-    public void octalToMode() throws XPathException {
-       final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
+    final Sequence result = permissionsFunctions.eval(args, null);
 
-       final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_OCTAL_TO_MODE);
-       Sequence args[] = {
-           new StringValue("0750")
-       };
-       
-       final Sequence result = permissionsFunctions.eval(args, null);
-       
-       assertEquals(1, result.getItemCount());
-       assertEquals("rwxr-x---", result.itemAt(0).toString());
-    }
+    assertEquals(1, result.getItemCount());
+    assertEquals("0750", result.itemAt(0).toString());
+  }
+
+  @Test(expected=XPathException.class)
+  public void modeToOctal_invalidMode() throws XPathException {
+    final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
+
+    final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_MODE_TO_OCTAL);
+    Sequence args[] = {
+        new StringValue("invalid")
+    };
+
+    permissionsFunctions.eval(args, null);
+  }
+
+  @Test
+  public void octalToMode() throws XPathException {
+    final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
+
+    final PermissionsFunction permissionsFunctions = new PermissionsFunction(mckContext, PermissionsFunction.FNS_OCTAL_TO_MODE);
+    Sequence args[] = {
+        new StringValue("0750")
+    };
+
+    final Sequence result = permissionsFunctions.eval(args, null);
+
+    assertEquals(1, result.getItemCount());
+    assertEquals("rwxr-x---", result.itemAt(0).toString());
+  }
 }

@@ -21,7 +21,7 @@
  */
 package org.exist.xquery.functions.util;
 
-import org.easymock.classextension.EasyMock;
+import org.easymock.EasyMock;
 import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.value.IntegerValue;
@@ -35,37 +35,37 @@ import static org.junit.Assert.*;
  * @author Adam Retter <adam.retter@googlemail.com>
  */
 public class BaseConversionFunctionsTest {
-    
-    /**
-     * Test of eval method, of class PermissionsFunctions.
-     */
-    @Test
-    public void intToOctal() throws XPathException {
-       final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
 
-       final BaseConversionFunctions baseConversionFunctions = new BaseConversionFunctions(mckContext, BaseConversionFunctions.FNS_INT_TO_OCTAL);
-       Sequence args[] = {
-           new IntegerValue(511)
-       };
-       
-       final Sequence result = baseConversionFunctions.eval(args, null);
-       
-       assertEquals(1, result.getItemCount());
-       assertEquals("0777", result.itemAt(0).toString());
-    }
-    
-    @Test
-    public void octalToInt() throws XPathException {
-       final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
+  /**
+   * Test of eval method, of class PermissionsFunctions.
+   */
+  @Test
+  public void intToOctal() throws XPathException {
+    final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
 
-       final BaseConversionFunctions baseConversionFunctions = new BaseConversionFunctions(mckContext, BaseConversionFunctions.FNS_OCTAL_TO_INT);
-       Sequence args[] = {
-           new StringValue("0777")
-       };
-       
-       final Sequence result = baseConversionFunctions.eval(args, null);
-       
-       assertEquals(1, result.getItemCount());
-       assertEquals(511, (int)result.itemAt(0).toJavaObject(int.class));
-    }
+    final BaseConversionFunctions baseConversionFunctions = new BaseConversionFunctions(mckContext, BaseConversionFunctions.FNS_INT_TO_OCTAL);
+    Sequence args[] = {
+        new IntegerValue(511)
+    };
+
+    final Sequence result = baseConversionFunctions.eval(args, null);
+
+    assertEquals(1, result.getItemCount());
+    assertEquals("0777", result.itemAt(0).toString());
+  }
+
+  @Test
+  public void octalToInt() throws XPathException {
+    final XQueryContext mckContext = EasyMock.createMock(XQueryContext.class);
+
+    final BaseConversionFunctions baseConversionFunctions = new BaseConversionFunctions(mckContext, BaseConversionFunctions.FNS_OCTAL_TO_INT);
+    Sequence args[] = {
+        new StringValue("0777")
+    };
+
+    final Sequence result = baseConversionFunctions.eval(args, null);
+
+    assertEquals(1, result.getItemCount());
+    assertEquals(511, (int)result.itemAt(0).toJavaObject(int.class));
+  }
 }

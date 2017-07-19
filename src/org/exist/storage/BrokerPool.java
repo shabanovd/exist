@@ -1013,8 +1013,13 @@ public class BrokerPool implements Database {
 
         					try {
         						// initialize expath repository so startup triggers can access it
-        						expathRepo = ExistRepository.getRepository(this.conf);
-        					} catch (final PackageException e) {
+                    ExistRepository repo = new ExistRepository();
+
+                    repo.configure(this.conf);
+                    repo.prepare(this);
+
+                    expathRepo = repo;
+        					} catch (final BrokerPoolServiceException e) {
         						LOG.warn("Failed to initialize expath repository: " + e.getMessage() + " - this is not fatal, but " +
         								"the package manager may not work.");
         					}
@@ -1062,7 +1067,8 @@ public class BrokerPool implements Database {
 
         				scheduler.run();
 
-        				ClasspathHelper.updateClasspath(this);
+                ClasspathHelper classpathHelper = new ClasspathHelper();
+                classpathHelper.prepare(this);
 
         				statusReporter.setStatus(SIGNAL_STARTED);
         			} catch (Throwable t) {

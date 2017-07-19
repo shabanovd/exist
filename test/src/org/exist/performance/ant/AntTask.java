@@ -53,7 +53,7 @@ public class AntTask extends Task {
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(src);
 
-            TestResultWriter writer = new TestResultWriter(outFile.getAbsolutePath());
+            TestResultWriter writer = new TestResultWriter(outFile.toPath());
             runner = new Runner(doc.getDocumentElement(), writer);
             runner.run(group);
         } catch (Exception e) {

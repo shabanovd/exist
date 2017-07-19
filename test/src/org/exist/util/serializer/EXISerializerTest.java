@@ -5,9 +5,9 @@ import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.isNull;
 import static org.easymock.EasyMock.matches;
-import static org.easymock.classextension.EasyMock.createMock;
-import static org.easymock.classextension.EasyMock.replay;
-import static org.easymock.classextension.EasyMock.verify;
+import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
 
 import java.io.OutputStream;
 import java.util.List;
@@ -27,7 +27,7 @@ public class EXISerializerTest {
 	private EXISerializer serializer;
 	private OutputStream mockOutputStream;
 	private SAXEncoder mockEncoder;
-	
+
 	@Before
 	public void setUp() throws Exception {
 		mockOutputStream = createMock(OutputStream.class);
@@ -35,7 +35,7 @@ public class EXISerializerTest {
 		mockEncoder = createMock(SAXEncoder.class);
 		serializer.setEncoder(mockEncoder);
 	}
-	
+
 	@Test
 	public void testStartDocument() throws Exception {
 		mockEncoder.startDocument();
@@ -43,7 +43,7 @@ public class EXISerializerTest {
 		serializer.startDocument();
 		verify(mockEncoder);
 	}
-	
+
 	@Test
 	public void testEndDocument() throws Exception {
 		mockEncoder.endDocument();
@@ -51,7 +51,7 @@ public class EXISerializerTest {
 		serializer.endDocument();
 		verify(mockEncoder);
 	}
-	
+
 	@Test
 	public void testStartPrefixMapping() throws Exception {
 		mockEncoder.startPrefixMapping("prefix", "uri");
@@ -59,7 +59,7 @@ public class EXISerializerTest {
 		serializer.startPrefixMapping("prefix", "uri");
 		verify(mockEncoder);
 	}
-	
+
 	@Test
 	public void testEndPrefixMapping() throws Exception {
 		mockEncoder.endPrefixMapping("prefix");
@@ -67,7 +67,7 @@ public class EXISerializerTest {
 		serializer.endPrefixMapping("prefix");
 		verify(mockEncoder);
 	}
-	
+
 	@Test
 	public void testStartElement() throws Exception {
 		QName testQName = new QName("local", "uri", "prefix");
@@ -81,9 +81,9 @@ public class EXISerializerTest {
 		List<Attributes> capturedAttributeList = capturedAttributes.getValues();
 		Assert.assertEquals("local", capturedAttributeList.get(0).getLocalName(0));
 		Assert.assertEquals("uri", capturedAttributeList.get(0).getURI(0));
-		Assert.assertEquals("value", capturedAttributeList.get(0).getValue(0));	
+		Assert.assertEquals("value", capturedAttributeList.get(0).getValue(0));
 	}
-	
+
 	@Test
 	public void testEndElement() throws Exception {
 		QName testQName = new QName("local", "uri", "prefix");
@@ -92,7 +92,7 @@ public class EXISerializerTest {
 		serializer.endElement(testQName);
 		verify(mockEncoder);
 	}
-	
+
 	@Test
 	public void testCharacters() throws Exception {
 		String testString = "test";
@@ -102,5 +102,5 @@ public class EXISerializerTest {
 		serializer.characters(testSeq);
 		verify(mockEncoder);
 	}
-	
+
 }

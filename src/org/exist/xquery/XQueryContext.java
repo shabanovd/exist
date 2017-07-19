@@ -341,7 +341,7 @@ public class XQueryContext implements BinaryValueManager, Context
             return mod;
         }
         // try an eXist-specific module
-        final File resolved = repo.resolveXQueryModule(namespace);
+        final File resolved = repo.resolveXQueryModule(namespace).toFile();
         // use the resolved file or return null
         if ( resolved == null ) {
             return null;

@@ -21,10 +21,11 @@
  */
 package org.exist.management.client;
 
-import org.apache.avalon.excalibur.cli.CLArgsParser;
-import org.apache.avalon.excalibur.cli.CLOption;
-import org.apache.avalon.excalibur.cli.CLOptionDescriptor;
-import org.apache.avalon.excalibur.cli.CLUtil;
+import org.exist.util.SystemExitCodes;
+import se.softhouse.jargo.Argument;
+import se.softhouse.jargo.ArgumentException;
+import se.softhouse.jargo.CommandLineParser;
+import se.softhouse.jargo.ParsedArguments;
 
 import javax.management.Attribute;
 import javax.management.AttributeList;
@@ -41,13 +42,10 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import static org.exist.util.ArgumentUtil.getBool;
+import static se.softhouse.jargo.Arguments.*;
 
 /**
  */
@@ -62,7 +60,7 @@ public class JMXClient {
 
     public void connect(String address,int port) throws IOException {
         final JMXServiceURL url =
-                new JMXServiceURL("service:jmx:rmi:///jndi/rmi://"+address+":" + port + "/jmxrmi");
+            new JMXServiceURL("service:jmx:rmi:///jndi/rmi://"+address+":" + port + "/jmxrmi");
         final Map<String, String[]> env = new HashMap<>();
         final String[] creds = {"guest", "guest"};
         env.put(JMXConnector.CREDENTIALS, creds);
@@ -79,7 +77,7 @@ public class JMXClient {
             if (composite != null) {
                 echo("\nMEMORY:");
                 echo(String.format("Current heap: %,12d k        Committed memory:  %,12d k",
-                        ((Long)composite.get("used")) / 1024, ((Long)composite.get("committed")) / 1024));
+                    ((Long)composite.get("used")) / 1024, ((Long)composite.get("committed")) / 1024));
                 echo(String.format("Max memory:   %,12d k", ((Long)composite.get("max")) / 1024));
             }
         } catch (final Exception e) {
@@ -108,7 +106,7 @@ public class JMXClient {
             if (table.size() > 0) {
                 echo("\nCurrently active threads:");
             }
-            
+
             for (final Iterator<?> i = table.values().iterator(); i.hasNext(); ) {
                 final CompositeData data = (CompositeData) i.next();
                 echo(String.format("\t%20s: %3d", data.get("owner"), data.get("referenceCount")));
@@ -134,15 +132,15 @@ public class JMXClient {
                 attrs = connection.getAttributes(name, cols);
                 values = getValues(attrs);
                 echo(String.format("%10s %20s %,10d %,10d %,10d %,10d", values[0], values[1], values[2], values[3], values[4], values[5]));
-           }
-            
+            }
+
             echo("");
-           name = new ObjectName("org.exist.management." + instance + ":type=CollectionCacheManager");
+            name = new ObjectName("org.exist.management." + instance + ":type=CollectionCacheManager");
             cols = new String[] { "MaxTotal", "CurrentSize" };
             attrs = connection.getAttributes(name, cols);
             values = getValues(attrs);
-           echo(String.format("Collection Cache: %10d k max / %10d k allocated",
-               ((Long)values[0] / 1024), ((Long)values[1] / 1024)));
+            echo(String.format("Collection Cache: %10d k max / %10d k allocated",
+                ((Long)values[0] / 1024), ((Long)values[1] / 1024)));
         } catch (final Exception e) {
             error(e);
         }
@@ -186,10 +184,10 @@ public class JMXClient {
             echo(String.format("%22s: %s", "Last check start", lastCheckStart));
             echo(String.format("%22s: %s", "Last check end", lastCheckEnd));
             if (lastCheckStart != null && lastCheckEnd != null)
-                {echo(String.format("%22s: %dms", "Check took", (lastCheckEnd.getTime() - lastCheckStart.getTime())));}
+            {echo(String.format("%22s: %dms", "Check took", (lastCheckEnd.getTime() - lastCheckStart.getTime())));}
 
             final TabularData table = (TabularData)
-                    connection.getAttribute(name, "Errors");
+                connection.getAttribute(name, "Errors");
             for (final Iterator<?> i = table.values().iterator(); i.hasNext(); ) {
                 final CompositeData data = (CompositeData) i.next();
                 echo(String.format("%22s: %s", "Error code", data.get("errcode")));
@@ -207,7 +205,7 @@ public class JMXClient {
             final ObjectName name = new ObjectName("org.exist.management." + instance + ":type=ProcessReport");
 
             TabularData table = (TabularData)
-                    connection.getAttribute(name, "RunningJobs");
+                connection.getAttribute(name, "RunningJobs");
             String[] cols = new String[] { "ID", "Action", "Info" };
             echo(String.format("%15s %30s %30s", cols[0], cols[1], cols[2]));
             for (final Iterator<?> i = table.values().iterator(); i.hasNext(); ) {
@@ -218,7 +216,7 @@ public class JMXClient {
             echo("\nRunning queries");
             echo("-----------------------------------------------");
             table = (TabularData)
-                    connection.getAttribute(name, "RunningQueries");
+                connection.getAttribute(name, "RunningQueries");
             cols = new String[] { "ID", "Type", "Key", "Terminating" };
             echo(String.format("%10s %10s %30s %s", cols[0], cols[1], cols[2], cols[3]));
             for (final Iterator<?> i = table.values().iterator(); i.hasNext(); ) {
@@ -241,124 +239,109 @@ public class JMXClient {
     private void echo(String msg) {
         System.out.println(msg);
     }
-    
+
     private void error(Exception e) {
         System.err.println("ERROR: " + e.getMessage());
         e.printStackTrace();
     }
 
-    private final static int HELP_OPT = 'h';
-    private final static int CACHE_OPT = 'c';
-    private final static int DB_OPT = 'd';
-    private final static int WAIT_OPT = 'w';
-    private final static int LOCK_OPT = 'l';
-    private final static int MEMORY_OPT = 'm';
-    private final static int PORT_OPT = 'p';
-    private final static int INSTANCE_OPT = 'i';
-    private final static int ADDRESS_OPT = 'a';
-    private final static int SANITY_OPT = 's';
-    private final static int JOBS_OPT = 'j';
-    
-    private final static CLOptionDescriptor OPTIONS[] = new CLOptionDescriptor[] {
-        new CLOptionDescriptor( "help", CLOptionDescriptor.ARGUMENT_DISALLOWED,
-            HELP_OPT, "print help on command line options and exit." ),
-        new CLOptionDescriptor( "cache", CLOptionDescriptor.ARGUMENT_DISALLOWED,
-                CACHE_OPT, "displays server statistics on cache and memory usage." ),
-        new CLOptionDescriptor( "db", CLOptionDescriptor.ARGUMENT_DISALLOWED,
-            DB_OPT, "display general info about the db instance." ),
-        new CLOptionDescriptor( "wait", CLOptionDescriptor.ARGUMENT_REQUIRED,
-            WAIT_OPT, "while displaying server statistics: keep retrieving statistics, but wait the " +
-                "specified number of seconds between calls." ),
-        new CLOptionDescriptor( "locks", CLOptionDescriptor.ARGUMENT_DISALLOWED,
-            LOCK_OPT, "lock manager: display locking information on all threads currently waiting for a lock on a resource " +
-                "or collection. Useful to debug deadlocks. During normal operation, the list will usually be empty (means: no " +
-                "blocked threads)." ),
-        new CLOptionDescriptor( "memory", CLOptionDescriptor.ARGUMENT_DISALLOWED,
-            MEMORY_OPT, "display info on free and total memory. Can be combined with other parameters." ),
-        new CLOptionDescriptor( "port", CLOptionDescriptor.ARGUMENT_REQUIRED,
-            PORT_OPT, "RMI port of the server"),
-        new CLOptionDescriptor( "address", CLOptionDescriptor.ARGUMENT_REQUIRED,
-            ADDRESS_OPT, "RMI address of the server"),
-        new CLOptionDescriptor( "instance", CLOptionDescriptor.ARGUMENT_REQUIRED,
-            INSTANCE_OPT, "the ID of the database instance to connect to"),
-        new CLOptionDescriptor( "report", CLOptionDescriptor.ARGUMENT_DISALLOWED,
-            SANITY_OPT, "retrieve sanity check report from the db"),
-        new CLOptionDescriptor( "jobs", CLOptionDescriptor.ARGUMENT_DISALLOWED,
-            JOBS_OPT, "list currently running jobs")
-    };
+    private static final int DEFAULT_PORT = 1099;
+    private static final int DEFAULT_WAIT_TIME = 0;
 
-    private final static int MODE_STATS = 0;
-    private final static int MODE_LOCKS = 1;
-    
+    /* general arguments */
+    private static final Argument<?> helpArg = helpArgument("-h", "--help");
+
+    /* connection arguments */
+    private static final Argument<String> addressArg = stringArgument("-a", "--address")
+        .description("RMI address of the server")
+        .required()
+        .defaultValue("localhost")
+        .build();
+    private static final Argument<Integer> portArg = integerArgument("-p", "--port")
+        .description("RMI port of the server")
+        .required()
+        .defaultValue(DEFAULT_PORT)
+        .build();
+    private static final Argument<String> instanceArg = stringArgument("-i", "--instance")
+        .description("The ID of the database instance to connect to")
+        .required()
+        .defaultValue("exist")
+        .build();
+    private static final Argument<Integer> waitArg = integerArgument("-w", "--wait")
+        .description("while displaying server statistics: keep retrieving statistics, but wait the specified number of seconds between calls.")
+        .defaultValue(DEFAULT_WAIT_TIME)
+        .build();
+
+    /* display mode options */
+    private static final Argument<Boolean> cacheDisplayArg = optionArgument("-c", "--cache")
+        .description("displays server statistics on cache and memory usage.")
+        .defaultValue(false)
+        .build();
+    private static final Argument<Boolean> locksDisplayArg = optionArgument("-l", "--locks")
+        .description("lock manager: display locking information on all threads currently waiting for a lock on a resource or collection. Useful to debug deadlocks. During normal operation, the list will usually be empty (means: no blocked threads).")
+        .defaultValue(false)
+        .build();
+
+    /* display info options */
+    private static final Argument<Boolean> dbInfoArg = optionArgument("-d", "--db")
+        .description("display general info about the db instance.")
+        .defaultValue(false)
+        .build();
+    private static final Argument<Boolean> memoryInfoArg = optionArgument("-m", "--memory")
+        .description("display info on free and total memory. Can be combined with other parameters.")
+        .defaultValue(false)
+        .build();
+    private static final Argument<Boolean> sanityCheckInfoArg = optionArgument("-s", "--report")
+        .description("retrieve sanity check report from the db")
+        .defaultValue(false)
+        .build();
+    private static final Argument<Boolean> jobsInfoArg = optionArgument("-j", "--jobs")
+        .description("retrieve sanity check report from the db")
+        .defaultValue(false)
+        .build();
+
+    private enum Mode {
+        STATS,
+        LOCKS
+    }
+
     @SuppressWarnings("unchecked")
-	public static void main(String[] args) {
-        final CLArgsParser optParser = new CLArgsParser( args, OPTIONS );
-        if(optParser.getErrorString() != null) {
-            System.err.println( "ERROR: " + optParser.getErrorString());
-            return;
-        }
-        String dbInstance = "exist";
-        long waitTime = 0;
-        final List<CLOption> opts = optParser.getArguments();
-        int mode = -1;
-        int port = 1099;
-        String address = "localhost";
-        boolean displayMem = false;
-        boolean displayInstance = false;
-        boolean displayReport = false;
-        boolean jobReport = false;
+    public static void main(final String[] args) {
 
-        for(final CLOption option : opts) {
-            switch(option.getId()) {
-                case HELP_OPT :
-                    System.out.println(CLUtil.describeOptions(OPTIONS).toString());
-                    return;
-                case WAIT_OPT :
-                    try {
-                        waitTime = Integer.parseInt( option.getArgument() ) * 1000;
-                    } catch( final NumberFormatException e ) {
-                        System.err.println("option -w|--wait requires a numeric argument");
-                        return;
-                    }
-                    break;
-                case CACHE_OPT:
-                    mode = MODE_STATS;
-                    break;
-                case LOCK_OPT :
-                    mode = MODE_LOCKS;
-                    break;
-                case PORT_OPT :
-                    try {
-                        port = Integer.parseInt(option.getArgument());
-                    } catch (final NumberFormatException e) {
-                        System.err.println("option -p|--port requires a numeric argument");
-                        return;
-                    }
-                    break;
-                case ADDRESS_OPT :
-                    try {
-                        address = option.getArgument();
-                    } catch (final NumberFormatException e) {
-                        System.err.println("option -a|--address requires a numeric argument");
-                        return;
-                    }
-                    break;
-                case MEMORY_OPT :
-                    displayMem = true;
-                    break;
-                case DB_OPT :
-                    displayInstance = true;
-                    break;
-                case INSTANCE_OPT :
-                    dbInstance = option.getArgument();
-                    break;
-                case SANITY_OPT :
-                    displayReport = true;
-                    break;
-                case JOBS_OPT :
-                    jobReport = true;
-            }
+        try {
+            final ParsedArguments arguments = CommandLineParser
+                .withArguments(addressArg, portArg, instanceArg, waitArg)
+                .andArguments(cacheDisplayArg, locksDisplayArg)
+                .andArguments(dbInfoArg, memoryInfoArg, sanityCheckInfoArg, jobsInfoArg)
+                .andArguments(helpArg)
+                .parse(args);
+
+            process(arguments);
+        } catch (final ArgumentException e) {
+            System.out.println(e.getMessageAndUsage());
+            System.exit(SystemExitCodes.INVALID_ARGUMENT_EXIT_CODE);
         }
+
+    }
+
+    private static void process(final ParsedArguments arguments) {
+        final String address = arguments.get(addressArg);
+        final int port = Optional.ofNullable(arguments.get(portArg)).orElse(DEFAULT_PORT);
+        final String dbInstance = arguments.get(instanceArg);
+        final long waitTime = Optional.ofNullable(arguments.get(waitArg)).orElse(DEFAULT_WAIT_TIME);
+
+        Mode mode = Mode.STATS;
+        if(getBool(arguments, cacheDisplayArg)) {
+            mode = Mode.STATS;
+        }
+        if(getBool(arguments, locksDisplayArg)) {
+            mode = Mode.LOCKS;
+        }
+
+        final boolean displayInstance = getBool(arguments, dbInfoArg);
+        final boolean displayMem = getBool(arguments, memoryInfoArg);
+        final boolean displayReport = getBool(arguments, sanityCheckInfoArg);
+        final boolean jobReport = getBool(arguments, jobsInfoArg);
 
         try {
             final JMXClient stats = new JMXClient(dbInstance);
@@ -366,10 +349,10 @@ public class JMXClient {
             stats.memoryStats();
             while (true) {
                 switch (mode) {
-                    case MODE_STATS :
+                    case STATS :
                         stats.cacheStats();
                         break;
-                    case MODE_LOCKS :
+                    case LOCKS :
                         stats.lockTable();
                         break;
                 }
@@ -386,10 +369,10 @@ public class JMXClient {
                         }
                     }
                 } else
-                    {return;}
+                {return;}
             }
         } catch (final IOException e) {
-            e.printStackTrace(); 
-        } 
+            e.printStackTrace();
+        }
     }
 }

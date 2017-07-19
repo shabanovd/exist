@@ -22,98 +22,94 @@
 
 package org.exist.performance;
 
-import org.apache.avalon.excalibur.cli.CLArgsParser;
-import org.apache.avalon.excalibur.cli.CLOption;
-import org.apache.avalon.excalibur.cli.CLOptionDescriptor;
-import org.apache.avalon.excalibur.cli.CLUtil;
-import org.apache.commons.io.FileUtils;
 import org.exist.source.ClassLoaderSource;
+import org.exist.util.FileUtils;
+import org.exist.util.SystemExitCodes;
+import org.exist.util.XMLFilenameFilter;
 import org.exist.xmldb.XQueryService;
 import org.w3c.dom.Document;
 import org.xmldb.api.base.*;
 import org.xmldb.api.modules.CollectionManagementService;
+import org.xmldb.api.modules.XMLResource;
+import se.softhouse.jargo.Argument;
+import se.softhouse.jargo.ArgumentException;
+import se.softhouse.jargo.CommandLineParser;
+import se.softhouse.jargo.ParsedArguments;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.exist.util.ArgumentUtil.getBool;
+import static se.softhouse.jargo.Arguments.*;
 
 public class Main {
 
-    // command-line options
-    private final static int HELP_OPT = 'h';
-    private final static int XML_FILE_OPT = 'f';
-    private final static int OUTPUT_DIR_OPT = 'd';
-    private final static int REPORT_OPT = 'r';
+    /* general arguments */
+    private static final Argument<?> helpArg = helpArgument("-h", "--help");
 
-    private final static CLOptionDescriptor OPTIONS[] = new CLOptionDescriptor[] {
-        new CLOptionDescriptor("help", CLOptionDescriptor.ARGUMENT_DISALLOWED, HELP_OPT,
-                "print help on command line options and exit."),
-        new CLOptionDescriptor("dir", CLOptionDescriptor.ARGUMENT_REQUIRED, OUTPUT_DIR_OPT,
-                "directory for writing test results."),
-        new CLOptionDescriptor("file", CLOptionDescriptor.ARGUMENT_REQUIRED, XML_FILE_OPT,
-                "XML input file."),
-        new CLOptionDescriptor("report", CLOptionDescriptor.ARGUMENT_DISALLOWED, REPORT_OPT,
-                "create an HTML report from all output files in the directory.")
-    };
+    /* control arguments */
+    private static final Argument<Boolean> reportArg = optionArgument("-r", "--report")
+        .description("create an HTML report from all output files in the directory.")
+        .defaultValue(false)
+        .build();
+    private static final Argument<File> inputFileArg = fileArgument("-f", "file")
+        .description("XML input file.")
+        .required()
+        .build();
+    private static final Argument<File> outputDirArg = fileArgument("-d", "dir")
+        .description("directory for writing test results.")
+        .required()
+        .build();
+    private static final Argument<List<String>> groupArg = stringArgument()
+        .description("group of performance tests to run")
+        .variableArity()
+        .build();
 
-    private final static File CSS_FILE = new File("test/src/org/exist/performance/style.css");
-    
-    public static void main(String[] args) {
-        CLArgsParser optParser = new CLArgsParser(args, OPTIONS);
-        if (optParser.getErrorString() != null) {
-            System.err.println("ERROR: " + optParser.getErrorString());
-            return;
-        }
-        for (String arg : args) {
-            System.out.println("ARG: " + arg);
-        }
-        List<?> opt = optParser.getArguments();
-        int size = opt.size();
-        CLOption option;
-        File outputDir = null;
-        boolean createReport = false;
-        List<String> groups = new ArrayList<String>();
-        File xmlFile = null;
-        for (int i = 0; i < size; i++) {
-            option = (CLOption) opt.get(i);
-            switch (option.getId()) {
-            case HELP_OPT:
-                System.out.println("Usage: java " + Main.class.getName() + " [options] [group ...]");
-                System.out.println(CLUtil.describeOptions(OPTIONS).toString());
-                System.exit(0);
-                break;
-            case OUTPUT_DIR_OPT:
-                outputDir = new File(option.getArgument().trim());
-                break;
-            case REPORT_OPT:
-                createReport = true;
-                break;
-            case XML_FILE_OPT:
-                xmlFile = new File(option.getArgument().trim());
-                break;
-            case CLOption.TEXT_ARGUMENT:
-                groups.add(option.getArgument());
-                break;
-            }
-        }
+    private final static Path CSS_FILE = Paths.get("test/src/org/exist/performance/style.css");
 
-        if (xmlFile == null || !xmlFile.canRead()) {
-            System.err.println("Cannot read test definition file: " + xmlFile.getAbsolutePath());
-            System.exit(1);
+    public static void main(final String[] args) {
+        try {
+            final ParsedArguments arguments = CommandLineParser
+                .withArguments(reportArg, inputFileArg, outputDirArg)
+                .andArguments(groupArg)
+                .andArguments(helpArg)
+                .parse(args);
+
+            process(arguments);
+        } catch (final ArgumentException e) {
+            System.out.println(e.getMessageAndUsage());
+            System.exit(SystemExitCodes.INVALID_ARGUMENT_EXIT_CODE);
+
         }
-        if (outputDir == null || !outputDir.canWrite()) {
+    }
+
+    private static void process(final ParsedArguments arguments) {
+        final boolean createReport = getBool(arguments, reportArg);
+        final Path xmlFile = arguments.get(inputFileArg).toPath();
+        final Path outputDir = arguments.get(outputDirArg).toPath();
+        final List<String> groups = arguments.get(groupArg);
+
+        if (xmlFile == null || !Files.isReadable(xmlFile)) {
+            System.err.println("Cannot read test definition file: " + xmlFile.toAbsolutePath());
+            System.exit(SystemExitCodes.INVALID_ARGUMENT_EXIT_CODE);
+        }
+        if (outputDir == null || !Files.isWritable(outputDir)) {
             System.err.println("No or not writable output directory specified. Please provide a " +
                 "writable directory with option -d");
-            System.exit(1);
+            System.exit(SystemExitCodes.INVALID_ARGUMENT_EXIT_CODE);
         }
 
-        for (String group: groups) {
+        for (final String group: groups) {
             Runner runner = null;
             try {
-                File outFile = new File(outputDir, group + ".xml");
+                final Path outFile = outputDir.resolve(group + ".xml");
                 runner = configure(xmlFile, outFile);
                 runner.run(group);
             } catch (Exception e) {
@@ -136,17 +132,24 @@ public class Main {
         }
     }
 
-    private static Runner configure(File xmlFile, File outFile) {
+    private static Runner configure(Path xmlFile, Path outFile) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
             factory.setValidating(false);
             DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(xmlFile);
+            Document doc = builder.parse(xmlFile.toFile());
             TestResultWriter writer = null;
-            if (outFile != null)
-                writer = new TestResultWriter(outFile.getAbsolutePath());
-            return new Runner(doc.getDocumentElement(), writer);
+            if (outFile != null) {
+                writer = new TestResultWriter(outFile);
+            }
+            try {
+                return new Runner(doc.getDocumentElement(), writer);
+            } finally {
+                if(writer != null) {
+                    writer.close();
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("ERROR: " + e.getMessage());
@@ -154,7 +157,7 @@ public class Main {
         return null;
     }
 
-    private static void createReport(Runner runner, File directory) {
+    private static void createReport(Runner runner, Path directory) {
         try {
             Connection con = runner.getConnection();
             Collection collection = con.getCollection("benchmark");
@@ -164,20 +167,25 @@ public class Main {
                     (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
                 collection = cmgt.createCollection("benchmark");
             }
-            for (Iterator<?> i = FileUtils.iterateFiles(directory, new String[] { "xml" }, false); i.hasNext(); ) {
-                File file = (File) i.next();
-                Resource resource = collection.createResource(file.getName(), "XMLResource");
+
+            for(final Path file : FileUtils.list(directory, XMLFilenameFilter.asPredicate())) {
+                Resource resource = collection.createResource(FileUtils.fileName(file), XMLResource.RESOURCE_TYPE);
                 resource.setContent(file);
                 collection.storeResource(resource);
             }
             XQueryService service = (XQueryService) collection.getService("XQueryService", "1.0");
             ResourceSet result = service.execute(new ClassLoaderSource("/org/exist/performance/log2html.xql"));
 
-            if (directory == null)
-                directory = new File(System.getProperty("user.dir"));
-            File htmlFile = new File(directory, "results.html");
-            FileUtils.writeStringToFile(htmlFile, result.getResource(0).getContent().toString(), "UTF-8");
-            FileUtils.copyFile(CSS_FILE, new File(directory, CSS_FILE.getName()));
+            if (directory == null) {
+                directory = Paths.get(System.getProperty("user.dir"));
+            }
+
+            final Path htmlFile = directory.resolve("results.html");
+            try(final BufferedWriter writer = Files.newBufferedWriter(htmlFile, UTF_8)) {
+                writer.write(result.getResource(0).getContent().toString());
+            }
+            Files.copy(CSS_FILE, directory.resolve(FileUtils.fileName(CSS_FILE)));
+
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("ERROR: " + e.getMessage());

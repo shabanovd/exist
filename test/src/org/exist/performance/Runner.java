@@ -32,6 +32,7 @@ import org.xmldb.api.DatabaseManager;
 import org.xmldb.api.base.Database;
 import org.xmldb.api.base.XMLDBException;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,7 +40,7 @@ public class Runner {
 
     private Map<String, Connection> connections = new HashMap<String, Connection>();
     private Connection firstConnection = null;
-    
+
     private Map<String, Class<Action>> classes = new HashMap<String, Class<Action>>();
 
     private Map<String, Group> groups = new HashMap<String, Group>();
@@ -49,7 +50,7 @@ public class Runner {
     private int nextId = 0;
 
     @SuppressWarnings("unchecked")
-	public Runner(Element root, TestResultWriter reporter) throws EXistException, XMLDBException {
+    public Runner(Element root, TestResultWriter reporter) throws EXistException, XMLDBException {
         this.resultWriter = reporter;
         initDb();
 
@@ -108,7 +109,7 @@ public class Runner {
     public Connection getConnection() {
         return firstConnection;
     }
-    
+
     public Class<Action> getClassForAction(String action) {
         return classes.get(action);
     }
@@ -122,11 +123,17 @@ public class Runner {
     }
 
     public void shutdown() {
-        if (resultWriter != null)
-            resultWriter.close();
+        try {
+            if (resultWriter != null) {
+                resultWriter.close();
+            }
+        } catch(final IOException e) {
+            e.printStackTrace();
+        }
+
         try {
             shutdownDb();
-        } catch (XMLDBException e) {
+        } catch (final XMLDBException e) {
             e.printStackTrace();
         }
     }
@@ -147,7 +154,7 @@ public class Runner {
             CollectionImpl collection = (CollectionImpl) connection.getCollection("/db");
             if (!collection.isRemoteCollection()) {
                 DatabaseInstanceManager mgr = (DatabaseInstanceManager)
-                        collection.getService("DatabaseInstanceManager", "1.0");
+                    collection.getService("DatabaseInstanceManager", "1.0");
                 mgr.shutdown();
             }
         }

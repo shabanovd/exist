@@ -19,12 +19,12 @@
  */
 package org.exist.xquery;
 
+import org.exist.security.xacml.AccessContext;
 import org.exist.storage.DBBroker;
 import org.exist.security.Subject;
 import org.exist.xquery.value.BinaryValue;
 import org.junit.Test;
-import org.easymock.classextension.EasyMock;
-import org.exist.security.xacml.AccessContext;
+import org.easymock.EasyMock;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -43,11 +43,11 @@ public class XQueryContextTest {
 
         //partial mock context
         XQueryContext context = EasyMock.createMockBuilder(XQueryContext.class)
-                .withConstructor(AccessContext.class)
-                .withArgs(AccessContext.TEST)
-                .addMockedMethod("getUserFromHttpSession")
-                .addMockedMethod("getBroker")
-                .createMock();
+            .withConstructor()
+            .withArgs()
+            .addMockedMethod("getUserFromHttpSession")
+            .addMockedMethod("getBroker")
+            .createMock();
 
         DBBroker mockBroker = createMock(DBBroker.class);
 
@@ -55,8 +55,8 @@ public class XQueryContextTest {
 
         //expectations
         expect(context.getUserFromHttpSession()).andReturn(mockSubject);
-        expect(context.getBroker()).andReturn(mockBroker);
-        mockBroker.setSubject(mockSubject);
+        expect(context.getBroker()).andReturn(mockBroker).times(2);
+        mockBroker.pushSubject(mockSubject);
 
         //test
         replay(context);

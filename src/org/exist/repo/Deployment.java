@@ -1,6 +1,6 @@
 /*
  *  eXist Open Source Native XML Database
- *  Copyright (C) 2001-12 The eXist Project
+ *  Copyright (C) 2001-2015 The eXist Project
  *  http://exist-db.org
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,22 +16,21 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- *  $Id$
  */
 package org.exist.repo;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.output.ByteArrayOutputStream;
+import com.evolvedbinary.j8fu.Either;
+import java.io.File;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
+import org.exist.SystemProperties;
 import org.exist.collections.Collection;
 import org.exist.collections.IndexInfo;
-import org.exist.config.ConfigurationException;
-import org.exist.dom.BinaryDocument;
+import org.exist.collections.triggers.TriggerException;
 import org.exist.dom.QName;
 import org.exist.memtree.*;
+import org.exist.dom.BinaryDocument;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
 import org.exist.security.internal.aider.GroupAider;
@@ -39,13 +38,9 @@ import org.exist.security.internal.aider.UserAider;
 import org.exist.security.xacml.AccessContext;
 import org.exist.source.FileSource;
 import org.exist.storage.DBBroker;
-import org.exist.storage.lock.Lock;
 import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
-import org.exist.util.LockException;
-import org.exist.util.MimeTable;
-import org.exist.util.MimeType;
-import org.exist.util.SyntaxException;
+import org.exist.util.*;
 import org.exist.util.serializer.AttrList;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.*;
@@ -62,13 +57,17 @@ import org.w3c.dom.Element;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.helpers.AttributesImpl;
 
-import java.io.*;
-import java.util.Date;
-import java.util.Stack;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Deploy a .xar package into the database using the information provided
@@ -79,6 +78,8 @@ public class Deployment {
     public final static String PROPERTY_APP_ROOT = "repo.root-collection";
 
     private final static Logger LOG = LogManager.getLogger(Deployment.class);
+
+    public final static String PROCESSOR_NAME = "http://exist-db.org";
 
     private final static String REPO_NAMESPACE = "http://exist-db.org/xquery/repo";
     private final static String PKG_NAMESPACE = "http://expath.org/ns/pkg";
@@ -91,61 +92,76 @@ public class Deployment {
     private static final QName CLEANUP_ELEMENT = new QName("cleanup", REPO_NAMESPACE);
     private static final QName DEPLOYED_ELEMENT = new QName("deployed", REPO_NAMESPACE);
     private static final QName DEPENDENCY_ELEMENT = new QName("dependency", PKG_NAMESPACE);
+    private static final QName RESOURCES_ELEMENT = new QName("resources", REPO_NAMESPACE);
+    private static final String RESOURCES_PATH_ATTRIBUTE = "path";
 
-    private DBBroker broker;
+    private final DBBroker broker;
 
-    private String user = null;
-    private String password = null;
-    private String group = null;
-    private int perms = -1;
-    private String permsStr = null;
+    private static class RequestedPerms {
+        final String user;
+        final String password;
+        final Optional<String> group;
+        final Either<Integer, String> permissions;
 
-    public Deployment(DBBroker broker) {
+        private RequestedPerms(final String user, final String password, final Optional<String> group, final Either<Integer, String> permissions) {
+            this.user = user;
+            this.password = password;
+            this.group = group;
+            this.permissions = permissions;
+        }
+    }
+
+//    private Optional<RequestedPerms> requestedPerms = Optional.empty();
+
+    public Deployment(final DBBroker broker) {
         this.broker = broker;
     }
 
-    protected File getPackageDir(String pkgName, ExistRepository repo) throws PackageException {
-        File packageDir = null;
+    protected Optional<Path> getPackageDir(final String pkgName, final ExistRepository repo) throws PackageException {
+        Optional<Path> packageDir = Optional.empty();
 
-        for (final Packages pp : repo.getParentRepo().listPackages()) {
-            final org.expath.pkg.repo.Package pkg = pp.latest();
-            if (pkg.getName().equals(pkgName)) {
-                packageDir = getPackageDir(pkg);
+        if (repo != null) {
+            for (final Packages pp : repo.getParentRepo().listPackages()) {
+                final org.expath.pkg.repo.Package pkg = pp.latest();
+                if (pkg.getName().equals(pkgName)) {
+                    packageDir = Optional.of(getPackageDir(pkg));
+                }
             }
         }
         return packageDir;
     }
 
-    protected File getPackageDir(Package pkg) {
+    protected Path getPackageDir(final Package pkg) {
         final FileSystemStorage.FileSystemResolver resolver = (FileSystemStorage.FileSystemResolver) pkg.getResolver();
-        return resolver.resolveResourceAsFile(".");
+        return resolver.resolveResourceAsFile("").toPath();
     }
 
-    protected org.expath.pkg.repo.Package getPackage(String pkgName, ExistRepository repo) throws PackageException {
-        for (final Packages pp : repo.getParentRepo().listPackages()) {
-            final org.expath.pkg.repo.Package pkg = pp.latest();
-            if (pkg.getName().equals(pkgName)) {
-                return pkg;
+    protected Optional<org.expath.pkg.repo.Package> getPackage(final String pkgName, final ExistRepository repo) throws PackageException {
+        if (repo != null) {
+            for (final Packages pp : repo.getParentRepo().listPackages()) {
+                final org.expath.pkg.repo.Package pkg = pp.latest();
+                if (pkg.getName().equals(pkgName)) {
+                    return Optional.ofNullable(pkg);
+                }
             }
         }
-        return null;
+        return Optional.empty();
     }
 
-    protected DocumentImpl getRepoXML(File packageDir) throws PackageException {
+    protected DocumentImpl getRepoXML(final Path packageDir) throws PackageException {
         // find and parse the repo.xml descriptor
-        final File repoFile = new File(packageDir, "repo.xml");
-        if (!repoFile.canRead())
-            {return null;}
-        try {
-            return DocUtils.parse(broker.getBrokerPool(), null, new FileInputStream(repoFile));
-        } catch (final XPathException e) {
+        final Path repoFile = packageDir.resolve("repo.xml");
+        if (!Files.isReadable(repoFile)) {
+            return null;
+        }
+        try(final InputStream is = Files.newInputStream(repoFile)) {
+            return DocUtils.parse(broker.getBrokerPool(), null, is);
+        } catch (final XPathException | IOException e) {
             throw new PackageException("Failed to parse repo.xml: " + e.getMessage(), e);
-        } catch (final FileNotFoundException e) {
-            throw new PackageException("Failed to read repo.xml: " + e.getMessage(), e);
         }
     }
 
-    public String installAndDeploy(File xar, PackageLoader loader) throws PackageException, IOException {
+    public Optional<String> installAndDeploy(final Path xar, final PackageLoader loader) throws PackageException, IOException {
         return installAndDeploy(xar, loader, true);
     }
 
@@ -158,120 +174,162 @@ public class Deployment {
      * @param enforceDeps when set to true, the method will throw an exception if a dependency could not be resolved
      *                    or an older version of the required dependency is installed and needs to be replaced.
      */
-    public String installAndDeploy(File xar, PackageLoader loader, boolean enforceDeps) throws PackageException, IOException {
-        final DocumentImpl document = getDescriptor(xar);
+    public Optional<String> installAndDeploy(final Path xar, final PackageLoader loader, boolean enforceDeps) throws PackageException, IOException {
+        final Optional<DocumentImpl> descriptor = getDescriptor(xar);
+        if(!descriptor.isPresent()) {
+            throw new PackageException("Missing descriptor from package: " + xar.toAbsolutePath());
+        }
+        final DocumentImpl document = descriptor.get();
+
         final ElementImpl root = (ElementImpl) document.getDocumentElement();
         final String name = root.getAttribute("name");
         final String pkgVersion = root.getAttribute("version");
 
         final ExistRepository repo = broker.getBrokerPool().getExpathRepo();
-        final Packages packages = repo.getParentRepo().getPackages(name);
-        if (packages != null && (!enforceDeps || pkgVersion.equals(packages.latest().getVersion()))) {
-            LOG.info("Application package " + name + " already installed. Skipping.");
-            return null;
-        }
+        if (repo != null) {
+            final Packages packages = repo.getParentRepo().getPackages(name);
 
-        InMemoryNodeSet deps;
-        try {
-            deps = findElements(root, DEPENDENCY_ELEMENT);
-            for (final SequenceIterator i = deps.iterate(); i.hasNext(); ) {
-                final Element dependency = (Element) i.nextItem();
-                final String pkgName = dependency.getAttribute("package");
-                final String versionStr = dependency.getAttribute("version");
-                final String semVer = dependency.getAttribute("semver");
-                final String semVerMin = dependency.getAttribute("semver-min");
-                final String semVerMax = dependency.getAttribute("semver-max");
-                PackageLoader.Version version = null;
-                if (semVer != null) {
-                    version = new PackageLoader.Version(semVer, true);
-                } else if (semVerMax != null || semVerMin != null) {
-                    version = new PackageLoader.Version(semVerMin, semVerMax);
-                } else if (pkgVersion != null) {
-                    version = new PackageLoader.Version(versionStr, false);
-                }
-                if (pkgName != null) {
-                    LOG.info("Package " + name + " depends on " + pkgName);
-                    boolean isInstalled = false;
-                    if (repo.getParentRepo().getPackages(pkgName) != null) {
-                        LOG.debug("Package " + pkgName + " already installed");
-                        Packages pkgs = repo.getParentRepo().getPackages(pkgName);
-                        // check if installed package matches required version
-                        if (pkgs != null) {
-                            if (version != null) {
-                                Package latest = pkgs.latest();
-                                DependencyVersion depVersion = version.getDependencyVersion();
-                                if (depVersion.isCompatible(latest.getVersion())) {
-                                    isInstalled = true;
-                                } else {
-                                    LOG.debug("Package " + pkgName + " needs to be upgraded");
-                                    if (enforceDeps) {
-                                        throw new PackageException("Package requires version " + version.toString() +
-                                            " of package " + pkgName +
-                                            ". Installed version is " + latest.getVersion() + ". Please upgrade!");
-                                    }
-                                }
-                            } else {
-                                isInstalled = true;
-                            }
-                            if (isInstalled) {
-                                LOG.debug("Package " + pkgName + " already installed");
-                            }
-                        }
-                    }
-                    if (!isInstalled && loader != null) {
-                        final File depFile = loader.load(pkgName, version);
-                        if (depFile != null) {
-                            installAndDeploy(depFile, loader);
-                        } else {
-                            if (enforceDeps) {
-                                LOG.warn("Missing dependency: package " + pkgName + " could not be resolved. This error " +
-                                        "is not fatal, but the package may not work as expected");
-                            } else {
-                                throw new PackageException("Missing dependency: package " + pkgName + " could not be resolved.");
-                            }
-                        }
-                    }
-                }
+            if (packages != null && (!enforceDeps || pkgVersion.equals(packages.latest().getVersion()))) {
+                LOG.info("Application package " + name + " already installed. Skipping.");
+                final Package pkg = packages.latest();
+                return Optional.of(getTargetCollection(pkg, getPackageDir(pkg)));
             }
-        } catch (final XPathException e) {
-            throw new PackageException("Invalid descriptor found in " + xar.getAbsolutePath());
+
+            InMemoryNodeSet deps;
+            try {
+                deps = findElements(root, DEPENDENCY_ELEMENT);
+                for (final SequenceIterator i = deps.iterate(); i.hasNext(); ) {
+                    final Element dependency = (Element) i.nextItem();
+                    final String pkgName = dependency.getAttribute("package");
+                    final String processor = dependency.getAttribute("processor");
+                    final String versionStr = dependency.getAttribute("version");
+                    final String semVer = dependency.getAttribute("semver");
+                    final String semVerMin = dependency.getAttribute("semver-min");
+                    final String semVerMax = dependency.getAttribute("semver-max");
+                    PackageLoader.Version version = null;
+                    if (semVer != null) {
+                        version = new PackageLoader.Version(semVer, true);
+                    } else if (semVerMax != null || semVerMin != null) {
+                        version = new PackageLoader.Version(semVerMin, semVerMax);
+                    } else if (pkgVersion != null) {
+                        version = new PackageLoader.Version(versionStr, false);
+                    }
+
+                    if (processor != null && processor.equals(PROCESSOR_NAME) && version != null) {
+                        checkProcessorVersion(version);
+                    } else if (pkgName != null) {
+                        LOG.info("Package " + name + " depends on " + pkgName);
+                        boolean isInstalled = false;
+                        if (repo.getParentRepo().getPackages(pkgName) != null) {
+                            LOG.debug("Package " + pkgName + " already installed");
+                            Packages pkgs = repo.getParentRepo().getPackages(pkgName);
+                            // check if installed package matches required version
+                            if (pkgs != null) {
+                                if (version != null) {
+                                    Package latest = pkgs.latest();
+                                    DependencyVersion depVersion = version.getDependencyVersion();
+                                    if (depVersion.isCompatible(latest.getVersion())) {
+                                        isInstalled = true;
+                                    } else {
+                                        LOG.debug("Package " + pkgName + " needs to be upgraded");
+                                        if (enforceDeps) {
+                                            throw new PackageException("Package requires version " + version.toString() +
+                                                " of package " + pkgName +
+                                                ". Installed version is " + latest.getVersion() + ". Please upgrade!");
+                                        }
+                                    }
+                                } else {
+                                    isInstalled = true;
+                                }
+                                if (isInstalled) {
+                                    LOG.debug("Package " + pkgName + " already installed");
+                                }
+                            }
+                        }
+                        if (!isInstalled && loader != null) {
+                            final Path depFile = loader.load(pkgName, version);
+                            if (depFile != null) {
+                                installAndDeploy(depFile, loader);
+                            } else {
+                                if (enforceDeps) {
+                                    LOG.warn("Missing dependency: package " + pkgName + " could not be resolved. This error " +
+                                        "is not fatal, but the package may not work as expected");
+                                } else {
+                                    throw new PackageException("Missing dependency: package " + pkgName + " could not be resolved.");
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (final XPathException e) {
+                throw new PackageException("Invalid descriptor found in " + xar.toAbsolutePath().toString());
+            }
+
+            // installing the xar into the expath repo
+            LOG.info("Installing package " + xar.toAbsolutePath().toString());
+            final UserInteractionStrategy interact = new BatchUserInteraction();
+            final org.expath.pkg.repo.Package pkg = repo.getParentRepo().installPackage(xar, true, interact);
+            final ExistPkgInfo info = (ExistPkgInfo) pkg.getInfo("exist");
+            if (info != null && !info.getJars().isEmpty()) {
+                ClasspathHelper.updateClasspath(broker.getBrokerPool(), pkg);
+            }
+            broker.getBrokerPool().getXQueryPool().clear();
+            final String pkgName = pkg.getName();
+            // signal status
+            broker.getBrokerPool().reportStatus("Installing app: " + pkg.getAbbrev());
+            repo.reportAction(ExistRepository.Action.INSTALL, pkg.getName());
+
+            LOG.info("Deploying package " + pkgName);
+            return deploy(pkgName, repo, null);
         }
 
-        // installing the xar into the expath repo
-        LOG.info("Installing package " + xar.getAbsolutePath());
-        final UserInteractionStrategy interact = new BatchUserInteraction();
-        final org.expath.pkg.repo.Package pkg = repo.getParentRepo().installPackage(xar, true, interact);
-        final ExistPkgInfo info = (ExistPkgInfo) pkg.getInfo("exist");
-        if (info != null && !info.getJars().isEmpty())
-            {ClasspathHelper.updateClasspath(broker.getBrokerPool(), pkg);}
-        broker.getBrokerPool().getXQueryPool().clear();
-        final String pkgName = pkg.getName();
-        // signal status
-        broker.getBrokerPool().reportStatus("Installing app: " + pkg.getAbbrev());
-        repo.reportAction(ExistRepository.Action.INSTALL, pkg.getName());
-
-        LOG.info("Deploying package " + pkgName);
-        return deploy(pkgName, repo, null);
+        // Totally unneccessary to do the above if repo is unavailable.
+        return Optional.empty();
     }
 
-    public String undeploy(String pkgName, ExistRepository repo) throws PackageException {
-        final File packageDir = getPackageDir(pkgName, repo);
-        if (packageDir == null)
+    private void checkProcessorVersion(final PackageLoader.Version version) throws PackageException {
+        final String procVersion = SystemProperties.getInstance().getSystemProperty("product-version", "1.0");
+
+        final DependencyVersion depVersion = version.getDependencyVersion();
+        if (!depVersion.isCompatible(procVersion)) {
+            throw new PackageException("Package requires eXistdb version " + version.toString() + ". " +
+                "Installed version is " + procVersion);
+        }
+    }
+
+    public Optional<String> undeploy(final String pkgName, final ExistRepository repo) throws PackageException {
+        final Optional<Path> maybePackageDir = getPackageDir(pkgName, repo);
+        if (!maybePackageDir.isPresent()) {
             // fails silently if package dir is not found?
-            {return null;}
-        final DocumentImpl repoXML = getRepoXML(packageDir);
-        final Package pkg = getPackage(pkgName, repo);
+            return Optional.empty();
+        }
+
+        final Path packageDir = maybePackageDir.get();
+        final Optional<Package> pkg = getPackage(pkgName, repo);
+        final DocumentImpl repoXML;
+        try {
+            repoXML = getRepoXML(packageDir);
+        } catch (PackageException e) {
+            if (pkg.isPresent()) {
+                uninstall(pkg.get(), Optional.empty());
+            }
+            throw new PackageException("Failed to remove package from database " +
+                "due to error in repo.xml: " + e.getMessage(), e);
+        }
+
         if (repoXML != null) {
-            ElementImpl target = null;
             try {
-                target = findElement(repoXML, TARGET_COLL_ELEMENT);
-                final ElementImpl cleanup = findElement(repoXML, CLEANUP_ELEMENT);
-                if (cleanup != null) {
-                    runQuery(null, packageDir, cleanup.getStringValue(), false);
+                final Optional<ElementImpl> cleanup = findElement(repoXML, CLEANUP_ELEMENT);
+                if(cleanup.isPresent()) {
+                    runQuery(null, packageDir, cleanup.get().getStringValue(), false);
                 }
 
-                uninstall(pkg, target);
-                return target == null ? null : target.getStringValue();
+                final Optional<ElementImpl> target = findElement(repoXML, TARGET_COLL_ELEMENT);
+                if (pkg.isPresent()) {
+                    uninstall(pkg.get(), target);
+                }
+
+                return target.map(e -> Optional.ofNullable(e.getStringValue())).orElseGet(() -> Optional.of(getTargetFallback(pkg.get()).getCollectionPath()));
             } catch (final XPathException e) {
                 throw new PackageException("Error found while processing repo.xml: " + e.getMessage(), e);
             } catch (final IOException e) {
@@ -279,25 +337,33 @@ public class Deployment {
             }
         } else {
             // we still may need to remove the copy of the package from /db/system/repo
-            uninstall(pkg, null);
+            if (pkg.isPresent()) {
+                uninstall(pkg.get(), Optional.empty());
+            }
         }
-        return null;
+        return Optional.empty();
     }
 
-    public String deploy(String pkgName, ExistRepository repo, String userTarget) throws PackageException, IOException {
-        final File packageDir = getPackageDir(pkgName, repo);
-        if (packageDir == null)
-            {throw new PackageException("Package not found: " + pkgName);}
+    public Optional<String> deploy(final String pkgName, final ExistRepository repo, final String userTarget) throws PackageException, IOException {
+        final Optional<Path> maybePackageDir = getPackageDir(pkgName, repo);
+        if (!maybePackageDir.isPresent()) {
+            throw new PackageException("Package not found: " + pkgName);
+        }
+
+        final Path packageDir = maybePackageDir.get();
+
         final DocumentImpl repoXML = getRepoXML(packageDir);
-        if (repoXML == null)
-            {return null;}
+        if (repoXML == null) {
+            return Optional.empty();
+        }
         try {
             // if there's a <setup> element, run the query it points to
-            final ElementImpl setup = findElement(repoXML, SETUP_ELEMENT);
-            String path = setup == null ? null : setup.getStringValue();
-            if (path != null && path.length() > 0) {
-                runQuery(null, packageDir, path, true);
-                return null;
+            final Optional<ElementImpl> setup = findElement(repoXML, SETUP_ELEMENT);
+            final Optional<String> setupPath = setup.map(ElementImpl::getStringValue).filter(s -> !s.isEmpty());
+
+            if (setupPath.isPresent()) {
+                runQuery(null, packageDir, setupPath.get(), true);
+                return Optional.empty();
             } else {
                 // otherwise copy all child directories to the target collection
                 XmldbURI targetCollection = null;
@@ -308,72 +374,96 @@ public class Deployment {
                         throw new PackageException("Bad collection URI: " + userTarget, e);
                     }
                 } else {
-                    final ElementImpl target = findElement(repoXML, TARGET_COLL_ELEMENT);
-                    if (target != null) {
-                        final String targetPath = target.getStringValue();
-                        if (targetPath.length() > 0) {
-                            // determine target collection
-                            try {
-                                targetCollection = XmldbURI.create(getTargetCollection(targetPath));
-                            } catch (final Exception e) {
-                                throw new PackageException("Bad collection URI for <target> element: " + target.getStringValue(), e);
-                            }
+                    final Optional<ElementImpl> target = findElement(repoXML, TARGET_COLL_ELEMENT);
+                    final Optional<String> targetPath = target.map(ElementImpl::getStringValue).filter(s -> !s.isEmpty());
+
+                    if (targetPath.isPresent()) {
+                        // determine target collection
+                        try {
+                            targetCollection = XmldbURI.create(getTargetCollection(targetPath.get()));
+                        } catch (final Exception e) {
+                            throw new PackageException("Bad collection URI for <target> element: " + targetPath.get(), e);
                         }
                     }
                 }
+
                 if (targetCollection == null) {
                     // no target means: package does not need to be deployed into database
                     // however, we need to preserve a copy for backup purposes
-                    final Package pkg = getPackage(pkgName, repo);
-                    final String pkgColl = pkg.getAbbrev() + "-" + pkg.getVersion();
+                    final Optional<Package> pkg = getPackage(pkgName, repo);
+                    pkg.orElseThrow(() -> new XPathException("expath repository is not available so the package was not stored."));
+                    final String pkgColl = pkg.get().getAbbrev() + "-" + pkg.get().getVersion();
                     targetCollection = XmldbURI.SYSTEM.append("repo/" + pkgColl);
                 }
-                final ElementImpl permissions = findElement(repoXML, PERMISSIONS_ELEMENT);
-                if (permissions != null) {
-                    // get user, group and default permissions
-                    user = permissions.getAttribute("user");
-                    group = permissions.getAttribute("group");
-                    password = permissions.getAttribute("password");
-                    String mode = permissions.getAttribute("mode");
-                    try {
-                        perms = Integer.parseInt(mode, 8);
-                    } catch (final NumberFormatException e) {
-                        permsStr = mode;
-                        if (!permsStr.matches("^[rwx-]{9}"))
-                            {throw new PackageException("Bad format for mode attribute in <permissions>: " + mode);}
-                    }
+
+                // extract the permissions (if any)
+                final Optional<ElementImpl> permissions = findElement(repoXML, PERMISSIONS_ELEMENT);
+                final Optional<RequestedPerms> requestedPerms = permissions.flatMap(elem -> {
+                    final Optional<Either<Integer, String>> perms = Optional.ofNullable(elem.getAttribute("mode")).flatMap(mode -> {
+                        try {
+                            return Optional.of(Either.Left(Integer.parseInt(mode, 8)));
+                        } catch(final NumberFormatException e) {
+                            if(mode.matches("^[rwx-]{9}")) {
+                                return Optional.of(Either.Right(mode));
+                            } else {
+                                return Optional.empty();
+                            }
+                        }
+                    });
+
+                    return perms.map(p -> new RequestedPerms(
+                        elem.getAttribute("user"),
+                        elem.getAttribute("password"),
+                        Optional.ofNullable(elem.getAttribute("group")),
+                        p
+                    ));
+                });
+
+                //check that if there were permissions then we were able to parse them, a failure would be related to the mode string
+                if(permissions.isPresent() && !requestedPerms.isPresent()) {
+                    final String mode = permissions.map(elem -> elem.getAttribute("mode")).orElse(null);
+                    throw new PackageException("Bad format for mode attribute in <permissions>: " + mode);
                 }
 
                 // run the pre-setup query if present
-                final ElementImpl preSetup = findElement(repoXML, PRE_SETUP_ELEMENT);
-                if (preSetup != null) {
-                    path = preSetup.getStringValue();
-                    if (path.length() > 0)
-                        {runQuery(targetCollection, packageDir, path, true);}
+                final Optional<ElementImpl> preSetup = findElement(repoXML, PRE_SETUP_ELEMENT);
+                final Optional<String> preSetupPath = preSetup.map(ElementImpl::getStringValue).filter(s -> !s.isEmpty());
+
+                if(preSetupPath.isPresent()) {
+                    runQuery(targetCollection, packageDir, preSetupPath.get(), true);
                 }
 
                 // any required users and group should have been created by the pre-setup query.
                 // check for invalid users now.
-                checkUserSettings();
-
-                // install
-                scanDirectory(packageDir, targetCollection, true);
-
-                // run the post-setup query if present
-                final ElementImpl postSetup = findElement(repoXML, POST_SETUP_ELEMENT);
-                if (postSetup != null) {
-                    path = postSetup.getStringValue();
-                    if (path.length() > 0)
-                        {runQuery(targetCollection, packageDir, path, false);}
+                if(requestedPerms.isPresent()) {
+                    checkUserSettings(requestedPerms.get());
                 }
 
-                storeRepoXML(repoXML, targetCollection);
+                final InMemoryNodeSet resources = findElements(repoXML,RESOURCES_ELEMENT);
 
-                // TODO: it should be save to clean up the file system after a package
+                // install
+                final List<String> errors = scanDirectory(packageDir, targetCollection, resources, true, false,
+                    requestedPerms);
+
+                // run the post-setup query if present
+                final Optional<ElementImpl> postSetup = findElement(repoXML, POST_SETUP_ELEMENT);
+                final Optional<String> postSetupPath = postSetup.map(ElementImpl::getStringValue).filter(s -> !s.isEmpty());
+
+                if(postSetupPath.isPresent()) {
+                    runQuery(targetCollection, packageDir, postSetupPath.get(), false);
+                }
+
+                storeRepoXML(repoXML, targetCollection, requestedPerms);
+
+                // TODO: it should be safe to clean up the file system after a package
                 // has been deployed. Might be enabled after 2.0
                 //cleanup(pkgName, repo);
 
-                return targetCollection.getCollectionPath();
+                if (!errors.isEmpty()) {
+                    throw new PackageException("Deployment incomplete, " + errors.size() + " issues found: " +
+                        errors.stream().collect(Collectors.joining("; ")));
+                }
+                return Optional.ofNullable(targetCollection.getCollectionPath());
             }
         } catch (final XPathException e) {
             throw new PackageException("Error found while processing repo.xml: " + e.getMessage(), e);
@@ -389,33 +479,70 @@ public class Deployment {
      * @param repo
      * @throws PackageException
      */
-    private void cleanup(String pkgName, ExistRepository repo) throws PackageException {
-        final Package pkg = getPackage(pkgName, repo);
-        final String abbrev = pkg.getAbbrev();
-        final File packageDir = getPackageDir(pkg);
-        if (packageDir == null) {
-            throw new PackageException("Cleanup: package dir for package " + pkgName + " not found");
-        }
-        File[] filesToDelete = packageDir.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File file) {
-                String name = file.getName();
-                if (file.isDirectory()) {
+    private void cleanup(final String pkgName, final ExistRepository repo) throws PackageException {
+        if (repo != null) {
+            final Optional<Package> pkg = getPackage(pkgName, repo);
+            final Optional<Path> maybePackageDir = pkg.map(this::getPackageDir);
+            if (!maybePackageDir.isPresent()) {
+                throw new PackageException("Cleanup: package dir for package " + pkgName + " not found");
+            }
+
+            final Path packageDir = maybePackageDir.get();
+            final String abbrev = pkg.get().getAbbrev();
+
+            try(final Stream<Path> filesToDelete = Files.find(packageDir, 1, (path, attrs) -> {
+                if(path.equals(packageDir)) {
+                    return false;
+                }
+                final String name = FileUtils.fileName(path);
+                if (attrs.isDirectory()) {
                     return !(name.equals(abbrev) || name.equals("content"));
                 } else {
                     return !(name.equals("expath-pkg.xml") || name.equals("repo.xml") ||
-                            "exist.xml".equals(name) || name.startsWith("icon"));
+                        "exist.xml".equals(name) || name.startsWith("icon"));
                 }
-            }
-        });
-        for (final File fileToDelete : filesToDelete) {
-            try {
-                FileUtils.forceDelete(fileToDelete);
-            } catch (final IOException e) {
-                LOG.warn("Cleanup: failed to delete file " + fileToDelete.getAbsolutePath() + " in package " +
-                    pkgName);
+            })) {
+
+                filesToDelete.forEach(path -> {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch(final IOException ioe) {
+                        LOG.warn("Cleanup: failed to delete file " + path.toAbsolutePath().toString() + " in package " + pkgName);
+                    }
+                });
+            } catch (final IOException ioe) {
+                LOG.warn("Cleanup: failed to delete files", ioe);
             }
         }
+    }
+
+    /**
+     * Get the target collection for the given package, which resides in pkgDir.
+     * Returns path to cached .xar for library packages.
+     *
+     * @param pkg
+     * @param pkgDir
+     * @return
+     * @throws PackageException
+     */
+    private String getTargetCollection(final Package pkg, final Path pkgDir) throws PackageException {
+        final DocumentImpl repoXML = getRepoXML(pkgDir);
+        if (repoXML != null) {
+            try {
+                final Optional<ElementImpl> target = findElement(repoXML, TARGET_COLL_ELEMENT);
+                return target.map(ElementImpl::getStringValue).map(this::getTargetCollection).map(XmldbURI::create).map(XmldbURI::getCollectionPath)
+                    .orElseGet(() -> getTargetFallback(pkg).getCollectionPath());
+            } catch (XPathException e) {
+                throw new PackageException("Failed to determine target collection");
+            }
+        } else {
+            return getTargetFallback(pkg).getCollectionPath();
+        }
+    }
+
+    private XmldbURI getTargetFallback(final Package pkg) {
+        final String pkgColl = pkg.getAbbrev() + "-" + pkg.getVersion();
+        return XmldbURI.SYSTEM.append("repo/" + pkgColl);
     }
 
     private String getTargetCollection(String targetFromRepo) {
@@ -441,39 +568,29 @@ public class Deployment {
      * @param target
      * @throws PackageException
      */
-    private void uninstall(Package pkg, ElementImpl target)
-            throws PackageException {
+    private void uninstall(final Package pkg, final Optional<ElementImpl> target)
+        throws PackageException {
         // determine target collection
-        XmldbURI targetCollection;
-        if (target == null || target.getStringValue().length() == 0) {
-            final String pkgColl = pkg.getAbbrev() + "-" + pkg.getVersion();
-            targetCollection = XmldbURI.SYSTEM.append("repo/" + pkgColl);
-        } else {
-            final String targetPath = target.getStringValue();
-            try {
-                targetCollection = XmldbURI.create(getTargetCollection(targetPath));
-            } catch (final Exception e) {
-                throw new PackageException("Bad collection URI for <target> element: " + targetPath);
-            }
-        }
+        final Optional<String> targetPath = target.map(ElementImpl::getStringValue).filter(s -> !s.isEmpty());
+        final XmldbURI targetCollection = targetPath.map(s -> XmldbURI.create(getTargetCollection(s)))
+            .orElseGet(() -> getTargetFallback(pkg));
+
         final TransactionManager mgr = broker.getBrokerPool().getTransactionManager();
-        final Txn txn = mgr.beginTransaction();
-        try {
-            Collection collection = broker.getOrCreateCollection(txn, targetCollection);
-            if (collection != null)
-                {broker.removeCollection(txn, collection);}
+        try(final Txn transaction = mgr.beginTransaction()) {
+            Collection collection = broker.getOrCreateCollection(transaction, targetCollection);
+            if (collection != null) {
+                broker.removeCollection(transaction, collection);
+            }
             if (target != null) {
                 final XmldbURI configCollection = XmldbURI.CONFIG_COLLECTION_URI.append(targetCollection);
-                collection = broker.getOrCreateCollection(txn, configCollection);
-                if (collection != null)
-                    {broker.removeCollection(txn, collection);}
+                collection = broker.getOrCreateCollection(transaction, configCollection);
+                if (collection != null) {
+                    broker.removeCollection(transaction, collection);
+                }
             }
-            mgr.commit(txn);
+            mgr.commit(transaction);
         } catch (final Exception e) {
             LOG.error("Exception occurred while removing package.", e);
-            mgr.abort(txn);
-        } finally {
-            mgr.close(txn);
         }
     }
 
@@ -484,8 +601,8 @@ public class Deployment {
      * @param targetCollection
      * @throws XPathException
      */
-    private void storeRepoXML(DocumentImpl repoXML, XmldbURI targetCollection)
-            throws PackageException, XPathException {
+    private void storeRepoXML(final DocumentImpl repoXML, final XmldbURI targetCollection, final Optional<RequestedPerms> requestedPerms)
+        throws PackageException, XPathException {
         // Store repo.xml
         final DateTimeValue time = new DateTimeValue(new Date());
         final MemTreeBuilder builder = new MemTreeBuilder();
@@ -500,73 +617,69 @@ public class Deployment {
         final DocumentImpl updatedXML = builder.getDocument();
 
         final TransactionManager mgr = broker.getBrokerPool().getTransactionManager();
-        final Txn txn = mgr.beginTransaction();
-        try {
-            final Collection collection = broker.getOrCreateCollection(txn, targetCollection);
+        try(final Txn transaction = mgr.beginTransaction()) {
+            final Collection collection = broker.getOrCreateCollection(transaction, targetCollection);
             final XmldbURI name = XmldbURI.createInternal("repo.xml");
-            final IndexInfo info = collection.validateXMLResource(txn, broker, name, updatedXML);
+            final IndexInfo info = collection.validateXMLResource(transaction, broker, name, updatedXML);
             final Permission permission = info.getDocument().getPermissions();
-            setPermissions(false, MimeType.XML_TYPE, permission);
+            setPermissions(requestedPerms, false, MimeType.XML_TYPE, permission);
 
-            collection.store(txn, broker, info, updatedXML);
+            collection.store(transaction, broker, info, updatedXML);
 
-            mgr.commit(txn);
+            mgr.commit(transaction);
         } catch (final Exception e) {
-            mgr.abort(txn);
-        } finally {
-            mgr.close(txn);
+            LOG.warn(e);
         }
     }
 
-    private void checkUserSettings() throws PackageException {
+    private void checkUserSettings(final RequestedPerms requestedPerms) throws PackageException {
+        Objects.requireNonNull(requestedPerms);
         final org.exist.security.SecurityManager secman = broker.getBrokerPool().getSecurityManager();
         try {
-            if (group != null && !secman.hasGroup(group)) {
-                final GroupAider aider = new GroupAider(group);
-                secman.addGroup(aider);
+            if (requestedPerms.group.filter(g -> !secman.hasGroup(g)).isPresent()) {
+                secman.addGroup(broker, new GroupAider(requestedPerms.group.get()));
             }
-            if (user != null && !secman.hasAccount(user)) {
-                final UserAider aider = new UserAider(user);
-                aider.setPassword(password);
-                if (group != null)
-                    {aider.addGroup(group);}
 
-                secman.addAccount(aider);
+            if (!secman.hasAccount(requestedPerms.user)) {
+                final UserAider aider = new UserAider(requestedPerms.user);
+                aider.setPassword(requestedPerms.password);
+                requestedPerms.group.ifPresent(groupName -> aider.addGroup(groupName));
+                secman.addAccount(broker, aider);
             }
-        } catch (final ConfigurationException e) {
-            throw new PackageException("Failed to create user: " + user, e);
-        } catch (final PermissionDeniedException e) {
-            throw new PackageException("Failed to create user: " + user, e);
-        } catch (final EXistException e) {
-            throw new PackageException("Failed to create user: " + user, e);
+        } catch (final PermissionDeniedException | EXistException e) {
+            throw new PackageException("Failed to create user: " + requestedPerms.user, e);
         }
     }
 
-    private Sequence runQuery(XmldbURI targetCollection, File tempDir, String fileName, boolean preInstall)
-            throws PackageException, IOException, XPathException {
-        final File xquery = new File(tempDir, fileName);
-        if (!xquery.canRead()) {
+    private Sequence runQuery(final XmldbURI targetCollection, final Path tempDir, final String fileName, final boolean preInstall)
+        throws PackageException, IOException, XPathException {
+        final Path xquery = tempDir.resolve(fileName);
+        if (!Files.isReadable(xquery)) {
             LOG.warn("The XQuery resource specified in the <setup> element was not found");
             return Sequence.EMPTY_SEQUENCE;
         }
         final XQuery xqs = broker.getXQueryService();
-        final XQueryContext ctx = xqs.newContext(AccessContext.REST);
-        ctx.declareVariable("dir", tempDir.getAbsolutePath());
+        final XQueryContext ctx = new XQueryContext(broker.getBrokerPool(), AccessContext.REST);
+        ctx.declareVariable("dir", tempDir.toAbsolutePath().toString());
         final File home = broker.getConfiguration().getExistHome();
-        ctx.declareVariable("home", home.getAbsolutePath());
+        if(home != null) {
+            ctx.declareVariable("home", home.toPath().toAbsolutePath().toString());
+        }
+
         if (targetCollection != null) {
             ctx.declareVariable("target", targetCollection.toString());
             ctx.setModuleLoadPath(XmldbURI.EMBEDDED_SERVER_URI + targetCollection.toString());
         } else
-            {ctx.declareVariable("target", Sequence.EMPTY_SEQUENCE);}
-        if (preInstall)
+        {ctx.declareVariable("target", Sequence.EMPTY_SEQUENCE);}
+        if (preInstall) {
             // when running pre-setup scripts, base path should point to directory
             // because the target collection does not yet exist
-            {ctx.setModuleLoadPath(tempDir.getAbsolutePath());}
+            ctx.setModuleLoadPath(tempDir.toAbsolutePath().toString());
+        }
 
         CompiledXQuery compiled;
         try {
-            compiled = xqs.compile(ctx, new FileSource(xquery, "UTF-8", false));
+            compiled = xqs.compile(ctx, new FileSource(xquery.toFile(), "UTF-8", false));
             return xqs.execute(compiled, null);
         } catch (final PermissionDeniedException e) {
             throw new PackageException(e.getMessage(), e);
@@ -580,39 +693,63 @@ public class Deployment {
      * @param directory
      * @param target
      */
-    private void scanDirectory(File directory, XmldbURI target, boolean inRootDir) {
+    private List<String> scanDirectory(final Path directory, final XmldbURI target, final InMemoryNodeSet resources,
+        final boolean inRootDir, final boolean isResourcesDir, final Optional<RequestedPerms> requestedPerms) {
+        return scanDirectory(directory, target, resources, inRootDir, isResourcesDir, requestedPerms, new ArrayList<>());
+    }
+
+    private List<String> scanDirectory(final Path directory, final XmldbURI target, final InMemoryNodeSet resources,
+        final boolean inRootDir, final boolean isResourcesDir, final
+    Optional<RequestedPerms> requestedPerms, final List<String> errors) {
         final TransactionManager mgr = broker.getBrokerPool().getTransactionManager();
-        final Txn txn = mgr.beginTransaction();
         Collection collection = null;
-        try {
-            collection = broker.getOrCreateCollection(txn, target);
-            setPermissions(true, null, collection.getPermissionsNoLock());
-            broker.saveCollection(txn, collection);
-            mgr.commit(txn);
+        try(final Txn transaction = mgr.beginTransaction()) {
+            collection = broker.getOrCreateCollection(transaction, target);
+            setPermissions(requestedPerms, true, null, collection.getPermissionsNoLock());
+            broker.saveCollection(transaction, collection);
+            mgr.commit(transaction);
         } catch (final Exception e) {
-            mgr.abort(txn);
-        } finally {
-            mgr.close(txn);
+            LOG.warn(e);
+            errors.add(e.getMessage());
         }
 
-        try {
-            // lock the collection while we store the files
-            // TODO: could be released after each operation
-            collection.getLock().acquire(Lock.WRITE_LOCK);
-            storeFiles(directory, collection, inRootDir);
-        } catch (final LockException e) {
-            e.printStackTrace();
-        } finally {
-            collection.getLock().release(Lock.WRITE_LOCK);
+        final boolean isResources = isResourcesDir || isResourceDir(target, resources);
+
+        // the root dir is not allowed to be a resources directory
+        if (!inRootDir && isResources) {
+            try {
+                storeBinaryResources(directory, collection, requestedPerms, errors);
+            } catch (Exception e) {
+                LOG.error(e.getMessage(), e);
+            }
+        } else {
+            storeFiles(directory, collection, inRootDir, requestedPerms, errors);
         }
 
         // scan sub directories
-        final File[] files = directory.listFiles();
-        for (final File file : files) {
-            if (file.isDirectory()) {
-                scanDirectory(file, target.append(file.getName()), false);
-            }
+        try(final Stream<Path> subDirs = Files.find(directory, 1, (path, attrs) -> (!path.equals(directory)) && attrs.isDirectory())) {
+            subDirs.forEach(path -> scanDirectory(path, target.append(FileUtils.fileName(path)), resources, false,
+                isResources, requestedPerms, errors));
+        } catch(final IOException ioe) {
+            LOG.warn("Unable to scan sub-directories", ioe);
         }
+        return errors;
+    }
+
+    private boolean isResourceDir(XmldbURI target, InMemoryNodeSet resources) {
+        // iterate here or pass into scandirectory directly or even save as class property???
+        try {
+            for (final SequenceIterator i = resources.iterate(); i.hasNext(); ) {
+                final ElementImpl child = (ElementImpl) i.nextItem();
+                final String resourcePath = child.getAttribute(RESOURCES_PATH_ATTRIBUTE);
+                if (target.toString().endsWith(resourcePath)) {
+                    return true;
+                }
+            }
+        } catch (XPathException e) {
+            LOG.warn("Caught exception while reading resource list in repo.xml: " + e.getMessage(), e);
+        }
+        return false;
     }
 
     /**
@@ -621,47 +758,100 @@ public class Deployment {
      * @param directory
      * @param targetCollection
      */
-    private void storeFiles(File directory, Collection targetCollection, boolean inRootDir) {
-        final File[] files = directory.listFiles();
+    private void storeFiles(final Path directory, final Collection targetCollection, final boolean inRootDir, final
+    Optional<RequestedPerms> requestedPerms, final List<String> errors) {
+        List<Path> files;
+        try {
+            files = FileUtils.list(directory);
+        } catch(final IOException ioe) {
+            LOG.error(ioe);
+            errors.add(FileUtils.fileName(directory) + ": " + ioe.getMessage());
+            files = Collections.EMPTY_LIST;
+        }
+
         final MimeTable mimeTab = MimeTable.getInstance();
         final TransactionManager mgr = broker.getBrokerPool().getTransactionManager();
-        for (final File file : files) {
-            if (inRootDir && "repo.xml".equals(file.getName()))
-                {continue;}
-            if (!file.isDirectory()) {
-                MimeType mime = mimeTab.getContentTypeFor(file.getName());
-                if (mime == null)
-                    {mime = MimeType.BINARY_TYPE;}
-                final XmldbURI name = XmldbURI.create(file.getName());
 
-                final Txn txn = mgr.beginTransaction();
-                try {
+        for (final Path file : files) {
+            if (inRootDir && FileUtils.fileName(file).equals("repo.xml")) {
+                continue;
+            }
+            if (!Files.isDirectory(file)) {
+                MimeType mime = mimeTab.getContentTypeFor(FileUtils.fileName(file));
+                if (mime == null) {
+                    mime = MimeType.BINARY_TYPE;
+                }
+                final XmldbURI name = XmldbURI.create(FileUtils.fileName(file));
+
+                try(final Txn transaction = mgr.beginTransaction()) {
                     if (mime.isXMLType()) {
-                        final InputSource is = new InputSource(file.toURI().toASCIIString());
-                        final IndexInfo info = targetCollection.validateXMLResource(txn, broker, name, is);
-                        info.getDocument().getMetadata().setMimeType(mime.getName());
-                        final Permission permission = info.getDocument().getPermissions();
-                        setPermissions(false, mime, permission);
+                        try {
+                            final InputSource is = new InputSource(file.toUri().toASCIIString());
+                            final IndexInfo info = targetCollection.validateXMLResource(transaction, broker, name, is);
+                            info.getDocument().getMetadata().setMimeType(mime.getName());
+                            final Permission permission = info.getDocument().getPermissions();
+                            setPermissions(requestedPerms, false, mime, permission);
 
-                        targetCollection.store(txn, broker, info, is);
+                            targetCollection.store(transaction, broker, info, is);
+                        } catch (Exception e) {
+                            //check for .html ending
+                            if(mime.getName().equals(MimeType.HTML_TYPE.getName())){
+                                //store it
+                                storeBinary(targetCollection, file, mime, name, requestedPerms, transaction);
+                            } else {
+                                errors.add(FileUtils.fileName(file) + ": " + e.getMessage());
+                            }
+                        }
                     } else {
-                        final long size = file.length();
-                        final FileInputStream is = new FileInputStream(file);
-                        final BinaryDocument doc =
-                                targetCollection.addBinaryResource(txn, broker, name, is, mime.getName(), size);
-                        is.close();
+                        final long size = Files.size(file);
+                        try(final InputStream is = Files.newInputStream(file)) {
+                            final BinaryDocument doc =
+                                targetCollection.addBinaryResource(transaction, broker, name, is, mime.getName(), size);
 
-                        final Permission permission = doc.getPermissions();
-                        setPermissions(false, mime, permission);
-                        doc.getMetadata().setMimeType(mime.getName());
-                        broker.storeXMLResource(txn, doc);
+                            final Permission permission = doc.getPermissions();
+                            setPermissions(requestedPerms, false, mime, permission);
+                            doc.getMetadata().setMimeType(mime.getName());
+                            broker.storeXMLResource(transaction, doc);
+                        }
                     }
-                    mgr.commit(txn);
+                    mgr.commit(transaction);
                 } catch (final Exception e) {
-                    mgr.abort(txn);
-                    e.printStackTrace();
-                } finally {
-                    mgr.close(txn);
+                    LOG.error(e.getMessage(), e);
+                    errors.add(FileUtils.fileName(file) + ": " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    private void storeBinary(final Collection targetCollection, final Path file, final MimeType mime, final XmldbURI name, final Optional<RequestedPerms> requestedPerms, final Txn transaction) throws
+        IOException, EXistException, PermissionDeniedException, LockException, TriggerException {
+        final long size = Files.size(file);
+        try (final InputStream is = Files.newInputStream(file)) {
+            final BinaryDocument doc =
+                targetCollection.addBinaryResource(transaction, broker, name, is, mime.getName(), size);
+
+            final Permission permission = doc.getPermissions();
+            setPermissions(requestedPerms, false, mime, permission);
+            doc.getMetadata().setMimeType(mime.getName());
+            broker.storeXMLResource(transaction, doc);
+        }
+    }
+
+    private void storeBinaryResources(final Path directory, final Collection targetCollection, final
+    Optional<RequestedPerms> requestedPerms, final List<String> errors) throws IOException, EXistException,
+        PermissionDeniedException, LockException, TriggerException {
+        final TransactionManager mgr = broker.getBrokerPool().getTransactionManager();
+        try(DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
+            for (final Path entry: stream) {
+                if (!Files.isDirectory(entry)) {
+                    final XmldbURI name = XmldbURI.create(FileUtils.fileName(entry));
+                    try(final Txn transaction = mgr.beginTransaction()) {
+                        storeBinary(targetCollection, entry, MimeType.BINARY_TYPE, name, requestedPerms, transaction);
+                        mgr.commit(transaction);
+                    } catch (final Exception e) {
+                        LOG.error(e.getMessage(), e);
+                        errors.add(e.getMessage());
+                    }
                 }
             }
         }
@@ -672,141 +862,122 @@ public class Deployment {
      * @param mime
      * @param permission
      */
-    private void setPermissions(boolean isCollection, MimeType mime, Permission permission) throws PermissionDeniedException {
-        if (user != null){
-            permission.setOwner(user);
-        }
-        if (group != null){
-            permission.setGroup(group);
-        }
+    private void setPermissions(final Optional<RequestedPerms> requestedPerms, final boolean isCollection, final MimeType mime, final Permission permission) throws PermissionDeniedException {
+        int mode = permission.getMode();
+        if(requestedPerms.isPresent()) {
+            final RequestedPerms perms = requestedPerms.get();
+            permission.setOwner(perms.user);
 
-        int mode;
-        if (permsStr != null) {
-            try {
-                permission.setMode(permsStr);
-                mode = permission.getMode();
-            } catch (final SyntaxException e) {
-                LOG.warn("Incorrect permissions string: " + permsStr + ". Falling back to default.");
-                mode = permission.getMode();
+            if(perms.group.isPresent()) {
+                permission.setGroup(perms.group.get());
             }
-        } else if (perms > -1) {
-            mode = perms;
-        } else {
-            mode = permission.getMode();
+
+            mode = perms.permissions.map(permStr -> {
+                try {
+                    permission.setMode(permStr);
+                    return permission.getMode();
+                } catch (final PermissionDeniedException | SyntaxException e) {
+                    LOG.warn("Unable to set permissions string: " + permStr + ". Falling back to default.");
+                    return permission.getMode();
+                }
+            }).fold(l -> l, r -> r);
         }
 
         if (isCollection || (mime != null && mime.getName().equals(MimeType.XQUERY_TYPE.getName()))) {
-            mode = mode | 0111;
+            mode = mode | 0111;     //TODO(AR) Whoever did this - this is a really bad idea. You are circumventing the security of the system
         }
         permission.setMode(mode);
     }
 
-    private ElementImpl findElement(NodeImpl root, QName qname) throws XPathException {
+    private Optional<ElementImpl> findElement(final NodeImpl root, final QName qname) throws XPathException {
         final InMemoryNodeSet setupNodes = new InMemoryNodeSet();
         root.selectDescendants(false, new NameTest(Type.ELEMENT, qname), setupNodes);
-        if (setupNodes.getItemCount() == 0)
-            {return null;}
-        return (ElementImpl) setupNodes.itemAt(0);
+        if (setupNodes.getItemCount() == 0) {
+            return Optional.empty();
+        }
+        return Optional.of((ElementImpl) setupNodes.itemAt(0));
     }
 
-    private InMemoryNodeSet findElements(NodeImpl root, QName qname) throws XPathException {
+    private InMemoryNodeSet findElements(final NodeImpl root, final QName qname) throws XPathException {
         final InMemoryNodeSet setupNodes = new InMemoryNodeSet();
         root.selectDescendants(false, new NameTest(Type.ELEMENT, qname), setupNodes);
         return setupNodes;
     }
 
-    public String getNameFromDescriptor(File xar) throws IOException, PackageException {
-        final DocumentImpl doc = getDescriptor(xar);
-        final Element root = doc.getDocumentElement();
-        return root.getAttribute("name");
+    public Optional<String> getNameFromDescriptor(final Path xar) throws IOException, PackageException {
+        final Optional<DocumentImpl> doc = getDescriptor(xar);
+        return doc.map(DocumentImpl::getDocumentElement).map(root -> root.getAttribute("name"));
     }
 
-    public DocumentImpl getDescriptor(File jar) throws IOException, PackageException {
-        final InputStream istream = new BufferedInputStream(new FileInputStream(jar));
-        final JarInputStream jis = new JarInputStream(istream);
-        JarEntry entry;
-        DocumentImpl doc = null;
-        while ((entry = jis.getNextJarEntry()) != null) {
-            if (!entry.isDirectory() && "expath-pkg.xml".equals(entry.getName())) {
-                final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                int c;
-                final byte[] b = new byte[4096];
-                while ((c = jis.read(b)) > 0) {
-                    bos.write(b, 0, c);
+    public Optional<DocumentImpl> getDescriptor(final Path jar) throws IOException, PackageException {
+        try(final JarInputStream jis = new JarInputStream(Files.newInputStream(jar))) {
+            JarEntry entry;
+            while ((entry = jis.getNextJarEntry()) != null) {
+                if (!entry.isDirectory() && "expath-pkg.xml".equals(entry.getName())) {
+                    try {
+                        return Optional.of(DocUtils.parse(broker.getBrokerPool(), null, jis));
+                    } catch (final XPathException e) {
+                        throw new PackageException("Error while parsing expath-pkg.xml: " + e.getMessage(), e);
+                    }
                 }
-
-                bos.close();
-
-                final byte[] data = bos.toByteArray();
-
-                final ByteArrayInputStream bis = new ByteArrayInputStream(data);
-                try {
-                    doc = DocUtils.parse(broker.getBrokerPool(), null, bis);
-                } catch (final XPathException e) {
-                    throw new PackageException("Error while parsing expath-pkg.xml: " + e.getMessage(), e);
-                }
-                break;
             }
         }
-        jis.close();
-        return doc;
+        return Optional.empty();
     }
 
     /**
      * Update repo.xml while copying it. For security reasons, make sure
      * any default password is removed before uploading.
      */
-    private class UpdatingDocumentReceiver extends DocumentBuilderReceiver {
+    private static class UpdatingDocumentReceiver extends DocumentBuilderReceiver {
+        private final String time;
+        private final Stack<String> stack = new Stack<>();
 
-        private String time;
-        private Stack<String> stack = new Stack<String>();
-
-        public UpdatingDocumentReceiver( MemTreeBuilder builder, String time )
-        {
-            super( builder, false );
+        public UpdatingDocumentReceiver(final MemTreeBuilder builder, final String time) {
+            super(builder, false);
             this.time = time;
         }
 
         @Override
-        public void startElement(QName qname, AttrList attribs) {
-            stack.push(qname.getLocalName());
+        public void startElement(final QName qname, final AttrList attribs) {
+            stack.push(qname.getLocalPart());
             AttrList newAttrs = attribs;
-            if (attribs != null && "permissions".equals(qname.getLocalName())) {
+            if (attribs != null && "permissions".equals(qname.getLocalPart())) {
                 newAttrs = new AttrList();
                 for (int i = 0; i < attribs.getLength(); i++) {
-                    if (!"password". equals(attribs.getQName(i).getLocalName())) {
+                    if (!"password". equals(attribs.getQName(i).getLocalPart())) {
                         newAttrs.addAttribute(attribs.getQName(i), attribs.getValue(i), attribs.getType(i));
                     }
                 }
             }
 
-            if (!"deployed".equals(qname.getLocalName())) {
+            if (!"deployed".equals(qname.getLocalPart())) {
                 super.startElement(qname, newAttrs);
             }
         }
 
         @Override
-        public void startElement(String namespaceURI, String localName,
-                                 String qName, Attributes attrs) throws SAXException {
+        public void startElement(final String namespaceURI, final String localName,
+            final String qName, final Attributes attrs) throws SAXException {
             stack.push(localName);
-            if (!"deployed".equals(localName))
-                {super.startElement(namespaceURI, localName, qName, attrs);}
+            if (!"deployed".equals(localName)) {
+                super.startElement(namespaceURI, localName, qName, attrs);
+            }
         }
 
         @Override
-        public void endElement(QName qname) throws SAXException {
+        public void endElement(final QName qname) throws SAXException {
             stack.pop();
-            if ("meta".equals(qname.getLocalName())) {
+            if ("meta".equals(qname.getLocalPart())) {
                 addDeployTime();
             }
-            if (!"deployed".equals(qname.getLocalName())) {
+            if (!"deployed".equals(qname.getLocalPart())) {
                 super.endElement(qname);
             }
         }
 
         @Override
-        public void endElement(String uri, String localName, String qName)
-                throws SAXException {
+        public void endElement(final String uri, final String localName, final String qName) throws SAXException {
             stack.pop();
             if ("meta".equals(localName)) {
                 addDeployTime();
@@ -817,26 +988,27 @@ public class Deployment {
         }
 
         @Override
-        public void attribute(QName qname, String value) throws SAXException {
+        public void attribute(final QName qname, final String value) throws SAXException {
             final String current = stack.peek();
-            if (!("permissions".equals(current) && "password".equals(qname.getLocalName()))) {
+            if (!("permissions".equals(current) && "password".equals(qname.getLocalPart()))) {
                 super.attribute(qname, value);
             }
         }
 
         @Override
-        public void characters(char[] ch, int start, int len)
-                throws SAXException {
+        public void characters(final char[] ch, final int start, final int len) throws SAXException {
             final String current = stack.peek();
-            if (!"deployed".equals(current))
-                {super.characters(ch, start, len);}
+            if (!"deployed".equals(current)) {
+                super.characters(ch, start, len);
+            }
         }
 
         @Override
-        public void characters(CharSequence seq) throws SAXException {
+        public void characters(final CharSequence seq) throws SAXException {
             final String current = stack.peek();
-            if (!"deployed".equals(current))
-                {super.characters(seq);}
+            if (!"deployed".equals(current)) {
+                super.characters(seq);
+            }
         }
 
         private void addDeployTime() throws SAXException {
