@@ -21,12 +21,12 @@
  */
 package org.exist.xquery;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Date;
@@ -341,13 +341,13 @@ public class XQueryContext implements BinaryValueManager, Context
             return mod;
         }
         // try an eXist-specific module
-        final File resolved = repo.resolveXQueryModule(namespace).toFile();
+        final Path resolved = repo.resolveXQueryModule(namespace);
         // use the resolved file or return null
         if ( resolved == null ) {
             return null;
         }
         // build a module object from the file
-        final Source src = new FileSource(resolved, "utf-8", false);
+        final Source src = new FileSource(resolved.toFile(), "utf-8", false);
         return compileOrBorrowModule(prefix, namespace, "", src);
     }
     // TODO: end of expath repo manageer, may change
