@@ -269,20 +269,44 @@ public class Service implements Configurable {
         if (!mapAttributes.isEmpty()) {
             final Account account = found;
             try {
-                realm.executeAsSystemUser(broker -> {
-                    mapAttributes.forEach(mapping -> {
-                        String val = responseAttributes.get(mapping.getAttribute());
+                if (mapAttributes.size() == 1 && "*".equals(mapAttributes.get(0).attribute)) {
+                    realm.executeAsSystemUser(broker -> {
+                        responseAttributes.forEach((k,v) -> {
+                            if (v != null) {
+                                account.setMetadataValue(new SchemaType() {
+                                    @Override
+                                    public String getNamespace() {
+                                        return k;
+                                    }
+                                    @Override
+                                    public String getAlias() {
+                                        return k;
+                                    }
+                                }, v);
+                            }
+                        });
 
-                        if (val != null) {
-                            account.setMetadataValue(mapping, val);
-                        }
+                        account.save();
+
+                        return account;
                     });
+                } else {
+                    realm.executeAsSystemUser(broker -> {
+                        mapAttributes.forEach(mapping -> {
+                            String val = responseAttributes.get(mapping.getAttribute());
 
-                    account.save();
+                            if (val != null) {
+                                account.setMetadataValue(mapping, val);
+                            }
+                        });
 
-                    return account;
-                });
+                        account.save();
+
+                        return account;
+                    });
+                }
             } catch (EXistException | PermissionDeniedException e) {
+                SAMLRealm.LOG.error(e,e);
                 throw new AuthenticationException(
                     AuthenticationException.UNNOWN_EXCEPTION,
                     "can't update account's metadata",
