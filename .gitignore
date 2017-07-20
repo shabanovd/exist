@@ -13,8 +13,6 @@ extensions/contentextraction/lib/
 extensions/lib/
 extensions/modules/lib/
 lib/extensions/
-lib/user/svnkit*.jar
-lib/user/icu4j*.jar
 local.*
 mime-types.xml
 start.jar
@@ -39,7 +37,6 @@ webapp/WEB-INF/logs/*.log.*
 tools/jetty/logs/
 tools/jetty/tmp/
 tools/wrapper/logs/
-backup/
 test/junit/
 test/temp/
 nbproject/build/
@@ -47,3 +44,4 @@ nbproject/private/
 /target
 build/intellij
 eXist.iws
+VERSION.txt
