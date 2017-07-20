@@ -59,7 +59,10 @@ public class ExistRepository extends Observable { //implements BrokerPoolService
 
   //    @Override
     public void configure(final Configuration configuration) throws BrokerPoolServiceException {
-        final Path dataDir = Optional.ofNullable((Path) configuration.getProperty(BrokerPool.PROPERTY_DATA_DIR))
+        final Path dataDir = Optional
+            .ofNullable(
+                Paths.get((String) configuration.getProperty(BrokerPool.PROPERTY_DATA_DIR))
+            )
             .orElse(Paths.get(NativeBroker.DEFAULT_DATA_DIR));
         this.expathDir = dataDir.resolve(EXPATH_REPO_DIR);
     }
@@ -206,7 +209,10 @@ public class ExistRepository extends Observable { //implements BrokerPoolService
     }
 
     public static Path getRepositoryDir(final Configuration config) throws IOException {
-        final Path dataDir = Optional.ofNullable((Path) config.getProperty(BrokerPool.PROPERTY_DATA_DIR))
+        final Path dataDir = Optional
+            .ofNullable(
+                Paths.get((String) config.getProperty(BrokerPool.PROPERTY_DATA_DIR))
+            )
             .orElse(Paths.get(NativeBroker.DEFAULT_DATA_DIR));
         final Path expathDir = dataDir.resolve(EXPATH_REPO_DIR);
 
