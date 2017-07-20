@@ -28,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerException;
 
@@ -96,9 +97,11 @@ public class SAMLServlet extends HttpServlet {
             throw new ServletException(e);
         }
 
-        // String relay = request.getParameter(RELAY_STATE);
+        String relay = request.getParameter(RELAY_STATE);
 
         String responseMessage = request.getParameter(SAML_RESPONSE);
+
+        HttpSession session = request.getSession(true);
 
         if (responseMessage != null) {
             LOG.debug("Response from Identity Provider is received");
@@ -109,8 +112,23 @@ public class SAMLServlet extends HttpServlet {
 
                 //samlMessageContext.setLocalEntityId(service.getSpProviderId());
 
-                String relayState = "/";
-                //XXX: getInitialRequestedResource(samlMessageContext);
+                //String relayState = "/";
+                //getInitialRequestedResource(samlMessageContext);
+
+                String relayState = samlMessageContext.getRelayState();
+                if (relayState == null || relayState.isEmpty()) {
+                    relayState = relay;
+
+                    if (session != null) {
+                        if (relayState == null || relayState.isEmpty()) {
+                            Object redirect = session.getAttribute(RELAY_STATE);
+
+                            if (redirect != null) {
+                                relayState = redirect.toString();
+                            }
+                        }
+                    }
+                }
 
                 service.verify(samlMessageContext);
 
@@ -118,41 +136,22 @@ public class SAMLServlet extends HttpServlet {
                 service.createSAMLSession(request.getSession(), samlMessageContext);
 
                 LOG.debug("User has been successfully authenticated in idP. Redirect to initial requested resource " + relayState);
-                response.sendRedirect(relayState);
-                return;
+
+                if (relayState != null && !relayState.isEmpty()) {
+                    response.sendRedirect(relayState);
+                } else {
+                    response.sendRedirect("/");
+                }
             } catch (Exception e) {
                 throw new ServletException(e);
             }
         } else {
+            if (session != null) {
+                session.setAttribute(RELAY_STATE, relay);
+            }
+
             service.sendAuthRequest(request, response);
-            return;
         }
-
-        // if (request.getParameterMap().containsKey(RETURN_TO_PAGE)) {
-        //
-        // String authorizationUrl = service.getAuthorizationUrl(EMPTY_TOKEN);
-        //
-        // request.getSession().setAttribute(RETURN_TO_PAGE,
-        // request.getParameter(RETURN_TO_PAGE));
-        //
-        // response.sendRedirect(authorizationUrl);
-        // return;
-        // }
-        //
-        // try {
-        // service.saveAccessToken(request, service, accessToken);
-        // } catch (Exception e) {
-        // throw new ServletException(e);
-        // }
-
-        // String returnToPage = (String)
-        // request.getSession().getAttribute(RETURN_TO_PAGE);
-        //
-        // if (returnToPage != null) {
-        // response.sendRedirect(returnToPage);
-        // } else {
-        // response.sendRedirect("/");
-        // }
     }
 
     private SAMLMessageContext<Response, SAMLObject, NameID> decodeSamlMessage(HttpServletRequest request, HttpServletResponse response) throws Exception {
