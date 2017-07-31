@@ -1388,8 +1388,12 @@ public class Collection extends Observable implements Resource, Comparable<Colle
             }
         });
     }
-    
-    /** 
+
+    public void store(final Txn transaction, final DBBroker broker, final IndexInfo info, final String data) throws EXistException, PermissionDeniedException, TriggerException, SAXException, LockException {
+        store(transaction, broker, info, data, false);
+    }
+
+    /**
      * Stores an XML document in the database. {@link #validateXMLResourceInternal(org.exist.storage.txn.Txn,
      * org.exist.storage.DBBroker, org.exist.xmldb.XmldbURI, CollectionConfiguration, org.exist.collections.Collection.ValidateBlock)} 
      * should have been called previously in order to acquire a write lock for the document. Launches the finish trigger.
