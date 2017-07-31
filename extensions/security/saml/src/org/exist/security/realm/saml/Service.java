@@ -105,7 +105,10 @@ public class Service implements Configurable {
 
     @ConfigurationFieldAsElement("return-url")
     String return_url;
-    
+
+    @ConfigurationFieldAsElement("on-success-redirect-to-url")
+    String on_success_url = "/";
+
     @ConfigurationFieldAsElement("signCertificate")
     String signCertificate;
 

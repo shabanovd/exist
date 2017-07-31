@@ -140,7 +140,9 @@ public class SAMLServlet extends HttpServlet {
                 if (relayState != null && !relayState.isEmpty()) {
                     response.sendRedirect(relayState);
                 } else {
-                    response.sendRedirect("/");
+                    String query = request.getQueryString();
+
+                    response.sendRedirect(service.on_success_url + ((query != null && !query.isEmpty()) ? "?" + query : ""));
                 }
             } catch (Exception e) {
                 throw new ServletException(e);
