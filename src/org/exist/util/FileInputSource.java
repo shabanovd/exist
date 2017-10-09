@@ -7,8 +7,9 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Path;
 
-public class FileInputSource extends EXistInputSource {
+public class FileInputSource extends EXistInputSource implements AutoCloseable {
 
 	private File file;
 	private InputStream inputStream;
@@ -17,7 +18,7 @@ public class FileInputSource extends EXistInputSource {
 	 * Empty constructor
 	 */
 	public FileInputSource() {
-		this(null);
+		this((File)null);
 	}
 	
 	/**
@@ -29,6 +30,12 @@ public class FileInputSource extends EXistInputSource {
 		super();
 		inputStream = null;
 		setFile(file);
+	}
+
+	public FileInputSource(Path path) {
+		super();
+		inputStream = null;
+		setFile(path.toFile());
 	}
 	
 	/**
