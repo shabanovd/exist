@@ -29,6 +29,7 @@ package org.exist.util.io;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Stack;
 import java.util.UUID;
 import org.apache.commons.io.FileUtils;
@@ -54,21 +55,34 @@ public class TemporaryFileManager {
     
     private final static String FOLDER_PREFIX = "_mmtfm_";
     private final Stack<File> available = new Stack<File>();
-    private final File tmpFolder;
+    private File tmpFolder;
     
     private final static TemporaryFileManager instance = new TemporaryFileManager();
     
     public static TemporaryFileManager getInstance() {
+        //workaround for initialization issue on 2nd run without jvm restart and cleaned up tmp folder
+        instance.check();
+
         return instance;
     }
     
     private TemporaryFileManager() {
+        init();
+    }
+
+    private void check() {
+        if (!Files.isDirectory(tmpFolder.toPath())) {
+            init();
+        }
+    }
+
+    private void init() {
         final String tmpDir = System.getProperty("java.io.tmpdir");
         final File t = new File(tmpDir);
         
         cleanupOldTempFolders(t);
         
-        this.tmpFolder = new File(t, FOLDER_PREFIX + UUID.randomUUID().toString());
+        tmpFolder = new File(t, FOLDER_PREFIX + UUID.randomUUID().toString());
         if(!tmpFolder.mkdir()) {
             throw new RuntimeException("Unable to use temporary folder: " +  tmpFolder.getAbsolutePath());
         }
@@ -118,6 +132,8 @@ public class TemporaryFileManager {
     }
     
     private void cleanupOldTempFolders(final File t) {
+        available.clear();
+
         final File oldFolders[] = t.listFiles(new FileFilter(){
             @Override
             public boolean accept(File f) {
