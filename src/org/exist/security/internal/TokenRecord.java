@@ -83,6 +83,30 @@ public class TokenRecord implements Configurable {
         return builder.getDocument();
     }
 
+    public String name() {
+        return name;
+    }
+
+    public String token() {
+        return token;
+    }
+
+    public String realm() {
+        return realm;
+    }
+
+    public String account() {
+        return account;
+    }
+
+    public long created() {
+        return created;
+    }
+
+    public long lastUse() {
+        return lastUse;
+    }
+
     @Override
     public boolean isConfigured() {
         return configuration != null;
