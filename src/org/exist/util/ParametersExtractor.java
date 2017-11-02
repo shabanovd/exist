@@ -138,4 +138,30 @@ public class ParametersExtractor {
 
         return results;
     }
+
+    public static Properties parseProperties(final Node container, final String elementName) throws IllegalArgumentException {
+        final Properties properties = new Properties();
+
+        if(container != null && container.getNodeType() == Node.ELEMENT_NODE) {
+            final NodeList params = ((Element) container).getElementsByTagName(elementName);
+            for(int i = 0; i < params.getLength(); i++) {
+                final Element param = ((Element) params.item(i));
+
+                final String name = param.getAttribute("name");
+                final String value = param.getAttribute("value");
+
+                if(name != null && value != null) {
+                    properties.setProperty(name, value);
+                } else {
+                    if(name == null) {
+                        throw new IllegalArgumentException("'name' attribute missing for " + elementName);
+                    } else {
+                        throw new IllegalArgumentException("'value' attribute missing for " + elementName);
+                    }
+                }
+            }
+        }
+
+        return properties;
+    }
 }

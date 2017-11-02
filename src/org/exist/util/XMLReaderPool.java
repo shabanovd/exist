@@ -20,6 +20,8 @@
  */
 package org.exist.util;
 
+import java.util.Map;
+import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.pool.PoolableObjectFactory;
 import org.apache.commons.pool.impl.StackObjectPool;
 import org.apache.logging.log4j.LogManager;
@@ -40,6 +42,11 @@ import org.xml.sax.ext.DefaultHandler2;
  */
 public class XMLReaderPool extends StackObjectPool<XMLReader> {
 
+    public final static String PARSER_ELEMENT_NAME = "parser";
+    public final static String XML_PARSER_ELEMENT = "xml";
+    public final static String XML_PARSER_FEATURES_ELEMENT = "features";
+    public final static String XML_PARSER_FEATURES_PROPERTY = "parser.xml-parser.features";
+
     private final static Logger LOG = LogManager.getLogger(XMLReaderPool.class);
 
     private final static DefaultHandler2 DUMMY_HANDLER = new DefaultHandler2();
@@ -58,9 +65,21 @@ public class XMLReaderPool extends StackObjectPool<XMLReader> {
         this.config = config;
     }
 
+    private void setParserConfigFeatures(final XMLReader xmlReader) throws ParserConfigurationException, SAXNotRecognizedException, SAXNotSupportedException {
+        final Map<String, Boolean> parserFeatures = (Map<String, Boolean>) config.getProperty(XML_PARSER_FEATURES_PROPERTY);
+
+        if(parserFeatures == null) return;
+
+        for(final Map.Entry<String, Boolean> feature : parserFeatures.entrySet()) {
+            xmlReader.setFeature(feature.getKey(), feature.getValue());
+        }
+    }
+
     public synchronized XMLReader borrowXMLReader() {
         try {
-            return super.borrowObject();
+            final XMLReader reader = super.borrowObject();
+            setParserConfigFeatures(reader);
+            return reader;
         } catch (final Exception e) {
             throw new IllegalStateException("error while returning XMLReader: " + e.getMessage(), e );
         }

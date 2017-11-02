@@ -236,6 +236,12 @@ public class Configuration implements ErrorHandler
                 configureTransformer((Element)transformers.item(0));
             }
 
+            //parser settings
+            final NodeList parsers = doc.getElementsByTagName(XMLReaderPool.PARSER_ELEMENT_NAME);
+            if(parsers.getLength() > 0) {
+                configureParser((Element)parsers.item(0));
+            }
+
             //serializer settings
             final NodeList serializers = doc.getElementsByTagName(Serializer.CONFIGURATION_ELEMENT_NAME);
             if(serializers.getLength() > 0) {
@@ -558,6 +564,23 @@ public class Configuration implements ErrorHandler
         if( cachingValue != null ) {
             config.put( TransformerFactoryAllocator.PROPERTY_CACHING_ATTRIBUTE, parseBoolean( cachingValue, false ) );
             LOG.debug( TransformerFactoryAllocator.PROPERTY_CACHING_ATTRIBUTE + ": " + config.get( TransformerFactoryAllocator.PROPERTY_CACHING_ATTRIBUTE ) );
+        }
+    }
+
+    private void configureParser(final Element parser) {
+        final NodeList nlXml = parser.getElementsByTagName(XMLReaderPool.XML_PARSER_ELEMENT);
+        if(nlXml.getLength() > 0) {
+            final Element xml = (Element)nlXml.item(0);
+
+            final NodeList nlFeatures = xml.getElementsByTagName(XMLReaderPool.XML_PARSER_FEATURES_ELEMENT);
+            if(nlFeatures.getLength() > 0) {
+                final Properties pFeatures = ParametersExtractor.parseProperties(nlFeatures.item(0), "feature");
+                if(pFeatures != null) {
+                    final Map<String, Boolean> features = new HashMap<>();
+                    pFeatures.forEach((k,v) -> features.put(k.toString(), Boolean.valueOf(v.toString())));
+                    config.put(XMLReaderPool.XML_PARSER_FEATURES_PROPERTY, features);
+                }
+            }
         }
     }
 
