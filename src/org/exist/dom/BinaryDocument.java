@@ -94,7 +94,7 @@ public class BinaryDocument extends DocumentImpl {
     @Override
     public void read(VariableByteInput istream) throws IOException, EOFException {
         setDocId(istream.readInt());
-        setFileURI(XmldbURI.create(istream.readUTF()));
+        setFileURI(XmldbURI.createInternal(istream.readUTF()));
         pageNr = istream.readLong();
         
         getPermissions().read(istream);
