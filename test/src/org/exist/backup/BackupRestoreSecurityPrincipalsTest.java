@@ -21,6 +21,7 @@
  */
 package org.exist.backup;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.exist.EXistException;
 import org.exist.backup.restore.listener.RestoreListener;
 import org.exist.jetty.JettyStart;
@@ -28,6 +29,7 @@ import static org.exist.repo.AutoDeploymentTrigger.AUTODEPLOY_PROPERTY;
 import org.exist.security.*;
 import org.exist.security.SecurityManager;
 import org.exist.security.internal.RealmImpl;
+import org.exist.security.internal.SecurityManagerImpl;
 import org.exist.security.internal.aider.GroupAider;
 import org.exist.security.internal.aider.UserAider;
 import org.exist.storage.BrokerPool;
@@ -72,6 +74,7 @@ public class BackupRestoreSecurityPrincipalsTest {
     private final static String FRANK_USER = "frank";
     private final static String JOE_USER = "joe";
     private final static String JACK_USER = "jack";
+    private final static String TEST_USER = "test";
 
     private String autodeploy;
 
@@ -249,6 +252,26 @@ public class BackupRestoreSecurityPrincipalsTest {
         final Resource jDoc = test.getResource(JACKS_DOCUMENT);
         final Permission jacksDocPermissions = testUms.getPermissions(jDoc);
         assertEquals(JACK_USER, jacksDocPermissions.getOwner().getName());
+    }
+
+    @Test
+    public void addAccountWithLockedConfig() throws Exception {
+        final Collection col = DatabaseManager.getCollection("xmldb:exist:///db/system/security", "admin", "");
+        final Resource doc = col.getResource("config.xml");
+        final UserManagementService ums = (UserManagementService)col.getService("UserManagementService", "1.0");
+        ums.lockResource(doc, ums.getAccount("admin"));
+
+        createUser(TEST_USER, TEST_USER);
+
+        shutdownDatabase();
+        startupDatabase();
+
+        final SecurityManagerImpl sm = (SecurityManagerImpl) BrokerPool.getInstance().getSecurityManager();
+
+        AtomicInteger lastId = new AtomicInteger();
+        sm.preAllocateAccountId(lastId::set);
+
+        assertEquals(4, lastId.get());
     }
 
     private void assertUser(final int userId, final String userName, final Node account) {
