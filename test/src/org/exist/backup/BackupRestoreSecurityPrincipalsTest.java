@@ -76,9 +76,21 @@ public class BackupRestoreSecurityPrincipalsTest {
     private final static String JACK_USER = "jack";
     private final static String TEST_USER = "test";
 
+    final String FRANKS_DOCUMENT = "franks-document.xml";
+    final String JACKS_DOCUMENT = "jacks-document.xml";
+
+    final String accountQuery = "declare namespace c = 'http://exist-db.org/Configuration';\n" +
+        "for $account in //c:account\n" +
+        "return\n" +
+        "<user id='{$account/@id}' name='{$account/c:name}'/>";
+
+    final String lastAccountIdQuery =
+        "declare namespace c = 'http://exist-db.org/Configuration';\n" +
+            "//c:security-manager/string(@last-account-id)";
+
     private String autodeploy;
 
-    private void startupDatabase() throws EXistException, DatabaseConfigurationException {
+    private void startupDatabase() {
         server = new JettyStart();
         server.run();
     }
@@ -93,10 +105,10 @@ public class BackupRestoreSecurityPrincipalsTest {
     @Before
     public void setup() throws PermissionDeniedException, EXistException, XMLDBException, SAXException, IOException, DatabaseConfigurationException, AuthenticationException {
         //we need to temporarily disable the auto-deploy trigger, as deploying eXide creates user accounts which interferes with this test
-	    autodeploy = System.getProperty(AUTODEPLOY_PROPERTY, "off");
-	    System.setProperty(AUTODEPLOY_PROPERTY, "off");
+	      autodeploy = System.getProperty(AUTODEPLOY_PROPERTY, "off");
+	      System.setProperty(AUTODEPLOY_PROPERTY, "off");
 
-        startupDatabase();
+        resetDatabaseToClean();
 
         createUser(FRANK_USER, FRANK_USER);   //should have id RealmImpl.INITIAL_LAST_ACCOUNT_ID + 1
         createUser(JOE_USER, JOE_USER);       //should have id RealmImpl.INITIAL_LAST_ACCOUNT_ID + 2
@@ -154,9 +166,11 @@ public class BackupRestoreSecurityPrincipalsTest {
 
     @After
     public void shutdownDatabase() {
-        server.shutdown();
-        server = null;
-	    System.setProperty(AUTODEPLOY_PROPERTY, autodeploy); //set the autodeploy trigger enablement back to how it was before this test class
+        if (server != null) {
+            server.shutdown();
+            server = null;
+        }
+	      System.setProperty(AUTODEPLOY_PROPERTY, autodeploy); //set the autodeploy trigger enablement back to how it was before this test class
     }
 
     /**
@@ -182,54 +196,74 @@ public class BackupRestoreSecurityPrincipalsTest {
     @Test
     public void restoreConflictingUsername() throws PermissionDeniedException, EXistException, SAXException, ParserConfigurationException, IOException, URISyntaxException, XMLDBException, AuthenticationException {
         final Collection root = DatabaseManager.getCollection("xmldb:exist:///db", "admin", "");
-        final XPathQueryService xqs = (XPathQueryService) root.getService("XPathQueryService", "1.0");
+        final XPathQueryService xqs = (XPathQueryService) root
+            .getService("XPathQueryService", "1.0");
 
         //create new users: 'frank' and 'jack'
         createUser(FRANK_USER, FRANK_USER);   // should have id RealmImpl.INITIAL_LAST_ACCOUNT_ID + 1
         createUser(JACK_USER, JACK_USER);     // should have id RealmImpl.INITIAL_LAST_ACCOUNT_ID + 2
-
-        final String accountQuery = "declare namespace c = 'http://exist-db.org/Configuration';\n" +
-            "for $account in //c:account\n" +
-            "return\n" +
-            "<user id='{$account/@id}' name='{$account/c:name}'/>";
+        createUser("test1", "test1");
+        createUser("test2", "test2");
 
         //check the current user accounts
         ResourceSet result = xqs.query(accountQuery);
-        assertUser(RealmImpl.ADMIN_ACCOUNT_ID, SecurityManager.DBA_USER, ((XMLResource) result.getResource(0)).getContentAsDOM());
-        assertUser(RealmImpl.GUEST_ACCOUNT_ID, SecurityManager.GUEST_USER, ((XMLResource) result.getResource(1)).getContentAsDOM());
-        assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 1, "frank", ((XMLResource) result.getResource(2)).getContentAsDOM());
-        assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 2, "jack", ((XMLResource) result.getResource(3)).getContentAsDOM());
+        assertUser(RealmImpl.ADMIN_ACCOUNT_ID, SecurityManager.DBA_USER,
+            ((XMLResource) result.getResource(0)).getContentAsDOM());
+        assertUser(RealmImpl.GUEST_ACCOUNT_ID, SecurityManager.GUEST_USER,
+            ((XMLResource) result.getResource(1)).getContentAsDOM());
+        assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 1, "frank",
+            ((XMLResource) result.getResource(2)).getContentAsDOM());
+        assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 2, "jack",
+            ((XMLResource) result.getResource(3)).getContentAsDOM());
 
         //check the last user id
-        final String lastAccountIdQuery = "declare namespace c = 'http://exist-db.org/Configuration';\n" +
-            "//c:security-manager/string(@last-account-id)";
         result = xqs.query(lastAccountIdQuery);
-        assertEquals(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 2, Integer.parseInt(result.getResource(0).getContent().toString())); //last account id should be that of 'jack'
+        assertEquals(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 4, Integer.parseInt(
+            result.getResource(0).getContent()
+                .toString())); //last account id should be that of 'jack'
 
         //create a test collection and give everyone access
-        final CollectionManagementService cms = (CollectionManagementService)root.getService("CollectionManagementService", "1.0");
+        final CollectionManagementService cms = (CollectionManagementService) root
+            .getService("CollectionManagementService", "1.0");
         final Collection test = cms.createCollection("test");
-        final UserManagementService testUms = (UserManagementService)test.getService("UserManagementService", "1.0");
+        final UserManagementService testUms = (UserManagementService) test
+            .getService("UserManagementService", "1.0");
         testUms.chmod("rwxrwxrwx");
 
         //create and store a new document as 'frank'
-        final Collection frankTest = DatabaseManager.getCollection("xmldb:exist:///db/test", FRANK_USER, FRANK_USER);
-        final String FRANKS_DOCUMENT = "franks-document.xml";
-        final Resource frankDoc = frankTest.createResource(FRANKS_DOCUMENT, XMLResource.RESOURCE_TYPE);
+        final Collection frankTest = DatabaseManager
+            .getCollection("xmldb:exist:///db/test", FRANK_USER, FRANK_USER);
+        final Resource frankDoc = frankTest
+            .createResource(FRANKS_DOCUMENT, XMLResource.RESOURCE_TYPE);
         frankDoc.setContent("<hello>frank</hello>");
         frankTest.storeResource(frankDoc);
 
         //create and store a new document as 'jack'
-        final Collection jackTest = DatabaseManager.getCollection("xmldb:exist:///db/test", JACK_USER, JACK_USER);
-        final String JACKS_DOCUMENT = "jacks-document.xml";
+        final Collection jackTest = DatabaseManager
+            .getCollection("xmldb:exist:///db/test", JACK_USER, JACK_USER);
         final Resource jackDoc = jackTest.createResource(JACKS_DOCUMENT, XMLResource.RESOURCE_TYPE);
         jackDoc.setContent("<hello>jack</hello>");
         jackTest.storeResource(jackDoc);
 
         //restore the database backup
         final Restore restore = new Restore();
-        restore.restore(new NullRestoreListener(), "admin", "", null, backupFile, "xmldb:exist:///db");
+        restore
+            .restore(new NullRestoreListener(), "admin", "", null, backupFile, "xmldb:exist:///db");
 
+        shutdownDatabase();
+        startupDatabase();
+
+        checkData();
+    }
+
+    private void checkData() throws XMLDBException {
+
+        final Collection root = DatabaseManager.getCollection("xmldb:exist:///db", "admin", "");
+        final XPathQueryService xqs = (XPathQueryService) root.getService("XPathQueryService", "1.0");
+
+        //check the last user id
+        ResourceSet result = xqs.query(lastAccountIdQuery);
+        assertEquals(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 4, Integer.parseInt(result.getResource(0).getContent().toString())); //last account id should be that of 'jack'
 
         //check the current user accounts after the restore
         result = xqs.query(accountQuery);
@@ -237,11 +271,17 @@ public class BackupRestoreSecurityPrincipalsTest {
         assertUser(RealmImpl.GUEST_ACCOUNT_ID, SecurityManager.GUEST_USER, ((XMLResource) result.getResource(1)).getContentAsDOM());
         assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 1, "frank", ((XMLResource) result.getResource(2)).getContentAsDOM());
         assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 2, "jack", ((XMLResource) result.getResource(3)).getContentAsDOM());
-        assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 4, "joe", ((XMLResource) result.getResource(4)).getContentAsDOM()); //this is `+ 4` because pre-allocating an id skips one
+        assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 3, "test1", ((XMLResource) result.getResource(4)).getContentAsDOM()); //this is `+ 4` because pre-allocating an id skips one
+        assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 4, "test2", ((XMLResource) result.getResource(5)).getContentAsDOM()); //this is `+ 4` because pre-allocating an id skips one
+        assertUser(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 4, "joe", ((XMLResource) result.getResource(6)).getContentAsDOM()); //this is `+ 4` because pre-allocating an id skips one
 
         //check the last user id after the restore
         result = xqs.query(lastAccountIdQuery);
         assertEquals(RealmImpl.INITIAL_LAST_ACCOUNT_ID + 4, Integer.parseInt(result.getResource(0).getContent().toString())); //last account id should be that of 'joe'
+
+        final CollectionManagementService cms = (CollectionManagementService) root.getService("CollectionManagementService", "1.0");
+        final Collection test = cms.createCollection("test");
+        final UserManagementService testUms = (UserManagementService) test.getService("UserManagementService", "1.0");
 
         //check the owner of frank's document after restore
         final Resource fDoc = test.getResource(FRANKS_DOCUMENT);
