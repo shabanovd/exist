@@ -116,7 +116,7 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
 
     protected IndexController indexController;
 
-    long config_timestamp = 0;
+    private long config_timestamp = 0;
 
     public DBBroker(final BrokerPool pool, final Configuration config) {
         this.config = config;
@@ -129,9 +129,9 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
     }
 
     public void initIndexModules() {
-        if (indexController == null
-            || getBrokerPool().getIndexManager().getConfigurationTimestamp() != config_timestamp) {
-
+        long timestamp = getBrokerPool().getIndexManager().getConfigurationTimestamp();
+        if (indexController == null || timestamp != config_timestamp) {
+            config_timestamp = timestamp;
             indexController = new IndexController(this);
         }
     }

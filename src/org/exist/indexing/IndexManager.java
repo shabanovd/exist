@@ -57,7 +57,7 @@ public class IndexManager implements BrokerPoolService {
     private Configuration.IndexModuleConfig modConfigs[];
     private Path dataDir;
 
-    long config_timestamp = 0;
+    private long config_timestamp = 0;
 
     /**
      * @param pool   the BrokerPool representing the current database instance
