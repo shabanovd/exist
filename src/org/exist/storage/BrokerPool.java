@@ -1679,9 +1679,6 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
                     if (shutdownListener != null) {
                         shutdownListener.shutdown(instanceName, instancesCount());
                     }
-
-                    statusReporter.terminate();
-                    statusReporter = null;
                 }
             } finally {
                 // clear instance variables, just to be sure they will be garbage collected
@@ -1703,6 +1700,11 @@ public class BrokerPool extends BrokerPools implements BrokerPoolConstants, Data
             }
         } finally {
             status.process(Event.FINISHED_SHUTDOWN);
+
+            if (statusReporter != null) {
+                statusReporter.terminate();
+                statusReporter = null;
+            }
         }
     }
 
