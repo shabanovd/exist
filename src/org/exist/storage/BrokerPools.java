@@ -303,8 +303,8 @@ abstract class BrokerPools {
      * @param killed <code>true</code> when invoked by an exiting JVM
      */
     public static void stopAll(final boolean killed) {
-        final Lock writeLock = instancesLock.writeLock();
-        writeLock.lock();
+        final Lock readLock = instancesLock.readLock();
+        readLock.lock();
         try {
             for (final BrokerPool instance : instances.values()) {
                 if (instance.isInstanceConfigured()) {
@@ -315,9 +315,9 @@ abstract class BrokerPools {
 
             // Clear the living instances container : they are all sentenced to death...
             assert(instances.size() == 0); // should have all been removed by BrokerPool#shutdown(boolean)
-            instances.clear();
+            //instances.clear();
         } finally {
-            writeLock.unlock();
+            readLock.unlock();
         }
     }
 }
