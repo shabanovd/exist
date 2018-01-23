@@ -328,6 +328,29 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
         metadata.setPageCount(0);
     }
 
+    public void copyOf(final DocumentImpl other) {
+
+        DocumentMetadata md = new DocumentMetadata();
+
+        //copy metadata
+        md.copyOf(other.getMetadata());
+
+        final long timestamp = System.currentTimeMillis();
+        md.setLastModified(timestamp);
+        //md.setCreated(timestamp);
+
+        // reset pageCount: will be updated during storage
+        md.setPageCount(0);
+
+        childAddress = null;
+        children = 0;
+
+        metadata = md;
+
+        //copy permission
+        permissions = ((UnixStylePermission) other.permissions).copy();
+    }
+
     /**
      * The method <code>copyChildren</code>
      *

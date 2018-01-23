@@ -2511,7 +2511,7 @@ public class NativeBroker extends DBBroker {
                     }
                 } else {
                     final DocumentImpl newDoc = new DocumentImpl(pool, destination, newName);
-                    newDoc.copyOf(doc, oldDoc != null);
+                    newDoc.copyOf(doc);
                     newDoc.setDocId(getNextResourceId(transaction, destination));
                     newDoc.getUpdateLock().acquire(LockMode.WRITE_LOCK);
                     try {
