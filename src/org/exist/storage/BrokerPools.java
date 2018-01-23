@@ -296,6 +296,22 @@ abstract class BrokerPools {
         }
     }
 
+    private static BrokerPool nextInstance() {
+        final Lock readLock = instancesLock.readLock();
+        readLock.lock();
+        try {
+            for (final BrokerPool instance : instances.values()) {
+                if (instance.isInstanceConfigured()) {
+                    return instance;
+                }
+            }
+        } finally {
+            readLock.unlock();
+        }
+
+        return null;
+    }
+
     /**
      * Stops all the database instances. After calling this method, the database instances are
      * no longer configured.
@@ -303,21 +319,13 @@ abstract class BrokerPools {
      * @param killed <code>true</code> when invoked by an exiting JVM
      */
     public static void stopAll(final boolean killed) {
-        final Lock readLock = instancesLock.readLock();
-        readLock.lock();
-        try {
-            for (final BrokerPool instance : instances.values()) {
-                if (instance.isInstanceConfigured()) {
-                    //Shut it down
-                    instance.shutdown(killed);
-                }
-            }
-
-            // Clear the living instances container : they are all sentenced to death...
-            assert(instances.size() == 0); // should have all been removed by BrokerPool#shutdown(boolean)
-            //instances.clear();
-        } finally {
-            readLock.unlock();
+        BrokerPool instance;
+        while ((instance = nextInstance()) != null){
+            instance.shutdown(killed);
         }
+
+        // Clear the living instances container : they are all sentenced to death...
+        assert(instances.size() == 0); // should have all been removed by BrokerPool#shutdown(boolean)
+        //instances.clear();
     }
 }
