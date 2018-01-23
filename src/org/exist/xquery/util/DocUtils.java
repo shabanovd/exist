@@ -27,6 +27,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.Namespaces;
@@ -76,8 +77,10 @@ public class DocUtils {
 
     }
 
+    private static Pattern URL_PATTERN = Pattern.compile("^[a-z]+:.*");
+
     private static Sequence getDocumentByPath(final XQueryContext context, final String path) throws XPathException, PermissionDeniedException {
-        if (path.matches("^[a-z]+:.*") && !path.startsWith("xmldb:")) {
+        if (URL_PATTERN.matcher(path).matches() && !path.startsWith("xmldb:")) {
             /* URL */
             return getDocumentByPathFromURL(context, path);
         } else {
@@ -146,14 +149,19 @@ public class DocUtils {
             XmldbURI pathUri = XmldbURI.xmldbUriFor(path, false);
 
             final XmldbURI baseURI = context.getBaseURI().toXmldbURI();
-            if (baseURI != null && !(baseURI.equals("") || baseURI.equals("/db"))) {
+            if (baseURI != null
+                && !(baseURI.getRawCollectionPath().equals("") || baseURI.getRawCollectionPath().equals("/db"))) {
                 // relative collection Path: add the current base URI
                 pathUri = baseURI.resolveCollectionPath(pathUri);
             }
 
             // relative collection Path: add the current module call URI
             try {
-                pathUri = XmldbURI.xmldbUriFor(context.getModuleLoadPath()).resolveCollectionPath(pathUri);
+                //ignore "resource:" case for now
+                if (!context.getModuleLoadPath().startsWith("resource:")) {
+                    pathUri = XmldbURI.xmldbUriFor(context.getModuleLoadPath())
+                        .resolveCollectionPath(pathUri);
+                }
             } catch (final Exception e) {
                 //workaround: ignore Windows issue
                 LOG.error(e);
