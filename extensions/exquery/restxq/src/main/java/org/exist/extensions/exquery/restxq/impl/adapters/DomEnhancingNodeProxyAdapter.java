@@ -49,9 +49,15 @@ import org.w3c.dom.Text;
  * @author Adam Retter <adam.retter@googlemail.com>
  */
 class DomEnhancingNodeProxyAdapter {
+
+    private static final Boolean ENHANCER_DISABLED = !"true".equals(System.getProperty("eXistDB.use.enhancer", "true"));
     
     public static NodeProxy create(final NodeProxy nodeProxy) {
-        
+
+        if (ENHANCER_DISABLED) {
+            return nodeProxy;
+        }
+
         final Class<? extends Node> clazzes[] = getNodeClasses(nodeProxy);
          
         // NoOp Callback is for NodeProxy calls

@@ -207,6 +207,8 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
         return exportInternalNode(result);
     }
 
+    private static final Boolean ENHANCER_DISABLED = !"true".equals(System.getProperty("eXistDB.use.enhancer", "true"));
+
     /**
      * Provides a safe export of an internal persistent DOM
      * node from eXist via the Local XML:DB API.
@@ -217,6 +219,10 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
      * its abstractions.
      */
     private Node exportInternalNode(final Node node) {
+        if (ENHANCER_DISABLED) {
+            return node;
+        }
+
         final Optional<Class<? extends Node>> domClazz = getW3cNodeInterface(node.getClass());
         if(!domClazz.isPresent()) {
             throw new IllegalArgumentException("Provided node does not implement org.w3c.dom");
