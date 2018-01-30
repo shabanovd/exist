@@ -2617,7 +2617,7 @@ public class NativeBroker extends DBBroker {
                 }
                 */
 
-                removeResource(transaction, oldDoc);
+                oldDoc.getCollection().removeResource(transaction, this, oldDoc);
             }
 
             boolean renameOnly = collection.getId() == destination.getId();

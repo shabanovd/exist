@@ -1453,14 +1453,8 @@ public class MutableCollection implements Collection {
                 listener.startReplaceDocument(transaction);
 
                 if (oldDoc.getResourceType() == DocumentImpl.BINARY_FILE) {
-                    //TODO : use a more elaborated method ? No triggers...
-                    broker.removeBinaryResource(transaction, (BinaryDocument) oldDoc);
-                    documents.remove(oldDoc.getFileURI().getRawCollectionPath());
-                    //This lock is released in storeXMLInternal()
-                    //TODO : check that we go until there to ensure the lock is released
-//                    if (transaction != null)
-//                    	transaction.acquireLock(document.getUpdateLock(), LockMode.WRITE_LOCK);
-//                	else
+                    oldDoc.getCollection().removeResource(transaction, broker, oldDoc);
+
                     document.getUpdateLock().acquire(LockMode.WRITE_LOCK);
                     
                     document.setDocId(broker.getNextResourceId(transaction, this));
@@ -1687,7 +1681,8 @@ public class MutableCollection implements Collection {
             if (oldDoc != null) {
                 LOG.debug("removing old document " + oldDoc.getFileURI());
                 updateModificationTime(blob);
-                broker.removeResource(transaction, oldDoc);
+
+                oldDoc.getCollection().removeResource(transaction, broker, oldDoc);
             }
 
             broker.storeBinaryResource(transaction, blob, is);
