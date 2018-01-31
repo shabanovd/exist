@@ -19,6 +19,7 @@
  */
 package org.exist.xquery.fixes;
 
+import org.exist.storage.md.ChangeMetadataId;
 import org.exist.xquery.AbstractInternalModule;
 import org.exist.xquery.FunctionDef;
 import org.exist.xquery.backupsdiffs.FnBackupsDiffs;
@@ -41,6 +42,8 @@ public class Module extends AbstractInternalModule {
 
             new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[0], CleanupRestoreBinaryFromRCS.class),
             new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[1], CleanupRestoreBinaryFromRCS.class),
+
+            new FunctionDef(ChangeMetadataId.signatures[0], ChangeMetadataId.class),
 
             new FunctionDef(FnImportChanges.signatures[0], FnImportChanges.class),
             new FunctionDef(FnBackupsDiffs.signatures[0], FnBackupsDiffs.class)
