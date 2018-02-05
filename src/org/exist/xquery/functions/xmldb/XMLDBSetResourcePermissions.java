@@ -113,7 +113,7 @@ public class XMLDBSetResourcePermissions extends XMLDBAbstractCollectionManipula
 
 
                 ums.chown(res, usr, group);
-                ums.chmod(mode);
+                ums.chmod(res, mode);
 
             } else {
                 logger.error("Unable to locate resource " + args[1].getStringValue());
