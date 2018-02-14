@@ -203,20 +203,32 @@ public class SystemImportHandler extends DefaultHandler {
         	final Txn txn = txnManager.beginTransaction();
         	try {
         		currentCollection = broker.getOrCreateCollection(txn, collUri);
-        		
+
+            Date date_created = null;
+            if(created != null) {
+              try {
+                date_created = (new DateTimeValue(created)).getDate();
+              } catch(final XPathException xpe) {
+                listener.warn("Illegal creation date. Ignoring date...");
+              }
+            }
+            if (date_created != null) {
+              currentCollection.setCreationTime(date_created.getTime());
+            }
+
         		rh.startRestore(currentCollection, atts);
         		
-                broker.saveCollection(txn, currentCollection);
+            broker.saveCollection(txn, currentCollection);
 
         		txnManager.commit(txn);
         	} catch (final Exception e) {
         		txnManager.abort(txn);
         		throw new SAXException(e);
-    		} finally {
-                txnManager.close(txn);
-            }
+    		  } finally {
+            txnManager.close(txn);
+          }
 
-            currentCollection = mkcol(collUri, getDateFromXSDateTimeStringForItem(created, name));
+            // currentCollection = mkcol(collUri, getDateFromXSDateTimeStringForItem(created, name));
 
             listener.setCurrentCollection(name);
             
