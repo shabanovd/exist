@@ -19,10 +19,9 @@
  */
 package org.exist.protocolhandler.embedded;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.EXistException;
@@ -38,13 +37,15 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.MimeTable;
 import org.exist.util.MimeType;
+import org.exist.util.io.FastByteArrayInputStream;
+import org.exist.util.io.FastByteArrayOutputStream;
 import org.exist.xmldb.XmldbURI;
 import org.xml.sax.InputSource;
 
 /**
  * @author <a href="mailto:shabanovd@gmail.com">Dmitriy Shabanov</a>
  */
-public class InMemoryOutputStream extends ByteArrayOutputStream {
+public class InMemoryOutputStream extends FastByteArrayOutputStream {
 
   private final static Logger LOG = LogManager.getLogger(InMemoryOutputStream.class);
 
@@ -103,14 +104,14 @@ public class InMemoryOutputStream extends ByteArrayOutputStream {
         }
 
         if (mime.isXMLType()) {
-          final InputSource inputsource = new InputSource(new ByteArrayInputStream(data));
+          final InputSource inputsource = new InputSource(new FastByteArrayInputStream(data));
           final IndexInfo info = collection.validateXMLResource(txn, broker, documentUri, inputsource);
           final DocumentImpl doc = info.getDocument();
           doc.getMetadata().setMimeType(contentType);
           collection.store(txn, broker, info, inputsource);
 
         } else {
-          try (final InputStream is = new ByteArrayInputStream(data)) {
+          try (final InputStream is = new FastByteArrayInputStream(data)) {
             collection.addBinaryResource(txn, broker, documentUri, is, contentType, data.length);
           }
         }

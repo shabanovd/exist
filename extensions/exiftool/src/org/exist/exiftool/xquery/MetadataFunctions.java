@@ -1,7 +1,5 @@
 package org.exist.exiftool.xquery;
 
-import java.io.ByteArrayInputStream;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.IOException;
@@ -19,6 +17,7 @@ import org.exist.source.Source;
 import org.exist.source.SourceFactory;
 import org.exist.storage.NativeBroker;
 import org.exist.storage.lock.Lock.LockMode;
+import org.exist.util.io.FastByteArrayOutputStream;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
@@ -131,19 +130,15 @@ public class MetadataFunctions extends BasicFunction {
         try {
             final Process p = Runtime.getRuntime().exec(module.getPerlPath() + " " + module.getExiftoolPath() + " -X -struct " + binaryFile.toAbsolutePath().toString());
             try(final InputStream stdIn = p.getInputStream();
-                    final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                    final FastByteArrayOutputStream baos = new FastByteArrayOutputStream()) {
 
                 //buffer stdin
-                int read = -1;
-                byte buf[] = new byte[4096];
-                while ((read = stdIn.read(buf)) > -1) {
-                    baos.write(buf, 0, read);
-                }
+                baos.write(stdIn);
 
                 //make sure process is complete
                 p.waitFor();
 
-                return ModuleUtils.inputSourceToXML(context, new InputSource(new ByteArrayInputStream(baos.toByteArray())));
+                return ModuleUtils.inputSourceToXML(context, new InputSource(baos.toFastByteInputStream()));
             }
         } catch (final IOException ex) {
             throw new XPathException("Could not execute the Exiftool " + ex.getMessage(), ex);
@@ -160,7 +155,7 @@ public class MetadataFunctions extends BasicFunction {
             final Process p = Runtime.getRuntime().exec(module.getExiftoolPath()+" -fast -X -");
 
             try(final InputStream stdIn = p.getInputStream();
-                    final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                    final FastByteArrayOutputStream baos = new FastByteArrayOutputStream()) {
 
                 try(final OutputStream stdOut = p.getOutputStream()) {
                     final Source src = SourceFactory.getSource(context.getBroker(), null, uri.toString(), false);
@@ -176,16 +171,12 @@ public class MetadataFunctions extends BasicFunction {
                 }
 
                 //read stdin to buffer
-                int read = -1;
-                byte buf[] = new byte[4096];
-                while ((read = stdIn.read(buf)) > -1) {
-                    baos.write(buf, 0, read);
-                }
+                baos.write(stdIn);
 
                 //make sure process is complete
                 p.waitFor();
 
-                return ModuleUtils.inputSourceToXML(context, new InputSource(baos.toInputStream()));
+                return ModuleUtils.inputSourceToXML(context, new InputSource(baos.toFastByteInputStream()));
             }
 
         } catch (final IOException ex) {

@@ -21,7 +21,6 @@
  */
 package org.exist.storage;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -78,12 +77,11 @@ public class RecoverBinaryTest {
 	            final String existHome = System.getProperty("exist.home");
                 Path existDir = existHome == null ? Paths.get(".") : Paths.get(existHome);
                 existDir = existDir.normalize();
-        	    try(final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-                    Files.copy(existDir.resolve("LICENSE"), os);
-                	BinaryDocument doc =
-                    	root.addBinaryResource(transaction, broker, TestConstants.TEST_BINARY_URI, os.toByteArray(), "text/text");
-	                assertNotNull(doc);
-    	        }
+
+                final byte[] bin = Files.readAllBytes(existDir.resolve("LICENSE"));
+                BinaryDocument doc =
+                    root.addBinaryResource(transaction, broker, TestConstants.TEST_BINARY_URI, bin, "text/text");
+                assertNotNull(doc);
 
 				transact.commit(transaction);
 			}

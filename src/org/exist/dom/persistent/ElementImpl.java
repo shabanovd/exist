@@ -40,6 +40,8 @@ import org.exist.storage.txn.Txn;
 import org.exist.util.ByteArrayPool;
 import org.exist.util.ByteConversion;
 import org.exist.util.UTF8;
+import org.exist.util.io.FastByteArrayInputStream;
+import org.exist.util.io.FastByteArrayOutputStream;
 import org.exist.util.pool.NodePool;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.Constants;
@@ -56,8 +58,6 @@ import org.w3c.dom.ProcessingInstruction;
 import org.w3c.dom.Text;
 import org.w3c.dom.TypeInfo;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
@@ -88,8 +88,8 @@ public class ElementImpl extends NamedNode implements Element {
     public static final int LENGTH_NS_ID = 2; //sizeof short
     public static final int LENGTH_PREFIX_LENGTH = 2; //sizeof short
 
-    private short attributes = 0;
-    private int children = 0;
+    private short attributes = 0; // number of attributes
+    private int children = 0; // number of elements AND attributes
 
     private int position = 0;
     private Map<String, String> namespaceMappings = null;
@@ -224,8 +224,8 @@ public class ElementImpl extends NamedNode implements Element {
             final byte[] prefixData;
             // serialize namespace prefixes declared in this element
             if(declaresNamespacePrefixes()) {
-                try(final ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                        final DataOutputStream out = new DataOutputStream(bout)) {
+                try(final FastByteArrayOutputStream bout = new FastByteArrayOutputStream(64);
+                    final DataOutputStream out = new DataOutputStream(bout)) {
                     out.writeShort(namespaceMappings.size());
                     for (final Map.Entry<String, String> namespaceMapping : namespaceMappings.entrySet()) {
                         //TODO(AR) could store the prefix from the symbol table
@@ -353,7 +353,7 @@ public class ElementImpl extends NamedNode implements Element {
         if(end > pos) {
             final byte[] pfxData = new byte[end - pos];
             System.arraycopy(data, pos, pfxData, 0, end - pos);
-            final InputStream bin = new ByteArrayInputStream(pfxData);
+            final InputStream bin = new FastByteArrayInputStream(pfxData);
             final DataInputStream in = new DataInputStream(bin);
             try {
                 final short prefixCount = in.readShort();
@@ -424,7 +424,7 @@ public class ElementImpl extends NamedNode implements Element {
         if(end > offset) {
             final byte[] pfxData = new byte[end - offset];
             System.arraycopy(data, offset, pfxData, 0, end - offset);
-            final InputStream bin = new ByteArrayInputStream(pfxData);
+            final InputStream bin = new FastByteArrayInputStream(pfxData);
             final DataInputStream in = new DataInputStream(bin);
             try {
                 final short prefixCount = in.readShort();
@@ -583,7 +583,7 @@ public class ElementImpl extends NamedNode implements Element {
                         final IStoredNode<?> last = (IStoredNode<?>) cl.item(child - 2);
                         insertAfter(transaction, nodes, last);
                     } else {
-                        final IStoredNode<?> last = (IStoredNode<?>) getLastChild();
+                        final IStoredNode<?> last = (IStoredNode<?>) getLastChild(true);
                         appendChildren(transaction, last.getNodeId().nextSibling(), null,
                             new NodeImplRef(getLastNode(last)), path, nodes, listener);
                     }
@@ -1030,16 +1030,41 @@ public class ElementImpl extends NamedNode implements Element {
 
     @Override
     public Node getLastChild() {
-        if(!hasChildNodes()) {
+        return getLastChild(false);
+    }
+
+    /**
+     * Get the last child.
+     *
+     * @param attributesAreChildren In the DLN model attributes have child node ids,
+     *     however in the DOM model attributes are not child nodes. Set true for DLN
+     *     or false for DOM.
+     *
+     * @return the last child.
+     */
+    private Node getLastChild(final boolean attributesAreChildren) {
+        if ((!attributesAreChildren) && (!hasChildNodes())) {
+            // DOM model
+            return null;
+        } else if (!(hasChildNodes() || hasAttributes())) {
+            // DLN model
             return null;
         }
+
         Node node = null;
-        if(!isDirty) {
+        if (!isDirty) {
             final NodeId child = nodeId.getChild(children);
             node = ownerDocument.getNode(new NodeProxy(ownerDocument, child));
         }
-        if(node == null) {
-            final NodeList cl = getChildNodes();
+        if (node == null) {
+            final NodeList cl;
+            if (!attributesAreChildren) {
+                // DOM model
+                cl = getChildNodes();
+            } else {
+                // DLN model
+                cl = getAttrsAndChildNodes();
+            }
             return cl.item(cl.getLength() - 1);
         }
         return node;

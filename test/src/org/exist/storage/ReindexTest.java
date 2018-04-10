@@ -67,17 +67,14 @@ public class ReindexTest {
                 assertNotNull(root);
                 broker.saveCollection(transaction, root);
 
-                final List<Path> files = FileUtils.list(dir);
+                final List<Path> files = FileUtils.list(dir, XMLFilenameFilter.asPredicate());
                 for (final Path f : files) {
-                    final MimeType mime = MimeTable.getInstance().getContentTypeFor(FileUtils.fileName(f));
-                    if (mime == null || mime.isXMLType()) {
-                        try {
-                            final IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create(FileUtils.fileName(f)), new InputSource(f.toUri().toASCIIString()));
-                            assertNotNull(info);
-                            root.store(transaction, broker, info, new InputSource(f.toUri().toASCIIString()));
-                        } catch (SAXException e) {
-                            System.err.println("Error found while parsing document: " + FileUtils.fileName(f) + ": " + e.getMessage());
-                        }
+                    try {
+                        final IndexInfo info = root.validateXMLResource(transaction, broker, XmldbURI.create(FileUtils.fileName(f)), new InputSource(f.toUri().toASCIIString()));
+                        assertNotNull(info);
+                        root.store(transaction, broker, info, new InputSource(f.toUri().toASCIIString()));
+                    } catch (SAXException e) {
+                        fail("Error found while parsing document: " + FileUtils.fileName(f) + ": " + e.getMessage());
                     }
                 }
                 transact.commit(transaction);
@@ -100,11 +97,18 @@ public class ReindexTest {
 
             BrokerPool.FORCE_CORRUPTION = true;
 
-            Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
-            assertNotNull(root);
-            transaction.registerLock(root.getLock(), LockMode.WRITE_LOCK);
-            broker.removeCollection(transaction, root);
-            pool.getJournalManager().get().flush(true, false);
+            Collection root = null;
+            try {
+                root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
+                assertNotNull(root);
+                transaction.acquireLock(root.getLock(), LockMode.WRITE_LOCK);
+                broker.removeCollection(transaction, root);
+                pool.getJournalManager().get().flush(true, false);
+            } finally {
+                if(root != null) {
+                    root.release(LockMode.WRITE_LOCK);
+                }
+            }
             transact.commit(transaction);
         } catch (Exception e) {
             e.printStackTrace();

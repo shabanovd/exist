@@ -43,6 +43,7 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.util.FileUtils;
 import org.exist.xmldb.XmldbURI;
+import org.xml.sax.SAXException;
 
 /**
  * Factory to create a {@link org.exist.source.Source} object for a given
@@ -149,7 +150,7 @@ public class SourceFactory {
 
             if (source == null) {
                 /*
-                 * Try to load from the folder of the contextPath URL
+                 * Try to load from the parent folder of the contextPath URL
                  */
                 try {
                     Path p6 = null;
@@ -176,14 +177,41 @@ public class SourceFactory {
 
             if (source == null) {
                 /*
-                 * Lastly we try to load it using EXIST_HOME as the reference point
+                 * Try to load from the contextPath URL folder
                  */
-                Path p7 = null;
                 try {
-                    p7 = FileUtils.resolve(BrokerPool.getInstance().getConfiguration().getExistHome(), location);
+                    Path p7 = null;
+                    if(contextPath.startsWith("file:/")) {
+                        try {
+                            p7 = Paths.get(new URI(contextPath)).resolve(location);
+                        } catch (final URISyntaxException e) {
+                            // continue trying
+                        }
+                    }
+
+                    if(p7 == null) {
+                        p7 = Paths.get(contextPath.replaceFirst("^file:/*(/.*)$", "$1")).resolve(location);
+                    }
+
                     if (Files.isReadable(p7)) {
                         location = p7.toUri().toASCIIString();
                         source = new FileSource(p7, checkXQEncoding);
+                    }
+                } catch (InvalidPathException e) {
+                    // continue trying
+                }
+            }
+
+            if (source == null) {
+                /*
+                 * Lastly we try to load it using EXIST_HOME as the reference point
+                 */
+                Path p8 = null;
+                try {
+                    p8 = FileUtils.resolve(BrokerPool.getInstance().getConfiguration().getExistHome(), location);
+                    if (Files.isReadable(p8)) {
+                        location = p8.toUri().toASCIIString();
+                        source = new FileSource(p8, checkXQEncoding);
                     }
                 } catch (final EXistException e) {
                     LOG.warn(e);
@@ -204,7 +232,17 @@ public class SourceFactory {
                 final XmldbURI pathUri = XmldbURI.create(location);
                 resource = broker.getXMLResource(pathUri, LockMode.READ_LOCK);
                 if (resource != null) {
-                    source = new DBSource(broker, (BinaryDocument) resource, true);
+                    if (resource.getResourceType() == DocumentImpl.BINARY_FILE) {
+                        source = new DBSource(broker, (BinaryDocument) resource, true);
+                    } else {
+                        try {
+                            // XML document: serialize to string source so it can be read as a stream
+                            // by fn:unparsed-text and friends
+                            source = new StringSource(broker.getSerializer().serialize(resource));
+                        } catch (SAXException e) {
+                            throw new IOException(e.getMessage());
+                        }
+                    }
                 }
             } finally {
                 //TODO: this is nasty!!! as we are unlocking the resource whilst there

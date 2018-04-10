@@ -70,6 +70,7 @@ import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
 import com.evolvedbinary.j8fu.function.ConsumerE;
+import org.exist.util.io.FastByteArrayInputStream;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.TerminatedException;
 import org.exist.xquery.value.Type;
@@ -1536,25 +1537,25 @@ public class NativeBroker extends DBBroker {
                 if(!isRoot) {
                     // remove from parent collection
                     //TODO : resolve URIs ! (uri.resolve(".."))
-                    final Collection parentCollection = openCollection(collection.getParentURI(), LockMode.WRITE_LOCK);
-                    if(parentCollection != null) {
-                        // keep the lock for the transaction
-                        if(transaction != null) {
-                            transaction.registerLock(parentCollection.getLock(), LockMode.WRITE_LOCK);
-                        }
+                    Collection parentCollection = null;
+                    try {
+                        parentCollection = openCollection(collection.getParentURI(), LockMode.WRITE_LOCK);
+                        if(parentCollection != null) {
+                            // keep a lock for the transaction
+                            if(transaction != null) {
+                                transaction.acquireLock(parentCollection.getLock(), LockMode.WRITE_LOCK);
+                            }
 
-                        try {
                             LOG.debug("Removing collection '" + collName + "' from its parent...");
                             //TODO : resolve from collection's base URI
                             parentCollection.removeCollection(this, uri.lastSegment());
                             saveCollection(transaction, parentCollection);
-
-                        } catch(final LockException e) {
-                            LOG.warn("LockException while removing collection '" + collName + "'");
-                        } finally {
-                            if(transaction == null) {
-                                parentCollection.getLock().release(LockMode.WRITE_LOCK);
-                            }
+                        }
+                    } catch(final LockException e) {
+                        LOG.warn("LockException while removing collection '" + collName + "'");
+                    } finally {
+                        if(parentCollection != null) {
+                            parentCollection.getLock().release(LockMode.WRITE_LOCK);
                         }
                     }
                 }
@@ -2062,9 +2063,9 @@ public class NativeBroker extends DBBroker {
             //} catch (ReadOnlyException e) {
             //LOG.warn(DATABASE_IS_READ_ONLY);
         } catch(final LockException e) {
-            LOG.warn("Failed to acquire lock on " + FileUtils.fileName(collectionsDb.getFile()));
+            LOG.error("Failed to acquire lock on " + FileUtils.fileName(collectionsDb.getFile()));
         } catch(final IOException e) {
-            LOG.warn("IOException while writing document data", e);
+            LOG.error("IOException while writing document data: " + doc.getURI(), e);
         } finally {
             lock.release(LockMode.WRITE_LOCK);
         }
@@ -2127,7 +2128,7 @@ public class NativeBroker extends DBBroker {
     public void storeBinaryResource(final Txn transaction, final BinaryDocument blob, final byte[] data)
             throws IOException {
         storeBinaryResource(transaction, blob, dest -> {
-            try(final InputStream is = new ByteArrayInputStream(data)) {
+            try(final InputStream is = new FastByteArrayInputStream(data)) {
                 Files.copy(is, dest);
             }
         });

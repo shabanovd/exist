@@ -102,16 +102,16 @@ public class ExistEmbeddedServer extends ExternalResource {
             }
 
             // override any specified config properties
-            if(configProperties.isPresent()) {
-                for(final Map.Entry<Object, Object> configProperty : configProperties.get().entrySet()) {
+            configProperties.ifPresent(properties -> {
+                for (final Map.Entry<Object, Object> configProperty : properties.entrySet()) {
                     config.setProperty(configProperty.getKey().toString(), configProperty.getValue());
                 }
-            }
+            });
 
             if(useTemporaryStorage) {
                 this.temporaryStorage = Optional.of(Files.createTempDirectory("org.exist.test.ExistEmbeddedServer"));
                 config.setProperty(BrokerPool.PROPERTY_DATA_DIR, temporaryStorage.get());
-                config.setProperty(Journal.RECOVERY_JOURNAL_DIR_ATTRIBUTE, temporaryStorage.get());
+                config.setProperty(Journal.PROPERTY_RECOVERY_JOURNAL_DIR, temporaryStorage.get());
                 System.out.println("Using temporary storage location: " + temporaryStorage.get().toAbsolutePath().toString());
             }
 

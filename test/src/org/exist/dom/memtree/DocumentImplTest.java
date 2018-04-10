@@ -20,17 +20,19 @@
 
 package org.exist.dom.memtree;
 
+import com.googlecode.junittoolbox.ParallelRunner;
 import net.sf.saxon.dom.AttrOverNodeInfo;
 import net.sf.saxon.dom.DocumentBuilderImpl;
 import org.apache.xerces.dom.AttrNSImpl;
 import org.exist.Namespaces;
+import org.exist.util.io.FastByteArrayInputStream;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.w3c.dom.*;
 import org.xml.sax.*;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.*;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -38,6 +40,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+@RunWith(ParallelRunner.class)
 public class DocumentImplTest {
 
     private static final String DOC =
@@ -48,7 +51,7 @@ public class DocumentImplTest {
     @Test
     public void checkNamespaces_xerces() throws IOException, ParserConfigurationException, SAXException {
         final Document doc;
-        try(final InputStream is = new ByteArrayInputStream(DOC.getBytes(UTF_8))) {
+        try(final InputStream is = new FastByteArrayInputStream(DOC.getBytes(UTF_8))) {
             doc = parseXerces(is);
         }
 
@@ -81,7 +84,7 @@ public class DocumentImplTest {
     @Test
     public void checkNamespaces_saxon() throws IOException, ParserConfigurationException, SAXException {
         final Document doc;
-        try(final InputStream is = new ByteArrayInputStream(DOC.getBytes(UTF_8))) {
+        try(final InputStream is = new FastByteArrayInputStream(DOC.getBytes(UTF_8))) {
             doc = parseSaxon(is);
         }
 
@@ -122,7 +125,7 @@ public class DocumentImplTest {
     @Test
     public void checkNamespaces_exist() throws IOException, SAXException, ParserConfigurationException {
         final DocumentImpl doc;
-        try(final InputStream is = new ByteArrayInputStream(DOC.getBytes(UTF_8))) {
+        try(final InputStream is = new FastByteArrayInputStream(DOC.getBytes(UTF_8))) {
             doc = parseExist(is);
         }
 

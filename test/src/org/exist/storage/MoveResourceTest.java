@@ -41,7 +41,7 @@ import org.exist.util.DatabaseConfigurationException;
 import org.exist.util.LockException;
 import org.exist.xmldb.DatabaseImpl;
 import org.exist.xmldb.XmldbURI;
-import org.exist.xmldb.CollectionManagementServiceImpl;
+import org.exist.xmldb.EXistCollectionManagementService;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -142,11 +142,17 @@ public class MoveResourceTest {
             final TransactionManager transact = pool.getTransactionManager();
             try(final Txn transaction = transact.beginTransaction()) {
 
-                final Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
-                assertNotNull(root);
-                transaction.registerLock(root.getLock(), LockMode.WRITE_LOCK);
-                broker.removeCollection(transaction, root);
-
+                Collection root = null;
+                try {
+                    root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
+                    assertNotNull(root);
+                    transaction.acquireLock(root.getLock(), LockMode.WRITE_LOCK);
+                    broker.removeCollection(transaction, root);
+                } finally {
+                    if(root != null) {
+                        root.release(LockMode.WRITE_LOCK);
+                    }
+                }
                 transact.commit(transaction);
             }
         }
@@ -203,10 +209,17 @@ public class MoveResourceTest {
             final TransactionManager transact = pool.getTransactionManager();
             try(final Txn transaction = transact.beginTransaction()) {
 
-                final Collection root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
-                assertNotNull(root);
-                transaction.registerLock(root.getLock(), LockMode.WRITE_LOCK);
-                broker.removeCollection(transaction, root);
+                Collection root = null;
+                try {
+                    root = broker.openCollection(TestConstants.TEST_COLLECTION_URI, LockMode.WRITE_LOCK);
+                    assertNotNull(root);
+                    transaction.acquireLock(root.getLock(), LockMode.WRITE_LOCK);
+                    broker.removeCollection(transaction, root);
+                } finally {
+                    if(root != null) {
+                        root.release(LockMode.WRITE_LOCK);
+                    }
+                }
 
                 transact.commit(transaction);
             }
@@ -215,7 +228,7 @@ public class MoveResourceTest {
 
     private void xmldbStore(final BrokerPool pool) throws XMLDBException {
         final org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "");
-        final CollectionManagementServiceImpl mgr = (CollectionManagementServiceImpl)
+        final EXistCollectionManagementService mgr = (EXistCollectionManagementService)
                 root.getService("CollectionManagementService", "1.0");
 
         org.xmldb.api.base.Collection test = root.getChildCollection("test");
@@ -244,7 +257,7 @@ public class MoveResourceTest {
         assertNotNull("Document should not be null", res);
 
         final org.xmldb.api.base.Collection root = DatabaseManager.getCollection(XmldbURI.LOCAL_DB, "admin", "");
-        final CollectionManagementServiceImpl mgr = (CollectionManagementServiceImpl)
+        final EXistCollectionManagementService mgr = (EXistCollectionManagementService)
                 root.getService("CollectionManagementService", "1.0");
         mgr.removeCollection(XmldbURI.create("test"));
         mgr.removeCollection(XmldbURI.create("test2"));

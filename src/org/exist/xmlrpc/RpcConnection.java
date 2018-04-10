@@ -73,6 +73,8 @@ import org.exist.storage.serializers.Serializer;
 import org.exist.storage.sync.Sync;
 import org.exist.storage.txn.Txn;
 import org.exist.util.*;
+import org.exist.util.io.FastByteArrayInputStream;
+import org.exist.util.io.TemporaryFileManager;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.util.serializer.SerializerPool;
 import org.exist.validation.ValidationReport;
@@ -105,6 +107,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.DeflaterOutputStream;
+import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 
@@ -122,7 +125,7 @@ public class RpcConnection implements RpcAPI {
 
     private final static Logger LOG = LogManager.getLogger(RpcConnection.class);
 
-    private final static int MAX_DOWNLOAD_CHUNK_SIZE = 0x40000;
+    public final static int MAX_DOWNLOAD_CHUNK_SIZE = 1024 * 1024;  // 1 MB
     private final static Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
 
     private final XmldbRequestProcessorFactory factory;
@@ -636,46 +639,54 @@ public class RpcConnection implements RpcAPI {
 
             // A tweak for very large resources, VirtualTempFile
             final Map<String, Object> result = new HashMap<>();
-            VirtualTempFile vtempFile = null;
-            try {
-                vtempFile = new VirtualTempFile(MAX_DOWNLOAD_CHUNK_SIZE, MAX_DOWNLOAD_CHUNK_SIZE);
-                vtempFile.setTempPrefix("eXistRPCC");
+            final TemporaryFileManager temporaryFileManager = TemporaryFileManager.getInstance();
+            final Path tempFile = temporaryFileManager.getTemporaryFile();
 
-                // binary check TODO dwes
-                if (document.getResourceType() == DocumentImpl.XML_FILE) {
-                    vtempFile.setTempPostfix(".xml");
-                    final Serializer serializer = broker.getSerializer();
-                    serializer.setProperties(toProperties(parameters));
+            if (document.getResourceType() == DocumentImpl.XML_FILE) {
+                final Serializer serializer = broker.getSerializer();
+                serializer.setProperties(toProperties(parameters));
 
-                    try (final Writer writer = new OutputStreamWriter(vtempFile, encoding)) {
-                        serializer.serialize(document, writer);
-                    }
-                } else {
-                    vtempFile.setTempPostfix(".bin");
-                    broker.readBinaryResource((BinaryDocument) document, vtempFile);
+                try (final Writer writer = Files.newBufferedWriter(tempFile, encoding)) {
+                    serializer.serialize(document, writer);
                 }
-            } finally {
-                if (vtempFile != null) {
-                    vtempFile.close();
+            } else {
+                try (final OutputStream os = Files.newOutputStream(tempFile)) {
+                    broker.readBinaryResource((BinaryDocument) document, os);
                 }
             }
 
-            final byte[] firstChunk = vtempFile.getChunk(0);
+            final byte[] firstChunk = getChunk(tempFile, 0);
+
             result.put("data", firstChunk);
             int offset = 0;
-            if (vtempFile.length() > MAX_DOWNLOAD_CHUNK_SIZE) {
+            if (Files.size(tempFile) > MAX_DOWNLOAD_CHUNK_SIZE) {
                 offset = firstChunk.length;
 
-                final int handle = factory.resultSets.add(new SerializedResult(vtempFile));
+                final int handle = factory.resultSets.add(new SerializedResult(tempFile));
                 result.put("handle", Integer.toString(handle));
                 result.put("supports-long-offset", Boolean.TRUE);
             } else {
-                vtempFile.delete();
+                temporaryFileManager.returnTemporaryFile(tempFile);
             }
             result.put("offset", offset);
 
             return result;
         });
+    }
+
+    private byte[] getChunk(final Path file, final int offset) throws IOException {
+        final long available = Files.size(file);
+        final int len = (int)Math.min(Math.min(available - offset, MAX_DOWNLOAD_CHUNK_SIZE), Integer.MAX_VALUE);
+
+        final byte[] chunk = new byte[len];
+        try (final InputStream is = Files.newInputStream(file)) {
+            is.skip(offset);
+            final int read = is.read(chunk);
+            if(read != len) {
+                throw new IOException("Unable to read full chunk at offset: " + offset + ", from file: " + file.toAbsolutePath().toString());
+            }
+        }
+        return chunk;
     }
 
     @Override
@@ -690,19 +701,19 @@ public class RpcConnection implements RpcAPI {
             }
             // This will keep the serialized result in the cache
             sr.touch();
-            final VirtualTempFile vfile = sr.result;
+            final Path tempFile = sr.result;
 
-            if (offset <= 0 || offset > vfile.length()) {
+            if (offset <= 0 || offset > Files.size(tempFile)) {
                 factory.resultSets.remove(resultId);
                 throw new EXistException("No more data available");
             }
-            final byte[] chunk = vfile.getChunk(offset);
+            final byte[] chunk = getChunk(tempFile, offset);
             final long nextChunk = offset + chunk.length;
 
             final Map<String, Object> result = new HashMap<>();
             result.put("data", chunk);
             result.put("handle", handle);
-            if (nextChunk > (long) Integer.MAX_VALUE || nextChunk == vfile.length()) {
+            if (nextChunk > (long) Integer.MAX_VALUE || nextChunk >= Files.size(tempFile)) {
                 factory.resultSets.remove(resultId);
                 result.put("offset", 0);
             } else {
@@ -726,20 +737,20 @@ public class RpcConnection implements RpcAPI {
             }
             // This will keep the serialized result in the cache
             sr.touch();
-            final VirtualTempFile vfile = sr.result;
+            final Path tempFile = sr.result;
 
             final long longOffset = Long.parseLong(offset);
-            if (longOffset < 0 || longOffset > vfile.length()) {
+            if (longOffset < 0 || longOffset > Files.size(tempFile)) {
                 factory.resultSets.remove(resultId);
                 throw new EXistException("No more data available");
             }
-            final byte[] chunk = vfile.getChunk(longOffset);
+            final byte[] chunk = getChunk(tempFile, (int)longOffset);
             final long nextChunk = longOffset + chunk.length;
 
             final Map<String, Object> result = new HashMap<>();
             result.put("data", chunk);
             result.put("handle", handle);
-            if (nextChunk == vfile.length()) {
+            if (nextChunk >= Files.size(tempFile)) {
                 factory.resultSets.remove(resultId);
                 result.put("offset", Long.toString(0));
             } else {
@@ -1309,7 +1320,7 @@ public class RpcConnection implements RpcAPI {
                 }
             }
 
-            try (final InputStream is = new ByteArrayInputStream(xml)) {
+            try (final InputStream is = new FastByteArrayInputStream(xml)) {
 
                 final InputSource source = new InputSource(is);
 
@@ -1410,7 +1421,7 @@ public class RpcConnection implements RpcAPI {
 
 
             // get the source for parsing
-            SupplierE<VirtualTempFileInputSource, IOException> sourceSupplier;
+            SupplierE<FileInputSource, IOException> sourceSupplier;
             try {
                 final int handle = Integer.parseInt(localFile);
                 final SerializedResult sr = factory.resultSets.getSerializedResult(handle);
@@ -1419,7 +1430,7 @@ public class RpcConnection implements RpcAPI {
                 }
 
                 sourceSupplier = () -> {
-                    final VirtualTempFileInputSource source = new VirtualTempFileInputSource(sr.result);
+                    final FileInputSource source = new FileInputSource(sr.result);
                     sr.result = null; // de-reference the VirtualTempFile in the SerializeResult
                     factory.resultSets.remove(handle);
                     return source;
@@ -1433,11 +1444,11 @@ public class RpcConnection implements RpcAPI {
                     throw new EXistException("unable to read file " + path.toAbsolutePath().toString());
                 }
 
-                sourceSupplier = () -> new VirtualTempFileInputSource(path);
+                sourceSupplier = () -> new FileInputSource(path);
             }
 
             // parse the source
-            try (final VirtualTempFileInputSource source = sourceSupplier.get()) {
+            try (final FileInputSource source = sourceSupplier.get()) {
                 final MimeType mime = Optional.ofNullable(MimeTable.getInstance().getContentType(mimeType)).orElse(MimeType.BINARY_TYPE);
                 final boolean treatAsXML = (isXML != null && isXML) || (isXML == null && mime.isXMLType());
 
@@ -1486,8 +1497,8 @@ public class RpcConnection implements RpcAPI {
     private boolean storeBinary(final byte[] data, final XmldbURI docUri, final String mimeType,
                                 final int overwrite, final Date created, final Date modified) throws EXistException, PermissionDeniedException {
         return this.<Boolean>writeCollection(docUri.removeLastSegment()).apply((collection, broker, transaction) -> {
-            // keep the write lock in the transaction
-            transaction.registerLock(collection.getLock(), LockMode.WRITE_LOCK);
+            // keep a write lock in the transaction
+            transaction.acquireLock(collection.getLock(), LockMode.WRITE_LOCK);
             if (overwrite == 0) {
                 final DocumentImpl old = collection.getDocument(broker, docUri.lastSegment());
                 if (old != null) {
@@ -1512,13 +1523,11 @@ public class RpcConnection implements RpcAPI {
 
     public String upload(final byte[] chunk, final int length, String fileName, final boolean compressed)
             throws EXistException, IOException {
-        VirtualTempFile vtempFile;
+        final Path tempFile;
         if (fileName == null || fileName.length() == 0) {
             // create temporary file
-            vtempFile = new VirtualTempFile(MAX_DOWNLOAD_CHUNK_SIZE, MAX_DOWNLOAD_CHUNK_SIZE);
-            vtempFile.setTempPrefix("rpc");
-            vtempFile.setTempPostfix(".xml");
-            final int handle = factory.resultSets.add(new SerializedResult(vtempFile));
+            tempFile = TemporaryFileManager.getInstance().getTemporaryFile();
+            final int handle = factory.resultSets.add(new SerializedResult(tempFile));
             fileName = Integer.toString(handle);
         } else {
 //            if(LOG.isDebugEnabled()) {
@@ -1532,15 +1541,18 @@ public class RpcConnection implements RpcAPI {
                 }
                 // This will keep the serialized result in the cache
                 sr.touch();
-                vtempFile = sr.result;
+                tempFile = sr.result;
             } catch (final NumberFormatException nfe) {
                 throw new EXistException("Syntactically invalid handle specified");
             }
         }
-        if (compressed) {
-            Compressor.uncompress(chunk, vtempFile);
-        } else {
-            vtempFile.write(chunk, 0, length);
+
+        try (final OutputStream os = Files.newOutputStream(tempFile)) {
+            if (compressed) {
+                Compressor.uncompress(chunk, os);
+            } else {
+                os.write(chunk, 0, length);
+            }
         }
 
         return fileName;
@@ -1646,6 +1658,9 @@ public class RpcConnection implements RpcAPI {
         });
     }
 
+    /**
+     * @deprecated Use {@link #queryPT(String, XmldbURI, String, Map)} instead.
+     */
     public Map<String, Object> queryP(final String xpath, final String documentPath,
                                       final String s_id, final Map<String, Object> parameters) throws URISyntaxException, EXistException, PermissionDeniedException {
         return queryP(xpath,
@@ -1653,6 +1668,9 @@ public class RpcConnection implements RpcAPI {
                 s_id, parameters);
     }
 
+    /**
+     * @deprecated Use {@link #queryPT(String, XmldbURI, String, Map)} instead.
+     */
     private Map<String, Object> queryP(final String xpath, final XmldbURI docUri,
                                        final String s_id, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
 
@@ -1662,9 +1680,6 @@ public class RpcConnection implements RpcAPI {
         return withDb((broker, transaction) -> {
             final long startTime = System.currentTimeMillis();
 
-            final Map<String, Object> ret = new HashMap<>();
-            final List<Object> result = new ArrayList<>();
-            Sequence resultSeq = null;
             final NodeSet nodes;
 
             if (docUri != null && s_id != null) {
@@ -1689,79 +1704,239 @@ public class RpcConnection implements RpcAPI {
             }
 
             try {
-                final QueryResult queryResult = this.<QueryResult>compileQuery(broker, transaction, source, parameters).apply(compiledQuery -> doQuery(broker, compiledQuery, nodes, parameters));
-                if (queryResult == null) {
-                    return ret;
-                }
-
-                if (queryResult.hasErrors()) {
-                    // return an error description
-                    final XPathException e = queryResult.getException();
-                    ret.put(RpcAPI.ERROR, e.getMessage());
-                    if (e.getLine() != 0) {
-                        ret.put(RpcAPI.LINE, e.getLine());
-                        ret.put(RpcAPI.COLUMN, e.getColumn());
-                    }
-                    return ret;
-                }
-
-                resultSeq = queryResult.result;
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("found " + resultSeq.getItemCount());
-                }
-
-                if (sortBy.isPresent()) {
-                    final SortedNodeSet sorted = new SortedNodeSet(factory.getBrokerPool(), user, sortBy.get());
-                    sorted.addAll(resultSeq);
-                    resultSeq = sorted;
-                }
-                NodeProxy p;
-                List<String> entry;
-                if (resultSeq != null) {
-                    final SequenceIterator i = resultSeq.iterate();
-                    if (i != null) {
-                        Item next;
-                        while (i.hasNext()) {
-                            next = i.nextItem();
-                            if (Type.subTypeOf(next.getType(), Type.NODE)) {
-                                entry = new ArrayList<>();
-                                if (((NodeValue) next).getImplementationType() == NodeValue.PERSISTENT_NODE) {
-                                    p = (NodeProxy) next;
-                                    entry.add(p.getOwnerDocument().getURI().toString());
-                                    entry.add(p.getNodeId().toString());
-                                } else {
-                                    entry.add("temp_xquery/" + next.hashCode());
-                                    entry.add(String.valueOf(((NodeImpl) next).getNodeNumber()));
-                                }
-                                result.add(entry);
-                            } else {
-                                result.add(next.getStringValue());
-                            }
-                        }
-                    } else {
-                        if(LOG.isDebugEnabled()) {
-                            LOG.debug("sequence iterator is null. Should not");
-                        }
-                    }
-                } else {
-                    if(LOG.isDebugEnabled()) {
-                        LOG.debug("result sequence is null. Skipping it...");
-                    }
-                }
-
-                queryResult.result = resultSeq;
-                queryResult.queryTime = (System.currentTimeMillis() - startTime);
-                final int id = factory.resultSets.add(queryResult);
-                ret.put("id", id);
-                ret.put("hash", queryResult.hashCode());
-                ret.put("results", result);
-                return ret;
+                final Map<String, Object> rpcResponse = this.<Map<String, Object>>compileQuery(broker, transaction, source, parameters)
+                        .apply(compiledQuery -> queryResultToRpcResponse(startTime, doQuery(broker, compiledQuery, nodes, parameters), sortBy));
+                return rpcResponse;
             } catch (final XPathException e) {
                 throw new EXistException(e);
             }
         });
     }
 
+    private Map<String, Object> queryResultToRpcResponse(final long startTime, final QueryResult queryResult, final Optional<String> sortBy) throws XPathException {
+        final Map<String, Object> ret = new HashMap<>();
+        if (queryResult == null) {
+            return ret;
+        }
+
+        if (queryResult.hasErrors()) {
+            // return an error description
+            final XPathException e = queryResult.getException();
+            ret.put(RpcAPI.ERROR, e.getMessage());
+            if (e.getLine() != 0) {
+                ret.put(RpcAPI.LINE, e.getLine());
+                ret.put(RpcAPI.COLUMN, e.getColumn());
+            }
+            return ret;
+        }
+
+        Sequence resultSeq = queryResult.result;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("found " + resultSeq.getItemCount());
+        }
+
+        if (sortBy.isPresent()) {
+            final SortedNodeSet sorted = new SortedNodeSet(factory.getBrokerPool(), user, sortBy.get());
+            sorted.addAll(resultSeq);
+            resultSeq = sorted;
+        }
+
+        final List<Object> result = new ArrayList<>();
+        if (resultSeq != null) {
+            final SequenceIterator i = resultSeq.iterate();
+            if (i != null) {
+                while (i.hasNext()) {
+                    final Item next = i.nextItem();
+                    if (Type.subTypeOf(next.getType(), Type.NODE)) {
+                        final List<String> entry = new ArrayList<>();
+                        if (((NodeValue) next).getImplementationType() == NodeValue.PERSISTENT_NODE) {
+                            final NodeProxy p = (NodeProxy) next;
+                            entry.add(p.getOwnerDocument().getURI().toString());
+                            entry.add(p.getNodeId().toString());
+                        } else {
+                            entry.add("temp_xquery/" + next.hashCode());
+                            entry.add(String.valueOf(((NodeImpl) next).getNodeNumber()));
+                        }
+                        result.add(entry);
+                    } else {
+                        result.add(next.getStringValue());
+                    }
+                }
+            } else {
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("sequence iterator is null. Should not");
+                }
+            }
+        } else {
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("result sequence is null. Skipping it...");
+            }
+        }
+
+        queryResult.result = resultSeq;
+        queryResult.queryTime = (System.currentTimeMillis() - startTime);
+        final int id = factory.resultSets.add(queryResult);
+        ret.put("id", id);
+        ret.put("hash", queryResult.hashCode());
+        ret.put("results", result);
+        return ret;
+    }
+
+    @Override
+    public Map<String, Object> queryPT(final byte[] xquery, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
+        return queryPT(new String(xquery, DEFAULT_ENCODING), null, null, parameters);
+    }
+
+    @Override
+    public Map<String, Object> queryPT(final byte[] xquery, @Nullable final String docName, @Nullable final String s_id, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException, URISyntaxException {
+        return queryPT(new String(xquery, DEFAULT_ENCODING), docName == null ? null : XmldbURI.create(docName), s_id, parameters);
+    }
+
+    private Map<String, Object> queryPT(final String xquery, final XmldbURI docUri,
+                                        final String s_id, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
+
+        final Source source = new StringSource(xquery);
+        final Optional<String> sortBy = Optional.ofNullable(parameters.get(RpcAPI.SORT_EXPR)).map(Object::toString);
+
+        return withDb((broker, transaction) -> {
+            final long startTime = System.currentTimeMillis();
+
+            final NodeSet nodes;
+
+            if (docUri != null && s_id != null) {
+                nodes = this.<NodeSet>readDocument(broker, transaction, docUri).apply((document, broker1, transaction1) -> {
+
+                    final Object[] docs = new Object[1];
+                    docs[0] = docUri.toString();
+                    parameters.put(RpcAPI.STATIC_DOCUMENTS, docs);
+
+                    if (s_id.length() > 0) {
+                        final NodeId nodeId = factory.getBrokerPool().getNodeFactory().createFromString(s_id);
+                        final NodeProxy node = new NodeProxy(document, nodeId);
+                        final NodeSet nodeSet = new ExtArrayNodeSet(1);
+                        nodeSet.add(node);
+                        return nodeSet;
+                    } else {
+                        return null;
+                    }
+                });
+            } else {
+                nodes = null;
+            }
+
+            try {
+                final Map<String, Object> rpcResponse = this.<Map<String, Object>>compileQuery(broker, transaction, source, parameters)
+                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, doQuery(broker, compiledQuery, nodes, parameters), sortBy));
+                return rpcResponse;
+            } catch (final XPathException e) {
+                throw new EXistException(e);
+            }
+        });
+    }
+
+    private Map<String, Object> queryResultToTypedRpcResponse(final long startTime, final QueryResult queryResult, final Optional<String> sortBy) throws XPathException {
+        final Map<String, Object> ret = new HashMap<>();
+        if (queryResult == null) {
+            return ret;
+        }
+
+        if (queryResult.hasErrors()) {
+            // return an error description
+            final XPathException e = queryResult.getException();
+            ret.put(RpcAPI.ERROR, e.getMessage());
+            if (e.getLine() != 0) {
+                ret.put(RpcAPI.LINE, e.getLine());
+                ret.put(RpcAPI.COLUMN, e.getColumn());
+            }
+            return ret;
+        }
+
+        Sequence resultSeq = queryResult.result;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("found " + resultSeq.getItemCount());
+        }
+
+        if (sortBy.isPresent()) {
+            final SortedNodeSet sorted = new SortedNodeSet(factory.getBrokerPool(), user, sortBy.get());
+            sorted.addAll(resultSeq);
+            resultSeq = sorted;
+        }
+
+        final List<Map<String, String>> result = new ArrayList<>();
+        if (resultSeq != null) {
+            final SequenceIterator i = resultSeq.iterate();
+            if (i != null) {
+                while (i.hasNext()) {
+                    final Item next = i.nextItem();
+                    final Map<String, String> entry;
+                    if (Type.subTypeOf(next.getType(), Type.NODE)) {
+                        entry = nodeMap(next);
+                    } else {
+                        entry = atomicMap(next);
+                    }
+
+                    if(entry != null) {
+                        result.add(entry);
+                    }
+                }
+            } else {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("sequence iterator is null. Should not");
+                }
+            }
+        } else {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("result sequence is null. Skipping it...");
+            }
+        }
+
+        queryResult.result = resultSeq;
+        queryResult.queryTime = (System.currentTimeMillis() - startTime);
+        final int id = factory.resultSets.add(queryResult);
+        ret.put("id", id);
+        ret.put("hash", queryResult.hashCode());
+        ret.put("results", result);
+        return ret;
+    }
+
+    private @Nullable Map<String, String> nodeMap(final Item item) {
+        final Map<String, String> result;
+
+        if(item instanceof NodeValue &&
+                ((NodeValue)item).getImplementationType() == NodeValue.PERSISTENT_NODE) {
+            final NodeProxy p = (NodeProxy) item;
+
+            result = new HashMap<>();
+            result.put("type", Type.getTypeName(p.getType()));
+            result.put("docUri", p.getOwnerDocument().getURI().toString());
+            result.put("nodeId", p.getNodeId().toString());
+
+        } else if(item instanceof org.exist.dom.memtree.NodeImpl) {
+            final NodeImpl ni = (NodeImpl)item;
+
+            result = new HashMap<>();
+            result.put("type", Type.getTypeName(ni.getType()));
+            result.put("docUri", "temp_xquery/" + item.hashCode());
+            result.put("nodeId", String.valueOf(ni.getNodeNumber()));
+        } else {
+            LOG.error("Omitting from results, unsure how to process: " + item.getClass());
+            result = null;
+        }
+
+        return result;
+    }
+
+    private Map<String, String> atomicMap(final Item item) throws XPathException {
+        final Map<String, String> result = new HashMap<>();
+
+        final int type = item.getType();
+        result.put("type", Type.getTypeName(type));
+        result.put("value", item.getStringValue());
+
+        return result;
+    }
+
+    @Deprecated
     @Override
     public Map<String, Object> execute(final String pathToQuery, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
         final long startTime = System.currentTimeMillis();
@@ -1778,77 +1953,40 @@ public class RpcConnection implements RpcAPI {
                 throw new PermissionDeniedException("Insufficient privileges to access resource");
             }
 
-            final Map<String, Object> ret = new HashMap<>();
+            final Source source = new DBSource(broker, xquery, true);
+
+            try {
+                final Map<String, Object> rpcResponse = this.<Map<String, Object>>compileQuery(broker, transaction, source, parameters)
+                        .apply(compiledQuery -> queryResultToRpcResponse(startTime, doQuery(broker, compiledQuery, null, parameters), sortBy));
+                return rpcResponse;
+            } catch (final XPathException e) {
+                throw new EXistException(e);
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> executeT(final String pathToQuery, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
+        final long startTime = System.currentTimeMillis();
+
+        final Optional<String> sortBy = Optional.ofNullable(parameters.get(RpcAPI.SORT_EXPR)).map(Object::toString);
+
+        return this.<Map<String, Object>>readDocument(XmldbURI.createInternal(pathToQuery)).apply((document, broker, transaction) -> {
+            final BinaryDocument xquery = (BinaryDocument) document;
+            if (xquery.getResourceType() != DocumentImpl.BINARY_FILE) {
+                throw new EXistException("Document " + pathToQuery + " is not a binary resource");
+            }
+
+            if (!xquery.getPermissions().validate(user, Permission.READ | Permission.EXECUTE)) {
+                throw new PermissionDeniedException("Insufficient privileges to access resource");
+            }
 
             final Source source = new DBSource(broker, xquery, true);
+
             try {
-                final QueryResult queryResult = this.<QueryResult>compileQuery(broker, transaction, source, parameters).apply(compiledQuery -> doQuery(broker, compiledQuery, null, parameters));
-                if (queryResult == null) {
-                    return ret;
-                }
-
-                if (queryResult.hasErrors()) {
-                    // return an error description
-                    final XPathException e = queryResult.getException();
-                    ret.put(RpcAPI.ERROR, e.getMessage());
-                    if (e.getLine() != 0) {
-                        ret.put(RpcAPI.LINE, e.getLine());
-                        ret.put(RpcAPI.COLUMN, e.getColumn());
-                    }
-                    return ret;
-                }
-
-                Sequence resultSeq = queryResult.result;
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("found " + resultSeq.getItemCount());
-                }
-
-                if (sortBy.isPresent()) {
-                    final SortedNodeSet sorted = new SortedNodeSet(factory.getBrokerPool(), user, sortBy.get());
-                    sorted.addAll(resultSeq);
-                    resultSeq = sorted;
-                }
-
-                final List<Object> result = new ArrayList<>();
-                if (resultSeq != null) {
-                    final SequenceIterator i = resultSeq.iterate();
-                    if (i != null) {
-                        Item next;
-                        while (i.hasNext()) {
-                            next = i.nextItem();
-                            if (Type.subTypeOf(next.getType(), Type.NODE)) {
-                                final List<String> entry = new ArrayList<>();
-                                if (((NodeValue) next).getImplementationType() == NodeValue.PERSISTENT_NODE) {
-                                    final NodeProxy p = (NodeProxy) next;
-                                    entry.add(p.getOwnerDocument().getURI().toString());
-                                    entry.add(p.getNodeId().toString());
-                                } else {
-                                    entry.add("temp_xquery/" + next.hashCode());
-                                    entry.add(String.valueOf(((NodeImpl) next).getNodeNumber()));
-                                }
-                                result.add(entry);
-                            } else {
-                                result.add(next.getStringValue());
-                            }
-                        }
-                    } else {
-                        if(LOG.isDebugEnabled()) {
-                            LOG.debug("sequence iterator is null. Should not be!");
-                        }
-                    }
-                } else {
-                    if(LOG.isDebugEnabled()) {
-                        LOG.debug("result sequence is null. Skipping it...");
-                    }
-                }
-
-                queryResult.result = resultSeq;
-                queryResult.queryTime = (System.currentTimeMillis() - startTime);
-                final int id = factory.resultSets.add(queryResult);
-                ret.put("id", id);
-                ret.put("hash", queryResult.hashCode());
-                ret.put("results", result);
-                return ret;
+                final Map<String, Object> rpcResponse = this.<Map<String, Object>>compileQuery(broker, transaction, source, parameters)
+                        .apply(compiledQuery -> queryResultToTypedRpcResponse(startTime, doQuery(broker, compiledQuery, null, parameters), sortBy));
+                return rpcResponse;
             } catch (final XPathException e) {
                 throw new EXistException(e);
             }
@@ -1880,8 +2018,8 @@ public class RpcConnection implements RpcAPI {
 
     private boolean remove(final XmldbURI docUri) throws EXistException, PermissionDeniedException {
         return this.<Boolean>writeCollection(docUri.removeLastSegment()).apply((collection, broker, transaction) -> {
-            // keep the write lock in the transaction
-            transaction.registerLock(collection.getLock(), LockMode.WRITE_LOCK);
+            // keep a write lock in the transaction
+            transaction.acquireLock(collection.getLock(), LockMode.WRITE_LOCK);
 
             final DocumentImpl doc = collection.getDocument(broker, docUri.lastSegment());
             if (doc == null) {
@@ -1905,8 +2043,8 @@ public class RpcConnection implements RpcAPI {
     private boolean removeCollection(final XmldbURI collURI) throws EXistException, PermissionDeniedException {
         try {
             return this.<Boolean>writeCollection(collURI).apply((collection, broker, transaction) -> {
-                // keep the write lock in the transaction
-                transaction.registerLock(collection.getLock(), LockMode.WRITE_LOCK);
+                // keep a write lock in the transaction
+                transaction.acquireLock(collection.getLock(), LockMode.WRITE_LOCK);
                 if(LOG.isDebugEnabled()) {
                     LOG.debug("removing collection " + collURI);
                 }
@@ -1983,49 +2121,29 @@ public class RpcConnection implements RpcAPI {
             serializer.setProperties(toProperties(parameters));
 
             final Map<String, Object> result = new HashMap<>();
-            VirtualTempFile vtempFile = new VirtualTempFile(MAX_DOWNLOAD_CHUNK_SIZE, MAX_DOWNLOAD_CHUNK_SIZE);
-            vtempFile.setTempPrefix("eXistRPCC");
-            vtempFile.setTempPostfix(".xml");
+            final TemporaryFileManager temporaryFileManager = TemporaryFileManager.getInstance();
+            final Path tempFile = temporaryFileManager.getTemporaryFile();
 
-            OutputStream os = null;
-            if (compression) {
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("retrieveFirstChunk with compression");
-                }
-                os = new DeflaterOutputStream(vtempFile);
-            } else {
-                os = vtempFile;
-            }
-            try {
-                try (final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
-                    serializer.serialize(node, writer);
-                }
-            } finally {
-                try {
-                    os.close();
-                } catch (final IOException ioe) {
-                    //IgnoreIT(R)
-                }
-                if (os != vtempFile) {
-                    try {
-                        vtempFile.close();
-                    } catch (final IOException ioe) {
-                        //IgnoreIT(R)
-                    }
-                }
+            if (compression && LOG.isDebugEnabled()) {
+                LOG.debug("retrieveFirstChunk with compression");
             }
 
-            final byte[] firstChunk = vtempFile.getChunk(0);
+            try (final OutputStream os = compression ? new DeflaterOutputStream(Files.newOutputStream(tempFile)) : Files.newOutputStream(tempFile);
+                    final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
+                serializer.serialize(node, writer);
+            }
+
+            final byte[] firstChunk = getChunk(tempFile, 0);
             result.put("data", firstChunk);
             int offset = 0;
-            if (vtempFile.length() > MAX_DOWNLOAD_CHUNK_SIZE) {
+            if (Files.size(tempFile) > MAX_DOWNLOAD_CHUNK_SIZE) {
                 offset = firstChunk.length;
 
-                final int handle = factory.resultSets.add(new SerializedResult(vtempFile));
+                final int handle = factory.resultSets.add(new SerializedResult(tempFile));
                 result.put("handle", Integer.toString(handle));
                 result.put("supports-long-offset", Boolean.TRUE);
             } else {
-                vtempFile.delete();
+                temporaryFileManager.returnTemporaryFile(tempFile);
             }
             result.put("offset", offset);
             return result;
@@ -2105,63 +2223,43 @@ public class RpcConnection implements RpcAPI {
             }
 
             final Map<String, Object> result = new HashMap<>();
-            VirtualTempFile vtempFile = new VirtualTempFile(MAX_DOWNLOAD_CHUNK_SIZE, MAX_DOWNLOAD_CHUNK_SIZE);
-            vtempFile.setTempPrefix("eXistRPCC");
-            vtempFile.setTempPostfix(".xml");
+            final TemporaryFileManager temporaryFileManager = TemporaryFileManager.getInstance();
+            final Path tempFile = temporaryFileManager.getTemporaryFile();
 
-            OutputStream os;
-            if (compression) {
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("retrieveFirstChunk with compression");
-                }
-                os = new DeflaterOutputStream(vtempFile);
-            } else {
-                os = vtempFile;
-            }
-            try {
-                try (final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
-                    if (Type.subTypeOf(item.getType(), Type.NODE)) {
-                        final NodeValue nodeValue = (NodeValue) item;
-                        final Serializer serializer = broker.getSerializer();
-                        serializer.reset();
-                        for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
-                            parameters.put(entry.getKey().toString(), entry.getValue().toString());
-                        }
-                        serializer.setProperties(toProperties(parameters));
-
-                        serializer.serialize(nodeValue, writer);
-                    } else {
-                        writer.write(item.getStringValue());
-                    }
-                } catch (final XPathException e) {
-                    throw new EXistException(e);
-                }
-            } finally {
-                try {
-                    os.close();
-                } catch (final IOException ioe) {
-                    //IgnoreIT(R)
-                }
-                if (os != vtempFile) {
-                    try {
-                        vtempFile.close();
-                    } catch (final IOException ioe) {
-                        //IgnoreIT(R)
-                    }
-                }
+            if (compression && LOG.isDebugEnabled()) {
+                LOG.debug("retrieveFirstChunk with compression");
             }
 
-            final byte[] firstChunk = vtempFile.getChunk(0);
+            try (final OutputStream os = compression ? new DeflaterOutputStream(Files.newOutputStream(tempFile)) : Files.newOutputStream(tempFile);
+                    final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
+                if (Type.subTypeOf(item.getType(), Type.NODE)) {
+                    final NodeValue nodeValue = (NodeValue) item;
+                    final Serializer serializer = broker.getSerializer();
+                    serializer.reset();
+                    for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
+                        parameters.put(entry.getKey().toString(), entry.getValue().toString());
+                    }
+                    serializer.setProperties(toProperties(parameters));
+
+                    serializer.serialize(nodeValue, writer);
+                } else {
+                    writer.write(item.getStringValue());
+                }
+            } catch (final XPathException e) {
+                throw new EXistException(e);
+            }
+
+            final byte[] firstChunk = getChunk(tempFile, 0);
             result.put("data", firstChunk);
             int offset = 0;
-            if (vtempFile.length() > MAX_DOWNLOAD_CHUNK_SIZE) {
+            if (Files.size(tempFile) > MAX_DOWNLOAD_CHUNK_SIZE) {
                 offset = firstChunk.length;
 
-                final int handle = factory.resultSets.add(new SerializedResult(vtempFile));
+                final int handle = factory.resultSets.add(new SerializedResult(tempFile));
                 result.put("handle", Integer.toString(handle));
                 result.put("supports-long-offset", Boolean.TRUE);
             } else {
-                vtempFile.delete();
+                temporaryFileManager.returnTemporaryFile(tempFile);
             }
             result.put("offset", offset);
             return result;
@@ -2248,84 +2346,65 @@ public class RpcConnection implements RpcAPI {
             final SAXSerializer handler = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
 
             final Map<String, Object> result = new HashMap<>();
-            VirtualTempFile vtempFile = new VirtualTempFile(MAX_DOWNLOAD_CHUNK_SIZE, MAX_DOWNLOAD_CHUNK_SIZE);
-            vtempFile.setTempPrefix("eXistRPCC");
-            vtempFile.setTempPostfix(".xml");
+            final TemporaryFileManager temporaryFileManager = TemporaryFileManager.getInstance();
+            final Path tempFile = temporaryFileManager.getTemporaryFile();
 
-            OutputStream os;
-            if (compression) {
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("retrieveAllFirstChunk compression");
-                }
-                os = new DeflaterOutputStream(vtempFile);
-            } else {
-                os = vtempFile;
+            if (compression && LOG.isDebugEnabled()) {
+                LOG.debug("retrieveAllFirstChunk with compression");
             }
-            try {
-                try (final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
-                    handler.setOutput(writer, toProperties(parameters));
 
-                    // serialize results
-                    handler.startDocument();
-                    handler.startPrefixMapping("exist", Namespaces.EXIST_NS);
-                    final AttributesImpl attribs = new AttributesImpl();
-                    attribs.addAttribute(
-                            "",
-                            "hitCount",
-                            "hitCount",
-                            "CDATA",
-                            Integer.toString(qr.result.getItemCount()));
-                    handler.startElement(
-                            Namespaces.EXIST_NS,
-                            "result",
-                            "exist:result",
-                            attribs);
-                    Item current;
-                    char[] value;
-                    try {
-                        for (final SequenceIterator i = qr.result.iterate(); i.hasNext(); ) {
-                            current = i.nextItem();
-                            if (Type.subTypeOf(current.getType(), Type.NODE)) {
-                                ((NodeValue) current).toSAX(broker, handler, null);
-                            } else {
-                                value = current.toString().toCharArray();
-                                handler.characters(value, 0, value.length);
-                            }
-                        }
-                    } catch (final XPathException e) {
-                        throw new EXistException(e);
-                    }
-                    handler.endElement(Namespaces.EXIST_NS, "result", "exist:result");
-                    handler.endPrefixMapping("exist");
-                    handler.endDocument();
-                    SerializerPool.getInstance().returnObject(handler);
-                }
-            } finally {
+            try (final OutputStream os = compression ? new DeflaterOutputStream(Files.newOutputStream(tempFile)) : Files.newOutputStream(tempFile);
+                 final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
+                handler.setOutput(writer, toProperties(parameters));
+
+                // serialize results
+                handler.startDocument();
+                handler.startPrefixMapping("exist", Namespaces.EXIST_NS);
+                final AttributesImpl attribs = new AttributesImpl();
+                attribs.addAttribute(
+                        "",
+                        "hitCount",
+                        "hitCount",
+                        "CDATA",
+                        Integer.toString(qr.result.getItemCount()));
+                handler.startElement(
+                        Namespaces.EXIST_NS,
+                        "result",
+                        "exist:result",
+                        attribs);
+                Item current;
+                char[] value;
                 try {
-                    os.close();
-                } catch (final IOException ioe) {
-                    //IgnoreIT(R)
-                }
-                if (os != vtempFile) {
-                    try {
-                        vtempFile.close();
-                    } catch (final IOException ioe) {
-                        //IgnoreIT(R)
+                    for (final SequenceIterator i = qr.result.iterate(); i.hasNext(); ) {
+                        current = i.nextItem();
+                        if (Type.subTypeOf(current.getType(), Type.NODE)) {
+                            ((NodeValue) current).toSAX(broker, handler, null);
+                        } else {
+                            value = current.toString().toCharArray();
+                            handler.characters(value, 0, value.length);
+                        }
                     }
+                } catch (final XPathException e) {
+                    throw new EXistException(e);
                 }
+                handler.endElement(Namespaces.EXIST_NS, "result", "exist:result");
+                handler.endPrefixMapping("exist");
+                handler.endDocument();
+                SerializerPool.getInstance().returnObject(handler);
             }
 
-            final byte[] firstChunk = vtempFile.getChunk(0);
+
+            final byte[] firstChunk = getChunk(tempFile, 0);
             result.put("data", firstChunk);
             int offset = 0;
-            if (vtempFile.length() > MAX_DOWNLOAD_CHUNK_SIZE) {
+            if (Files.size(tempFile) > MAX_DOWNLOAD_CHUNK_SIZE) {
                 offset = firstChunk.length;
 
-                final int handle = factory.resultSets.add(new SerializedResult(vtempFile));
+                final int handle = factory.resultSets.add(new SerializedResult(tempFile));
                 result.put("handle", Integer.toString(handle));
                 result.put("supports-long-offset", Boolean.TRUE);
             } else {
-                vtempFile.delete();
+                temporaryFileManager.returnTemporaryFile(tempFile);
             }
             result.put("offset", offset);
             return result;
@@ -2557,6 +2636,7 @@ public class RpcConnection implements RpcAPI {
         return false;
     }
 
+    @Override
     public boolean setUserPrimaryGroup(final String username, final String groupName) throws EXistException, PermissionDeniedException {
         final SecurityManager manager = factory.getBrokerPool().getSecurityManager();
 
@@ -2653,6 +2733,7 @@ public class RpcConnection implements RpcAPI {
         });
     }
 
+    @Override
     public void removeGroupMember(final String group, final String member) throws EXistException, PermissionDeniedException {
         withDb((broker, transaction) -> {
             final SecurityManager sm = broker.getBrokerPool().getSecurityManager();
@@ -2678,8 +2759,8 @@ public class RpcConnection implements RpcAPI {
      * @return
      * @throws org.exist.security.PermissionDeniedException
      */
+    @Override
     public boolean updateAccount(final String name, final List<String> groups) throws EXistException, PermissionDeniedException {
-
         try {
             return withDb((broker, transaction) -> {
                 final SecurityManager manager = broker.getBrokerPool().getSecurityManager();
@@ -3294,13 +3375,13 @@ public class RpcConnection implements RpcAPI {
     @Override
     public List<String> getDocumentChunk(final String name, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException, IOException {
         final List<String> result = new ArrayList<>(2);
-        final File file = File.createTempFile("rpc", ".xml");
-        file.deleteOnExit();
-        try (final FileOutputStream os = new FileOutputStream(file.getAbsolutePath(), true)) {
+        final TemporaryFileManager temporaryFileManager = TemporaryFileManager.getInstance();
+        final Path file = temporaryFileManager.getTemporaryFile();
+        try (final OutputStream os = Files.newOutputStream(file)) {
             os.write(getDocument(name, parameters));
         }
-        result.add(file.getName());
-        result.add(Long.toString(file.length()));
+        result.add(FileUtils.fileName(file));
+        result.add(Long.toString(Files.size(file)));
         return result;
     }
 
@@ -3438,11 +3519,13 @@ public class RpcConnection implements RpcAPI {
     }
 
     @Override
+    @Deprecated
     public Map<String, Object> queryP(final byte[] xpath, final String docName, final String s_id, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException, URISyntaxException {
         return queryP(new String(xpath, DEFAULT_ENCODING), docName, s_id, parameters);
     }
 
     @Override
+    @Deprecated
     public Map<String, Object> queryP(final byte[] xpath, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
         return queryP(new String(xpath, DEFAULT_ENCODING), (XmldbURI) null, null, parameters);
     }
@@ -3524,13 +3607,15 @@ public class RpcConnection implements RpcAPI {
         return factory.getBrokerPool().getScheduler().createPeriodicJob(0, shutdownJob, delay, new Properties(), 0);
     }
 
-    public boolean enterServiceMode() throws PermissionDeniedException, EXistException {
+    @Override
+    public boolean enterServiceMode() throws PermissionDeniedException {
         final BrokerPool brokerPool = factory.getBrokerPool();
         brokerPool.enterServiceMode(user);
         return true;
     }
 
-    public void exitServiceMode() throws PermissionDeniedException, EXistException {
+    @Override
+    public void exitServiceMode() throws PermissionDeniedException {
         final BrokerPool brokerPool = factory.getBrokerPool();
         brokerPool.exitServiceMode(user);
     }
