@@ -22,6 +22,9 @@ package org.exist.xquery;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -43,13 +46,7 @@ import org.exist.Namespaces;
 import org.exist.collections.Collection;
 import org.exist.debuggee.Debuggee;
 import org.exist.debuggee.DebuggeeJoint;
-import org.exist.dom.persistent.BinaryDocument;
-import org.exist.dom.persistent.DefaultDocumentSet;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.DocumentSet;
-import org.exist.dom.persistent.MutableDocumentSet;
-import org.exist.dom.persistent.NodeHandle;
-import org.exist.dom.persistent.NodeProxy;
+import org.exist.dom.persistent.*;
 import org.exist.dom.QName;
 import org.exist.http.servlets.RequestWrapper;
 import org.exist.interpreter.Context;
@@ -68,6 +65,9 @@ import org.exist.storage.DBBroker;
 import org.exist.storage.UpdateListener;
 import org.exist.storage.lock.Lock.LockMode;
 import org.exist.storage.lock.LockedDocumentMap;
+import org.exist.storage.txn.TransactionException;
+import org.exist.storage.txn.TransactionManager;
+import org.exist.storage.txn.Txn;
 import org.exist.util.Collations;
 import org.exist.util.Configuration;
 import org.exist.util.LockException;
@@ -84,11 +84,9 @@ import antlr.TokenStreamException;
 import antlr.collections.AST;
 import org.w3c.dom.Node;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static java.lang.invoke.MethodType.methodType;
 
 /**
  * The current XQuery execution context. Contains the static as well as the dynamic
@@ -175,6 +173,9 @@ public class XQueryContext implements BinaryValueManager, Context
 
     // Unresolved references to user defined functions
     protected Deque<FunctionCall>                      forwardReferences                                = new ArrayDeque<>();
+
+    // Inline functions using closures need to be cleared after execution
+    protected Deque<UserDefinedFunction>               closures                                         = new ArrayDeque<>();
 
     // List of options declared for this query at compile time - i.e. declare option
     protected List<Option>                             staticOptions                                    = null;
@@ -1168,13 +1169,12 @@ public class XQueryContext implements BinaryValueManager, Context
 
             // no path defined: return all documents in the db
             try {
-                getBroker().getAllXMLResources( ndocs );
-            } catch(final PermissionDeniedException pde) {
-                LOG.warn("Permission denied to read resource all resources" + pde.getMessage(), pde);
-                throw new XPathException("Permission denied to read resource all resources" + pde.getMessage(), pde);
+                getBroker().getAllXMLResources(ndocs);
+            } catch(final PermissionDeniedException | LockException e) {
+                LOG.warn(e);
+                throw new XPathException("Permission denied to read resource all resources: " + e.getMessage(), e);
             }
         } else {
-            DocumentImpl doc;
             Collection   collection;
 
             for( int i = 0; i < staticDocumentPaths.length; i++ ) {
@@ -1185,21 +1185,22 @@ public class XQueryContext implements BinaryValueManager, Context
                     if( collection != null ) {
                         collection.allDocs( getBroker(), ndocs, true);
                     } else {
-                        doc = getBroker().getXMLResource( staticDocumentPaths[i], LockMode.READ_LOCK );
+                        try(final LockedDocument lockedDocument = getBroker().getXMLResource( staticDocumentPaths[i], LockMode.READ_LOCK)) {
 
-                        if( doc != null ) {
+                            final DocumentImpl doc = lockedDocument == null ? null : lockedDocument.getDocument();
+                            if (doc != null) {
 
-                            if( doc.getPermissions().validate( 
-                            		getBroker().getCurrentSubject(), Permission.READ ) ) {
-                                
-                            	ndocs.add( doc );
+                                if (doc.getPermissions().validate(
+                                        getBroker().getCurrentSubject(), Permission.READ)) {
+
+                                    ndocs.add(doc);
+                                }
                             }
-                            doc.getUpdateLock().release( LockMode.READ_LOCK );
                         }
                     }
                 }
-                catch( final PermissionDeniedException e ) {
-                    LOG.warn( "Permission denied to read resource " + staticDocumentPaths[i] + ". Skipping it." );
+                catch(final PermissionDeniedException | LockException e) {
+                    LOG.warn("Permission denied to read resource " + staticDocumentPaths[i] + ". Skipping it.");
                 }
             }
         }
@@ -1375,7 +1376,7 @@ public class XQueryContext implements BinaryValueManager, Context
             try {
                 Modification.checkFragmentation( this, modifiedDocuments );
             }
-            catch( final EXistException e ) {
+            catch( final LockException | EXistException e ) {
                 LOG.warn( "Error while checking modified documents: " + e.getMessage(), e );
             }
             modifiedDocuments = null;
@@ -1398,6 +1399,11 @@ public class XQueryContext implements BinaryValueManager, Context
         if( !isShared ) {
             lastVar = null;
         }
+
+        // clear inline functions using closures
+        closures.forEach(func -> func.setClosureVariables(null));
+        closures.clear();
+
         fragmentStack = new Stack<MemTreeBuilder>();
         callStack.clear();
         protectedDocuments = null;
@@ -1688,14 +1694,17 @@ public class XQueryContext implements BinaryValueManager, Context
     }
 
 
-    protected Module instantiateModule( String namespaceURI, Class<Module> mClass, Map<String, Map<String, List<? extends Object>>> moduleParameters) {
+    protected Module instantiateModule( String namespaceURI, Class<Module> mClazz, Map<String, Map<String, List<? extends Object>>> moduleParameters) {
         Module module = null;
 
         try {
-
-            final Constructor<Module> cnstr = mClass.getConstructor(Map.class);
-            
-            module = cnstr.newInstance(moduleParameters.get(namespaceURI));
+            final MethodHandles.Lookup lookup = MethodHandles.lookup();
+            final MethodHandle methodHandle = lookup.findConstructor(mClazz, methodType(void.class, Map.class));
+            final java.util.function.Function<Map, Module> ctor = (java.util.function.Function<Map, Module>)
+                    LambdaMetafactory.metafactory(
+                            lookup, "apply", methodType(java.util.function.Function.class),
+                            methodHandle.type().erase(), methodHandle, methodHandle.type()).getTarget().invokeExact();
+            module = ctor.apply(moduleParameters.get(namespaceURI));
 
             if(namespaceURI != null && !module.getNamespaceURI().equals(namespaceURI)) {
                 LOG.warn( "the module declares a different namespace URI. Expected: " + namespaceURI + " found: " + module.getNamespaceURI() );
@@ -1708,16 +1717,13 @@ public class XQueryContext implements BinaryValueManager, Context
 
             modules.put(module.getNamespaceURI(), module);
             allModules.put(module.getNamespaceURI(), module);
-        } catch(final InstantiationException ie) {
-            LOG.warn("error while instantiating module class " + mClass.getName(), ie);
-        } catch(final IllegalAccessException iae) {
-            LOG.warn("error while instantiating module class " + mClass.getName(), iae);
-        } catch(final XPathException xpe) {
-            LOG.warn("error while instantiating module class " + mClass.getName(), xpe);
-        } catch(final NoSuchMethodException nsme) {
-            LOG.warn("error while instantiating module class " + mClass.getName(), nsme);
-        } catch(final InvocationTargetException ite) {
-            LOG.warn("error while instantiating module class " + mClass.getName(), ite);
+        } catch(final Throwable e) {
+            if (e instanceof InterruptedException) {
+                // NOTE: must set interrupted flag
+                Thread.currentThread().interrupt();
+            }
+
+            LOG.warn("error while instantiating module class " + mClazz.getName(), e);
         }
         
         return module;
@@ -2059,7 +2065,7 @@ public class XQueryContext implements BinaryValueManager, Context
      */
     public List<ClosureVariable> getLocalStack() {
 
-        final List<ClosureVariable> closure = new ArrayList<>(6);
+        List<ClosureVariable> closure = null;
 
     	final LocalVariable end = contextStack.isEmpty() ? null : contextStack.peek();
 
@@ -2069,6 +2075,9 @@ public class XQueryContext implements BinaryValueManager, Context
                 break;
             }
 
+            if (closure == null) {
+                closure = new ArrayList<>(6);
+            }
             closure.add( new ClosureVariable(var) );
         }
 
@@ -2612,6 +2621,16 @@ public class XQueryContext implements BinaryValueManager, Context
     }
 
     /**
+     * Register a inline function using closure variables so it can be cleared
+     * after query execution.
+     *
+     * @param func an inline function definition using closure variables
+     */
+    public void pushClosure(final UserDefinedFunction func) {
+        closures.add(func);
+    }
+
+    /**
      * Returns the current size of the stack. This is used to determine where a variable has been declared.
      *
      * @return  current size of the stack
@@ -2740,11 +2759,9 @@ public class XQueryContext implements BinaryValueManager, Context
                                 locationUri = moduleLoadPathUri.resolveCollectionPath( locationUri );
                             }
 
-                            DocumentImpl sourceDoc = null;
+                            try (final LockedDocument lockedSourceDoc = getBroker().getXMLResource( locationUri.toCollectionPathURI(), LockMode.READ_LOCK)) {
 
-                            try {
-                                sourceDoc = getBroker().getXMLResource( locationUri.toCollectionPathURI(), LockMode.READ_LOCK );
-
+                                final DocumentImpl sourceDoc = lockedSourceDoc == null ? null : lockedSourceDoc.getDocument();
                                 if(sourceDoc == null) {
                                     throw moduleLoadException("Module location hint URI '" + location + "' does not refer to anything.", location);
                                 }
@@ -2760,10 +2777,6 @@ public class XQueryContext implements BinaryValueManager, Context
 
                             } catch(final PermissionDeniedException e) {
                                 throw moduleLoadException("Permission denied to read module source from location hint URI '" + location + ".", location, e);
-                            } finally {
-                                if(sourceDoc != null) {
-                                    sourceDoc.getUpdateLock().release(LockMode.READ_LOCK);
-                                }
                             }
                         } catch(final URISyntaxException e) {
                             throw moduleLoadException("Invalid module location hint URI '" + location + "'.", location, e);

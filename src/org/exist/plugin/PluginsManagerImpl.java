@@ -22,9 +22,12 @@
 package org.exist.plugin;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.*;
+import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,16 +37,18 @@ import org.exist.LifeCycle;
 import org.exist.backup.BackupHandler;
 import org.exist.backup.RestoreHandler;
 import org.exist.collections.Collection;
+import org.exist.collections.triggers.TriggerException;
 import org.exist.config.*;
 import org.exist.config.Configuration;
 import org.exist.config.annotation.*;
 import org.exist.security.Permission;
+import org.exist.security.PermissionDeniedException;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.BrokerPoolService;
 import org.exist.storage.BrokerPoolServiceException;
 import org.exist.storage.DBBroker;
-import org.exist.storage.txn.TransactionManager;
 import org.exist.storage.txn.Txn;
+import org.exist.util.LockException;
 import org.exist.util.serializer.SAXSerializer;
 import org.exist.xmldb.XmldbURI;
 import org.w3c.dom.Document;
@@ -51,6 +56,8 @@ import org.xml.sax.Attributes;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
+
+import static java.lang.invoke.MethodType.methodType;
 
 /**
  * Plugins manager.
@@ -91,60 +98,69 @@ public class PluginsManagerImpl implements Configurable, BrokerPoolService, Plug
 	}
 
 	@Override
-	public void startSystem(final DBBroker systemBroker) throws BrokerPoolServiceException {
+	public void startSystem(final DBBroker systemBroker, final Txn transaction) throws BrokerPoolServiceException {
 		try {
-			start(systemBroker);
+			start(systemBroker, transaction);
 		} catch(final EXistException e) {
 			throw new BrokerPoolServiceException(e);
 		}
 	}
 
     @Override
-	public void start(DBBroker broker) throws EXistException {
-        final TransactionManager transaction = broker.getBrokerPool().getTransactionManager();
-
-        try (final Txn txn = transaction.beginTransaction()) {
-            collection = broker.getCollection(COLLETION_URI);
-            if (collection == null) {
-                collection = broker.getOrCreateCollection(txn, COLLETION_URI);
-                if (collection == null) {
-                    return;
-                }
-                //if db corrupted it can lead to unrunnable issue
-                //throw new ConfigurationException("Collection '/db/system/plugins' can't be created.");
-
-                collection.setPermissions(Permission.DEFAULT_SYSTEM_SECURITY_COLLECTION_PERM);
-                broker.saveCollection(txn, collection);
-            }
-
-            transaction.commit(txn);
-        } catch (final Exception e) {
-            e.printStackTrace();
-            LOG.debug("loading configuration failed: " + e.getMessage());
-        }
-
-        final Configuration _config_ = Configurator.parse(this, broker, collection, CONFIG_FILE_URI);
-        configuration = Configurator.configure(this, _config_);
-
-        //load plugins by META-INF/services/
+	public void start(final DBBroker broker, final Txn transaction) throws EXistException {
+        boolean interrupted = false;
         try {
+            try {
+                collection = broker.getCollection(COLLETION_URI);
+                if (collection == null) {
+                    collection = broker.getOrCreateCollection(transaction, COLLETION_URI);
+                    if (collection == null) {
+                        return;
+                    }
+                    //if db corrupted it can lead to unrunnable issue
+                    //throw new ConfigurationException("Collection '/db/system/plugins' can't be created.");
 
-            for (final Class<? extends Plug> plugin : listServices(Plug.class)) {
-                //System.out.println("found plugin "+plugin);
-
-                try {
-                    final Constructor<? extends Plug> ctor = plugin.getConstructor(PluginsManager.class);
-                    final Plug plgn = ctor.newInstance(this);
-
-                    jacks.put(plugin.getName(), plgn);
-                } catch (final Throwable e) {
-                    e.printStackTrace();
+                    collection.setPermissions(broker, Permission.DEFAULT_SYSTEM_SECURITY_COLLECTION_PERM);
+                    broker.saveCollection(transaction, collection);
                 }
+
+    		} catch (final TriggerException | PermissionDeniedException | IOException | LockException e) {
+    			e.printStackTrace();
+    			LOG.debug("loading configuration failed: " + e.getMessage());
             }
-        } catch (final Throwable e) {
-            e.printStackTrace();
-        }
-        //UNDERSTAND: call save?
+
+            final Configuration _config_ = Configurator.parse(this, broker, collection, CONFIG_FILE_URI);
+            configuration = Configurator.configure(this, _config_);
+
+            //load plugins by META-INF/services/
+            try {
+
+                final MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+                for (final Class<? extends Plug> pluginClazz : listServices(Plug.class)) {
+                    try {
+                        final MethodHandle methodHandle = lookup.findConstructor(pluginClazz, methodType(void.class, PluginsManager.class));
+                        final Function<PluginsManager, Plug> ctor = (Function<PluginsManager, Plug>)
+                                LambdaMetafactory.metafactory(
+                                        lookup, "apply", methodType(Function.class),
+                                        methodHandle.type().erase(), methodHandle, methodHandle.type()).getTarget().invokeExact();
+
+                        final Plug plgn = ctor.apply(this);
+
+                        jacks.put(pluginClazz.getName(), plgn);
+                    } catch (final Throwable e) {
+                        if (e instanceof InterruptedException) {
+                            // NOTE: must set interrupted flag
+                            interrupted = true;
+                        }
+
+                        e.printStackTrace();
+                    }
+                }
+            } catch (final Throwable e) {
+                e.printStackTrace();
+            }
+            //UNDERSTAND: call save?
 
 //		try {
 //			configuration.save(broker);
@@ -152,8 +168,14 @@ public class PluginsManagerImpl implements Configurable, BrokerPoolService, Plug
 //			//LOG?
 //		}
 
-        for (final Plug jack : jacks.values()) {
-            jack.start(broker);
+            for (final Plug jack : jacks.values()) {
+                jack.start(broker, transaction);
+            }
+        } finally {
+            if (interrupted) {
+                // NOTE: must set interrupted flag
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -196,16 +218,26 @@ public class PluginsManagerImpl implements Configurable, BrokerPoolService, Plug
 			{return;}
 		
 		try {
-			final Class<? extends Plug> plugin = (Class<? extends Plug>) Class.forName(className);
-			
-			final Constructor<? extends Plug> ctor = plugin.getConstructor(PluginsManager.class);
-			final Plug plgn = ctor.newInstance(this);
-			
-			jacks.put(plugin.getName(), plgn);
+			final Class<? extends Plug> pluginClazz = (Class<? extends Plug>) Class.forName(className);
+
+            final MethodHandles.Lookup lookup = MethodHandles.lookup();
+            final MethodHandle methodHandle = lookup.findConstructor(pluginClazz, methodType(void.class, PluginsManager.class));
+            final Function<PluginsManager, Plug> ctor = (Function<PluginsManager, Plug>)
+                    LambdaMetafactory.metafactory(
+                            lookup, "apply", methodType(Function.class),
+                            methodHandle.type().erase(), methodHandle, methodHandle.type()).getTarget().invokeExact();
+
+			final Plug plgn = ctor.apply(this);
+
+			jacks.put(pluginClazz.getName(), plgn);
 			runPlugins.add(className);
 			
 			//TODO: if (jack instanceof Startable) { ((Startable) jack).startUp(broker); }
 		} catch (final Throwable e) {
+            if (e instanceof InterruptedException) {
+                // NOTE: must set interrupted flag
+                Thread.currentThread().interrupt();
+            }
 //			e.printStackTrace();
 		}
 	}

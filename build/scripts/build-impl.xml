@@ -29,8 +29,8 @@
     <property name="dist" value="./dist"/>
     <property name="webapp.dir" value="${dist}/webapp"/>
     <property name="build.compiler" value="modern"/>
-    <property name="build.compiler.source" value="1.5"/>
-    <property name="build.compiler.target" value="1.5"/>
+    <property name="build.compiler.source" value="1.8"/>
+    <property name="build.compiler.target" value="1.8"/>
     <property name="build.debug" value="on"/>
     <property name="build.optimize" value="on"/>
     <property name="build.deprecation" value="on"/>
@@ -100,7 +100,7 @@
         </fileset>
     </path>
 
-    <taskdef classpath="${tools.aspectj}/lib/aspectjtools-1.9.0.jar" resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"/>
+    <taskdef classpath="${tools.aspectj}/lib/aspectjtools-1.9.1.jar" resource="org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties"/>
     <path id="classpath.aspectj">
         <fileset dir="${tools.aspectj}/lib">
             <include name="*.jar"/>
@@ -153,6 +153,9 @@
             </else>
         </if>
         <echo message=""/>
+        <echo message="Java Vendor: ${java.vendor}"/>
+        <echo message="Java Version: ${java.runtime.version}"/>
+        <echo message="Java VM: ${java.vm.name} ${java.vm.version}"/>
         <echo message="${ant.version}"/>
         <echo message="---------------------------------------------"/>
         <echo/>
@@ -214,7 +217,8 @@
             <include name="org/**"/>
 
             <!-- Do not compile Aspects here, compiled below by iajc -->
-        <exclude name="org/exist/security/PermissionRequiredAspect.java"/>
+            <exclude name="org/exist/security/PermissionRequiredAspect.java"/>
+            <exclude name="org/exist/storage/lock/EnsureLockingAspect.java"/>
 
         <classpath>
                 <path refid="classpath.core"/>
@@ -268,6 +272,7 @@
     <target name="check.aspects.uptodate">
         <uptodate property="aspectj.uptodate" targetfile="exist.jar">
             <srcfiles dir= "${src}" includes="org/exist/security/PermissionRequiredAspect.java"/>
+            <srcfiles dir= "${src}" includes="org/exist/storage/lock/EnsureLockingAspect.java"/>
         </uptodate>
     </target>
 
@@ -292,6 +297,9 @@
             fork="true" maxmem="1024m" showWeaveInfo="true" inpath="${build.classes}">
 
             <include name="org/exist/security/PermissionRequiredAspect.java"/>
+
+            <!-- can be enabled in local.build.properties -->
+            <include name="org/exist/storage/lock/EnsureLockingAspect.java" if="${enable.ensurelocking.aspect}" />
 
             <classpath refid="classpath.compile-aspectj"/>
         </iajc>

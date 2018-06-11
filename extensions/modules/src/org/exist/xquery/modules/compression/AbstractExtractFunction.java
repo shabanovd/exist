@@ -42,15 +42,7 @@ import org.exist.xquery.XPathException;
 import org.exist.xquery.XQueryContext;
 import org.exist.xquery.functions.xmldb.XMLDBAbstractCollectionManipulator;
 import org.exist.xquery.modules.ModuleUtils;
-import org.exist.xquery.value.AnyURIValue;
-import org.exist.xquery.value.Base64BinaryValueType;
-import org.exist.xquery.value.BinaryValue;
-import org.exist.xquery.value.BinaryValueFromInputStream;
-import org.exist.xquery.value.BooleanValue;
-import org.exist.xquery.value.FunctionReference;
-import org.exist.xquery.value.NodeValue;
-import org.exist.xquery.value.Sequence;
-import org.exist.xquery.value.StringValue;
+import org.exist.xquery.value.*;
 
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
@@ -93,7 +85,7 @@ public abstract class AbstractExtractFunction extends BasicFunction
             throw new XPathException("entry-filter function must take at least 3 arguments.");
 
         filterParam = args[2];
-        
+
         //get the entry-data function and check its types
         if(!(args[3].itemAt(0) instanceof FunctionReference))
             throw new XPathException("No entry-data function provided.");
@@ -117,7 +109,10 @@ public abstract class AbstractExtractFunction extends BasicFunction
             return processCompressedData(compressedData, encoding);
         } catch(final UnsupportedCharsetException | XMLDBException e) {
             throw new XPathException(this, e.getMessage(), e);
-		}
+		} finally {
+            entryDataFunction.close();
+            entryFilterFunction.close();
+        }
     }
 
     /**
@@ -157,7 +152,7 @@ public abstract class AbstractExtractFunction extends BasicFunction
             Sequence entryDataFunctionResult;
             Sequence uncompressedData = Sequence.EMPTY_SEQUENCE;
 
-            if (entryDataFunction.getSignature().getArgumentCount() == 3) {
+            if (entryDataFunction.getSignature().getReturnType().getPrimaryType() != Type.EMPTY && entryDataFunction.getSignature().getArgumentCount() == 3) {
 
                 Sequence dataParams[] = new Sequence[3];
                 System.arraycopy(filterParams, 0, dataParams, 0, 2);

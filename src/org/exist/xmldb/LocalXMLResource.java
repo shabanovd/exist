@@ -19,6 +19,7 @@
  */
 package org.exist.xmldb;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
@@ -29,8 +30,11 @@ import org.exist.dom.memtree.NodeImpl;
 import org.exist.numbering.NodeId;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
+import org.exist.storage.DBBroker;
 import org.exist.storage.serializers.Serializer;
+import org.exist.storage.txn.Txn;
 import org.exist.util.MimeType;
+import com.evolvedbinary.j8fu.Either;
 import org.exist.util.serializer.DOMSerializer;
 import org.exist.util.serializer.DOMStreamer;
 import org.exist.util.serializer.SAXSerializer;
@@ -161,13 +165,13 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
                     serializer.setProperties(getProperties());
 
                     if (root != null) {
-                        return serializer.serialize((NodeValue) root);
+                        return serialize(broker, saxSerializer -> saxSerializer.toSAX((NodeValue) root));
                     } else if (proxy != null) {
-                        return serializer.serialize(proxy);
+                        return serialize(broker, saxSerializer -> saxSerializer.toSAX(proxy));
                     } else {
                         return this.<String>read(broker, transaction).apply((document, broker1, transaction1) -> {
                             try {
-                                return serializer.serialize(document);
+                                return serialize(broker, saxSerializer -> saxSerializer.toSAX(document));
                             } catch (final SAXException e) {
                                 throw new XMLDBException(ErrorCodes.VENDOR_ERROR, e.getMessage(), e);
                             }
@@ -178,6 +182,31 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
                 }
             });
             return content;
+        }
+    }
+
+    private String serialize(final DBBroker broker, final ConsumerE<Serializer, SAXException> toSaxFunction) throws SAXException, IOException {
+        final Serializer serializer = broker.newSerializer();
+        serializer.setUser(user);
+        serializer.setProperties(getProperties());
+
+        SAXSerializer saxSerializer = null;
+        try {
+            saxSerializer = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
+
+            try (final StringWriter writer = new StringWriter()) {
+                saxSerializer.setOutput(writer, getProperties());
+                serializer.setSAXHandlers(saxSerializer, saxSerializer);
+
+                toSaxFunction.accept(serializer);
+
+                writer.flush();
+                return writer.toString();
+            }
+        } finally {
+            if (saxSerializer != null) {
+                SerializerPool.getInstance().returnObject(saxSerializer);
+            }
         }
     }
 
@@ -205,70 +234,7 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
             });
         }
 
-        return exportInternalNode(result);
-    }
-
-    private static final Boolean ENHANCER_DISABLED = !"true".equals(System.getProperty("eXistDB.use.enhancer", "true"));
-
-    /**
-     * Provides a safe export of an internal persistent DOM
-     * node from eXist via the Local XML:DB API.
-     *
-     * This is done by providing a proxy object that only implements
-     * the appropriate W3C DOM interface. This helps prevent the
-     * XML:DB Local API from leaking implementation through
-     * its abstractions.
-     */
-    private Node exportInternalNode(final Node node) {
-        if (ENHANCER_DISABLED) {
-            return node;
-        }
-
-        final Optional<Class<? extends Node>> domClazz = getW3cNodeInterface(node.getClass());
-        if(!domClazz.isPresent()) {
-            throw new IllegalArgumentException("Provided node does not implement org.w3c.dom");
-        }
-
-        final Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(domClazz.get());
-        enhancer.setCallback(new MethodInterceptor() {
-            @Override
-            public Object intercept(final Object obj, final Method method, final Object[] args, final MethodProxy proxy) throws Throwable {
-
-                final Object domResult = method.invoke(node, args);
-
-                if(domResult != null && Node.class.isAssignableFrom(method.getReturnType())) {
-                    return exportInternalNode((Node) domResult); //recursively wrap node result
-
-                } else if(domResult != null && method.getReturnType().equals(NodeList.class)) {
-                    final NodeList underlying = (NodeList)domResult; //recursively wrap nodes in nodelist result
-                    return new NodeList() {
-                        @Override
-                        public Node item(final int index) {
-                            return Optional.ofNullable(underlying.item(index))
-                                    .map(n -> exportInternalNode(n))
-                                    .orElse(null);
-                        }
-
-                        @Override
-                        public int getLength() {
-                            return underlying.getLength();
-                        }
-                    };
-                } else {
-                    return domResult;
-                }
-            }
-        });
-
-        return (Node)enhancer.create();
-    }
-
-    private Optional<Class<? extends Node>> getW3cNodeInterface(final Class<? extends Node> nodeClazz) {
-        return Stream.of(nodeClazz.getInterfaces())
-                .filter(iface -> iface.getPackage().getName().equals("org.w3c.dom"))
-                .findFirst()
-                .map(c -> (Class<? extends Node>)c);
+        return result;
     }
 
     @Override
@@ -412,6 +378,19 @@ public class LocalXMLResource extends AbstractEXistResource implements XMLResour
             return proxy;
         } else {
             return read((document, broker, transaction) -> new NodeProxy(document, NodeId.DOCUMENT_NODE));
+        }
+    }
+
+    /**
+     * Similar to {@link org.exist.xmldb.LocalXMLResource#getNode()}
+     * but useful for operations within the XML:DB Local API
+     * that are already working within a transaction
+     */
+    public NodeProxy getNode(final DBBroker broker, final Txn transaction) throws XMLDBException {
+        if(proxy != null) {
+            return proxy;
+        } else {
+            return this.<NodeProxy>read(broker, transaction).apply((document, broker1, transaction1) -> new NodeProxy(document, NodeId.DOCUMENT_NODE));
         }
     }
 

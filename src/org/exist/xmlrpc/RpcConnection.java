@@ -22,17 +22,7 @@ package org.exist.xmlrpc;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
-import org.exist.dom.persistent.NodeProxy;
-import org.exist.dom.persistent.DocumentMetadata;
-import org.exist.dom.persistent.DocumentSet;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.MutableDocumentSet;
-import org.exist.dom.persistent.ExtArrayNodeSet;
-import org.exist.dom.persistent.DocumentTypeImpl;
-import org.exist.dom.persistent.BinaryDocument;
-import org.exist.dom.persistent.NodeSet;
-import org.exist.dom.persistent.SortedNodeSet;
-import org.exist.dom.persistent.DefaultDocumentSet;
+import org.exist.dom.persistent.*;
 import org.exist.EXistException;
 import org.exist.Namespaces;
 import org.exist.Version;
@@ -66,8 +56,12 @@ import org.exist.source.DBSource;
 import org.exist.source.Source;
 import org.exist.source.StringSource;
 import org.exist.storage.*;
+import org.exist.storage.DBBroker.PreserveType;
 import org.exist.storage.lock.Lock.LockMode;
+import org.exist.storage.lock.LockManager;
 import org.exist.storage.lock.LockedDocumentMap;
+import org.exist.storage.lock.ManagedCollectionLock;
+import org.exist.storage.lock.ManagedDocumentLock;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.sync.Sync;
@@ -94,9 +88,11 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
+import com.evolvedbinary.j8fu.function.ConsumerE;
 import com.evolvedbinary.j8fu.function.Function2E;
 import com.evolvedbinary.j8fu.function.Function3E;
 import com.evolvedbinary.j8fu.function.SupplierE;
+import com.evolvedbinary.j8fu.tuple.Tuple2;
 
 import java.io.*;
 import java.net.URISyntaxException;
@@ -111,6 +107,7 @@ import javax.xml.transform.OutputKeys;
 
 import org.xmldb.api.base.*;
 
+import static org.exist.xmldb.EXistXPathQueryService.BEGIN_PROTECTED_MAX_LOCKING_RETRIES;
 import static java.nio.file.StandardOpenOption.*;
 
 /**
@@ -130,6 +127,7 @@ public class RpcConnection implements RpcAPI {
 
     private final XmldbRequestProcessorFactory factory;
     private final Subject user;
+    private final Random random = new Random();
 
     public RpcConnection(final XmldbRequestProcessorFactory factory, final Subject user) {
         super();
@@ -163,17 +161,11 @@ public class RpcConnection implements RpcAPI {
                 return true;
             }
 
-            current = broker.getOrCreateCollection(transaction, collUri);
+            current = broker.getOrCreateCollection(transaction, collUri, Optional.ofNullable(created).map(c -> new Tuple2<>(null, c.getTime())));
 
-            //TODO : register a lock (wich one ?) within the transaction ?
-            if (created != null) {
-                current.setCreationTime(created.getTime());
+            try(final ManagedCollectionLock collectionLock = broker.getBrokerPool().getLockManager().acquireCollectionWriteLock(collUri)) {
+                broker.saveCollection(transaction, current);
             }
-            if(LOG.isDebugEnabled()) {
-                LOG.debug("creating collection " + collUri);
-            }
-
-            broker.saveCollection(transaction, current);
 
             return null;
         });
@@ -267,22 +259,23 @@ public class RpcConnection implements RpcAPI {
         if (protectColl == null) {
             return null;
         }
+
+        int retries = BEGIN_PROTECTED_MAX_LOCKING_RETRIES == - 1 ? -1 : BEGIN_PROTECTED_MAX_LOCKING_RETRIES - 2;
         do {
             MutableDocumentSet docs = null;
             final LockedDocumentMap lockedDocuments = new LockedDocumentMap();
-            try {
-                final Collection coll = broker.getCollection(XmldbURI.createInternal(protectColl));
+            try(final Collection coll = broker.openCollection(XmldbURI.createInternal(protectColl), LockMode.READ_LOCK)) {
                 docs = new DefaultDocumentSet();
                 coll.allDocs(broker, docs, true, lockedDocuments, LockMode.WRITE_LOCK);
                 return lockedDocuments;
             } catch (final LockException e) {
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("Deadlock detected. Starting over again. Docs: " + docs.getDocumentCount() + "; locked: "
-                            + lockedDocuments.size());
-                }
+                LOG.warn("Deadlock detected. Starting over again. Docs: {}; locked: {}. Cause: {}", docs.getDocumentCount(), lockedDocuments.size(), e.getMessage());
                 lockedDocuments.unlock();
             }
-        } while (true);
+            retries--;
+        } while (retries >= -1);
+
+        throw new EXistException("Unable to beginProtected after " + BEGIN_PROTECTED_MAX_LOCKING_RETRIES + " retries");
     }
 
     /**
@@ -437,14 +430,8 @@ public class RpcConnection implements RpcAPI {
         }
 
         return withDb((broker, transaction) -> {
-            Collection collection = null;
-            try {
-                collection = broker.openCollection(uri, LockMode.READ_LOCK);
+            try(final Collection collection = broker.openCollection(uri, LockMode.READ_LOCK)) {
                 return collection != null;
-            } finally {
-                if (collection != null) {
-                    collection.release(LockMode.READ_LOCK);
-                }
             }
         });
     }
@@ -466,15 +453,17 @@ public class RpcConnection implements RpcAPI {
             if (collection.getPermissionsNoLock().validate(user, Permission.READ)) {
                 for (final Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext(); ) {
                     final DocumentImpl doc = i.next();
-                    final Permission perms = doc.getPermissions();
+                    try(final ManagedDocumentLock documentLock = broker.getBrokerPool().getLockManager().acquireDocumentReadLock(doc.getURI())) {
+                        final Permission perms = doc.getPermissions();
 
-                    final Map<String, Object> hash = new HashMap<>(5);
-                    hash.put("name", doc.getFileURI().toString());
-                    hash.put("owner", perms.getOwner().getName());
-                    hash.put("group", perms.getGroup().getName());
-                    hash.put("permissions", perms.getMode());
-                    hash.put("type", doc.getResourceType() == DocumentImpl.BINARY_FILE ? "BinaryResource" : "XMLResource");
-                    docs.add(hash);
+                        final Map<String, Object> hash = new HashMap<>(5);
+                        hash.put("name", doc.getFileURI().toString());
+                        hash.put("owner", perms.getOwner().getName());
+                        hash.put("group", perms.getGroup().getName());
+                        hash.put("permissions", perms.getMode());
+                        hash.put("type", doc.getResourceType() == DocumentImpl.BINARY_FILE ? "BinaryResource" : "XMLResource");
+                        docs.add(hash);
+                    }
                 }
                 for (final Iterator<XmldbURI> i = collection.collectionIterator(broker); i.hasNext(); ) {
                     collections.add(i.next().toString());
@@ -618,10 +607,33 @@ public class RpcConnection implements RpcAPI {
 
     private String getDocumentAsString(final XmldbURI docUri, final Map<String, Object> parameters) throws EXistException, PermissionDeniedException {
         return this.<String>readDocument(docUri).apply((document, broker, transaction) -> {
-            final Serializer serializer = broker.getSerializer();
-            serializer.setProperties(toProperties(parameters));
-            return serializer.serialize(document);
+            try (final StringWriter writer = new StringWriter()) {
+                serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(document), writer);
+                return writer.toString();
+            }
         });
+    }
+
+    private void serialize(final DBBroker broker, final Properties properties, final ConsumerE<Serializer, SAXException> toSaxFunction, final Writer writer) throws SAXException, IOException {
+        final Serializer serializer = broker.getSerializer();
+        serializer.setUser(user);
+        serializer.setProperties(properties);
+
+        SAXSerializer saxSerializer = null;
+        try {
+            saxSerializer = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
+
+            saxSerializer.setOutput(writer, properties);
+            serializer.setSAXHandlers(saxSerializer, saxSerializer);
+
+            toSaxFunction.accept(serializer);
+
+            writer.flush();
+        } finally {
+            if (saxSerializer != null) {
+                SerializerPool.getInstance().returnObject(saxSerializer);
+            }
+        }
     }
 
     @Override
@@ -643,11 +655,8 @@ public class RpcConnection implements RpcAPI {
             final Path tempFile = temporaryFileManager.getTemporaryFile();
 
             if (document.getResourceType() == DocumentImpl.XML_FILE) {
-                final Serializer serializer = broker.getSerializer();
-                serializer.setProperties(toProperties(parameters));
-
                 try (final Writer writer = Files.newBufferedWriter(tempFile, encoding)) {
-                    serializer.serialize(document, writer);
+                    serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(document), writer);
                 }
             } else {
                 try (final OutputStream os = Files.newOutputStream(tempFile)) {
@@ -809,9 +818,9 @@ public class RpcConnection implements RpcAPI {
             final Collection collectionRef = this.<Collection>readCollection(collUri).apply((collection, broker1, transaction1) -> collection);
             //TODO : register a lock (which one ?) in the transaction ?
             final DocumentSet docs = collectionRef.allDocs(broker, new DefaultDocumentSet(), true);
-            try {
+            try(final Reader reader = new StringReader(xupdate)) {
                 final XUpdateProcessor processor = new XUpdateProcessor(broker, docs);
-                final Modification modifications[] = processor.parse(new InputSource(new StringReader(xupdate)));
+                final Modification modifications[] = processor.parse(new InputSource(reader));
                 long mods = 0;
                 for (final Modification modification : modifications) {
                     mods += modification.process(transaction);
@@ -835,13 +844,16 @@ public class RpcConnection implements RpcAPI {
 
     private int xupdateResource(final XmldbURI docUri, final String xupdate) throws PermissionDeniedException, EXistException {
         return withDb((broker, transaction) -> {
-            final DocumentImpl documentRef = this.<DocumentImpl>readDocument(docUri).apply((document, broker1, transaction1) -> document);
-            //TODO : register a lock (which one ?) within the transaction ?
-            final MutableDocumentSet docs = new DefaultDocumentSet();
-            docs.add(documentRef);
-            try {
+            final MutableDocumentSet docs = this.<MutableDocumentSet>readDocument(docUri).apply((document, broker1, transaction1) -> {
+                //TODO : register a lock (which one ?) within the transaction ?
+                final MutableDocumentSet documentSet = new DefaultDocumentSet();
+                documentSet.add(document);
+                return documentSet;
+            });
+
+            try(final Reader reader = new StringReader(xupdate)) {
                 final XUpdateProcessor processor = new XUpdateProcessor(broker, docs);
-                final Modification modifications[] = processor.parse(new InputSource(new StringReader(xupdate)));
+                final Modification modifications[] = processor.parse(new InputSource(reader));
                 long mods = 0;
                 for (final Modification modification : modifications) {
                     mods += modification.process(transaction);
@@ -958,11 +970,10 @@ public class RpcConnection implements RpcAPI {
     private String createResourceId(final XmldbURI collUri) throws EXistException, PermissionDeniedException {
         return this.<String>readCollection(collUri).apply((collection, broker, transaction) -> {
             XmldbURI id;
-            final Random rand = new Random();
             boolean ok;
             do {
                 ok = true;
-                id = XmldbURI.create(Integer.toHexString(rand.nextInt()) + ".xml");
+                id = XmldbURI.create(Integer.toHexString(random.nextInt()) + ".xml");
                 // check if this id does already exist
                 if (collection.hasDocument(broker, id)) {
                     ok = false;
@@ -998,39 +1009,18 @@ public class RpcConnection implements RpcAPI {
 
     private Map<String, Object> getPermissions(final XmldbURI uri) throws EXistException, PermissionDeniedException {
         return withDb((broker, transaction) -> {
-            Collection collection = null;
-            try {
-                collection = broker.openCollection(uri, LockMode.READ_LOCK);
-                final Permission perm;
+            try(final Collection collection = broker.openCollection(uri, LockMode.READ_LOCK)) {
                 if (collection == null) {
-                    DocumentImpl doc = null;
-                    try {
-                        doc = broker.getXMLResource(uri, LockMode.READ_LOCK);
-                        if (doc == null) {
+                    try(final LockedDocument lockedDoc = broker.getXMLResource(uri, LockMode.READ_LOCK)) {
+                        if (lockedDoc == null) {
                             throw new EXistException("document or collection " + uri + " not found");
                         }
-                        perm = doc.getPermissions();
-                    } finally {
-                        if (doc != null) {
-                            doc.getUpdateLock().release(LockMode.READ_LOCK);
-                        }
+                        final Permission permission = lockedDoc.getDocument().getPermissions();
+                        return toMap(permission);
                     }
                 } else {
-                    perm = collection.getPermissionsNoLock();
-                }
-
-                final Map<String, Object> result = new HashMap<>();
-                result.put("owner", perm.getOwner().getName());
-                result.put("group", perm.getGroup().getName());
-                result.put("permissions", perm.getMode());
-
-                if (perm instanceof ACLPermission) {
-                    result.put("acl", getACEs(perm));
-                }
-                return result;
-            } finally {
-                if (collection != null) {
-                    collection.release(LockMode.READ_LOCK);
+                    final Permission permission = collection.getPermissionsNoLock();
+                    return toMap(permission);
                 }
             }
         });
@@ -1038,41 +1028,33 @@ public class RpcConnection implements RpcAPI {
 
     @Override
     public Map<String, Object> getSubCollectionPermissions(final String parentPath, final String name) throws EXistException, PermissionDeniedException, URISyntaxException {
-
         final XmldbURI uri = XmldbURI.xmldbUriFor(parentPath);
-        final Permission perm = this.<Permission>readCollection(uri).apply((collection, broker, transaction) -> collection.getChildCollectionEntry(broker, name).getPermissions());
-
-        final Map<String, Object> result = new HashMap<>();
-        result.put("owner", perm.getOwner().getName());
-        result.put("group", perm.getGroup().getName());
-        result.put("permissions", perm.getMode());
-
-        if (perm instanceof ACLPermission) {
-            result.put("acl", getACEs(perm));
-        }
-        return result;
+        return this.<Map<String, Object>>readCollection(uri).apply((collection, broker, transaction) -> toMap(collection.getChildCollectionEntry(broker, name).getPermissions()));
     }
 
     @Override
     public Map<String, Object> getSubResourcePermissions(final String parentPath, final String name) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(parentPath);
-        final Permission perm = this.<Permission>readCollection(uri).apply((collection, broker, transaction) -> collection.getResourceEntry(broker, name).getPermissions());
-
-        final Map<String, Object> result = new HashMap<>();
-        result.put("owner", perm.getOwner().getName());
-        result.put("group", perm.getGroup().getName());
-        result.put("permissions", perm.getMode());
-
-        if (perm instanceof ACLPermission) {
-            result.put("acl", getACEs(perm));
-        }
-        return result;
+        return this.<Map<String, Object>>readCollection(uri).apply((collection, broker, transaction) -> toMap(collection.getResourceEntry(broker, name).getPermissions()));
     }
 
     @Override
     public long getSubCollectionCreationTime(final String parentPath, final String name) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(parentPath);
         return this.<Long>readCollection(uri).apply((collection, broker, transaction) -> collection.getChildCollectionEntry(broker, name).getCreated());
+    }
+
+    private Map<String, Object> toMap(final Permission permission) {
+        final Map<String, Object> result = new HashMap<>();
+        result.put("owner", permission.getOwner().getName());
+        result.put("group", permission.getGroup().getName());
+        result.put("permissions", permission.getMode());
+
+        if (permission instanceof ACLPermission) {
+            result.put("acl", getACEs(permission));
+        }
+
+        return result;
     }
 
     private List<ACEAider> getACEs(final Permission perm) {
@@ -1095,16 +1077,11 @@ public class RpcConnection implements RpcAPI {
             final Map<String, List> result = new HashMap<>(collection.getDocumentCount(broker));
             for (final Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext(); ) {
                 final DocumentImpl doc = i.next();
-                final Permission perm = doc.getPermissions();
 
-                final List tmp = new ArrayList(4);
-                tmp.add(perm.getOwner().getName());
-                tmp.add(perm.getGroup().getName());
-                tmp.add(perm.getMode());
-                if (perm instanceof ACLPermission) {
-                    tmp.add(getACEs(perm));
+                try(final ManagedDocumentLock documentLock = broker.getBrokerPool().getLockManager().acquireDocumentReadLock(doc.getURI())) {
+                    final Permission perm = doc.getPermissions();
+                    result.put(doc.getFileURI().toString(), toList(perm));
                 }
-                result.put(doc.getFileURI().toString(), tmp);
             }
             return result;
         });
@@ -1124,18 +1101,22 @@ public class RpcConnection implements RpcAPI {
                 final XmldbURI child = i.next();
                 final XmldbURI path = collUri.append(child);
                 final Collection childColl = broker.getCollection(path);
-                final Permission perm = childColl.getPermissionsNoLock();
-                final List tmp = new ArrayList(4);
-                tmp.add(perm.getOwner().getName());
-                tmp.add(perm.getGroup().getName());
-                tmp.add(perm.getMode());
-                if (perm instanceof ACLPermission) {
-                    tmp.add(getACEs(perm));
-                }
-                result.put(child, tmp);
+                final Permission perm = childColl.getPermissionsNoLock();  // NOTE: we already have a READ lock on childColl implicitly
+                result.put(child, toList(perm));
             }
             return result;
         });
+    }
+
+    private List<Object> toList(final Permission permission) {
+        final List<Object> result = new ArrayList<>(4);
+        result.add(permission.getOwner().getName());
+        result.add(permission.getGroup().getName());
+        result.add(permission.getMode());
+        if (permission instanceof ACLPermission) {
+            result.add(getACEs(permission));
+        }
+        return result;
     }
 
     @Override
@@ -1181,58 +1162,47 @@ public class RpcConnection implements RpcAPI {
     @Override
     public Map<String, Object> getAccount(final String name) throws EXistException, PermissionDeniedException {
         return withDb((broker, transaction) -> {
-            final Account u = factory.getBrokerPool().getSecurityManager().getAccount(name);
-            if (u == null) {
+            final Account user = factory.getBrokerPool().getSecurityManager().getAccount(name);
+            if (user == null) {
                 throw new EXistException("account '" + name + "' does not exist");
             }
 
-            final Map<String, Object> tab = new HashMap<>();
-            tab.put("uid", user.getId());
-            tab.put("name", u.getName());
-            tab.put("groups", Arrays.asList(u.getGroups()));
-
-            final Group dg = u.getDefaultGroup();
-            if (dg != null) {
-                tab.put("default-group-id", dg.getId());
-                tab.put("default-group-realmId", dg.getRealmId());
-                tab.put("default-group-name", dg.getName());
-            }
-
-            tab.put("enabled", Boolean.toString(u.isEnabled()));
-
-            tab.put("umask", u.getUserMask());
-
-            final Map<String, String> metadata = new HashMap<>();
-            for (final SchemaType key : u.getMetadataKeys()) {
-                metadata.put(key.getNamespace(), u.getMetadataValue(key));
-            }
-            tab.put("metadata", metadata);
-
-            return tab;
+            return toMap(user);
         });
     }
 
     @Override
     public List<Map<String, Object>> getAccounts() throws EXistException, PermissionDeniedException {
-
         final java.util.Collection<Account> users = factory.getBrokerPool().getSecurityManager().getUsers();
-        final List<Map<String, Object>> r = new ArrayList<>();
+        final List<Map<String, Object>> result = new ArrayList<>();
         for (final Account user : users) {
-            final Map<String, Object> tab = new HashMap<>();
-            tab.put("uid", user.getId());
-            tab.put("name", user.getName());
-            tab.put("groups", Arrays.asList(user.getGroups()));
-            tab.put("enabled", Boolean.toString(user.isEnabled()));
-            tab.put("umask", user.getUserMask());
-
-            final Map<String, String> metadata = new HashMap<>();
-            for (final SchemaType key : user.getMetadataKeys()) {
-                metadata.put(key.getNamespace(), user.getMetadataValue(key));
-            }
-            tab.put("metadata", metadata);
-            r.add(tab);
+            result.add(toMap(user));
         }
-        return r;
+        return result;
+    }
+
+    private Map<String, Object> toMap(final Account account) {
+        final Map<String, Object> result = new HashMap<>();
+        result.put("uid", account.getId());
+        result.put("name", account.getName());
+        result.put("groups", Arrays.asList(account.getGroups()));
+
+        final Group dg = account.getDefaultGroup();
+        if (dg != null) {
+            result.put("default-group-id", dg.getId());
+            result.put("default-group-realmId", dg.getRealmId());
+            result.put("default-group-name", dg.getName());
+        }
+
+        result.put("enabled", Boolean.toString(account.isEnabled()));
+        result.put("umask", account.getUserMask());
+
+        final Map<String, String> metadata = new HashMap<>();
+        for (final SchemaType key : account.getMetadataKeys()) {
+            metadata.put(key.getNamespace(), account.getMetadataValue(key));
+        }
+        result.put("metadata", metadata);
+        return result;
     }
 
     @Override
@@ -1313,37 +1283,46 @@ public class RpcConnection implements RpcAPI {
                           final int overwrite, final Date created, final Date modified) throws EXistException, PermissionDeniedException {
 
         return this.<Boolean>writeCollection(docUri.removeLastSegment()).apply((collection, broker, transaction) -> {
-            if (overwrite == 0) {
-                final DocumentImpl old = collection.getDocument(broker, docUri.lastSegment());
-                if (old != null) {
-                    throw new PermissionDeniedException("Document exists and overwrite is not allowed");
+
+            try(final ManagedDocumentLock lockedDocument = broker.getBrokerPool().getLockManager().acquireDocumentWriteLock(docUri)) {
+                if (overwrite == 0) {
+                    final DocumentImpl old = collection.getDocument(broker, docUri.lastSegment());      // NOTE: we have the document write lock above
+                    if (old != null) {
+
+                        // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                        collection.close();
+
+                        throw new PermissionDeniedException("Document exists and overwrite is not allowed");
+                    }
                 }
-            }
 
             try (final InputStream is = new FastByteArrayInputStream(xml)) {
 
-                final InputSource source = new InputSource(is);
+                    final InputSource source = new InputSource(is);
 
-                final long startTime = System.currentTimeMillis();
+                    final long startTime = System.currentTimeMillis();
 
-                final IndexInfo info = collection.validateXMLResource(transaction, broker, docUri.lastSegment(), source);
-                final MimeType mime = MimeTable.getInstance().getContentTypeFor(docUri.lastSegment());
-                if (mime != null && mime.isXMLType()) {
-                    info.getDocument().getMetadata().setMimeType(mime.getName());
-                }
-                if (created != null) {
-                    info.getDocument().getMetadata().setCreated(created.getTime());
-                }
-                if (modified != null) {
-                    info.getDocument().getMetadata().setLastModified(modified.getTime());
-                }
+                    final IndexInfo info = collection.validateXMLResource(transaction, broker, docUri.lastSegment(), source);
+                    final MimeType mime = MimeTable.getInstance().getContentTypeFor(docUri.lastSegment());
+                    if (mime != null && mime.isXMLType()) {
+                        info.getDocument().getMetadata().setMimeType(mime.getName());
+                    }
+                    if (created != null) {
+                        info.getDocument().getMetadata().setCreated(created.getTime());
+                    }
+                    if (modified != null) {
+                        info.getDocument().getMetadata().setLastModified(modified.getTime());
+                    }
 
-                collection.store(transaction, broker, info, source);
+                    collection.store(transaction, broker, info, source);
 
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("parsing " + docUri + " took " + (System.currentTimeMillis() - startTime) + "ms.");
+                    // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                    collection.close();
+                    if(LOG.isDebugEnabled()) {
+                        LOG.debug("parsing " + docUri + " took " + (System.currentTimeMillis() - startTime) + "ms.");
+                    }
+                    return true;
                 }
-                return true;
             }
         });
     }
@@ -1412,39 +1391,49 @@ public class RpcConnection implements RpcAPI {
             throws EXistException, PermissionDeniedException {
         return this.<Boolean>writeCollection(docUri.removeLastSegment()).apply((collection, broker, transaction) -> {
 
-            if (overwrite == 0) {
-                final DocumentImpl old = collection.getDocument(broker, docUri.lastSegment());
-                if (old != null) {
-                    throw new PermissionDeniedException("Old document exists and overwrite is not allowed");
-                }
-            }
+            try(final ManagedDocumentLock lockedDocument = broker.getBrokerPool().getLockManager().acquireDocumentWriteLock(docUri)) {
 
+                if (overwrite == 0) {
+                    final DocumentImpl old = collection.getDocument(broker, docUri.lastSegment());  // NOTE: we have the document write lock above
+                    if (old != null) {
+                        // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                        collection.close();
 
-            // get the source for parsing
-            SupplierE<FileInputSource, IOException> sourceSupplier;
-            try {
-                final int handle = Integer.parseInt(localFile);
-                final SerializedResult sr = factory.resultSets.getSerializedResult(handle);
-                if (sr == null) {
-                    throw new EXistException("Invalid handle specified");
+                        throw new PermissionDeniedException("Old document exists and overwrite is not allowed");
+                    }
                 }
 
-                sourceSupplier = () -> {
-                    final FileInputSource source = new FileInputSource(sr.result);
-                    sr.result = null; // de-reference the VirtualTempFile in the SerializeResult
-                    factory.resultSets.remove(handle);
-                    return source;
-                };
-            } catch (final NumberFormatException nfe) {
+                // get the source for parsing
+                SupplierE<FileInputSource, IOException> sourceSupplier;
+                try {
+                    final int handle = Integer.parseInt(localFile);
+                    final SerializedResult sr = factory.resultSets.getSerializedResult(handle);
+                    if (sr == null) {
+                        // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                        collection.close();
 
-                // As this file can be a non-temporal one, we should not
-                // blindly erase it!
-                final Path path = Paths.get(localFile);
-                if (!Files.isReadable(path)) {
-                    throw new EXistException("unable to read file " + path.toAbsolutePath().toString());
-                }
+                        throw new EXistException("Invalid handle specified");
+                    }
 
-                sourceSupplier = () -> new FileInputSource(path);
+                    sourceSupplier = () -> {
+                        final FileInputSource source = new FileInputSource(sr.result);
+                        sr.result = null; // de-reference the VirtualTempFile in the SerializeResult
+                        factory.resultSets.remove(handle);
+                        return source;
+                    };
+                } catch (final NumberFormatException nfe) {
+
+                    // As this file can be a non-temporal one, we should not
+                    // blindly erase it!
+                    final Path path = Paths.get(localFile);
+                    if (!Files.isReadable(path)) {
+                        // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                        collection.close();
+
+                        throw new EXistException("unable to read file " + path.toAbsolutePath().toString());
+                    }
+
+                    sourceSupplier = () -> new FileInputSource(path);
             }
 
             // parse the source
@@ -1452,28 +1441,37 @@ public class RpcConnection implements RpcAPI {
                 final MimeType mime = Optional.ofNullable(MimeTable.getInstance().getContentType(mimeType)).orElse(MimeType.BINARY_TYPE);
                 final boolean treatAsXML = (isXML != null && isXML) || (isXML == null && mime.isXMLType());
 
-                if (treatAsXML) {
-                    final IndexInfo info = collection.validateXMLResource(transaction, broker, docUri.lastSegment(), source);
-                    if (created != null) {
-                        info.getDocument().getMetadata().setCreated(created.getTime());
-                    }
-                    if (modified != null) {
-                        info.getDocument().getMetadata().setLastModified(modified.getTime());
-                    }
-                    collection.store(transaction, broker, info, source);
-                } else {
-                    try (final InputStream is = source.getByteStream()) {
-                        final DocumentImpl doc = collection.addBinaryResource(transaction, broker, docUri.lastSegment(), is, mime.getName(), source.getByteStreamLength());
+                    if (treatAsXML) {
+                        final IndexInfo info = collection.validateXMLResource(transaction, broker, docUri.lastSegment(), source);
                         if (created != null) {
-                            doc.getMetadata().setCreated(created.getTime());
+                            info.getDocument().getMetadata().setCreated(created.getTime());
                         }
                         if (modified != null) {
-                            doc.getMetadata().setLastModified(modified.getTime());
+                            info.getDocument().getMetadata().setLastModified(modified.getTime());
+                        }
+                        collection.store(transaction, broker, info, source);
+
+                        // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                        collection.close();
+
+                    } else {
+                        try (final InputStream is = source.getByteStream()) {
+                            final DocumentImpl doc = collection.addBinaryResource(transaction, broker, docUri.lastSegment(), is, mime.getName(), source.getByteStreamLength());
+
+                            // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                            collection.close();
+
+                            if (created != null) {
+                                doc.getMetadata().setCreated(created.getTime());
+                            }
+                            if (modified != null) {
+                                doc.getMetadata().setLastModified(modified.getTime());
+                            }
                         }
                     }
-                }
 
-                return true;
+                    return true;
+                }
             }
         });
     }
@@ -1497,27 +1495,46 @@ public class RpcConnection implements RpcAPI {
     private boolean storeBinary(final byte[] data, final XmldbURI docUri, final String mimeType,
                                 final int overwrite, final Date created, final Date modified) throws EXistException, PermissionDeniedException {
         return this.<Boolean>writeCollection(docUri.removeLastSegment()).apply((collection, broker, transaction) -> {
+
             // keep a write lock in the transaction
-            transaction.acquireLock(collection.getLock(), LockMode.WRITE_LOCK);
-            if (overwrite == 0) {
-                final DocumentImpl old = collection.getDocument(broker, docUri.lastSegment());
-                if (old != null) {
-                    throw new PermissionDeniedException("Old document exists and overwrite is not allowed");
+            transaction.acquireCollectionLock(() -> broker.getBrokerPool().getLockManager().acquireCollectionWriteLock(collection.getURI()));
+
+            try(final ManagedDocumentLock lockedDocument = broker.getBrokerPool().getLockManager().acquireDocumentWriteLock(docUri)) {
+                if (overwrite == 0) {
+                    final DocumentImpl old = collection.getDocument(broker, docUri.lastSegment());  // NOTE: we have the document write lock above
+
+                    if (old != null) {
+                        // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                        collection.close();
+
+                        throw new PermissionDeniedException("Old document exists and overwrite is not allowed");
+                    }
+                }
+
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("Storing binary resource to collection " + collection.getURI());
+                }
+
+                final DocumentImpl doc = collection.addBinaryResource(transaction, broker, docUri.lastSegment(), data, mimeType);
+                if(doc != null) {
+                    if (created != null) {
+                        doc.getMetadata().setCreated(created.getTime());
+                    }
+                    if (modified != null) {
+                        doc.getMetadata().setLastModified(modified.getTime());
+                    }
+
+                    // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                    collection.close();
+
+                    return true;
+                } else {
+                    // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                    collection.close();
+
+                    return false;
                 }
             }
-            if(LOG.isDebugEnabled()) {
-                LOG.debug("Storing binary resource to collection " + collection.getURI());
-            }
-
-            final DocumentImpl doc = collection.addBinaryResource(transaction, broker, docUri.lastSegment(), data, mimeType);
-            if (created != null) {
-                doc.getMetadata().setCreated(created.getTime());
-            }
-            if (modified != null) {
-                doc.getMetadata().setLastModified(modified.getTime());
-            }
-
-            return doc != null;
         });
     }
 
@@ -1567,7 +1584,7 @@ public class RpcConnection implements RpcAPI {
     }
 
     protected String printAll(final DBBroker broker, final Sequence resultSet, int howmany,
-                              int start, final Map<String, Object> properties, final long queryTime) throws EXistException, SAXException, XPathException {
+                              int start, final Map<String, Object> properties, final long queryTime) throws EXistException, SAXException, XPathException, IOException {
         if (resultSet.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
             final String opt = (String) properties.get(OutputKeys.OMIT_XML_DECLARATION);
@@ -1597,9 +1614,7 @@ public class RpcConnection implements RpcAPI {
         writer.write(Integer.toString(howmany));
         writer.write("\">\n");
 
-        final Serializer serializer = broker.getSerializer();
-        serializer.reset();
-        serializer.setProperties(toProperties(properties));
+        final Properties serializationProps = toProperties(properties);
 
         Item item;
         for (int i = --start; i < start + howmany; i++) {
@@ -1609,7 +1624,7 @@ public class RpcConnection implements RpcAPI {
             }
             if (item.getType() == Type.ELEMENT) {
                 final NodeValue node = (NodeValue) item;
-                writer.write(serializer.serialize(node));
+                serialize(broker, serializationProps, saxSerializer -> saxSerializer.toSAX(node), writer);
             } else {
                 writer.write("<exist:value type=\"");
                 writer.write(Type.getTypeName(item.getType()));
@@ -2027,19 +2042,28 @@ public class RpcConnection implements RpcAPI {
     private boolean remove(final XmldbURI docUri) throws EXistException, PermissionDeniedException {
         return this.<Boolean>writeCollection(docUri.removeLastSegment()).apply((collection, broker, transaction) -> {
             // keep a write lock in the transaction
-            transaction.acquireLock(collection.getLock(), LockMode.WRITE_LOCK);
+            transaction.acquireCollectionLock(() -> broker.getBrokerPool().getLockManager().acquireCollectionWriteLock(collection.getURI()));
 
-            final DocumentImpl doc = collection.getDocument(broker, docUri.lastSegment());
-            if (doc == null) {
-                throw new EXistException("Document " + docUri + " not found");
-            }
+            try(final LockedDocument lockedDoc = collection.getDocumentWithLock(broker, docUri.lastSegment(), LockMode.WRITE_LOCK)) {
+                if (lockedDoc == null) {
+                    // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                    collection.close();
 
-            if (doc.getResourceType() == DocumentImpl.BINARY_FILE) {
-                collection.removeBinaryResource(transaction, broker, doc);
-            } else {
-                collection.removeXMLResource(transaction, broker, docUri.lastSegment());
+                    throw new EXistException("Document " + docUri + " not found");
+                }
+
+                final DocumentImpl doc = lockedDoc.getDocument();
+                if (doc.getResourceType() == DocumentImpl.BINARY_FILE) {
+                    collection.removeBinaryResource(transaction, broker, doc);
+                } else {
+                    collection.removeXMLResource(transaction, broker, docUri.lastSegment());
+                }
+
+                // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                collection.close();
+
+                return true;
             }
-            return true;
         });
     }
 
@@ -2052,7 +2076,7 @@ public class RpcConnection implements RpcAPI {
         try {
             return this.<Boolean>writeCollection(collURI).apply((collection, broker, transaction) -> {
                 // keep a write lock in the transaction
-                transaction.acquireLock(collection.getLock(), LockMode.WRITE_LOCK);
+                transaction.acquireCollectionLock(() -> broker.getBrokerPool().getLockManager().acquireCollectionWriteLock(collection.getURI()));
                 if(LOG.isDebugEnabled()) {
                     LOG.debug("removing collection " + collURI);
                 }
@@ -2101,10 +2125,11 @@ public class RpcConnection implements RpcAPI {
         return this.<String>readDocument(docUri).apply((document, broker, transaction) -> {
             final NodeId nodeId = factory.getBrokerPool().getNodeFactory().createFromString(s_id);
             final NodeProxy node = new NodeProxy(document, nodeId);
-            final Serializer serializer = broker.getSerializer();
-            serializer.reset();
-            serializer.setProperties(toProperties(parameters));
-            return serializer.serialize(node);
+
+            try (final StringWriter writer = new StringWriter()) {
+                serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.serialize(node), writer);
+                return writer.toString();
+            }
         });
     }
 
@@ -2124,10 +2149,6 @@ public class RpcConnection implements RpcAPI {
             final NodeId nodeId = factory.getBrokerPool().getNodeFactory().createFromString(id);
             final NodeProxy node = new NodeProxy(document, nodeId);
 
-            final Serializer serializer = broker.getSerializer();
-            serializer.reset();
-            serializer.setProperties(toProperties(parameters));
-
             final Map<String, Object> result = new HashMap<>();
             final TemporaryFileManager temporaryFileManager = TemporaryFileManager.getInstance();
             final Path tempFile = temporaryFileManager.getTemporaryFile();
@@ -2138,7 +2159,7 @@ public class RpcConnection implements RpcAPI {
 
             try (final OutputStream os = compression ? new DeflaterOutputStream(Files.newOutputStream(tempFile)) : Files.newOutputStream(tempFile);
                     final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
-                serializer.serialize(node, writer);
+                serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(node), writer);
             }
 
             final byte[] firstChunk = getChunk(tempFile, 0);
@@ -2196,13 +2217,13 @@ public class RpcConnection implements RpcAPI {
 
             if (Type.subTypeOf(item.getType(), Type.NODE)) {
                 final NodeValue nodeValue = (NodeValue) item;
-                final Serializer serializer = broker.getSerializer();
-                serializer.reset();
                 for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
                     parameters.put(entry.getKey().toString(), entry.getValue().toString());
                 }
-                serializer.setProperties(toProperties(parameters));
-                return serializer.serialize(nodeValue);
+                try (final StringWriter writer = new StringWriter()) {
+                  serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(nodeValue), writer);
+                  return writer.toString();
+                }
             } else {
                 try {
                     return item.getStringValue();
@@ -2242,14 +2263,10 @@ public class RpcConnection implements RpcAPI {
                     final Writer writer = new OutputStreamWriter(os, getEncoding(parameters))) {
                 if (Type.subTypeOf(item.getType(), Type.NODE)) {
                     final NodeValue nodeValue = (NodeValue) item;
-                    final Serializer serializer = broker.getSerializer();
-                    serializer.reset();
                     for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
                         parameters.put(entry.getKey().toString(), entry.getValue().toString());
                     }
-                    serializer.setProperties(toProperties(parameters));
-
-                    serializer.serialize(nodeValue, writer);
+                    serialize(broker, toProperties(parameters), saxSerializer -> saxSerializer.toSAX(nodeValue), writer);
                 } else {
                     writer.write(item.getStringValue());
                 }
@@ -2288,9 +2305,6 @@ public class RpcConnection implements RpcAPI {
                 throw new EXistException("result set unknown or timed out");
             }
             qr.touch();
-            final Serializer serializer = broker.getSerializer();
-            serializer.reset();
-            serializer.setProperties(qr.serialization);
 
             final SAXSerializer handler = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
             final StringWriter writer = new StringWriter();
@@ -2345,12 +2359,9 @@ public class RpcConnection implements RpcAPI {
                 throw new EXistException("result set unknown or timed out");
             }
             qr.touch();
-            final Serializer serializer = broker.getSerializer();
-            serializer.reset();
             for (final Map.Entry<Object, Object> entry : qr.serialization.entrySet()) {
                 parameters.put(entry.getKey().toString(), entry.getValue().toString());
             }
-            serializer.setProperties(toProperties(parameters));
             final SAXSerializer handler = (SAXSerializer) SerializerPool.getInstance().borrowObject(SAXSerializer.class);
 
             final Map<String, Object> result = new HashMap<>();
@@ -2420,10 +2431,10 @@ public class RpcConnection implements RpcAPI {
     }
 
     @Override
-    public boolean chgrp(final String resource, final String ownerGroup) throws EXistException, PermissionDeniedException, URISyntaxException {
+    public boolean chgrp(final String resource, final String group) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(resource);
         return withDb((broker, transaction) -> {
-            PermissionFactory.updatePermissions(broker, uri, permission -> permission.setGroup(ownerGroup));
+            PermissionFactory.chown(broker, transaction, uri, Optional.empty(), Optional.ofNullable(group));
             return true;
         });
     }
@@ -2432,73 +2443,54 @@ public class RpcConnection implements RpcAPI {
     public boolean chown(final String resource, final String owner) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(resource);
         return withDb((broker, transaction) -> {
-            PermissionFactory.updatePermissions(broker, uri, permission -> permission.setOwner(owner));
+            PermissionFactory.chown(broker, transaction, uri, Optional.ofNullable(owner), Optional.empty());
             return true;
         });
     }
 
     @Override
-    public boolean chown(final String resource, final String owner, final String ownerGroup) throws EXistException, PermissionDeniedException, URISyntaxException {
+    public boolean chown(final String resource, final String owner, final String group) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(resource);
         return withDb((broker, transaction) -> {
-            PermissionFactory.updatePermissions(broker, uri, permission -> {
-                permission.setOwner(owner);
-                permission.setGroup(ownerGroup);
-            });
+            PermissionFactory.chown(broker, transaction, uri, Optional.ofNullable(owner), Optional.ofNullable(group));
             return true;
         });
     }
 
     @Override
-    public boolean setPermissions(final String resource, final int permissions) throws EXistException, PermissionDeniedException, URISyntaxException {
+    public boolean setPermissions(final String resource, final int mode) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(resource);
         return withDb((broker, transaction) -> {
-            PermissionFactory.updatePermissions(broker, uri, permission -> permission.setMode(permissions));
+            PermissionFactory.chmod(broker, transaction, uri, Optional.of(mode), Optional.empty());
             return true;
         });
     }
 
     @Override
-    public boolean setPermissions(final String resource, final String permissions) throws EXistException, PermissionDeniedException, URISyntaxException {
+    public boolean setPermissions(final String resource, final String mode) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(resource);
         return withDb((broker, transaction) -> {
-            PermissionFactory.updatePermissions(broker, uri, permission -> {
-                try {
-                    permission.setMode(permissions);
-                } catch (final SyntaxException se) {
-                    throw new PermissionDeniedException("Unrecognised mode syntax: " + se.getMessage(), se);
-                }
-            });
+            PermissionFactory.chmod_str(broker, transaction, uri, Optional.ofNullable(mode), Optional.empty());
             return true;
         });
     }
 
     @Override
-    public boolean setPermissions(final String resource, final String owner, final String ownerGroup, final String permissions) throws EXistException, PermissionDeniedException, URISyntaxException {
+    public boolean setPermissions(final String resource, final String owner, final String group, final String mode) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(resource);
         return withDb((broker, transaction) -> {
-            PermissionFactory.updatePermissions(broker, uri, permission -> {
-                permission.setOwner(owner);
-                permission.setGroup(ownerGroup);
-                try {
-                    permission.setMode(permissions);
-                } catch (final SyntaxException se) {
-                    throw new PermissionDeniedException("Unrecognised mode syntax: " + se.getMessage(), se);
-                }
-            });
+            PermissionFactory.chown(broker, transaction, uri, Optional.ofNullable(owner), Optional.ofNullable(group));
+            PermissionFactory.chmod_str(broker, transaction, uri, Optional.ofNullable(mode), Optional.empty());
             return true;
         });
     }
 
     @Override
-    public boolean setPermissions(final String resource, final String owner, final String ownerGroup, final int permissions) throws EXistException, PermissionDeniedException, URISyntaxException {
+    public boolean setPermissions(final String resource, final String owner, final String group, final int mode) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(resource);
         return withDb((broker, transaction) -> {
-            PermissionFactory.updatePermissions(broker, uri, permission -> {
-                permission.setOwner(owner);
-                permission.setGroup(ownerGroup);
-                permission.setMode(permissions);
-            });
+            PermissionFactory.chown(broker, transaction, uri, Optional.ofNullable(owner), Optional.ofNullable(group));
+            PermissionFactory.chmod(broker, transaction, uri, Optional.of(mode), Optional.empty());
             return true;
         });
     }
@@ -2507,18 +2499,8 @@ public class RpcConnection implements RpcAPI {
     public boolean setPermissions(final String resource, final String owner, final String group, final int mode, final List<ACEAider> aces) throws EXistException, PermissionDeniedException, URISyntaxException {
         final XmldbURI uri = XmldbURI.xmldbUriFor(resource);
         return withDb((broker, transaction) -> {
-            PermissionFactory.updatePermissions(broker, uri, permission -> {
-                permission.setOwner(owner);
-                permission.setGroup(group);
-                permission.setMode(mode);
-                if (permission instanceof ACLPermission) {
-                    final ACLPermission aclPermission = ((ACLPermission) permission);
-                    aclPermission.clear();
-                    for (final ACEAider ace : aces) {
-                        aclPermission.addACE(ace.getAccessType(), ace.getTarget(), ace.getWho(), ace.getMode());
-                    }
-                }
-            });
+            PermissionFactory.chown(broker, transaction, uri, Optional.ofNullable(owner), Optional.ofNullable(group));
+            PermissionFactory.chmod(broker, transaction, uri, Optional.of(mode), Optional.ofNullable(aces));
             return true;
         });
     }
@@ -2919,63 +2901,12 @@ public class RpcConnection implements RpcAPI {
                 if (qr.hasErrors()) {
                     throw qr.getException();
                 }
-                final Map<String, NodeCount> map = new HashMap<>();
-                final Map<String, DoctypeCount> doctypes = new HashMap<>();
-                NodeProxy p;
-                String docName;
-                DocumentType doctype;
-                NodeCount counter;
-                DoctypeCount doctypeCounter;
-                for (final SequenceIterator i = qr.result.iterate(); i.hasNext(); ) {
-                    final Item item = i.nextItem();
-                    if (Type.subTypeOf(item.getType(), Type.NODE)) {
-                        final NodeValue nv = (NodeValue) item;
-                        if (nv.getImplementationType() == NodeValue.PERSISTENT_NODE) {
-                            p = (NodeProxy) nv;
-                            docName = p.getOwnerDocument().getURI().toString();
-                            doctype = p.getOwnerDocument().getDoctype();
-                            if (map.containsKey(docName)) {
-                                counter = map.get(docName);
-                                counter.inc();
-                            } else {
-                                counter = new NodeCount(p.getOwnerDocument());
-                                map.put(docName, counter);
-                            }
-                            if (doctype == null) {
-                                continue;
-                            }
-                            if (doctypes.containsKey(doctype.getName())) {
-                                doctypeCounter = doctypes.get(doctype.getName());
-                                doctypeCounter.inc();
-                            } else {
-                                doctypeCounter = new DoctypeCount(doctype);
-                                doctypes.put(doctype.getName(), doctypeCounter);
-                            }
-                        }
-                    }
+                if (qr.result == null) {
+                    return summaryToMap(qr.queryTime, null, null, null);
                 }
-                final Map<String, Object> result = new HashMap<>();
-                result.put("queryTime", System.currentTimeMillis() - startTime);
-                result.put("hits", qr.result.getItemCount());
-                final List<List> documents = new ArrayList<>();
-                for (final NodeCount nodeCounter : map.values()) {
-                    final List<Object> hitsByDoc = new ArrayList<>();
-                    hitsByDoc.add(nodeCounter.doc.getFileURI().toString());
-                    hitsByDoc.add(nodeCounter.doc.getDocId());
-                    hitsByDoc.add(nodeCounter.count);
-                    documents.add(hitsByDoc);
-                }
-                result.put("documents", documents);
 
-                final List<List> dtypes = new ArrayList<>();
-                for (final DoctypeCount docTemp : doctypes.values()) {
-                    final List<Object> hitsByType = new ArrayList<>();
-                    hitsByType.add(docTemp.doctype.getName());
-                    hitsByType.add(docTemp.count);
-                    dtypes.add(hitsByType);
-                }
-                result.put("doctypes", dtypes);
-                return result;
+                final Tuple2<java.util.Collection<NodeCount>, java.util.Collection<DoctypeCount>> summary = summarise(qr.result);
+                return summaryToMap(System.currentTimeMillis() - startTime, qr.result, summary._1, summary._2);
 
             } catch (final XPathException e) {
                 throw new EXistException(e);
@@ -2989,68 +2920,83 @@ public class RpcConnection implements RpcAPI {
             throw new EXistException("result set unknown or timed out");
         }
         qr.touch();
-        final Map<String, Object> result = new HashMap<>();
-        result.put("queryTime", qr.queryTime);
         if (qr.result == null) {
-            result.put("hits", 0);
-            return result;
+            return summaryToMap(qr.queryTime, null, null, null);
         }
-        final Map<String, NodeCount> map = new HashMap<>();
-        final Map<String, DoctypeCount> doctypes = new HashMap<>();
-        NodeProxy p;
-        String docName;
-        DocumentType doctype;
+
+        final Tuple2<java.util.Collection<NodeCount>, java.util.Collection<DoctypeCount>> summary = summarise(qr.result);
+        return summaryToMap(qr.queryTime, qr.result, summary._1, summary._2);
+    }
+
+    private Tuple2<java.util.Collection<NodeCount>, java.util.Collection<DoctypeCount>> summarise(final Sequence results) throws XPathException {
+        final Map<String, NodeCount> nodeCounts = new HashMap<>();
+        final Map<String, DoctypeCount> doctypeCounts = new HashMap<>();
         NodeCount counter;
         DoctypeCount doctypeCounter;
-        for (final SequenceIterator i = qr.result.iterate(); i.hasNext(); ) {
+        for (final SequenceIterator i = results.iterate(); i.hasNext(); ) {
             final Item item = i.nextItem();
             if (Type.subTypeOf(item.getType(), Type.NODE)) {
                 final NodeValue nv = (NodeValue) item;
                 if (nv.getImplementationType() == NodeValue.PERSISTENT_NODE) {
-                    p = (NodeProxy) nv;
-                    docName = p.getOwnerDocument().getURI().toString();
-                    doctype = p.getOwnerDocument().getDoctype();
-                    if (map.containsKey(docName)) {
-                        counter = map.get(docName);
+                    final NodeProxy p = (NodeProxy) nv;
+                    final String docName = p.getOwnerDocument().getURI().toString();
+                    final DocumentType doctype = p.getOwnerDocument().getDoctype();
+                    if (nodeCounts.containsKey(docName)) {
+                        counter = nodeCounts.get(docName);
                         counter.inc();
                     } else {
                         counter = new NodeCount(p.getOwnerDocument());
-                        map.put(docName, counter);
+                        nodeCounts.put(docName, counter);
                     }
                     if (doctype == null) {
                         continue;
                     }
-                    if (doctypes.containsKey(doctype.getName())) {
-                        doctypeCounter = (DoctypeCount) doctypes.get(doctype
-                                .getName());
+                    if (doctypeCounts.containsKey(doctype.getName())) {
+                        doctypeCounter = doctypeCounts.get(doctype.getName());
                         doctypeCounter.inc();
                     } else {
                         doctypeCounter = new DoctypeCount(doctype);
-                        doctypes.put(doctype.getName(), doctypeCounter);
+                        doctypeCounts.put(doctype.getName(), doctypeCounter);
                     }
                 }
             }
         }
-        result.put("hits", qr.result.getItemCount());
+
+        return new Tuple2<>(nodeCounts.values(), doctypeCounts.values());
+    }
+
+    private Map<String, Object> summaryToMap(final long queryTime, @Nullable final Sequence results,
+            @Nullable final java.util.Collection<NodeCount> nodeCounts, @Nullable final java.util.Collection<DoctypeCount> doctypeCounts) {
+        final Map<String, Object> result = new HashMap<>();
+
+        result.put("queryTime", queryTime);
+
+        if (results == null) {
+            result.put("hits", 0);
+            return result;
+        }
+
+        result.put("hits", results.getItemCount());
 
         final List<List> documents = new ArrayList<>();
-        for (final NodeCount nodeCounter : map.values()) {
+        for (final NodeCount nodeCount : nodeCounts) {
             final List<Object> hitsByDoc = new ArrayList<>();
-            hitsByDoc.add(nodeCounter.doc.getFileURI().toString());
-            hitsByDoc.add(nodeCounter.doc.getDocId());
-            hitsByDoc.add(nodeCounter.count);
+            hitsByDoc.add(nodeCount.doc.getFileURI().toString());
+            hitsByDoc.add(nodeCount.doc.getDocId());
+            hitsByDoc.add(nodeCount.count);
             documents.add(hitsByDoc);
         }
         result.put("documents", documents);
 
         final List<List> dtypes = new ArrayList<>();
-        for (final DoctypeCount docTemp : doctypes.values()) {
+        for (final DoctypeCount docTemp : doctypeCounts) {
             final List<Object> hitsByType = new ArrayList<>();
             hitsByType.add(docTemp.doctype.getName());
             hitsByType.add(docTemp.count);
             dtypes.add(hitsByType);
         }
         result.put("doctypes", dtypes);
+
         return result;
     }
 
@@ -3088,23 +3034,9 @@ public class RpcConnection implements RpcAPI {
         return properties;
     }
 
-    static class CachedQuery {
-
-        final PathExpr expression;
-        final String queryString;
-        final long timestamp;
-
-        public CachedQuery(final PathExpr expr, final String query) {
-            this.expression = expr;
-            this.queryString = query;
-            this.timestamp = System.currentTimeMillis();
-        }
-    }
-
-    static class DoctypeCount {
-
-        int count = 1;
+    private static class DoctypeCount {
         final DocumentType doctype;
+        int count = 1;
 
         public DoctypeCount(final DocumentType doctype) {
             this.doctype = doctype;
@@ -3115,10 +3047,9 @@ public class RpcConnection implements RpcAPI {
         }
     }
 
-    static class NodeCount {
-
-        int count = 1;
+    private static class NodeCount {
         final DocumentImpl doc;
+        int count = 1;
 
         public NodeCount(final DocumentImpl doc) {
             this.doc = doc;
@@ -3151,15 +3082,24 @@ public class RpcConnection implements RpcAPI {
         return buffer;
     }
 
+    @Deprecated
     public boolean moveOrCopyResource(final String documentPath, final String destinationPath,
-                                      final String newName, final boolean move)
+            final String newName, final boolean move)
             throws EXistException, PermissionDeniedException, URISyntaxException {
         return moveOrCopyResource(XmldbURI.xmldbUriFor(documentPath),
-                XmldbURI.xmldbUriFor(destinationPath), XmldbURI.xmldbUriFor(newName), move);
+                XmldbURI.xmldbUriFor(destinationPath), XmldbURI.xmldbUriFor(newName), move, PreserveType.DEFAULT);
+    }
+
+    @Deprecated
+    public boolean moveOrCopyResource(final String documentPath, final String destinationPath,
+            final String newName, final boolean move, final PreserveType preserve)
+            throws EXistException, PermissionDeniedException, URISyntaxException {
+        return moveOrCopyResource(XmldbURI.xmldbUriFor(documentPath),
+                XmldbURI.xmldbUriFor(destinationPath), XmldbURI.xmldbUriFor(newName), move, preserve);
     }
 
     private boolean moveOrCopyResource(final XmldbURI docUri, final XmldbURI destUri,
-                                       final XmldbURI newName, final boolean move)
+                                       final XmldbURI newName, final boolean move, final PreserveType preserve)
             throws EXistException, PermissionDeniedException {
 
         // use WRITE_LOCK if moving or if src and dest collection are the same
@@ -3173,7 +3113,7 @@ public class RpcConnection implements RpcAPI {
                                     if (move) {
                                         broker3.moveResource(transaction3, document, destination, newName);
                                     } else {
-                                        broker3.copyResource(transaction3, document, destination, newName);
+                                        broker3.copyResource(transaction3, document, destination, newName, preserve);
                                     }
                                     return true;
                                 })
@@ -3183,15 +3123,24 @@ public class RpcConnection implements RpcAPI {
         );
     }
 
+    @Deprecated
     public boolean moveOrCopyCollection(final String collectionName, final String destinationPath,
-                                        final String newName, final boolean move)
+            final String newName, final boolean move)
             throws EXistException, PermissionDeniedException, URISyntaxException {
         return moveOrCopyCollection(XmldbURI.xmldbUriFor(collectionName),
-                XmldbURI.xmldbUriFor(destinationPath), XmldbURI.xmldbUriFor(newName), move);
+                XmldbURI.xmldbUriFor(destinationPath), XmldbURI.xmldbUriFor(newName), move, PreserveType.DEFAULT);
+    }
+
+    @Deprecated
+    public boolean moveOrCopyCollection(final String collectionName, final String destinationPath,
+            final String newName, final boolean move, final PreserveType preserve)
+            throws EXistException, PermissionDeniedException, URISyntaxException {
+        return moveOrCopyCollection(XmldbURI.xmldbUriFor(collectionName),
+                XmldbURI.xmldbUriFor(destinationPath), XmldbURI.xmldbUriFor(newName), move, preserve);
     }
 
     private boolean moveOrCopyCollection(final XmldbURI collUri, final XmldbURI destUri,
-                                         final XmldbURI newName, final boolean move)
+            final XmldbURI newName, final boolean move, final PreserveType preserve)
             throws EXistException, PermissionDeniedException {
 
         // use WRITE_LOCK if moving or if src and dest collection are the same
@@ -3204,7 +3153,7 @@ public class RpcConnection implements RpcAPI {
                             if (move) {
                                 broker2.moveCollection(transaction2, source, destination, newName);
                             } else {
-                                broker2.copyCollection(transaction2, source, destination, newName);
+                                broker2.copyCollection(transaction2, source, destination, newName, preserve);
                             }
                             return true;
                         })
@@ -3214,13 +3163,13 @@ public class RpcConnection implements RpcAPI {
 
     @Override
     public boolean reindexCollection(final String collectionName) throws URISyntaxException, EXistException, PermissionDeniedException {
-        reindexCollection(XmldbURI.xmldbUriFor(collectionName));
+    	reindexCollection(XmldbURI.xmldbUriFor(collectionName));
         return true;
     }
 
     private void reindexCollection(final XmldbURI collUri) throws EXistException, PermissionDeniedException {
         withDb((broker, transaction) -> {
-            broker.reindexCollection(collUri);
+            broker.reindexCollection(transaction, collUri);
             if(LOG.isDebugEnabled()) {
                 LOG.debug("collection " + collUri + " and sub-collections reindexed");
             }
@@ -3231,18 +3180,12 @@ public class RpcConnection implements RpcAPI {
     @Override
     public boolean reindexDocument(final String docUri) throws EXistException, PermissionDeniedException {
         withDb((broker, transaction) -> {
-            DocumentImpl doc = null;
-            try {
-                doc = broker.getXMLResource(XmldbURI.create(docUri), LockMode.READ_LOCK);
-                broker.reindexXMLResource(transaction, doc, DBBroker.IndexMode.STORE);
+            try(final LockedDocument lockedDoc = broker.getXMLResource(XmldbURI.create(docUri), LockMode.READ_LOCK)) {
+                broker.reindexXMLResource(transaction, lockedDoc.getDocument(), DBBroker.IndexMode.STORE);
                 if(LOG.isDebugEnabled()) {
                     LOG.debug("document " + docUri + " reindexed");
                 }
                 return null;
-            } finally {
-                if (doc != null) {
-                    doc.getUpdateLock().release(LockMode.READ_LOCK);
-                }
             }
         });
         return true;
@@ -3362,22 +3305,32 @@ public class RpcConnection implements RpcAPI {
 
     @Override
     public boolean copyResource(final String docPath, final String destinationPath, final String newName) throws EXistException, PermissionDeniedException, URISyntaxException {
-        return moveOrCopyResource(docPath, destinationPath, newName, false);
+        return moveOrCopyResource(docPath, destinationPath, newName, false, PreserveType.DEFAULT);
+    }
+
+    @Override
+    public boolean copyResource(final String docPath, final String destinationPath, final String newName, final String preserveType) throws EXistException, PermissionDeniedException, URISyntaxException {
+        return moveOrCopyResource(docPath, destinationPath, newName, false, PreserveType.valueOf(preserveType));
     }
 
     @Override
     public boolean copyCollection(final String collectionPath, final String destinationPath, final String newName) throws EXistException, PermissionDeniedException, URISyntaxException {
-        return moveOrCopyCollection(collectionPath, destinationPath, newName, false);
+        return moveOrCopyCollection(collectionPath, destinationPath, newName, false, PreserveType.DEFAULT);
+    }
+
+    @Override
+    public boolean copyCollection(final String collectionPath, final String destinationPath, final String newName, final String preserveType) throws EXistException, PermissionDeniedException, URISyntaxException {
+        return moveOrCopyCollection(collectionPath, destinationPath, newName, false, PreserveType.valueOf(preserveType));
     }
 
     @Override
     public boolean moveResource(final String docPath, final String destinationPath, final String newName) throws EXistException, PermissionDeniedException, URISyntaxException {
-        return moveOrCopyResource(docPath, destinationPath, newName, true);
+        return moveOrCopyResource(docPath, destinationPath, newName, true, PreserveType.DEFAULT);
     }
 
     @Override
     public boolean moveCollection(final String collectionPath, final String destinationPath, final String newName) throws EXistException, PermissionDeniedException, URISyntaxException {
-        return moveOrCopyCollection(collectionPath, destinationPath, newName, true);
+        return moveOrCopyCollection(collectionPath, destinationPath, newName, true, PreserveType.DEFAULT);
     }
 
     @Override
@@ -3395,44 +3348,50 @@ public class RpcConnection implements RpcAPI {
 
     @Override
     public boolean copyCollection(final String name, final String namedest) throws PermissionDeniedException, EXistException {
-        try {
-            createCollection(namedest);
+        createCollection(namedest);
 
-            final Map<String, Object> parameters = new HashMap<>();
-            parameters.put(OutputKeys.INDENT, "no");
-            parameters.put(EXistOutputKeys.EXPAND_XINCLUDES, "no");
-            parameters.put(OutputKeys.ENCODING, DEFAULT_ENCODING);
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put(OutputKeys.INDENT, "no");
+        parameters.put(EXistOutputKeys.EXPAND_XINCLUDES, "no");
+        parameters.put(OutputKeys.ENCODING, DEFAULT_ENCODING);
 
-            final Map<String, Object> desc = getCollectionDesc(name);
-            final Object[] collections = (Object[]) desc.get("collections");
-            final Object[] documents = (Object[]) desc.get("documents");
+        final Map<String, Object> desc = getCollectionDesc(name);
+        final Object[] collections = (Object[]) desc.get("collections");
+        final Object[] documents = (Object[]) desc.get("documents");
 
-            //recurse the collection
-            for (final Object collection : collections) {
-                final String nome = collection.toString();
-                createCollection(namedest + "/" + nome);
-                copyCollection(name + "/" + nome, namedest + "/" + nome);
-            }
-
-            //Copy i file
-            int p, dsize = documents.length;
-            for (int i = 0; i < dsize; i++) {
-                final Map<String, Object> hash = (Map<String, Object>) documents[i];
-                String nome = (String) hash.get("name");
-                //TODO : use dedicated function in XmldbURI
-                if ((p = nome.lastIndexOf("/")) != Constants.STRING_NOT_FOUND) {
-                    nome = nome.substring(p + 1);
-                }
-
-                final byte[] xml = getDocument(name + "/" + nome, parameters);
-                parse(xml, namedest + "/" + nome);
-            }
-
-            return true;
-
-        } catch (final URISyntaxException e) {
-            throw new EXistException(e);
+        //recurse the collection
+        for (final Object collection : collections) {
+            final String nome = collection.toString();
+            createCollection(namedest + "/" + nome);
+            copyCollection(name + "/" + nome, namedest + "/" + nome);
         }
+
+        //Copy i file
+        int p, dsize = documents.length;
+        for (int i = 0; i < dsize; i++) {
+            final Map<String, Object> hash = (Map<String, Object>) documents[i];
+            String docName = (String) hash.get("name");
+            //TODO : use dedicated function in XmldbURI
+            if ((p = docName.lastIndexOf("/")) != Constants.STRING_NOT_FOUND) {
+                docName = docName.substring(p + 1);
+            }
+
+            final String srcDocUri = name + "/" + docName;
+            final String destDocUri = namedest + "/" + docName;
+            withDb((broker, transaction) -> {
+                final LockManager lockManager = broker.getBrokerPool().getLockManager();
+                try(final ManagedDocumentLock srcDocLock = lockManager.acquireDocumentReadLock(XmldbURI.create(srcDocUri));
+                        final ManagedDocumentLock destDocLock = lockManager.acquireDocumentWriteLock(XmldbURI.create(destDocUri))) {
+                    final byte[] xml = getDocument(srcDocUri, parameters);
+                    parse(xml, destDocUri);
+                    return null;
+                } catch (final URISyntaxException e) {
+                    throw new EXistException(e);
+                }
+            });
+        }
+
+        return true;
     }
 
     @Override
@@ -3584,8 +3543,7 @@ public class RpcConnection implements RpcAPI {
     @Override
     public boolean setTriggersEnabled(final String path, final String value) throws EXistException, PermissionDeniedException {
         final boolean triggersEnabled = Boolean.parseBoolean(value);
-        return withDb((broker, transaction) -> {
-            final Collection collection = broker.getCollection(XmldbURI.create(path));
+        return this.<Boolean>writeCollection(XmldbURI.create(path)).apply((collection, broker2, transaction2) -> {
             if (collection == null) {
                 return false;
             }
@@ -3736,9 +3694,7 @@ public class RpcConnection implements RpcAPI {
      */
     private <R> Function2E<XmlRpcCollectionFunction<R>, R, EXistException, PermissionDeniedException> withCollection(final LockMode lockMode, final DBBroker broker, final Txn transaction, final XmldbURI uri) throws EXistException, PermissionDeniedException {
         return readOp -> {
-            Collection collection = null;
-            try {
-                collection = broker.openCollection(uri, lockMode);
+            try(final Collection collection = broker.openCollection(uri, lockMode)) {
                 if (collection == null) {
                     final String msg = "collection " + uri + " not found!";
                     if (LOG.isDebugEnabled()) {
@@ -3747,10 +3703,6 @@ public class RpcConnection implements RpcAPI {
                     throw new EXistException(msg);
                 }
                 return readOp.apply(collection, broker, transaction);
-            } finally {
-                if (collection != null) {
-                    collection.release(lockMode);
-                }
             }
         };
     }
@@ -3853,23 +3805,21 @@ public class RpcConnection implements RpcAPI {
      */
     private <R> Function2E<XmlRpcDocumentFunction<R>, R, EXistException, PermissionDeniedException> withDocument(final LockMode lockMode, final DBBroker broker, final Txn transaction, final Collection collection, final XmldbURI uri) throws EXistException, PermissionDeniedException {
         return readOp -> {
-            DocumentImpl document = null;
-            try {
-                document = collection.getDocumentWithLock(broker, uri.lastSegment(), lockMode);
-                if (document == null) {
+            try(final LockedDocument lockedDocument = collection.getDocumentWithLock(broker, uri.lastSegment(), lockMode)) {
+
+                // NOTE: early release of Collection lock inline with Asymmetrical Locking scheme
+                collection.close();
+
+                if (lockedDocument == null) {
                     final String msg = "document " + uri + " not found!";
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(msg);
                     }
                     throw new EXistException(msg);
                 }
-                return readOp.apply(document, broker, transaction);
+                return readOp.apply(lockedDocument.getDocument(), broker, transaction);
             } catch (final LockException e) {
                 throw new EXistException(e);
-            } finally {
-                if (document != null) {
-                    collection.releaseDocument(document, lockMode);
-                }
             }
         };
     }

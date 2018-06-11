@@ -28,11 +28,7 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import javax.xml.transform.OutputKeys;
 
@@ -43,16 +39,15 @@ import org.exist.collections.Collection;
 import org.exist.collections.Collection.CollectionEntry;
 import org.exist.collections.IndexInfo;
 import org.exist.collections.triggers.TriggerException;
-import org.exist.dom.persistent.BinaryDocument;
-import org.exist.dom.persistent.DocumentImpl;
-import org.exist.dom.persistent.DocumentMetadata;
-import org.exist.dom.persistent.LockToken;
+import org.exist.dom.persistent.*;
 import org.exist.security.Permission;
 import org.exist.security.PermissionDeniedException;
+import org.exist.security.PermissionFactory;
 import org.exist.security.Subject;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.DBBroker;
 import org.exist.storage.lock.Lock.LockMode;
+import org.exist.storage.lock.ManagedCollectionLock;
 import org.exist.storage.serializers.EXistOutputKeys;
 import org.exist.storage.serializers.Serializer;
 import org.exist.storage.txn.TransactionManager;
@@ -87,9 +82,6 @@ public class Resource extends File {
         XML_OUTPUT_PROPERTIES.setProperty(EXistOutputKeys.EXPAND_XINCLUDES, "no");
         XML_OUTPUT_PROPERTIES.setProperty(EXistOutputKeys.PROCESS_XSL_PI, "no");
     }
-
-    public final static int DEFAULT_COLLECTION_PERM = 0777;
-    public final static int DEFAULT_RESOURCE_PERM = 0644;
 
 
     private static final SecureRandom random = new SecureRandom();
@@ -293,12 +285,8 @@ public class Resource extends File {
             return false;
         }
 
-        org.exist.collections.Collection destination = null;
-        org.exist.collections.Collection source = null;
-        XmldbURI newName;
-
-        try (final DBBroker broker = db.getBroker()) {
-            source = broker.openCollection(uri.removeLastSegment(), LockMode.WRITE_LOCK);
+        try (final DBBroker broker = db.getBroker();
+             final Collection source = broker.openCollection(uri.removeLastSegment(), LockMode.WRITE_LOCK)) {
             if (source == null) {
                 return false;
             }
@@ -306,29 +294,23 @@ public class Resource extends File {
             if (doc == null) {
                 return false;
             }
-            destination = broker.openCollection(destinationPath.removeLastSegment(), LockMode.WRITE_LOCK);
-            if (destination == null) {
-                return false;
+            try (final Collection destination = broker.openCollection(destinationPath.removeLastSegment(), LockMode.WRITE_LOCK)) {
+                if (destination == null) {
+                    return false;
+                }
+
+                final XmldbURI newName = destinationPath.lastSegment();
+
+                try (final Txn transaction = tm.beginTransaction()) {
+                    broker.moveResource(transaction, doc, destination, newName);
+                    tm.commit(transaction);
+                }
+                return true;
+
             }
-
-            newName = destinationPath.lastSegment();
-
-            try (final Txn transaction = tm.beginTransaction()) {
-                broker.moveResource(transaction, doc, destination, newName);
-                tm.commit(transaction);
-            }
-            return true;
-
         } catch (final Exception e) {
             e.printStackTrace();
             return false;
-        } finally {
-            if (source != null) {
-                source.release(LockMode.WRITE_LOCK);
-            }
-            if (destination != null) {
-                destination.release(LockMode.WRITE_LOCK);
-            }
         }
     }
 
@@ -345,27 +327,23 @@ public class Resource extends File {
             return false;
         }
 
-        try (final DBBroker broker = db.getBroker()) {
+        try (final DBBroker broker = db.getBroker();
+                final Collection source = broker.openCollection(uri.removeLastSegment(), LockMode.WRITE_LOCK)) {
 
-            org.exist.collections.Collection destination = null;
-            org.exist.collections.Collection source = null;
-            XmldbURI newName;
+            if (source == null) {
+                return false;
+            }
+            final DocumentImpl doc = source.getDocument(broker, uri.lastSegment());
+            if (doc == null) {
+                return false;
+            }
 
-            try {
-                source = broker.openCollection(uri.removeLastSegment(), LockMode.WRITE_LOCK);
-                if (source == null) {
-                    return false;
-                }
-                final DocumentImpl doc = source.getDocument(broker, uri.lastSegment());
-                if (doc == null) {
-                    return false;
-                }
-                destination = broker.openCollection(destinationPath.removeLastSegment(), LockMode.WRITE_LOCK);
+            try(final Collection destination = broker.openCollection(destinationPath.removeLastSegment(), LockMode.WRITE_LOCK)) {
                 if (destination == null) {
                     return false;
                 }
 
-                newName = destinationPath.lastSegment();
+                final XmldbURI newName = destinationPath.lastSegment();
 
                 final TransactionManager tm = db.getTransactionManager();
                 try (final Txn transaction = tm.beginTransaction()) {
@@ -379,19 +357,9 @@ public class Resource extends File {
                     tm.commit(transaction);
                     return true;
                 }
-
-            } catch (final Exception e) {
-                e.printStackTrace();
-                return false;
-            } finally {
-                if (source != null) {
-                    source.release(LockMode.WRITE_LOCK);
-                }
-                if (destination != null) {
-                    destination.release(LockMode.WRITE_LOCK);
-                }
             }
-        } catch (final EXistException e) {
+        } catch (final Exception e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -558,9 +526,8 @@ public class Resource extends File {
             return false;
         }
 
-        try (final DBBroker broker = db.getBroker()) {
-
-            collection = broker.openCollection(uri.removeLastSegment(), LockMode.WRITE_LOCK);
+        try (final DBBroker broker = db.getBroker();
+                final Collection collection = broker.openCollection(uri.removeLastSegment(), LockMode.WRITE_LOCK)) {
             if (collection == null) {
                 return false;
             }
@@ -586,10 +553,6 @@ public class Resource extends File {
         } catch (final EXistException | IOException | PermissionDeniedException | LockException | TriggerException e) {
             LOG.error(e);
             return false;
-        } finally {
-            if(collection != null) {
-                collection.release(LockMode.WRITE_LOCK);
-            }
         }
     }
 
@@ -603,10 +566,6 @@ public class Resource extends File {
         }
 
         try (final DBBroker broker = db.getBroker()) {
-
-//			if (!uri.startsWith("/db"))
-//				uri = XmldbURI.DB.append(uri);
-//	
             try {
                 if (uri.endsWith("/")) {
                     throw new IOException("It collection, but should be resource: " + uri);
@@ -623,19 +582,6 @@ public class Resource extends File {
 
             final XmldbURI fileName = uri.lastSegment();
 
-//			try {
-//				resource = broker.getXMLResource(uri, LockMode.READ_LOCK);
-//			} catch (final PermissionDeniedException e1) {
-//			} finally {
-//				if (resource != null) {
-//					resource.getUpdateLock().release(LockMode.READ_LOCK);
-//					collection = resource.getCollection();
-//					initialized = true;
-//					
-//					return false;
-//				}
-//			}
-//			
             try {
                 resource = broker.getResource(uri, Permission.READ);
             } catch (final PermissionDeniedException e1) {
@@ -662,14 +608,12 @@ public class Resource extends File {
                     final String str = "<empty/>";
                     final IndexInfo info = collection.validateXMLResource(transaction, broker, fileName, str);
                     info.getDocument().getMetadata().setMimeType(mimeType.getName());
-                    info.getDocument().getPermissions().setMode(DEFAULT_RESOURCE_PERM);
                     collection.store(transaction, broker, info, str);
 
                 } else {
                     // store as binary resource
                     try (final InputStream is = new FastByteArrayInputStream(new byte[0])) {
                         final BinaryDocument blob = new BinaryDocument(db, collection, fileName);
-                        blob.getPermissions().setMode(DEFAULT_RESOURCE_PERM);
                         collection.addBinaryResource(transaction, broker, blob, is,
                                 mimeType.getName(), 0L, new Date(), new Date());
                     }
@@ -709,8 +653,8 @@ public class Resource extends File {
 
                     //resource
                 } else {
-                    try {
-                        resource = broker.getXMLResource(uri, LockMode.READ_LOCK);
+                    try(final LockedDocument lockedResource = broker.getXMLResource(uri, LockMode.READ_LOCK)) {
+                        resource = lockedResource == null ? null : lockedResource.getDocument();
                         if (resource == null) {
                             //may be, it's collection ... checking ...
                             collection = broker.getCollection(uri);
@@ -719,10 +663,6 @@ public class Resource extends File {
                             }
                         } else {
                             collection = resource.getCollection();
-                        }
-                    } finally {
-                        if (resource != null) {
-                            resource.getUpdateLock().release(LockMode.READ_LOCK);
                         }
                     }
                 }
@@ -865,7 +805,7 @@ public class Resource extends File {
 
                     return list.toArray(new String[list.size()]);
                 }
-            } catch (final LockException | PermissionDeniedException | EXistException e) {
+            } catch (final LockException | PermissionDeniedException | IOException | EXistException e) {
                 LOG.error(e);
                 return new String[0];
             }
@@ -889,22 +829,22 @@ public class Resource extends File {
 
         try {
             final BrokerPool db = BrokerPool.getInstance();
-            try (final DBBroker broker = db.getBroker()) {
-                collection.getLock().acquire(LockMode.READ_LOCK);
+            try (final DBBroker broker = db.getBroker();
+                    final ManagedCollectionLock collectionLock = db.getLockManager().acquireCollectionReadLock(collection.getURI())) {
 
                 final File[] children = new File[collection.getChildCollectionCount(broker) +
                         collection.getDocumentCount(broker)];
 
                 //collections
                 int j = 0;
-                for (final Iterator<XmldbURI> i = collection.collectionIterator(broker); i.hasNext(); j++)
+                for (final Iterator<XmldbURI> i = collection.collectionIterator(broker); i.hasNext(); j++) {
                     children[j] = new Resource(collection.getURI().append(i.next()));
+                }
 
                 //collections
-                final List<XmldbURI> allresources = new ArrayList<XmldbURI>();
-                DocumentImpl doc = null;
+                final List<XmldbURI> allresources = new ArrayList<>();
                 for (final Iterator<DocumentImpl> i = collection.iterator(broker); i.hasNext(); ) {
-                    doc = i.next();
+                    final DocumentImpl doc = i.next();
 
                     // Include only when (1) locktoken is present or (2)
                     // locktoken indicates that it is not a null resource
@@ -920,15 +860,8 @@ public class Resource extends File {
                 }
 
                 return children;
-            } catch (final LockException e) {
-                //throw new IOException("Failed to acquire lock on collection '" + uri + "'");
-                return null;
-
             } catch (final Exception e) {
                 return null;
-
-            } finally {
-                collection.release(LockMode.READ_LOCK);
             }
 
         } catch (final Exception e) {
@@ -1027,20 +960,20 @@ public class Resource extends File {
             modifyMetadata(new ModifyMetadata() {
 
                 @Override
-                public void modify(DocumentImpl resource) throws IOException {
-                    Permission perm = resource.getPermissions();
+                public void modify(final DBBroker broker, final DocumentImpl resource) throws IOException {
+                    final Permission perm = resource.getPermissions();
                     try {
-                        perm.setMode(perm.getMode() | (READ << 6) & ~(WRITE << 6));
+                        PermissionFactory.chmod(broker, perm, Optional.of(perm.getMode() | (READ << 6) & ~(WRITE << 6)), Optional.empty());
                     } catch (PermissionDeniedException e) {
                         throw new IOException(e);
                     }
                 }
 
                 @Override
-                public void modify(Collection collection) throws IOException {
-                    Permission perm = collection.getPermissionsNoLock();
+                public void modify(final DBBroker broker, final Collection collection) throws IOException {
+                    final Permission perm = collection.getPermissionsNoLock();
                     try {
-                        perm.setMode(perm.getMode() | (READ << 6) & ~(WRITE << 6));
+                        PermissionFactory.chmod(broker, perm, Optional.of(perm.getMode() | (READ << 6) & ~(WRITE << 6)), Optional.empty());
                     } catch (PermissionDeniedException e) {
                         throw new IOException(e);
                     }
@@ -1059,20 +992,20 @@ public class Resource extends File {
             modifyMetadata(new ModifyMetadata() {
 
                 @Override
-                public void modify(DocumentImpl resource) throws IOException {
-                    Permission perm = resource.getPermissions();
+                public void modify(final DBBroker broker, final DocumentImpl resource) throws IOException {
+                    final Permission perm = resource.getPermissions();
                     try {
-                        perm.setMode(perm.getMode() | (EXECUTE << 6));
+                        PermissionFactory.chmod(broker, perm, Optional.of(perm.getMode() | (EXECUTE << 6)), Optional.empty());
                     } catch (PermissionDeniedException e) {
                         throw new IOException(e);
                     }
                 }
 
                 @Override
-                public void modify(Collection collection) throws IOException {
-                    Permission perm = collection.getPermissionsNoLock();
+                public void modify(final DBBroker broker, final Collection collection) throws IOException {
+                    final Permission perm = collection.getPermissionsNoLock();
                     try {
-                        perm.setMode(perm.getMode() | (EXECUTE << 6));
+                        PermissionFactory.chmod(broker, perm, Optional.of(perm.getMode() | (EXECUTE << 6)), Optional.empty());
                     } catch (PermissionDeniedException e) {
                         throw new IOException(e);
                     }
@@ -1111,12 +1044,12 @@ public class Resource extends File {
             modifyMetadata(new ModifyMetadata() {
 
                 @Override
-                public void modify(DocumentImpl resource) throws IOException {
+                public void modify(final DBBroker broker, DocumentImpl resource) throws IOException {
                     resource.getMetadata().setLastModified(time);
                 }
 
                 @Override
-                public void modify(Collection collection) throws IOException {
+                public void modify(final DBBroker broker, Collection collection) throws IOException {
                     throw new IOException("LastModified can't be set for collection.");
                 }
 
@@ -1147,9 +1080,8 @@ public class Resource extends File {
     }
 
     interface ModifyMetadata {
-        public void modify(DocumentImpl resource) throws IOException;
-
-        public void modify(Collection collection) throws IOException;
+        void modify(DBBroker broker, DocumentImpl resource) throws IOException;
+        void modify(DBBroker broker, Collection collection) throws IOException;
     }
 
     private void modifyMetadata(ModifyMetadata method) throws IOException {
@@ -1177,39 +1109,37 @@ public class Resource extends File {
 
                     //resource
                 } else {
-                    resource = broker.getXMLResource(uri, LockMode.READ_LOCK);
-                    if (resource == null) {
-                        //may be, it's collection ... checking ...
-                        collection = broker.getCollection(uri);
-                        if (collection == null) {
-                            throw new IOException("Resource not found: " + uri);
-                        }
+                    try(final LockedDocument lockedResource = broker.getXMLResource(uri, LockMode.READ_LOCK)) {
+                        resource = lockedResource == null ? null : lockedResource.getDocument();
+                        if (resource == null) {
+                            //may be, it's collection ... checking ...
+                            collection = broker.getCollection(uri);
+                            if (collection == null) {
+                                throw new IOException("Resource not found: " + uri);
+                            }
 
-                        try (final Txn txn = tm.beginTransaction()) {
-                            method.modify(collection);
-                            broker.saveCollection(txn, collection);
+                            try (final Txn txn = tm.beginTransaction()) {
+                                method.modify(broker, collection);
+                                broker.saveCollection(txn, collection);
 
-                            tm.commit(txn);
-                        }
+                                tm.commit(txn);
+                            }
 
-                    } else {
-                        collection = resource.getCollection();
+                        } else {
+                            collection = resource.getCollection();
 
-                        try (final Txn txn = tm.beginTransaction()) {
-                            method.modify(resource);
-                            broker.storeMetadata(txn, resource);
+                            try (final Txn txn = tm.beginTransaction()) {
+                                method.modify(broker, resource);
+                                broker.storeMetadata(txn, resource);
 
-                            tm.commit(txn);
+                                tm.commit(txn);
+                            }
                         }
                     }
                 }
             } catch (final Exception e) {
                 LOG.error(e);
                 throw new IOException(e);
-            } finally {
-                if (resource != null) {
-                    resource.getUpdateLock().release(LockMode.READ_LOCK);
-                }
             }
         } catch (final EXistException e) {
             LOG.error(e);

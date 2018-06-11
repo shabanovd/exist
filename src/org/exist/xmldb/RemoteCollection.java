@@ -19,18 +19,6 @@
  */
 package org.exist.xmldb;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.xmlrpc.XmlRpcException;
@@ -42,14 +30,21 @@ import org.exist.util.Compressor;
 import org.exist.util.EXistInputSource;
 import org.exist.util.FileUtils;
 import org.exist.util.Leasable;
+import org.exist.util.io.FastByteArrayInputStream;
 import org.xml.sax.InputSource;
 import org.xmldb.api.base.Collection;
-import org.xmldb.api.base.ErrorCodes;
-import org.xmldb.api.base.Resource;
-import org.xmldb.api.base.Service;
-import org.xmldb.api.base.XMLDBException;
+import org.xmldb.api.base.*;
 import org.xmldb.api.modules.BinaryResource;
 import org.xmldb.api.modules.XMLResource;
+
+import java.io.*;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A remote implementation of the Collection interface. This implementation
@@ -596,22 +591,59 @@ public class RemoteCollection extends AbstractRemote implements EXistCollection 
                     if (content instanceof EXistInputSource) {
                         descString = ((EXistInputSource) content).getSymbolicPath();
                     }
+                } else if (content instanceof String) {
+                    // TODO(AR) we really should not allow String to be used here, as we loose the encoding info and default to UTF-8!
+                    is = new FastByteArrayInputStream(((String) content).getBytes(UTF_8));
+                } else {
+                    LOG.error("Unable to get content from {}", content);
                 }
             }
 
-            final byte[] chunk = new byte[MAX_UPLOAD_CHUNK];
+            final byte[] chunk;
+            if (res instanceof ExtendedResource) {
+                if(res instanceof AbstractRemoteResource) {
+                    final long contentLen = ((AbstractRemoteResource)res).getContentLength();
+                    if (contentLen != -1) {
+                        // content length is known
+                        chunk = new byte[(int)Math.min(contentLen, MAX_UPLOAD_CHUNK)];
+                    } else {
+                        chunk = new byte[MAX_UPLOAD_CHUNK];
+                    }
+                } else {
+                    final long streamLen = ((ExtendedResource)res).getStreamLength();
+                    if (streamLen != -1) {
+                        // stream length is known
+                        chunk = new byte[(int)Math.min(streamLen, MAX_UPLOAD_CHUNK)];
+                    } else {
+                        chunk = new byte[MAX_UPLOAD_CHUNK];
+                    }
+                }
+            } else {
+                chunk = new byte[MAX_UPLOAD_CHUNK];
+            }
             try {
                 int len;
                 String fileName = null;
                 while ((len = is.read(chunk)) > -1) {
-                    final byte[] compressed = Compressor.compress(chunk, len);
                     final List<Object> params = new ArrayList<>();
                     if (fileName != null) {
                         params.add(fileName);
                     }
-                    params.add(compressed);
-                    params.add(len);
-                    fileName = (String) xmlRpcClientLease.get().execute("uploadCompressed", params);
+
+                    /*
+                    Only compress the chunk if it is larger than 256 bytes,
+                    otherwise the compression framing overhead results in a larger chunk
+                    */
+                    if (len < 256) {
+                        params.add(chunk);
+                        params.add(len);
+                        fileName = (String) xmlRpcClientLease.get().execute("upload", params);
+                    } else {
+                        final byte[] compressed = Compressor.compress(chunk, len);
+                        params.add(compressed);
+                        params.add(len);
+                        fileName = (String) xmlRpcClientLease.get().execute("uploadCompressed", params);
+                    }
                 }
                 // Zero length stream? Let's get a fileName!
                 if (fileName == null) {

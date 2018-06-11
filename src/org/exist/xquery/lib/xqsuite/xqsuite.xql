@@ -18,6 +18,7 @@ xquery version "3.0";
  :)
 module namespace test="http://exist-db.org/xquery/xqsuite";
 
+import module namespace http = "http://expath.org/ns/http-client";
 import module namespace map = "http://www.w3.org/2005/xpath-functions/map";
 import module namespace util = "http://exist-db.org/xquery/util";
 import module namespace system = "http://exist-db.org/xquery/system";
@@ -178,12 +179,74 @@ declare %private function test:run-tests($func as function(*), $meta as element(
           }</report>)
       )
     else
-      let $argsAnnot := $meta/annotation[matches(@name, ":args?")][not(preceding-sibling::annotation[1][matches(@name, ":args?")])]
-      return
-          if ($argsAnnot) then
-              $argsAnnot ! test:test($func, $meta, ., $test-started-function, $test-failure-function, $test-assumption-failed-function, $test-error-function, $test-finished-function)
-          else
-              test:test($func, $meta, (), $test-started-function, $test-failure-function, $test-assumption-failed-function, $test-error-function, $test-finished-function)
+        let $failed-assumptions := test:test-assumptions($meta, $test-assumption-failed-function)
+        return
+            if(not(empty($failed-assumptions)))then
+                test:print-result($meta, (), <report>{
+                element assumptions {
+                  for $failed-assumption in $failed-assumptions
+                  return
+                      element assumption {
+                        attribute name { replace($failed-assumption/@name, "[^:]+:(.+)", "$1") },
+                        $failed-assumption/value/text()
+                      }
+                }
+              }</report>)
+            else
+              let $argsAnnot := $meta/annotation[matches(@name, ":args?")][not(preceding-sibling::annotation[1][matches(@name, ":args?")])]
+              return
+                  if ($argsAnnot) then
+                      $argsAnnot ! test:test($func, $meta, ., $test-started-function, $test-failure-function, $test-error-function, $test-finished-function)
+                  else
+                      test:test($func, $meta, (), $test-started-function, $test-failure-function, $test-error-function, $test-finished-function)
+};
+
+(:~
+ : Tests the assumptions on the (test) function
+ :
+ : @param $meta the function description
+ : @param $test-assumption-failed-function A callback for reporting the failure of assumptions
+ :
+ : @return Any assumption annotations where the asusmption did not hold true
+ :)
+declare
+    %private
+function test:test-assumptions($meta as element(function), $test-assumption-failed-function as (function(xs:string, map(xs:string, item()?)?) as empty-sequence())?) as element(annotation)* {
+    let $assumption-annotations := $meta/annotation[matches(@name,  "[^:]+:assume.+")]
+    return
+        let $failed-assumption-annotations := $assumption-annotations ! test:test-assumption(., $test-assumption-failed-function)
+        return
+            (
+                if(not(empty($test-assumption-failed-function))) then
+                    $failed-assumption-annotations ! $test-assumption-failed-function(
+                            test:get-test-name($meta),
+                            map {
+                                "name": ./string(@name),
+                                "value": ./value/string()
+                            }
+                    )
+                else ()
+                ,
+                $failed-assumption-annotations
+            )
+};
+
+declare
+    %private
+function test:test-assumption($assumption-annotation as element(annotation), $test-assumption-failed-function as (function(xs:string, map(xs:string, item()?)?) as empty-sequence())?) as element(annotation)? {
+    if(ends-with($assumption-annotation/@name, ":assumeInternetAccess"))then
+        (: check for internet access :)
+         try {
+            let $uri := $assumption-annotation/value/text()
+            return
+                (: set a timeout of 3 seconds :)
+                let $response := http:send-request(<http:request method="head" href="{$uri}" timeout="3"/>)[1]
+                return
+                    () (: nothing failed :)
+         } catch * {
+            $assumption-annotation (: return the annotation as failed :)
+         }
+    else()
 };
 
 (:~
@@ -193,7 +256,6 @@ declare %private function test:run-tests($func as function(*), $meta as element(
 declare %private function test:test($func as function(*), $meta as element(function), $firstArg as element(annotation)?,
         $test-started-function as (function(xs:string) as empty-sequence())?,
         $test-failure-function as (function(xs:string, map(xs:string, item()?), map(xs:string, item()?)) as empty-sequence())?,
-        $test-assumption-failed-function as (function(xs:string, map(xs:string, item()?)?) as empty-sequence())?,
         $test-error-function as (function(xs:string, map(xs:string, item()?)?) as empty-sequence())?,
         $test-finished-function as (function(xs:string) as empty-sequence())?) {
     let $args := test:get-run-args($firstArg)
@@ -212,6 +274,7 @@ declare %private function test:test($func as function(*), $meta as element(funct
                             <report>
                                 <failure message="Expected error {$assertError/value/string()}."
                                     type="failure-error-code-1"/>
+                                <output>{ $result }</output>
                             </report>
                         )
                     else
@@ -640,7 +703,7 @@ declare %private function test:assertEmpty($result as item()*) as element(report
     else
         <report>
             <failure message="assertEmpty failed."
-                type="failure-error-code-1"/>,
+                type="failure-error-code-1"/>
             <output>{ $result }</output>
         </report>
 };
@@ -654,7 +717,7 @@ declare %private function test:assertExists($result as item()*) as element(repor
     else
         <report>
             <failure message="assertExists failed."
-                type="failure-error-code-1"/>,
+                type="failure-error-code-1"/>
             <output>{ $result }</output>
         </report>
 };
@@ -667,8 +730,8 @@ declare %private function test:assertTrue($result as item()*) as element(report)
         ()
     else
         <report>
-            <failure message="assertExists failed."
-                type="failure-error-code-1"/>,
+            <failure message="assertTrue failed."
+                type="failure-error-code-1"/>
             <output>{ $result }</output>
         </report>
 };
@@ -682,7 +745,7 @@ declare %private function test:assertError($value as xs:string, $result as item(
     else
         <report>
             <failure message="assertError failed. Expected error {$value}"
-                type="failure-error-code-1"/>,
+                type="failure-error-code-1"/>
             <output>{ $result }</output>
         </report>
 };
@@ -695,8 +758,8 @@ declare %private function test:assertFalse($result as item()*) as element(report
         ()
     else
         <report>
-            <failure message="assertExists failed."
-                type="failure-error-code-1"/>,
+            <failure message="assertFalse failed."
+                type="failure-error-code-1"/>
             <output>{ $result }</output>
         </report>
 };
@@ -746,7 +809,7 @@ declare %private function test:assertXPath($annotation as element(annotation), $
         else
             <report>
                 <failure message="assertXPath failed."
-                    type="failure-error-code-1">{ $expr }</failure>,
+                    type="failure-error-code-1">{ $expr }</failure>
                 <output>{ $result }</output>
             </report>
 };

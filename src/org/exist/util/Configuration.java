@@ -23,6 +23,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import org.exist.backup.SystemExport;
+import org.exist.collections.CollectionCache;
 import org.exist.repo.Deployment;
 
 import org.w3c.dom.Document;
@@ -44,7 +45,6 @@ import org.exist.scheduler.JobException;
 import org.exist.security.internal.RealmImpl;
 import org.exist.storage.BrokerFactory;
 import org.exist.storage.BrokerPool;
-import org.exist.storage.CollectionCacheManager;
 import org.exist.storage.DBBroker;
 import org.exist.storage.DefaultCacheManager;
 import org.exist.storage.IndexSpec;
@@ -54,7 +54,6 @@ import org.exist.storage.XQueryPool;
 import org.exist.storage.journal.Journal;
 import org.exist.storage.serializers.CustomMatchListenerFactory;
 import org.exist.storage.serializers.Serializer;
-import org.exist.storage.txn.TransactionManager;
 import org.exist.validation.GrammarPool;
 import org.exist.validation.resolver.eXistXMLCatalogResolver;
 import org.exist.xmldb.DatabaseImpl;
@@ -832,7 +831,7 @@ public class Configuration implements ErrorHandler
             LOG.warn("Cannot convert " + DefaultCacheManager.SHRINK_THRESHOLD_PROPERTY + " value to integer: " + cacheShrinkThreshold, nfe);
         }
 
-        String collectionCache = getConfigAttributeValue(con, CollectionCacheManager.CACHE_SIZE_ATTRIBUTE);
+        String collectionCache = getConfigAttributeValue(con, CollectionCache.CACHE_SIZE_ATTRIBUTE);
         if(collectionCache != null) {
             collectionCache = collectionCache.toLowerCase();
 
@@ -854,14 +853,14 @@ public class Configuration implements ErrorHandler
                     collectionCacheBytes = Integer.valueOf(collectionCache);
                 }
 
-                config.put(CollectionCacheManager.PROPERTY_CACHE_SIZE_BYTES, collectionCacheBytes);
+                config.put(CollectionCache.PROPERTY_CACHE_SIZE_BYTES, collectionCacheBytes);
 
                 if(LOG.isDebugEnabled()) {
-                    LOG.debug("Set config {} = {}", CollectionCacheManager.PROPERTY_CACHE_SIZE_BYTES, config.get(CollectionCacheManager.PROPERTY_CACHE_SIZE_BYTES));
+                    LOG.debug("Set config {} = {}", CollectionCache.PROPERTY_CACHE_SIZE_BYTES, config.get(CollectionCache.PROPERTY_CACHE_SIZE_BYTES));
                 }
             }
             catch( final NumberFormatException nfe ) {
-                LOG.warn("Cannot convert " + CollectionCacheManager.PROPERTY_CACHE_SIZE_BYTES + " value to integer: " + collectionCache, nfe);
+                LOG.warn("Cannot convert " + CollectionCache.PROPERTY_CACHE_SIZE_BYTES + " value to integer: " + collectionCache, nfe);
             }
         }
 
@@ -986,6 +985,34 @@ public class Configuration implements ErrorHandler
                 LOG.warn("Cannot convert " + BrokerPool.DISK_SPACE_MIN_PROPERTY + " value to integer: " + diskSpace, nfe);
             }
         }
+
+        final String posixChownRestrictedStr = getConfigAttributeValue(con,  DBBroker.POSIX_CHOWN_RESTRICTED_ATTRIBUTE);
+        final boolean posixChownRestricted;
+        if(posixChownRestrictedStr == null) {
+            posixChownRestricted = true;  // default
+        } else {
+            if(Boolean.valueOf(posixChownRestrictedStr)) {
+                posixChownRestricted = true;
+            } else {
+                // configuration explicitly specifies that posix chown should NOT be restricted
+                posixChownRestricted = false;
+            }
+        }
+        config.put(DBBroker.POSIX_CHOWN_RESTRICTED_PROPERTY, posixChownRestricted);
+
+        final String preserveOnCopyStr = getConfigAttributeValue(con,  DBBroker.PRESERVE_ON_COPY_ATTRIBUTE);
+        final DBBroker.PreserveType preserveOnCopy;
+        if(preserveOnCopyStr == null) {
+            preserveOnCopy = DBBroker.PreserveType.NO_PRESERVE;  // default
+        } else {
+            if(Boolean.valueOf(preserveOnCopyStr)) {
+                // configuration explicitly specifies that attributes should be preserved on copy
+                preserveOnCopy = DBBroker.PreserveType.PRESERVE;
+            } else {
+                preserveOnCopy = DBBroker.PreserveType.NO_PRESERVE;
+            }
+        }
+        config.put(DBBroker.PRESERVE_ON_COPY_PROPERTY, preserveOnCopy);
 
         final NodeList securityConf             = con.getElementsByTagName( BrokerPool.CONFIGURATION_SECURITY_ELEMENT_NAME );
         String   securityManagerClassName = BrokerPool.DEFAULT_SECURITY_CLASS;
