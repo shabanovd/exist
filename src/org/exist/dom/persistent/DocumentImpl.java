@@ -540,9 +540,6 @@ public class DocumentImpl extends NodeImpl<DocumentImpl> implements Resource, Do
     @EnsureContainerLocked(mode=READ_LOCK)
     public void write(final VariableByteOutputStream ostream) throws IOException {
         try {
-            if(!getCollection().isTempCollection() && !getUpdateLock().isLockedForWrite()) {
-                LOG.warn("document not locked for write !");
-            }
             ostream.writeInt(docId);
             ostream.writeUTF(fileURI.toString());
             getPermissions().write(ostream);
