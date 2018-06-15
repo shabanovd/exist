@@ -1111,12 +1111,21 @@ public class RCSHolder implements Constants {
 
             restoreMetas(broker, resource, rev, dh);
 
+//            DocumentMetadata meta = resource.getMetadata();
+//            if (dh.mimeType != null) meta.setMimeType(dh.mimeType);
+//            if (dh.createdTime != null) meta.setCreated(dh.createdTime);
+//            if (dh.lastModified != null) meta.setLastModified(dh.lastModified);
+
+            resource = parent.addBinaryResource(tx, broker, (BinaryDocument)resource, is.getByteStream(), dh.mimeType, is.getByteStreamLength(), new Date(dh.createdTime), new Date(dh.lastModified));
+
+            //workaround because of processing bug at eXist it can't be between validateBinaryResource and addBinaryResource
             DocumentMetadata meta = resource.getMetadata();
             if (dh.mimeType != null) meta.setMimeType(dh.mimeType);
             if (dh.createdTime != null) meta.setCreated(dh.createdTime);
             if (dh.lastModified != null) meta.setLastModified(dh.lastModified);
 
-            resource = parent.addBinaryResource(tx, broker, (BinaryDocument)resource, is.getByteStream(), dh.mimeType, is.getByteStreamLength(), new Date(dh.createdTime), new Date(dh.lastModified));
+            broker.storeXMLResource(tx, resource);
+            //end of workaround
         }
 
         rh.endRestore(resource);
