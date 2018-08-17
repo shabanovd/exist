@@ -5265,13 +5265,14 @@ public class RpcConnection implements RpcAPI {
             
             // Get inputstream
             // TODO DWES reconsider
-            final InputStream is = new EmbeddedInputStream( new XmldbURL(docUri) );
-            
-            // Perform validation
-            final ValidationReport report = validator.validate(is); 
-            
-            // Return validation result
-            isValid = report.isValid();
+            try (InputStream is = new EmbeddedInputStream( new XmldbURL(docUri) )) {
+
+                // Perform validation
+                final ValidationReport report = validator.validate(is);
+
+                // Return validation result
+                isValid = report.isValid();
+            }
             
         } catch (final Throwable e) {
             handleException(e);
