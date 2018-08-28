@@ -533,7 +533,7 @@ public class SystemExport
                 final DocumentImpl doc = i.next();
 
                 if( isDamaged( doc, errorList ) ) {
-                    reportError( "Skipping damaged document " + doc.getFileURI(), null );
+                    reportError( "Skipping damaged document " + doc.getURI(), null );
                     continue;
                 }
 
@@ -635,7 +635,7 @@ public class SystemExport
                 }
             }
             catch( final Exception e ) {
-                reportError( "A write error occurred while exporting document: '" + doc.getFileURI() + "'. Continuing with next document.", e );
+                reportError( "A write error occurred while exporting document: '" + doc.getURI() + "'. Continuing with next document.", e );
                 return;
             }
             finally {
@@ -964,7 +964,7 @@ public class SystemExport
                         doc = new DocumentImpl( broker.getBrokerPool() );
                     }
                     doc.readWithMetadata( istream );
-                    reportError( "Found an orphaned document: " + doc.getFileURI().toString(), null );
+                    reportError( "Found an orphaned document: " + doc.getURI(), null );
 
                     if( writtenDocs != null ) {
                         int    count   = 1;
