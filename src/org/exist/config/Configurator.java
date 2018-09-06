@@ -320,7 +320,9 @@ public class Configurator {
                 } else if (Map.class == fieldType) {
                     //Map
                     //skip contents, they will be processed as structure in the next loop on ConfigurationFieldAsElement
-                    value = configuration.getPropertyMap(property);
+                    if (!field.isAnnotationPresent(ConfigurationFieldAsElement.class)) {
+                        value = configuration.getPropertyMap(property);
+                    }
 
                 } else if(List.class == fieldType) {
                     //List
@@ -538,6 +540,85 @@ public class Configurator {
                                 list.add(obj);
                             }
                         }
+                    }
+                } else if (Map.class == fieldType) {
+                    //Map
+                    final String confName = element.getAnnotation().value();
+                    field.setAccessible(true);
+                    Map<String, Configurable> map = (Map<String, Configurable>) field.get(instance);
+                    String referenceBy;
+
+                    final List<Configuration> confs;
+                    if (field.isAnnotationPresent(ConfigurationReferenceBy.class)) {
+                        confs = configuration.getConfigurations(confName);
+                        referenceBy = field.getAnnotation(ConfigurationReferenceBy.class).value();
+                    } else {
+                        confs = configuration.getConfigurations(confName);
+                        referenceBy = null;
+                    }
+
+                    if (map == null) {
+                        map = new ConcurrentHashMap<>(confs.size());
+                        field.set(instance, map);
+                    }
+
+                    if (confs != null && referenceBy != null) {
+                        Set<String> keys = new HashSet<>(map.keySet());
+
+                        //Lookup for new configuration, update if found
+                        for (final Configuration conf : confs) {
+                            String key = conf.getProperty(referenceBy);
+                            if (key != null) {
+                                keys.remove(key);
+
+                                final Field ff = field;
+                                map.compute(key, (k, v) -> {
+                                    if (v == null) {
+                                        //create
+                                        final ConfigurationFieldClassMask annotation =
+                                            getAnnotation(ff, ConfigurationFieldClassMask.class);
+
+                                        if (annotation == null) {
+                                            final NewClass newClass = getAnnotation(ff, NewClass.class);
+                                            if (newClass != null) {
+                                                return (Configurable) org.exist.config.mapper.Constructor.load(
+                                                    newClass, instance, conf
+                                                );
+                                            } else {
+                                                LOG.error("Field '" + ff.getName() + "' must have '@org.exist.config.annotation.ConfigurationFieldClassMask' annotation [" + conf.getName() + "], skipping instance creation.");
+                                            }
+
+                                            return null;
+                                        }
+
+                                        final String id = conf.getProperty(Configuration.ID);
+                                        Object[] objs;
+
+                                        if (id == null) {
+                                            objs = new Object[]{"", ""};
+
+                                        } else {
+                                            objs = new Object[]{id.toLowerCase(), id};
+                                        }
+
+                                        final String clazzName = String.format(annotation.value(), objs);
+                                        return create(conf, instance, clazzName);
+                                    } else {
+                                        //update
+                                        if (v instanceof Configurable) {
+                                            Configuration current_conf = v.getConfiguration();
+                                            current_conf.checkForUpdates(conf.getElement());
+                                        } else {
+                                            return null;
+                                        }
+                                    }
+                                    return v;
+                                });
+                            }
+                        }
+
+                        //remove one that don't exist
+                        keys.forEach(map::remove);
                     }
                 }
             }
@@ -947,7 +1028,7 @@ public class Configurator {
                         continue;
                         
                     } else if ("java.util.Map".equals(typeName)) {
-                        serializeMap(element.getAnnotation().value(), (Map<String, String>) field.get(instance), serializer);
+                        serializeMap(element.getAnnotation().value(), (Map<String, Object>) field.get(instance), serializer);
                         continue;
                         
                     } else {
@@ -1060,18 +1141,26 @@ public class Configurator {
         }
     }
 
-    private static void serializeMap(final String mapName, final Map<String, String> map,
-            final SAXSerializer serializer) throws SAXException {
+    private static void serializeMap(final String mapName, final Map<String, Object> map,
+            final SAXSerializer serializer) throws SAXException, ConfigurationException {
         
         if (map != null) {
             final QName mapQName = new QName(mapName, Configuration.NS);
             final QName attrQName = new QName("key");
             
-            for (final Map.Entry<String, String> entry : map.entrySet()) {
-                serializer.startElement(mapQName, null);
-                serializer.attribute(attrQName, entry.getKey());
-                serializer.characters(entry.getValue());
-                serializer.endElement(mapQName);
+            for (final Map.Entry<String, Object> entry : map.entrySet()) {
+                Object v = entry.getValue();
+
+                if (v instanceof String) {
+                    serializer.startElement(mapQName, null);
+                    serializer.attribute(attrQName, entry.getKey());
+                    serializer.characters((String)v);
+                    serializer.endElement(mapQName);
+                } else if (v instanceof Configurable) {
+                    serialize((Configurable)v, serializer);
+                } else {
+                    throw new IllegalStateException("unknown type: "+v);
+                }
             }
         }
     }

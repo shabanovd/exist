@@ -1,6 +1,6 @@
 /*
  * eXist Open Source Native XML Database
- * Copyright (C) 2001-2015 The eXist Project
+ * Copyright (C) 2001-2018 The eXist Project
  * http://exist-db.org
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.exist.security.internal;
 
 import gnu.crypto.hash.RipeMD160;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.codec.binary.Base64;
 import org.exist.Database;
 import org.exist.EXistException;
@@ -28,6 +29,7 @@ import org.exist.config.Configuration;
 import org.exist.config.annotation.ConfigurationClass;
 import org.exist.config.annotation.ConfigurationFieldAsElement;
 import org.exist.config.annotation.ConfigurationFieldClassMask;
+import org.exist.config.annotation.ConfigurationReferenceBy;
 import org.exist.scheduler.JobDescription;
 import org.exist.security.*;
 import org.exist.security.realm.Realm;
@@ -48,15 +50,16 @@ import java.util.stream.Collectors;
 @ConfigurationClass("tokens")
 public class TokensManager implements Configurable {
 
-    public final static long TIMEOUT_CHECK_PERIOD = 1000; //10 * 60 * 1000; //10 minutes
+    private final static long STORE_PERIOD = 1000 * 60; //10 * 60 * 1000; //10 minutes
 
-    SecurityManagerImpl sm;
+    private SecurityManagerImpl sm;
 
     Configuration configuration;
 
     @ConfigurationFieldAsElement("record")
+    @ConfigurationReferenceBy("token")
     @ConfigurationFieldClassMask("org.exist.security.internal.TokenRecord")
-    List<TokenRecord> tokens = new ArrayList<>();
+    private Map<String, TokenRecord> tokens = new ConcurrentHashMap<>();
 
     private static class Holder {
         static final SecureRandom numberGenerator = new SecureRandom();
@@ -76,9 +79,16 @@ public class TokensManager implements Configurable {
         final Properties params = new Properties();
         params.put(getClass().getName(), this);
 
-        sm.pool.getScheduler().createPeriodicJob(TIMEOUT_CHECK_PERIOD, new TokensCheck(),
-            TIMEOUT_CHECK_PERIOD, params, SimpleTrigger.REPEAT_INDEFINITELY, false
-        );
+        sm.pool
+            .getScheduler()
+            .createPeriodicJob(
+                STORE_PERIOD,
+                new TokensCheck(),
+                STORE_PERIOD,
+                params,
+                SimpleTrigger.REPEAT_INDEFINITELY,
+                false
+            );
     }
 
     public String createToken(String name, Account account) {
@@ -103,37 +113,35 @@ public class TokensManager implements Configurable {
         token.realm = account.getRealmId();
         token.account = account.getName();
 
-        tokens.add(token);
+        tokens.putIfAbsent(token.token, token);
+
         save();
-        flush();
+        //flush();
 
         return original_token;
     }
 
     public List<TokenRecord> list(Account account) {
-        return tokens.stream()
+        return tokens.values().stream()
             .filter(record -> account.getName().equals(record.account) && account.getRealmId().equals(record.realm))
             .map(TokenRecord::new)
             .collect(Collectors.toList());
     }
 
     public boolean invalidateToken(String token) {
-        Iterator<TokenRecord> it = tokens.iterator();
-        while (it.hasNext()) {
-            TokenRecord record = it.next();
+        TokenRecord record = tokens.remove(token);
+        if (record == null) return false;
 
-            if (token.equals(record.token)) {
-                it.remove();
-                save();
-                flush();
-                return true;
-            }
-        }
+        save();
+        //flush();
 
-        return false;
+        return true;
+    }
+    public Subject authenticate(final String username, final Object credentials) throws AuthenticationException {
+        return authenticate(username, credentials, false);
     }
 
-    public Subject authenticate(final String username, final Object credentials) throws AuthenticationException {
+    public Subject authenticate(final String username, final Object credentials, boolean invalidate) throws AuthenticationException {
 
         if (credentials == null) return null;
 
@@ -144,42 +152,39 @@ public class TokensManager implements Configurable {
             token = hash(credentials.toString());
         }
 
-        for (TokenRecord record : tokens) {
-            if (token.equals(record.token)) {
-                record.lastUse = System.currentTimeMillis();
-                save();
+        TokenRecord record = invalidate ? tokens.remove(token) : tokens.get(token);
+        if (record == null) return null;
 
-                for(Realm realm : sm.realms) {
-                    if (!record.realm.equals(realm.getId())) continue;
+        record.lastUse = System.currentTimeMillis();
+        save();
 
-                    Account account = realm.getAccount(record.account);
-                    if (account != null) {
-                        if (username != null && !username.equals(account.getUsername())) {
-                            slowDown();
-                            throw new AuthenticationException(
-                                AuthenticationException.ACCOUNT_NOT_FOUND,
-                                "Token reference to account '" + account.getUsername() + "' " +
-                                "that miss match provided username '" + username + "'"
-                            );
-                        }
+        for(Realm realm : sm.realms) {
+            if (!record.realm.equals(realm.getId())) continue;
 
-                        if(!account.isEnabled()) {
-                            slowDown();
-                            throw new AuthenticationException(AuthenticationException.ACCOUNT_LOCKED, "Account is disabled.");
-                        }
-
-                        return new SubjectAccreditedImpl((AccountImpl) account, token);
-                    }
+            Account account = realm.getAccount(record.account);
+            if (account != null) {
+                if (username != null && !username.equals(account.getUsername())) {
+                    slowDown();
+                    throw new AuthenticationException(
+                        AuthenticationException.ACCOUNT_NOT_FOUND,
+                        "Token reference to account '" + account.getUsername() + "' " +
+                        "that miss match provided username '" + username + "'"
+                    );
                 }
 
-                slowDown();
-                throw new AuthenticationException(
-                    AuthenticationException.ACCOUNT_NOT_FOUND,
-                    "Token reference to account that not found");
+                if(!account.isEnabled()) {
+                    slowDown();
+                    throw new AuthenticationException(AuthenticationException.ACCOUNT_LOCKED, "Account is disabled.");
+                }
+
+                return new SubjectAccreditedImpl((AccountImpl) account, token);
             }
         }
 
-        return null;
+        slowDown();
+        throw new AuthenticationException(
+            AuthenticationException.ACCOUNT_NOT_FOUND,
+            "Token reference to account that not found");
     }
 
     private void slowDown() {
@@ -191,7 +196,7 @@ public class TokensManager implements Configurable {
         }
     }
 
-    boolean dirty = false;
+    private boolean dirty = false;
 
     private void save() {
         dirty = true;
@@ -208,7 +213,7 @@ public class TokensManager implements Configurable {
                 } catch (Exception e) {
                     dirty = true;
                     SecurityManagerImpl.LOG.error(e.getMessage(), e);
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
             });
         } catch (Exception e) {
@@ -271,7 +276,7 @@ public class TokensManager implements Configurable {
         }
     }
 
-    public void executeAsSystemUser(Database db, Consumer<DBBroker> unit) throws EXistException, PermissionDeniedException {
+    private void executeAsSystemUser(Database db, Consumer<DBBroker> unit) throws EXistException {
         DBBroker broker = null;
         final Subject currentSubject = db.getSubject();
         try {
