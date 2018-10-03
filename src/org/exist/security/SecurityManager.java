@@ -102,7 +102,9 @@ public interface SecurityManager extends Configurable {
 
    public Subject getSystemSubject();
    public Subject getGuestSubject();
-   public Group getDBAGroup();
+
+   Group getGuestGroup();
+   Group getDBAGroup();
 
    public List<Account> getGroupMembers(String groupName);
 

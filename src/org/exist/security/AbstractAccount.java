@@ -277,17 +277,17 @@ public abstract class AbstractAccount extends AbstractPrincipal implements Accou
             }
 	}
     
-        /**
-         * @deprecated user getPrimaryGroup instead;
-         */
-        @Deprecated
+  /**
+   * @deprecated user getPrimaryGroup instead;
+   */
+  @Deprecated
 	@Override
 	public Group getDefaultGroup() {
-            if(groups != null && groups.size() > 0) {
-                return groups.get(0);
-            }
+    if(groups != null && groups.size() > 0) {
+        return groups.get(0);
+    }
 
-            return null;
+    return getRealm().getSecurityManager().getGuestGroup();
 	}
 
     @Override

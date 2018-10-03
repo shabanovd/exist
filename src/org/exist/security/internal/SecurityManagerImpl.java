@@ -572,6 +572,11 @@ public class SecurityManagerImpl implements SecurityManager {
     }
 
     @Override
+    public Group getGuestGroup() {
+        return defaultRealm.GROUP_GUEST;
+    }
+
+    @Override
     public Database getDatabase() {
         return pool;
     }
