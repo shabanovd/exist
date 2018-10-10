@@ -2752,15 +2752,23 @@ public class NativeBroker extends DBBroker {
     }
 
     public void removeResource(Txn tx, DocumentImpl doc) throws IOException, PermissionDeniedException {
+        removeResource(tx, doc, true);
+    }
+
+    public void removeResource(Txn tx, DocumentImpl doc, boolean fireTrigger) throws IOException, PermissionDeniedException {
         if (doc instanceof BinaryDocument) {
             removeBinaryResource(tx, (BinaryDocument) doc);
         } else {
-            removeXMLResource(tx, doc);
+            removeXMLResource(tx, doc, true, fireTrigger);
         }
     }
 
     @Override
     public void removeXMLResource(final Txn txn, final DocumentImpl document, boolean freeDocId) throws PermissionDeniedException {
+        removeXMLResource(txn, document, freeDocId, true);
+    }
+
+    public void removeXMLResource(final Txn txn, final DocumentImpl document, boolean freeDocId, boolean fireTrigger) throws PermissionDeniedException {
         if (pool.isReadOnly())
             {throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);}
         try {
@@ -2771,7 +2779,7 @@ public class NativeBroker extends DBBroker {
             
             final DocumentTrigger trigger = new DocumentTriggers(this);
             
-            if (freeDocId) {
+            if (fireTrigger) {
                 trigger.beforeDeleteDocument(this, txn, document);
             }
             
@@ -2809,9 +2817,12 @@ public class NativeBroker extends DBBroker {
                 }
             }.run();
             removeResourceMetadata(txn, document);
+
             if (freeDocId) {
                 collectionsDb.freeResourceId(document.getDocId());
+            }
 
+            if (fireTrigger) {
                 trigger.afterDeleteDocument(this, txn, document.getURI());
             }
 

@@ -2051,7 +2051,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("removing old document " + oldDoc.getFileURI());
                 }
-                broker.removeResource(transaction, oldDoc);
+                broker.removeResource(transaction, oldDoc, false);
             }
             broker.storeBinaryResource(transaction, blob, is);
             addDocument(transaction, broker, blob, oldDoc);
