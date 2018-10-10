@@ -20,6 +20,7 @@
 package org.exist.xquery.fixes;
 
 import org.exist.storage.md.ChangeMetadataId;
+import org.exist.storage.md.XmlToBinary;
 import org.exist.xquery.AbstractInternalModule;
 import org.exist.xquery.FunctionDef;
 import org.exist.xquery.backupsdiffs.FnBackupsDiffs;
@@ -36,17 +37,18 @@ public class Module extends AbstractInternalModule {
     public final static String RELEASED_IN_VERSION = "eXist-2.2";
 
     public static final FunctionDef[] functions = {
-            new FunctionDef(CleanupMetadata.signatures[0], CleanupMetadata.class),
-            new FunctionDef(CleanupRemoveSubCollection.signatures[0], CleanupRemoveSubCollection.class),
-            new FunctionDef(CleanupRemoveDocument.signatures[0], CleanupRemoveDocument.class),
+        new FunctionDef(CleanupMetadata.signatures[0], CleanupMetadata.class),
+        new FunctionDef(CleanupRemoveSubCollection.signatures[0], CleanupRemoveSubCollection.class),
+        new FunctionDef(CleanupRemoveDocument.signatures[0], CleanupRemoveDocument.class),
 
-            new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[0], CleanupRestoreBinaryFromRCS.class),
-            new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[1], CleanupRestoreBinaryFromRCS.class),
+        new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[0], CleanupRestoreBinaryFromRCS.class),
+        new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[1], CleanupRestoreBinaryFromRCS.class),
 
-            new FunctionDef(ChangeMetadataId.signatures[0], ChangeMetadataId.class),
+        new FunctionDef(ChangeMetadataId.signatures[0], ChangeMetadataId.class),
+        new FunctionDef(XmlToBinary.signatures[0], XmlToBinary.class),
 
-            new FunctionDef(FnImportChanges.signatures[0], FnImportChanges.class),
-            new FunctionDef(FnBackupsDiffs.signatures[0], FnBackupsDiffs.class)
+        new FunctionDef(FnImportChanges.signatures[0], FnImportChanges.class),
+        new FunctionDef(FnBackupsDiffs.signatures[0], FnBackupsDiffs.class)
     };
 
     public Module(Map<String, List<? extends Object>> parameters) {
