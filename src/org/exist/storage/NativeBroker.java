@@ -2698,8 +2698,6 @@ public class NativeBroker extends DBBroker {
                 removeResource(transaction, oldDoc);
             }
 
-            boolean renameOnly = collection.getId() == destination.getId();
-            
             final XmldbURI oldURI = doc.getURI();
             final XmldbURI newURI = destination.getURI().append(newName);
 
@@ -2707,23 +2705,25 @@ public class NativeBroker extends DBBroker {
             
             collection.unlinkDocument(this, doc);
             removeResourceMetadata(transaction, doc);
-            doc.setFileURI(newName);
+
             if(doc.getResourceType() == DocumentImpl.XML_FILE) {
-                if(!renameOnly) {
-                    //XXX: BUG: doc have new uri here!
-                	dropIndex(transaction, doc);
-                    saveCollection(transaction, collection);
-                }
+                dropIndex(transaction, doc);
+
+                //update
+                doc.setFileURI(newName);
                 doc.setCollection(destination);
                 destination.addDocument(transaction, this, doc);
-                if(!renameOnly) {
-                    // reindexing
-                    reindexXMLResource(transaction, doc, NodeProcessor.MODE_REPAIR);
-                }
+
+                // reindexing
+                reindexXMLResource(transaction, doc, NodeProcessor.MODE_REPAIR);
             } else {
                 // binary resource
-            	doc.setCollection(destination);
+
+                //update
+                doc.setFileURI(newName);
+            	  doc.setCollection(destination);
                 destination.addDocument(transaction, this, doc);
+
                 final File colDir = getCollectionFile(fsDir,destination.getURI(),true);
                 final File binFile = new File(colDir,newName.lastSegment().toString());
                 final File sourceFile = getCollectionFile(fsDir,doc.getURI(),false);
@@ -2964,38 +2964,43 @@ public class NativeBroker extends DBBroker {
         if (doc.isCollectionConfig()) {
             doc.getCollection().setCollectionConfigEnabled(false);
         }
-
         try {
-            doc.getUpdateLock().acquire(Lock.READ_LOCK);
+            try {
+                doc.getUpdateLock().acquire(Lock.READ_LOCK);
 
-            //check that document still there
-            Collection col = doc.getCollection();
-            if (col == null || !col.hasDocument(doc.getFileURI())) return;
+                //check that document still there
+                Collection col = doc.getCollection();
+                if (col == null || !col.hasDocument(doc.getFileURI()))
+                    return;
 
-            indexController.setDocument(doc, StreamListener.STORE);
+                indexController.setDocument(doc, StreamListener.STORE);
 
-            if (doc instanceof BinaryDocument) {
-                indexController.indexBinary((BinaryDocument) doc);
+                if (doc instanceof BinaryDocument) {
+                    indexController.indexBinary((BinaryDocument) doc);
 
-            } else {
-                final StreamListener listener = indexController.getStreamListener();
-                final NodeList nodes = doc.getChildNodes();
-                for (int i = 0; i < nodes.getLength(); i++) {
-                    final StoredNode node = (StoredNode) nodes.item(i);
-                    final Iterator<StoredNode> iterator = getNodeIterator(node);
-                    iterator.next();
-                    scanNodes(txn, iterator, node, new NodePath(), mode, listener);
+                } else {
+                    final StreamListener listener = indexController.getStreamListener();
+                    final NodeList nodes = doc.getChildNodes();
+                    for (int i = 0; i < nodes.getLength(); i++) {
+                        final StoredNode node = (StoredNode) nodes.item(i);
+                        final Iterator<StoredNode> iterator = getNodeIterator(node);
+                        iterator.next();
+                        scanNodes(txn, iterator, node, new NodePath(), mode, listener);
+                    }
                 }
-            }
-        } catch (LockException e) {
-            throw new RuntimeException("document '"+doc.getURI()+"' can't be read locked", e);
+            } catch (LockException e) {
+                throw new RuntimeException("document '" + doc.getURI() + "' can't be read locked",
+                    e);
 
+            } finally {
+                doc.getUpdateLock().release(Lock.READ_LOCK);
+            }
+            flush();
         } finally {
-            doc.getUpdateLock().release(Lock.READ_LOCK);
+            if (doc.isCollectionConfig()) {
+                doc.getCollection().setCollectionConfigEnabled(true);
+            }
         }
-        flush();
-        if(doc.isCollectionConfig())
-            {doc.getCollection().setCollectionConfigEnabled(true);}
     }
 
     public void checkIndex(DocumentImpl doc, List<String> errors) {
