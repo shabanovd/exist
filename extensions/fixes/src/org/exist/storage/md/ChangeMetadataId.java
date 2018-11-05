@@ -19,6 +19,8 @@
  */
 package org.exist.storage.md;
 
+import java.util.ArrayList;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
@@ -69,9 +71,19 @@ public class ChangeMetadataId extends BasicFunction {
             return BooleanValue.valueOf(cc.getURI().equals(url.toString()));
         }
 
+        ArrayList<Pair<String, Object>> metas = new ArrayList<>();
+
+        for (Meta meta : cc.metas()) {
+            metas.add(Pair.of(meta.getKey(), meta.getValue()));
+        }
+
         md.delMetas(url);
 
         Metas cre = md._addMetas(url.toString(), uuid);
+
+        for (Pair<String, Object> pair : metas) {
+            cre.put(pair.getKey(), pair.getValue());
+        }
 
         return BooleanValue.valueOf(cre != null);
     }
