@@ -302,6 +302,13 @@ public class DocumentTriggers implements DocumentTrigger, ContentHandler, Lexica
     }
 
     @Override
+    public void middleMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) {
+        for (DocumentTrigger trigger : triggers) {
+            trigger.middleMoveDocument(broker, txn, document, oldUri);
+        }
+    }
+
+    @Override
     public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) {
         for (DocumentTrigger trigger : triggers) {
             try {

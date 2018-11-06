@@ -749,6 +749,10 @@ public class XQueryTrigger extends SAXTrigger implements DocumentTrigger, Collec
     }
 
     @Override
+    public void middleMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) {
+    }
+
+    @Override
     public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException {
         if (events.contains(TriggerEvents.EVENTS.MOVE_DOCUMENT)) {
             finish(6, broker, txn, oldUri, document.getURI(), false);

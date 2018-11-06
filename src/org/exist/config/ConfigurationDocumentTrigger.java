@@ -194,6 +194,10 @@ public class ConfigurationDocumentTrigger extends FilteringTrigger {
     }
 
     @Override
+    public void middleMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) {
+    }
+
+    @Override
     public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException {
         checkForUpdates(broker, document.getURI(), document);
     }

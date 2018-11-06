@@ -74,6 +74,10 @@ public class AnotherTrigger extends SAXTrigger {
     }
 
     @Override
+    public void middleMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) {
+    }
+
+    @Override
     public void afterMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) {
     }
 

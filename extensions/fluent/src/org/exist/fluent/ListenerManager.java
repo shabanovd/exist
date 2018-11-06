@@ -331,6 +331,9 @@ public class ListenerManager {
 			INSTANCE.fire(key, document, null, true);
 		}
 		@Override
+		public void middleMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) {
+		}
+		@Override
 		public void afterMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) { //throws TriggerException {
 			EventKey key = new EventKey(document.getURI().toString(), Trigger.AFTER_RENAME);
 			INSTANCE.fire(key, document, null, true);

@@ -104,6 +104,7 @@ public interface DocumentTrigger extends Trigger {
     public void afterCopyDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException;
 
     public void beforeMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException;
+    public void middleMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri);
     public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI oldUri) throws TriggerException;
 
     public void beforeDeleteDocument(DBBroker broker, Txn txn, DocumentImpl document) throws TriggerException;

@@ -2709,6 +2709,8 @@ public class NativeBroker extends DBBroker {
             if(doc.getResourceType() == DocumentImpl.XML_FILE) {
                 dropIndex(transaction, doc);
 
+                trigger.middleMoveDocument(this, transaction, doc, newURI);
+
                 //update
                 doc.setFileURI(newName);
                 doc.setCollection(destination);
@@ -2896,18 +2898,15 @@ public class NativeBroker extends DBBroker {
         // remove document metadata
         final Lock lock = collectionsDb.getLock();
         try {
-            //TODO: must be WRITE_LOCK !!!
-            lock.acquire(Lock.READ_LOCK);
+            lock.acquire(Lock.WRITE_LOCK);
             if (LOG.isDebugEnabled())
                 {LOG.debug("Removing resource metadata for " + document.getDocId());}
             final Value key = new CollectionStore.DocumentKey(document.getCollection().getId(), document.getResourceType(), document.getDocId());
             collectionsDb.remove(transaction, key);
-        //} catch (ReadOnlyException e) {
-            //LOG.warn(DATABASE_IS_READ_ONLY);
         } catch (final LockException e) {
             LOG.warn("Failed to acquire lock on " + collectionsDb.getFile().getName());
         } finally {
-            lock.release(Lock.READ_LOCK);
+            lock.release(Lock.WRITE_LOCK);
         }
     }
 

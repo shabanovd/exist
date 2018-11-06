@@ -168,6 +168,10 @@ public class STXTransformerTrigger extends SAXTrigger implements DocumentTrigger
     }
 
     @Override
+    public void middleMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) {
+    }
+
+    @Override
     public void afterMoveDocument(DBBroker broker, Txn transaction, DocumentImpl document, XmldbURI newUri) throws TriggerException {
     }
 

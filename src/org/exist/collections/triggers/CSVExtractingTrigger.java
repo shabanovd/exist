@@ -426,6 +426,10 @@ public class CSVExtractingTrigger extends SAXTrigger {
 	public void beforeMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException {
 	}
 
+  @Override
+  public void middleMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) {
+  }
+
 	@Override
 	public void afterMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) throws TriggerException {
 	}
