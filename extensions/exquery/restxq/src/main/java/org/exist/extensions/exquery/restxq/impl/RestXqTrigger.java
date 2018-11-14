@@ -81,6 +81,10 @@ public class RestXqTrigger extends FilteringTrigger {
     }
 
     @Override
+    public void middleMoveDocument(DBBroker broker, Txn txn, DocumentImpl document, XmldbURI newUri) {
+    }
+
+    @Override
     public void afterMoveDocument(final DBBroker broker, final Txn transaction, final DocumentImpl document, final XmldbURI oldUri) throws TriggerException {
         after(broker, document);
     }
