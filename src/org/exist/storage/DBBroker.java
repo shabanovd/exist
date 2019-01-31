@@ -474,12 +474,15 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
     public abstract void removeXMLResource(Txn transaction,
         DocumentImpl document, boolean freeDocId) throws PermissionDeniedException;
 
+    public abstract void removeXMLResource(Txn transaction,
+        DocumentImpl document, boolean freeDocId, boolean fireTrigger) throws PermissionDeniedException;
+
     /**
      * Reindex a collection.
-     * 
+     *
      * @param collectionName
      * @throws PermissionDeniedException
-     * 
+     *
      * public abstract void reindexCollection(String collectionName) throws
      * PermissionDeniedException;
      */

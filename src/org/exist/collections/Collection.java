@@ -1823,7 +1823,7 @@ public class Collection extends Observable implements Resource, Comparable<Colle
                     addDocument(transaction, broker, document);
                 } else {
                     //TODO : use a more elaborated method ? No triggers...
-                    broker.removeXMLResource(transaction, oldDoc, false);
+                    broker.removeXMLResource(transaction, oldDoc, false, false);
                     oldDoc.copyOf(document, true);
                     indexer.setDocumentObject(oldDoc);
                     //old has become new at this point
