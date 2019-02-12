@@ -41,8 +41,8 @@ public class Module extends AbstractInternalModule {
         new FunctionDef(CleanupRemoveSubCollection.signatures[0], CleanupRemoveSubCollection.class),
         new FunctionDef(CleanupRemoveDocument.signatures[0], CleanupRemoveDocument.class),
 
-        new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[0], CleanupRestoreBinaryFromRCS.class),
-        new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[1], CleanupRestoreBinaryFromRCS.class),
+//        new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[0], CleanupRestoreBinaryFromRCS.class),
+//        new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[1], CleanupRestoreBinaryFromRCS.class),
 
         new FunctionDef(ChangeMetadataId.signatures[0], ChangeMetadataId.class),
         new FunctionDef(XmlToBinary.signatures[0], XmlToBinary.class),
