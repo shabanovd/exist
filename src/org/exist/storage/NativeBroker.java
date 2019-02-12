@@ -2720,6 +2720,7 @@ public class NativeBroker extends DBBroker {
                 reindexXMLResource(transaction, doc, NodeProcessor.MODE_REPAIR);
             } else {
                 // binary resource
+                trigger.middleMoveDocument(this, transaction, doc, newURI);
 
                 //update
                 doc.setFileURI(newName);
