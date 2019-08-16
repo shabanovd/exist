@@ -704,7 +704,6 @@ public class NativeBroker extends DBBroker {
                 //TODO : resolve URIs !
                 final XmldbURI[] segments = name.getPathSegments();
                 XmldbURI path = XmldbURI.ROOT_COLLECTION_URI;
-                Collection sub;
                 Collection current = getCollection(XmldbURI.ROOT_COLLECTION_URI);
                 if (current == null) {
 
@@ -712,23 +711,7 @@ public class NativeBroker extends DBBroker {
                         LOG.debug("Creating root collection '" + XmldbURI.ROOT_COLLECTION_URI + "'");
                     }
 
-                    final CollectionTrigger trigger = new CollectionTriggers(this);
-
-                    trigger.beforeCreateCollection(this, transaction, XmldbURI.ROOT_COLLECTION_URI);
-
-                    current = new Collection(this, XmldbURI.ROOT_COLLECTION_URI);
-
-                    current.setId(getNextCollectionId(transaction));
-                    current.setCreationTime(System.currentTimeMillis());
-
-                    if(transaction != null) {
-                        transaction.acquireLock(current.getLock(), Lock.WRITE_LOCK);
-                    }
-
-                    //TODO : acquire lock manually if transaction is null ?
-                    saveCollection(transaction, current);
-
-                    trigger.afterCreateCollection(this, transaction, current);
+                    current = createCollection(XmldbURI.ROOT_COLLECTION_URI, transaction, null);
 
                     //import an initial collection configuration
                     try {
@@ -779,35 +762,7 @@ public class NativeBroker extends DBBroker {
                             throw new PermissionDeniedException("Collection '" + current.getURI() + "' have document '" + path.lastSegment() + "'.");
                         }
 
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Creating collection '" + path + "'...");
-                        }
-
-                        final CollectionTrigger trigger = new CollectionTriggers(this, current);
-
-                        trigger.beforeCreateCollection(this, transaction, path);
-
-                        sub = new Collection(this, path);
-
-                        //inherit the group to the sub-collection if current collection is setGid
-                        if(current.getPermissions().isSetGid()) {
-                            sub.getPermissions().setGroupFrom(current.getPermissions()); //inherit group
-                            sub.getPermissions().setSetGid(true); //inherit setGid bit
-                        }
-
-                        sub.setId(getNextCollectionId(transaction));
-
-                        if (transaction != null) {
-                            transaction.acquireLock(sub.getLock(), Lock.WRITE_LOCK);
-                        }
-
-                        //TODO : acquire lock manually if transaction is null ?
-                        current.addCollection(this, sub, true);
-                        saveCollection(transaction, current);
-
-                        trigger.afterCreateCollection(this, transaction, sub);
-
-                        current = sub;
+                        current = createCollection(path, transaction, current);
                     }
                 }
                 return current;
@@ -818,6 +773,51 @@ public class NativeBroker extends DBBroker {
                 throw new PermissionDeniedException(DATABASE_IS_READ_ONLY);
 			}
         }
+    }
+
+    private Collection createCollection(XmldbURI path, Txn txn, Collection parent)
+      throws TriggerException, PermissionDeniedException, ReadOnlyException, LockException, IOException
+    {
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Creating collection '" + path + "'...");
+      }
+
+      final CollectionTrigger trigger;
+      if (parent == null) {
+        trigger = new CollectionTriggers(this);
+      } else {
+        trigger = new CollectionTriggers(this, parent);
+      }
+
+      trigger.beforeCreateCollection(this, txn, path);
+
+      Collection col = new Collection(this, path);
+
+      //inherit the group to the sub-collection if current collection is setGid
+      if (parent != null && parent.getPermissions().isSetGid()) {
+        col.getPermissions().setGroupFrom(parent.getPermissions()); //inherit group
+        col.getPermissions().setSetGid(true); //inherit setGid bit
+      }
+
+      col.setId(getNextCollectionId(txn));
+      col.setCreationTime(System.currentTimeMillis());
+
+      if (txn != null) {
+        txn.acquireLock(col.getLock(), Lock.WRITE_LOCK);
+      }
+
+      //TODO : acquire lock manually if transaction is null ?
+      saveCollection(txn, col);
+
+      if (parent != null) {
+        parent.addCollection(this, col, true);
+        saveCollection(txn, parent);
+      }
+
+      trigger.afterCreateCollection(this, txn, col);
+
+      return col;
     }
 
     @Override
