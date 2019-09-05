@@ -19,15 +19,12 @@
  */
 package org.exist.collections;
 
-import java.util.Iterator;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import org.exist.storage.BrokerPool;
 import org.exist.storage.CacheManager;
 import org.exist.storage.cache.Cacheable;
-import org.exist.storage.cache.LRUCache;
-import org.exist.storage.lock.Lock;
-import org.exist.util.hashtable.Object2LongHashMap;
-import org.exist.util.hashtable.SequencedLongHashMap;
 import org.exist.xmldb.XmldbURI;
 
 /**
@@ -38,88 +35,85 @@ import org.exist.xmldb.XmldbURI;
  * 
  * @author wolf
  */
-public class CollectionCache extends LRUCache {
+public class CollectionCache implements org.exist.storage.cache.Cache {
+    
+    String fileName = "collection cache";
+    CacheManager cacheManager = null;
 
-    private Object2LongHashMap names;
+    Cache<String, Collection> names = Caffeine.newBuilder()
+        .weakValues()
+//        .removalListener(new RemovalListener<String, Collection>() {
+//            @Override
+//            public void onRemoval(String url, Collection col, RemovalCause removalCause) {
+//                final Lock lock = col.getLock();
+//                if (lock.attempt(Lock.READ_LOCK)) {
+//                    try {
+//                        if (col.allowUnload()) {
+//                            if (pool.getConfigurationManager() != null) { // might be null during db initialization
+//                                pool.getConfigurationManager().invalidate(col.getURI(), null);
+//                            }
+//                            col.sync(true);
+//                        }
+//                    } finally {
+//                        lock.release(Lock.READ_LOCK);
+//                    }
+//                }
+//            }
+//        })
+        .build();
+    
     private BrokerPool pool;
 
     public CollectionCache(BrokerPool pool, int blockBuffers, double growthThreshold) {
-        super(blockBuffers, 2.0, 0.000001, CacheManager.DATA_CACHE);
-        this.names = new Object2LongHashMap(blockBuffers);
         this.pool = pool;
-        setFileName("collection cache");
     }
 
-    public void add(Collection collection) {
-        add(collection, 1);
+    @Override
+    public String getType() {
+        return CacheManager.DATA_CACHE;
     }
 
-    public void add(Collection collection, int initialRefCount) {
-        super.add(collection, initialRefCount);
-        final String name = collection.getURI().getRawCollectionPath();
-        names.put(name, collection.getKey());
+    public void add(Cacheable item) {
+        add(item, 1);
     }
 
-    public Collection get(Collection collection) {
-        return (Collection) get(collection.getKey());
+    public void add(Cacheable item, int initialRefCount) {
+        if (item instanceof Collection) {
+            Collection col = (Collection) item;
+            final String name = col.getURI().getRawCollectionPath();
+            names.put(name, col);
+        }
+    }
+
+    public Cacheable get(Cacheable item) {
+        if (item instanceof Collection) {
+            Collection col = (Collection) item;
+
+            return get(col.getURI());
+        }
+        
+        return null;
     }
 
     public Collection get(XmldbURI name) {
-        final long key = names.get(name.getRawCollectionPath());
-        if (key < 0) {
-            return null;
-        }
-        return (Collection) get(key);
+        return names.getIfPresent(name.getRawCollectionPath());
     }
 
-    /**
-     * Overwritten to lock collections before they are removed.
-     */
-    protected void removeOne(Cacheable item) {
-        boolean removed = false;
-        SequencedLongHashMap.Entry<Cacheable> next = map.getFirstEntry();
-        int tries = 0;
-        do {
-            final Cacheable cached = next.getValue();
-            if(cached.getKey() != item.getKey()) {
-                final Collection old = (Collection) cached;
-                final Lock lock = old.getLock();
-                if (lock.attempt(Lock.READ_LOCK)) {
-                    try {
-                        if (cached.allowUnload()) {
-                            if(pool.getConfigurationManager()!=null) { // might be null during db initialization
-                                pool.getConfigurationManager().invalidate(old.getURI(), null);
-                            }
-                            names.remove(old.getURI().getRawCollectionPath());
-                            cached.sync(true);
-                            map.remove(cached.getKey());
-                            removed = true;
-                        }
-                    } finally {
-                        lock.release(Lock.READ_LOCK);
-                    }
-                }
-            }
-            if (!removed) {
-                next = next.getNext();
-                if (next == null && tries < 2) {
-                    next = map.getFirstEntry();
-                    tries++;
-                } else {
-                    LOG.info("Unable to remove entry");
-                    removed = true;
-                }
-            }
-        } while(!removed);
-        cacheManager.requestMem(this);
+    @Override
+    public Cacheable get(long key) {
+        return null;
     }
 
     public void remove(Cacheable item) {
         final Collection col = (Collection) item;
-        super.remove(item);
-        names.remove(col.getURI().getRawCollectionPath());
-        if(pool.getConfigurationManager() != null) // might be null during db initialization
-           {pool.getConfigurationManager().invalidate(col.getURI(), null);}
+//        super.remove(item);
+        names.invalidate(col.getURI().getRawCollectionPath());
+        
+        // might be null during db initialization
+        CollectionConfigurationManager cm = pool.getConfigurationManager();
+        if (cm != null) {
+            cm.invalidate(col.getURI(), null);
+        }
     }
 
     /**
@@ -131,8 +125,7 @@ public class CollectionCache extends LRUCache {
      */
     public int getRealSize() {
         int size = 0;
-        for (final Iterator<Long> i = names.valueIterator(); i.hasNext(); ) {
-            final Collection collection = (Collection) get(i.next());
+        for (final Collection collection : names.asMap().values()) {
             if (collection != null) {
                 size += collection.getMemorySize();
             }
@@ -140,32 +133,101 @@ public class CollectionCache extends LRUCache {
         return size;
     }
 
-    public void resize(int newSize) {
-        if (newSize < max) {
-            shrink(newSize);
-        } else {
-            LOG.debug("Growing collection cache to " + newSize);
-            SequencedLongHashMap<Cacheable> newMap = new SequencedLongHashMap<Cacheable>(newSize * 2);
-            Object2LongHashMap newNames = new Object2LongHashMap(newSize);
-            SequencedLongHashMap.Entry<Cacheable> next = map.getFirstEntry();
-            Cacheable cacheable;
-            while(next != null) {
-                cacheable = next.getValue();
-                newMap.put(cacheable.getKey(), cacheable);
-                newNames.put(((Collection) cacheable).getURI().getRawCollectionPath(), cacheable.getKey());
-                next = next.getNext();
-            }
-            max = newSize;
-            map = newMap;
-            names = newNames;
-            accounting.reset();
-            accounting.setTotalSize(max);
-        }
+    public boolean flush() {
+//        boolean flushed = false;
+//        for (Collection col : names.asMap().values()) {
+//            if (col.isDirty()) {
+//                flushed = flushed | col.sync(false);
+//            }
+//        }
+//        return flushed;
+        return false;
     }
 
-    @Override
-    protected void shrink(int newSize) {
-        super.shrink(newSize);
-        names = new Object2LongHashMap(newSize);
+
+    /* (non-Javadoc)
+     * @see org.exist.storage.cache.Cache#hasDirtyItems()
+     */
+    public boolean hasDirtyItems() {
+        for (Collection col : names.asMap().values()) {
+            if (col.isDirty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /* (non-Javadoc)
+     * @see org.exist.storage.cache.Cache#getBuffers()
+     */
+    public int getBuffers() {
+        return (int) names.estimatedSize();
+    }
+
+    /* (non-Javadoc)
+     * @see org.exist.storage.cache.Cache#getUsedBuffers()
+     */
+    public int getUsedBuffers() {
+        return (int) names.estimatedSize();
+    }
+
+    /* (non-Javadoc)
+     * @see org.exist.storage.cache.Cache#getHits()
+     */
+    public int getHits() {
+        return (int) names.stats().hitCount();
+    }
+
+    /* (non-Javadoc)
+     * @see org.exist.storage.cache.Cache#getFails()
+     */
+    public int getFails() {
+        return (int) names.stats().missCount();
+    }
+
+//    public int getThrashing() {
+//        return accounting.getThrashing();
+//    }
+
+    /* (non-Javadoc)
+     * @see org.exist.storage.cache.Cache#setFileName(java.lang.String)
+     */
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    /* (non-Javadoc)
+     * @see org.exist.storage.cache.Cache#getGrowthFactor()
+     */
+    public double getGrowthFactor() {
+        return 1.0;
+    }
+
+    /* (non-Javadoc)
+     * @see org.exist.storage.cache.Cache#setCacheManager(org.exist.storage.CacheManager)
+     */
+    public void setCacheManager(CacheManager manager) {
+        this.cacheManager = manager;
+    }
+
+    /* (non-Javadoc)
+     * @see org.exist.storage.cache.Cache#resize(int)
+     */
+    public void resize(int newSize) {
+    }
+
+    public int getLoad() {
+        return (int) names.stats().loadCount();
+//        if (hitsOld == 0) {
+//            hitsOld = accounting.getHits();
+//            return Integer.MAX_VALUE;
+//        }
+//        final int load = accounting.getHits() - hitsOld;
+//        hitsOld = accounting.getHits();
+//        return load;
     }
 }

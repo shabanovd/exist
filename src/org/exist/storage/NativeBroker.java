@@ -815,6 +815,10 @@ public class NativeBroker extends DBBroker {
         saveCollection(txn, parent);
       }
 
+      if (!pool.isInitializing()) {
+          pool.getCollectionsCache().add(col);
+      }
+
       trigger.afterCreateCollection(this, txn, col);
 
       return col;
@@ -973,7 +977,7 @@ public class NativeBroker extends DBBroker {
                     LOG.error("The collection received from the cache is not the requested: " + uri +
                         "; received: " + collection.getURI());
                 }
-                collectionsCache.add(collection);
+                //collectionsCache.add(collection);
 
                 if(!collection.getPermissionsNoLock().validate(getSubject(), Permission.EXECUTE)) {
                     throw new PermissionDeniedException("Permission denied to open collection: " + collection.getURI().toString() + " by " + getSubject().getName());
