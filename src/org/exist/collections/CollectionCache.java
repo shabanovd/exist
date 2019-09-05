@@ -41,7 +41,9 @@ public class CollectionCache implements org.exist.storage.cache.Cache {
     CacheManager cacheManager = null;
 
     Cache<String, Collection> names = Caffeine.newBuilder()
-        .weakValues()
+        .initialCapacity(10_000)
+//        .softValues()
+//        .weakValues()
 //        .removalListener(new RemovalListener<String, Collection>() {
 //            @Override
 //            public void onRemoval(String url, Collection col, RemovalCause removalCause) {
@@ -105,14 +107,15 @@ public class CollectionCache implements org.exist.storage.cache.Cache {
     }
 
     public void remove(Cacheable item) {
-        final Collection col = (Collection) item;
-//        super.remove(item);
-        names.invalidate(col.getURI().getRawCollectionPath());
-        
-        // might be null during db initialization
-        CollectionConfigurationManager cm = pool.getConfigurationManager();
-        if (cm != null) {
-            cm.invalidate(col.getURI(), null);
+        if (item instanceof Collection) {
+            final Collection col = (Collection) item;
+            names.invalidate(col.getURI().getRawCollectionPath());
+
+            // might be null during db initialization
+            CollectionConfigurationManager cm = pool.getConfigurationManager();
+            if (cm != null) {
+                cm.invalidate(col.getURI(), null);
+            }
         }
     }
 
@@ -149,11 +152,11 @@ public class CollectionCache implements org.exist.storage.cache.Cache {
      * @see org.exist.storage.cache.Cache#hasDirtyItems()
      */
     public boolean hasDirtyItems() {
-        for (Collection col : names.asMap().values()) {
-            if (col.isDirty()) {
-                return true;
-            }
-        }
+//        for (Collection col : names.asMap().values()) {
+//            if (col.isDirty()) {
+//                return true;
+//            }
+//        }
         return false;
     }
 
