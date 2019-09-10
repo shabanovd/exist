@@ -22,6 +22,7 @@ package org.exist.collections;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import java.util.concurrent.TimeUnit;
 import org.exist.storage.BrokerPool;
 import org.exist.storage.CacheManager;
 import org.exist.storage.cache.Cacheable;
@@ -42,6 +43,7 @@ public class CollectionCache implements org.exist.storage.cache.Cache {
 
     Cache<String, Collection> names = Caffeine.newBuilder()
         .initialCapacity(10_000)
+        .expireAfterAccess(3, TimeUnit.HOURS)
 //        .softValues()
 //        .weakValues()
 //        .removalListener(new RemovalListener<String, Collection>() {
@@ -98,7 +100,27 @@ public class CollectionCache implements org.exist.storage.cache.Cache {
     }
 
     public Collection get(XmldbURI name) {
-        return names.getIfPresent(name.getRawCollectionPath());
+      if (name == null) {
+        return null;
+      }
+      
+      String url = name.getRawCollectionPath();
+      
+      if (url == null) {
+        return null;
+      }
+      
+      Collection col = names.getIfPresent(url);
+      
+      if (col == null) {
+        return null;
+      } else if (url.equals(col.getURI().getRawCollectionPath())) {
+        return col;
+      }
+      
+      names.invalidate(url);
+      
+      return null;
     }
 
     @Override
