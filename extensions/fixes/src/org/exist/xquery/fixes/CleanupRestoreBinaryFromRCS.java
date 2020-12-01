@@ -34,7 +34,6 @@ import org.exist.revisions.RCSManager;
 import org.exist.revisions.RCSResource;
 import org.exist.revisions.Revision;
 import org.exist.storage.DBBroker;
-import org.exist.storage.txn.Txn;
 import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
