@@ -69,7 +69,6 @@ public class RealmImpl extends AbstractRealm {
     public final static int ADMIN_ACCOUNT_ID = 1048574;
     public final static int GUEST_ACCOUNT_ID = 1048573;
     public final static int UNKNOWN_ACCOUNT_ID = 1048572;
-    public final static int INITIAL_LAST_ACCOUNT_ID = 10;
 
     public final static int DBA_GROUP_ID = 1048575;
     public final static int GUEST_GROUP_ID = 1048574;
@@ -92,16 +91,13 @@ public class RealmImpl extends AbstractRealm {
 
     	super(sm, config);
 
-    	sm.lastUserId = 10;     //TODO this is horrible!
-    	sm.lastGroupId = 10;    //TODO this is horrible!
-        
         //DBA group
         GROUP_DBA = new GroupImpl(this, DBA_GROUP_ID, SecurityManager.DBA_GROUP);
         GROUP_DBA.setManagers(new ArrayList<Reference<SecurityManager, Account>>(){
             { add(new ReferenceImpl<SecurityManager, Account>(sm, "getAccount", SecurityManager.DBA_USER)); }
         });
         GROUP_DBA.setMetadataValue(EXistSchemaType.DESCRIPTION, "Database Administrators");
-    	sm.addGroup(GROUP_DBA.getId(), GROUP_DBA);
+    	  sm.registerGroup(GROUP_DBA);
         registerGroup(GROUP_DBA);
         //sm.groupsById.put(GROUP_DBA.getId(), GROUP_DBA);
     	//groupsByName.put(GROUP_DBA.getName(), GROUP_DBA);
@@ -110,7 +106,7 @@ public class RealmImpl extends AbstractRealm {
     	ACCOUNT_SYSTEM = new AccountImpl(this, SYSTEM_ACCOUNT_ID, SecurityManager.SYSTEM, "", GROUP_DBA, true);
         ACCOUNT_SYSTEM.setMetadataValue(AXSchemaType.FULLNAME, SecurityManager.SYSTEM);
         ACCOUNT_SYSTEM.setMetadataValue(EXistSchemaType.DESCRIPTION, "System Internals");
-        sm.addUser(ACCOUNT_SYSTEM.getId(), ACCOUNT_SYSTEM);
+        sm.registerAccount(ACCOUNT_SYSTEM);
         registerAccount(ACCOUNT_SYSTEM);
     	//sm.usersById.put(ACCOUNT_SYSTEM.getId(), ACCOUNT_SYSTEM);
     	//usersByName.put(ACCOUNT_SYSTEM.getName(), ACCOUNT_SYSTEM);
@@ -121,7 +117,7 @@ public class RealmImpl extends AbstractRealm {
             { add(new ReferenceImpl<SecurityManager, Account>(sm, "getAccount", SecurityManager.DBA_USER)); }
         });
         GROUP_GUEST.setMetadataValue(EXistSchemaType.DESCRIPTION, "Anonymous Users");
-        sm.addGroup(GROUP_GUEST.getId(), GROUP_GUEST);
+        sm.registerGroup(GROUP_GUEST);
         registerGroup(GROUP_GUEST);
     	//sm.groupsById.put(GROUP_GUEST.getId(), GROUP_GUEST);
     	//groupsByName.put(GROUP_GUEST.getName(), GROUP_GUEST);
@@ -221,7 +217,7 @@ public class RealmImpl extends AbstractRealm {
                         transaction.close(txn);
                     }
 
-                    getSecurityManager().addUser(remove_account.getId(), remove_account);
+                    sm.registerAccount(remove_account);
                     principalDb.remove(remove_account.getName());
                 } finally {
                     getDatabase().release(broker);
@@ -270,7 +266,7 @@ public class RealmImpl extends AbstractRealm {
                     transaction.close(txn);
                 }
 
-                getSecurityManager().addGroup(remove_group.getId(), (Group)remove_group);
+                sm.registerGroup((Group)remove_group);
                 principalDb.remove(remove_group.getName());
             }
         });

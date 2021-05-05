@@ -119,10 +119,6 @@ public interface SecurityManager extends Configurable {
    
    Subject getSubjectBySessionId(String sessionid);
 
-   void addGroup(int id, Group group);
-
-   void addUser(int id, Account account);
-
    boolean hasGroup(int id);
 
    boolean hasUser(int id);

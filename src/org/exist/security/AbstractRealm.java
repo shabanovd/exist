@@ -59,9 +59,9 @@ public abstract class AbstractRealm implements Realm, Configurable {
 
     protected final PrincipalDbByName<Account> usersByName = new PrincipalDbByName<Account>();
     protected final PrincipalDbByName<Group> groupsByName = new PrincipalDbByName<Group>();
-    
 
-    private SecurityManager sm;
+
+    protected final SecurityManagerImpl sm;
 
     protected Configuration configuration;
 
@@ -71,7 +71,7 @@ public abstract class AbstractRealm implements Realm, Configurable {
     protected Collection collectionRemovedAccounts = null;
     protected Collection collectionRemovedGroups = null;
 	
-    public AbstractRealm(SecurityManager sm, Configuration config) {
+    public AbstractRealm(SecurityManagerImpl sm, Configuration config) {
         this.sm = sm;
         this.configuration = Configurator.configure(this, config);
     }
@@ -130,23 +130,19 @@ public abstract class AbstractRealm implements Realm, Configurable {
                 final Configuration conf = Configurator.parse(i.next());
                 final String name = conf.getProperty("name");
                 
-                groupsByName.modifyE(new PrincipalDbModifyE<Group, ConfigurationException>() {
+                groupsByName.modifyE(principalDb -> {
 
-                    @Override
-                    public void execute(final Map<String, Group> principalDb) throws ConfigurationException {
-                        
-                        if(name != null && !principalDb.containsKey(name)) {
+                    if(name != null && !principalDb.containsKey(name)) {
 
-                            //Group group = instantiateGroup(this, conf);
-                            final GroupImpl group = new GroupImpl(r, conf);
+                        //Group group = instantiateGroup(this, conf);
+                        final GroupImpl group = new GroupImpl(r, conf);
 
-                            getSecurityManager().addGroup(group.getId(), group);
-                            principalDb.put(group.getName(), group);
+                        sm.registerGroup(group);
+                        principalDb.put(group.getName(), group);
 
-                            //set collection
-                            if(group.getId() > 0) {
-                                ((AbstractPrincipal)group).setCollection(broker, collectionGroups);
-                            }
+                        //set collection
+                        if(group.getId() > 0) {
+                            ((AbstractPrincipal)group).setCollection(broker, collectionGroups);
                         }
                     }
                 });
@@ -167,7 +163,7 @@ public abstract class AbstractRealm implements Realm, Configurable {
                     final GroupImpl group = new GroupImpl(this, conf);
                     group.removed = true;
                     
-                    getSecurityManager().addGroup(group.getId(), group);
+                    sm.registerGroup(group);
                 }
             }
         }
@@ -188,26 +184,23 @@ public abstract class AbstractRealm implements Realm, Configurable {
                 }
                 final String name = conf.getProperty("name");
                 
-                usersByName.modifyE(new PrincipalDbModifyE<Account, ConfigurationException>(){
-                    @Override
-                    public void execute(final Map<String, Account> principalDb) throws ConfigurationException {
-                        if(name != null && !principalDb.containsKey(name)) {
-                            //A account = instantiateAccount(this, conf);
-                            final Account account;
-                            try {
-                                account = new AccountImpl(r, conf);
-                            } catch (Throwable e) {
-                                SecurityManagerImpl.LOG.error("Account object can't build up from '"+doc.getFileURI()+"'", e);
-                                return;
-                            }
+                usersByName.modifyE(principalDb -> {
+                    if(name != null && !principalDb.containsKey(name)) {
+                        //A account = instantiateAccount(this, conf);
+                        final Account account;
+                        try {
+                            account = new AccountImpl(r, conf);
+                        } catch (Throwable e) {
+                            SecurityManagerImpl.LOG.error("Account object can't build up from '"+doc.getFileURI()+"'", e);
+                            return;
+                        }
 
-                            getSecurityManager().addUser(account.getId(), account);
-                            principalDb.put(account.getName(), account);
+                        sm.registerAccount(account);
+                        principalDb.put(account.getName(), account);
 
-                            //set collection
-                            if(account.getId() > 0) {
-                                ((AbstractPrincipal)account).setCollection(broker, collectionAccounts);
-                            }
+                        //set collection
+                        if(account.getId() > 0) {
+                            ((AbstractPrincipal)account).setCollection(broker, collectionAccounts);
                         }
                     }
                 });
@@ -225,10 +218,10 @@ public abstract class AbstractRealm implements Realm, Configurable {
                 if (id != null && !getSecurityManager().hasUser(id)) {
                     
                     //A account = instantiateAccount(this, conf, true);
-	            final AccountImpl account = new AccountImpl( this, conf );
-	            account.removed = true;
+                    final AccountImpl account = new AccountImpl( this, conf );
+                    account.removed = true;
 		    
-                    getSecurityManager().addUser(account.getId(), account);
+                    sm.registerAccount(account);
                 }
             }
         }

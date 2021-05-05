@@ -96,20 +96,19 @@ public class SecurityManagerImpl implements SecurityManager {
 
     Database pool;
 
-    protected PrincipalDbById<Group> groupsById = new PrincipalDbById<Group>();
-    protected PrincipalDbById<Account> usersById = new PrincipalDbById<Account>();
+    protected PrincipalDbById<Group> groupsById = new PrincipalDbById<>();
+    protected PrincipalDbById<Account> usersById = new PrincipalDbById<>();
 
-    private final PrincipalLocks<Account> accountLocks = new PrincipalLocks<Account>();
-    private final PrincipalLocks<Group> groupLocks = new PrincipalLocks<Group>();
+    private final PrincipalLocks<Account> accountLocks = new PrincipalLocks<>();
+    private final PrincipalLocks<Group> groupLocks = new PrincipalLocks<>();
 
-    //TODO: validate & remove if session timeout
-    private SessionDb sessions = new SessionDb();
+    private final SessionDb sessions = new SessionDb();
 
-    @ConfigurationFieldAsAttribute("last-account-id")
-    protected int lastUserId = 0;
+    public final static int INITIAL_LAST_ACCOUNT_ID = 10;
+    public final static int INITIAL_LAST_GROUP_ID = 10;
 
-    @ConfigurationFieldAsAttribute("last-group-id")
-    protected int lastGroupId = 0;
+    protected int lastAccountId = INITIAL_LAST_ACCOUNT_ID;
+    protected int lastGroupId = INITIAL_LAST_GROUP_ID;
 
     @ConfigurationFieldAsAttribute("version")
     private String version = "2.0";
@@ -347,13 +346,7 @@ public class SecurityManagerImpl implements SecurityManager {
 
     @Override
     public final Account getAccount(final int id) {
-
-        return usersById.read(new PrincipalDbRead<Account, Account>(){
-            @Override
-            public Account execute(final Int2ObjectHashMap<Account> principalDb) {
-                return principalDb.get(id);
-            }
-        });
+        return usersById.read(principalDb -> principalDb.get(id));
     }
 
     @Override
@@ -384,12 +377,7 @@ public class SecurityManagerImpl implements SecurityManager {
 
     @Override
     public final Group getGroup(final int id) {
-        return groupsById.read(new PrincipalDbRead<Group, Group>(){
-            @Override
-            public Group execute(final Int2ObjectHashMap<Group> principalDb) {
-                return principalDb.get(id);
-            }
-        });
+        return groupsById.read(principalDb -> principalDb.get(id));
     }
 	
     @Override
@@ -588,11 +576,23 @@ public class SecurityManagerImpl implements SecurityManager {
         return ++lastGroupId;
     }
 
-    private synchronized int getNextAccountId() {
-        if(lastUserId +1 == MAX_USER_ID) {
-            throw new RuntimeException("System has no more user-ids available");
+    private synchronized void updateLastGroupId(int id) {
+        if (id < MAX_GROUP_ID) {
+            lastGroupId = Math.max(lastGroupId, id);
         }
-        return ++lastUserId;
+    }
+
+    private synchronized int getNextAccountId() {
+        if(lastAccountId +1 == MAX_USER_ID) {
+            throw new RuntimeException("System has no more account-ids available");
+        }
+        return ++lastAccountId;
+    }
+
+    private synchronized void updateLastAccountId(int id) {
+        if (id < MAX_USER_ID) {
+            lastAccountId = Math.max(lastAccountId, id);
+        }
     }
 
     @Override
@@ -675,16 +675,10 @@ public class SecurityManagerImpl implements SecurityManager {
         
         groupLocks.getWriteLock(newGroup).lock();
         try {
-            groupsById.modify(new PrincipalDbModify<Group>(){
-                @Override
-                public void execute(final Int2ObjectHashMap<Group> principalDb) {
-                    principalDb.put(id, newGroup);
-                }
-            });
-            
+            registerGroup(newGroup);
             registeredRealm.registerGroup(newGroup);
 
-            save();
+            // save();
             newGroup.save();
 
             return newGroup;
@@ -717,17 +711,11 @@ public class SecurityManagerImpl implements SecurityManager {
 	
         accountLocks.getWriteLock(newAccount).lock();
         try {
-            usersById.modify(new PrincipalDbModify<Account>(){
-                @Override
-                public void execute(final Int2ObjectHashMap<Account> principalDb) {
-                    principalDb.put(id, newAccount);
-                }
-            });
-            
+            registerAccount(newAccount);
             registeredRealm.registerAccount(newAccount);
 
             //XXX: one transaction?
-            save();
+            // save();
             newAccount.save();
 
             if (events != null) events.registered(newAccount);
@@ -760,17 +748,11 @@ public class SecurityManagerImpl implements SecurityManager {
 
         accountLocks.getWriteLock(newAccount).lock();
         try {
-            usersById.modify(new PrincipalDbModify<Account>(){
-                @Override
-                public void execute(final Int2ObjectHashMap<Account> principalDb) {
-                    principalDb.put(id, newAccount);
-                }
-            });
-            
+            registerAccount(newAccount);
             registeredRealm.registerAccount(newAccount);
 
             //XXX: one transaction?
-            save(broker);
+            // save(broker);
             newAccount.save(broker);
 
             return newAccount;
@@ -878,49 +860,36 @@ public class SecurityManagerImpl implements SecurityManager {
         throw new ConfigurationException("The realm id = '" + realmId + "' not found.");
     }
     
-    @Override
-    public void addGroup(final int id, final Group group) {
-        groupsById.modify(new PrincipalDbModify<Group>(){
-            @Override
-            public void execute(final Int2ObjectHashMap<Group> principalDb) {
-               principalDb.put(id, group);
-            }
-        });
+    public void registerGroup(final Group group) {
+        final int id = group.getId();
+        if (id == Group.UNDEFINED_ID) {
+            throw new RuntimeException("Wrong group id");
+        }
+
+        groupsById.modify(principalDb -> principalDb.put(id, group));
+
+        updateLastGroupId(id);
     }
 
-    @Override
-    public void addUser(final int id, final Account account) {
-        usersById.modify(new PrincipalDbModify<Account>(){
-            @Override
-            public void execute(final Int2ObjectHashMap<Account> principalDb) {
-            	Account tmp = principalDb.get(id);
-            	if (tmp != null) {
-            		LOG.error("Two accounts with same id '"+id+"': '"+account.getName()+"' and '"+tmp.getName()+"'");
-            		System.out.println("ERROR: Two accounts with same id '"+id+"': '"+account.getName()+"' and '"+tmp.getName()+"' !!!");
-            	}
-               principalDb.put(id, account);
-            }
-        });
+    public void registerAccount(final Account account) {
+        int id = account.getId();
+        if (id == Account.UNDEFINED_ID) {
+            throw new RuntimeException("Wrong account id");
+        }
+
+        usersById.modify(principalDb -> principalDb.put(id, account));
+
+        updateLastAccountId(id);
     }
 
     @Override
     public boolean hasGroup(final int id) {
-        return groupsById.read(new PrincipalDbRead<Group, Boolean>(){
-            @Override
-            public Boolean execute(Int2ObjectHashMap<Group> principalDb) {
-                return principalDb.containsKey(id);
-            }
-        });
+        return groupsById.read(principalDb -> principalDb.containsKey(id));
     }
 
     @Override
     public boolean hasUser(final int id) {
-        return usersById.read(new PrincipalDbRead<Account, Boolean>(){
-            @Override
-            public Boolean execute(Int2ObjectHashMap<Account> principalDb) {
-                return principalDb.containsKey(id);
-            }
-        });
+        return usersById.read(principalDb -> principalDb.containsKey(id));
     }
 
     @Override
@@ -1044,7 +1013,7 @@ public class SecurityManagerImpl implements SecurityManager {
                 if (isRemoved && id > 2 && !hasUser(id)) {
                     final AccountImpl account = new AccountImpl( realm, conf );
                     account.removed = true;
-                    addUser(account.getId(), account);
+                    registerAccount(account);
                 } else if(name != null) {
                 	if (realm.hasAccount(name)) {
                 		final Integer oldId = saving.get(document.getURI());
@@ -1057,20 +1026,17 @@ public class SecurityManagerImpl implements SecurityManager {
                     		final Account current = realm.getAccount(name);
 	            	        accountLocks.getWriteLock(current).lock();
 	            	        try {
-	            	            usersById.modify(new PrincipalDbModify<Account>(){
-	            	                @Override
-	            	                public void execute(final Int2ObjectHashMap<Account> principalDb) {
-	            	                    principalDb.remove(oldId);
-	            	                    principalDb.put(newId, current);
-	            	                }
-	            	            });
+	            	            usersById.modify(principalDb -> {
+                                principalDb.remove(oldId);
+                                principalDb.put(newId, current);
+                            });
 	            	        } finally {
 	            	            accountLocks.getWriteLock(current).unlock();
 	            	        }
             			}
                 	} else {
                 		final Account account = new AccountImpl( realm, conf );
-                		addUser(account.getId(), account);
+                		registerAccount(account);
                 		realm.registerAccount(account);
                 	}
                 } else {
@@ -1082,10 +1048,10 @@ public class SecurityManagerImpl implements SecurityManager {
                 if (isRemoved && id > 2 && !hasGroup(id)) {
                     final GroupImpl group = new GroupImpl( realm, conf );
                     group.removed = true;
-                    addGroup(group.getId(), group);
+                    registerGroup(group);
                 } else if (name != null && !realm.hasGroup(name)) {
                     final GroupImpl group = new GroupImpl( realm, conf );
-                    addGroup(group.getId(), group);
+                    registerGroup(group);
                     realm.registerGroup(group);
                 } else {
                     //this can't be! log any way
