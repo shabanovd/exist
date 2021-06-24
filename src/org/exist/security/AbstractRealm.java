@@ -104,18 +104,9 @@ public abstract class AbstractRealm implements Realm, Configurable {
 
             transact.commit(txn);
             
-        } catch(final PermissionDeniedException pde) {
+        } catch(final PermissionDeniedException | IOException | LockException | TriggerException pde) {
             transact.abort(txn);
             throw new EXistException(pde);
-        } catch(final IOException ioe) {
-            transact.abort(txn);
-            throw new EXistException(ioe);
-        } catch(final LockException le) {
-            transact.abort(txn);
-            throw new EXistException(le);
-        } catch(final TriggerException te) {
-            transact.abort(txn);
-            throw new EXistException(te);
         } finally {
             transact.close(txn);
         }
@@ -127,15 +118,44 @@ public abstract class AbstractRealm implements Realm, Configurable {
             final AbstractRealm r = this;
             
             for(final Iterator<DocumentImpl> i = collectionGroups.iterator(broker); i.hasNext(); ) {
-                final Configuration conf = Configurator.parse(i.next());
+                final DocumentImpl doc = i.next();
+                final Configuration conf = Configurator.parse(doc);
+
+                final String id = conf.getProperty("id");
                 final String name = conf.getProperty("name");
-                
+
                 groupsByName.modifyE(principalDb -> {
 
                     if(name != null && !principalDb.containsKey(name)) {
 
-                        //Group group = instantiateGroup(this, conf);
-                        final GroupImpl group = new GroupImpl(r, conf);
+                        final Group group;
+                        final int groupId;
+
+                        try {
+                            groupId = Integer.parseInt(id);
+                        } catch (NumberFormatException e) {
+                            SecurityManagerImpl.LOG.error("Group object have wrong id '" + id + "' '" + doc.getFileURI() + "': " + e.getMessage());
+                            return;
+                        }
+
+                        Group groupById = sm.getGroup(groupId);
+                        if (groupById != null) {
+                            group = groupById;
+                        } else {
+                            // check that account can be already registered
+                            Object obj = Configurator.instance(conf);
+                            if (obj instanceof Group) {
+                                group = (Group) obj;
+                            } else {
+                                //Group group = instantiateGroup(this, conf);
+                                try {
+                                    group = new GroupImpl(r, conf);
+                                } catch (Throwable e) {
+                                    SecurityManagerImpl.LOG.error("Account object can't build up from '" + doc.getFileURI() + "'", e);
+                                    return;
+                                }
+                            }
+                        }
 
                         sm.registerGroup(group);
                         principalDb.put(group.getName(), group);
@@ -182,17 +202,38 @@ public abstract class AbstractRealm implements Realm, Configurable {
                 	SecurityManagerImpl.LOG.error("Account information was not loaded from '"+doc.getFileURI());
                 	continue;
                 }
+                final String id = conf.getProperty("id");
                 final String name = conf.getProperty("name");
-                
+
                 usersByName.modifyE(principalDb -> {
                     if(name != null && !principalDb.containsKey(name)) {
                         //A account = instantiateAccount(this, conf);
                         final Account account;
+                        final int accountId;
+
                         try {
-                            account = new AccountImpl(r, conf);
-                        } catch (Throwable e) {
-                            SecurityManagerImpl.LOG.error("Account object can't build up from '"+doc.getFileURI()+"'", e);
+                            accountId = Integer.parseInt(id);
+                        } catch (NumberFormatException e) {
+                            SecurityManagerImpl.LOG.error("Account object have wrong id '" + id + "' '" + doc.getFileURI() + "': " + e.getMessage());
                             return;
+                        }
+
+                        Account accById = sm.getAccount(accountId);
+                        if (accById != null) {
+                            account = accById;
+                        } else {
+                            // check that account can be already registered
+                            Object obj = Configurator.instance(conf);
+                            if (obj instanceof Account) {
+                                account = (Account) obj;
+                            } else {
+                                try {
+                                    account = new AccountImpl(r, conf);
+                                } catch (Throwable e) {
+                                    SecurityManagerImpl.LOG.error("Account object can't build up from '" + doc.getFileURI() + "'", e);
+                                    return;
+                                }
+                            }
                         }
 
                         sm.registerAccount(account);

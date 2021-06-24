@@ -93,6 +93,16 @@ public class Configurator {
     private final static String EOL = System.getProperty("line.separator", "\n");
     protected static ConcurrentMap<FullXmldbURI, Configuration> hotConfigs = new ConcurrentHashMap<FullXmldbURI, Configuration>();
 
+    public static Object instance(Configuration conf) {
+        if (conf instanceof ConfigurationImpl) {
+            final ConfigurationImpl impl = (ConfigurationImpl) conf;
+            if (impl.configuredObjectReference != null) {
+                return impl.configuredObjectReference.get();
+            }
+        }
+        return null;
+    }
+
     //TODO should be replaced with a naturally ordered List, we need to maintain the order of XML elements based on the order of class members!!!
     protected static AFields getConfigurationAnnotatedFields(Class<?> clazz) {
         final AFields fields = new AFields();

@@ -147,7 +147,7 @@ public class SAMLRealm extends AbstractRealm {
                     throw new PermissionDeniedException("You are not allowed to delete '" +account.getName() + "' user");
                 }
 
-                LOG.info("delete account "+account+" by "+user.toString(), new Exception());
+                LOG.info("delete account "+account+" by "+ user, new Exception());
 
                 remove_account.setRemoved(true);
                 remove_account.setCollection(broker, collectionRemovedAccounts, XmldbURI.create(UUIDGenerator.getUUID()+".xml"));
@@ -162,7 +162,7 @@ public class SAMLRealm extends AbstractRealm {
                     LOG.debug("loading configuration failed: " + e.getMessage(), e);
                 }
 
-                getSecurityManager().addUser(remove_account.getId(), remove_account);
+                sm.registerAccount(remove_account);
                 principalDb.remove(remove_account.getName());
             } catch (Exception e) {
                 LOG.debug(e.getMessage(), e);
