@@ -37,18 +37,19 @@ public class Module extends AbstractInternalModule {
     public final static String RELEASED_IN_VERSION = "eXist-2.2";
 
     public static final FunctionDef[] functions = {
-            new FunctionDef(CleanupMetadata.signatures[0], CleanupMetadata.class),
-            new FunctionDef(CleanupRemoveSubCollection.signatures[0], CleanupRemoveSubCollection.class),
-            new FunctionDef(CleanupRemoveDocument.signatures[0], CleanupRemoveDocument.class),
+        new FunctionDef(CleanupUnlinkDocument.signatures[0], CleanupUnlinkDocument.class),
+        new FunctionDef(CleanupRenameDocument.signatures[0], CleanupRenameDocument.class),
 
-            new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[0], CleanupRestoreBinaryFromRCS.class),
-            new FunctionDef(CleanupRestoreBinaryFromRCS.signatures[1], CleanupRestoreBinaryFromRCS.class),
+        new FunctionDef(CleanupMetadata.signatures[0], CleanupMetadata.class),
+        new FunctionDef(CleanupAttachSubCollection.signatures[0], CleanupAttachSubCollection.class),
+        new FunctionDef(CleanupRemoveSubCollection.signatures[0], CleanupRemoveSubCollection.class),
+        new FunctionDef(CleanupRemoveDocument.signatures[0], CleanupRemoveDocument.class),
 
-            new FunctionDef(ChangeMetadataId.signatures[0], ChangeMetadataId.class),
-            new FunctionDef(MergeMetadataIds.signatures[0], MergeMetadataIds.class),
+        new FunctionDef(ChangeMetadataId.signatures[0], ChangeMetadataId.class),
+        new FunctionDef(MergeMetadataIds.signatures[0], MergeMetadataIds.class),
 
-            new FunctionDef(FnImportChanges.signatures[0], FnImportChanges.class),
-            new FunctionDef(FnBackupsDiffs.signatures[0], FnBackupsDiffs.class)
+        new FunctionDef(FnImportChanges.signatures[0], FnImportChanges.class),
+        new FunctionDef(FnBackupsDiffs.signatures[0], FnBackupsDiffs.class)
     };
 
     public Module(Map<String, List<? extends Object>> parameters) {

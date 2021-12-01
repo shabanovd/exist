@@ -75,6 +75,8 @@ public class CleanupRemoveSubCollection extends BasicFunction {
 
             broker.saveCollection(tx, col);
 
+            tx.success();
+
         } catch (Exception e) {
             throw new XPathException(this, e);
         }

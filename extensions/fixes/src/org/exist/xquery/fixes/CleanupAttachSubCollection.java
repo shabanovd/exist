@@ -1,6 +1,6 @@
 /*
  * eXist Open Source Native XML Database
- * Copyright (C) 2001-2015 The eXist Project
+ * Copyright (C) 2001-2017 The eXist Project
  * http://exist-db.org
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,6 @@ package org.exist.xquery.fixes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.collections.Collection;
-import org.exist.dom.DocumentImpl;
 import org.exist.dom.QName;
 import org.exist.storage.DBBroker;
 import org.exist.storage.txn.Txn;
@@ -34,21 +33,21 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 
-public class CleanupRemoveDocument extends BasicFunction {
-    protected static final Logger logger = LogManager.getLogger(CleanupRemoveDocument.class);
+public class CleanupAttachSubCollection extends BasicFunction {
+    protected static final Logger logger = LogManager.getLogger(CleanupAttachSubCollection.class);
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
-            new QName("cleanup-remove", Module.NAMESPACE_URI, Module.PREFIX),
-            "Removes the resource $resource from the collection $collection-uri. " +
+            new QName("cleanup-attach-sub-collection", Module.NAMESPACE_URI, Module.PREFIX),
+            "Attach the sub collection $name from the collection $collection-uri. " +
                 XMLDBModule.COLLECTION_URI,
             new SequenceType[]{
                 new FunctionParameterSequenceType("collection-uri", Type.STRING, Cardinality.EXACTLY_ONE, "The collection URI"),
-                new FunctionParameterSequenceType("resource", Type.STRING, Cardinality.EXACTLY_ONE, "The resource")},
+                new FunctionParameterSequenceType("name", Type.STRING, Cardinality.EXACTLY_ONE, "The resource")},
             new SequenceType(Type.ITEM, Cardinality.EMPTY)
         )
     };
 
-    public CleanupRemoveDocument(XQueryContext context, FunctionSignature signature) {
+    public CleanupAttachSubCollection(XQueryContext context, FunctionSignature signature) {
         super(context, signature);
     }
 
@@ -58,21 +57,21 @@ public class CleanupRemoveDocument extends BasicFunction {
                 "Permission denied, calling user '" + context.getSubject().getName() + "' must be a DBA");
 
         final XmldbURI colURL = XmldbURI.create(args[0].itemAt(0).getStringValue());
-        final XmldbURI docURL = XmldbURI.createInternal(args[1].itemAt(0).getStringValue());
+        final XmldbURI name = XmldbURI.createInternal(args[1].itemAt(0).getStringValue());
 
         DBBroker broker = context.getBroker();
 
         try (Txn tx = broker.beginTx()) {
 
-            Collection col = broker.getCollection(colURL);
+            Collection parent = broker.getCollection(colURL);
+            if (parent == null) throw new XPathException(this, "parent collection not found");
 
-            if (col == null) throw new XPathException(this, "collection not found");
+            Collection child = broker.getCollection(colURL.append(name));
+            if (child == null) throw new XPathException(this, "child collection not found");
 
-            DocumentImpl doc = col.getDocument(broker, docURL);
+            parent.addCollection(broker, child, false);
 
-            if (doc == null) throw new XPathException(this, "document not found");
-
-            col.removeResource(tx, broker, doc);
+            broker.saveCollection(tx, parent);
 
             tx.success();
 

@@ -34,12 +34,12 @@ import org.exist.xquery.value.Sequence;
 import org.exist.xquery.value.SequenceType;
 import org.exist.xquery.value.Type;
 
-public class CleanupRemoveDocument extends BasicFunction {
-    protected static final Logger logger = LogManager.getLogger(CleanupRemoveDocument.class);
+public class CleanupUnlinkDocument extends BasicFunction {
+    protected static final Logger logger = LogManager.getLogger(CleanupUnlinkDocument.class);
     public final static FunctionSignature signatures[] = {
         new FunctionSignature(
-            new QName("cleanup-remove", Module.NAMESPACE_URI, Module.PREFIX),
-            "Removes the resource $resource from the collection $collection-uri. " +
+            new QName("cleanup-unlink-document", Module.NAMESPACE_URI, Module.PREFIX),
+            "Unlink the resource $resource from the collection $collection-uri. " +
                 XMLDBModule.COLLECTION_URI,
             new SequenceType[]{
                 new FunctionParameterSequenceType("collection-uri", Type.STRING, Cardinality.EXACTLY_ONE, "The collection URI"),
@@ -48,7 +48,7 @@ public class CleanupRemoveDocument extends BasicFunction {
         )
     };
 
-    public CleanupRemoveDocument(XQueryContext context, FunctionSignature signature) {
+    public CleanupUnlinkDocument(XQueryContext context, FunctionSignature signature) {
         super(context, signature);
     }
 
@@ -72,7 +72,8 @@ public class CleanupRemoveDocument extends BasicFunction {
 
             if (doc == null) throw new XPathException(this, "document not found");
 
-            col.removeResource(tx, broker, doc);
+            col.unlinkDocument(broker, doc);
+            broker.saveCollection(tx, col);
 
             tx.success();
 
