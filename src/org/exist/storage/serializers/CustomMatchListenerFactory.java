@@ -6,6 +6,7 @@ import org.exist.indexing.MatchListener;
 import org.exist.storage.DBBroker;
 import org.exist.util.Configuration;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -27,6 +28,11 @@ public class CustomMatchListenerFactory {
     private CustomMatchListener last = null;
 
     public CustomMatchListenerFactory(DBBroker broker, List<String> classes) {
+        // NPE protection
+        if (classes == null) {
+            classes = new ArrayList<>();
+        }
+
         CustomMatchListener listener;
         for (final String className : classes) {
             try {
