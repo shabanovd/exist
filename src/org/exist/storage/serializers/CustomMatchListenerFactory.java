@@ -26,6 +26,30 @@ public class CustomMatchListenerFactory {
     private CustomMatchListener first = null;
     private CustomMatchListener last = null;
 
+    public CustomMatchListenerFactory(DBBroker broker, List<String> classes) {
+        CustomMatchListener listener;
+        for (final String className : classes) {
+            try {
+                final Class<?> listenerClass = Class.forName(className);
+                if (CustomMatchListener.class.isAssignableFrom(listenerClass)) {
+                    listener = (CustomMatchListener) listenerClass.newInstance();
+                    listener.setBroker(broker);
+                    if (first == null) {
+                        first = listener;
+                    } else {
+                        last.setNextInChain(listener);
+                    }
+                    last = listener;
+                } else
+                {LOG.error("Failed to instantiate class " + listenerClass.getName() +
+                    ": it is not a subclass of CustomMatchListener");}
+            } catch (final Exception e) {
+                LOG.error("An exception was caught while trying to instantiate a custom MatchListener: " +
+                    e.getMessage(), e);
+            }
+        }
+    }
+
     public CustomMatchListenerFactory(DBBroker broker, Configuration config, List<String> customClasses) {
 
         List<String> classesAtConfig = (List<String>) config.getProperty(CONFIG_MATCH_LISTENERS);

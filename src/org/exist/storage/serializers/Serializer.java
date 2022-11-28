@@ -222,58 +222,61 @@ public abstract class Serializer implements XMLReader {
     {
     	this.httpContext = httpContext;
     }
-    
-    
-    public Serializer(DBBroker broker, Configuration config, List<String> classes) {
+
+	public Serializer(DBBroker broker, Configuration config) {
 		this.broker = broker;
 		factory = TransformerFactoryAllocator.getTransformerFactory(broker.getBrokerPool());
 		xinclude = new XIncludeFilter(this);
-		customMatchListeners = new CustomMatchListenerFactory(broker, config, classes);
+		customMatchListeners = new CustomMatchListenerFactory(broker, config, null);
 		receiver = xinclude;
-		
+
 		String option = (String) config.getProperty(PROPERTY_ENABLE_XSL);
 		if (option != null)
-			{defaultProperties.setProperty(EXistOutputKeys.PROCESS_XSL_PI, option);}
+		{defaultProperties.setProperty(EXistOutputKeys.PROCESS_XSL_PI, option);}
 		else
-			{defaultProperties.setProperty(EXistOutputKeys.PROCESS_XSL_PI, "no");}
-		
+		{defaultProperties.setProperty(EXistOutputKeys.PROCESS_XSL_PI, "no");}
+
 		option = (String) config.getProperty(PROPERTY_ENABLE_XINCLUDE);
 		if (option != null) {
 			defaultProperties.setProperty(EXistOutputKeys.EXPAND_XINCLUDES, option);
 		}
-		
+
 		option = (String) config.getProperty(PROPERTY_INDENT);
 		if (option != null)
-			{defaultProperties.setProperty(OutputKeys.INDENT, option);}
-		
+		{defaultProperties.setProperty(OutputKeys.INDENT, option);}
+
 		option = (String) config.getProperty(PROPERTY_COMPRESS_OUTPUT);
 		if (option != null)
-			{defaultProperties.setProperty(EXistOutputKeys.COMPRESS_OUTPUT, option);}
+		{defaultProperties.setProperty(EXistOutputKeys.COMPRESS_OUTPUT, option);}
 
-        option = (String) config.getProperty(PROPERTY_ADD_EXIST_ID);
-        if (option != null)
-            {defaultProperties.setProperty(EXistOutputKeys.ADD_EXIST_ID, option);}
+		option = (String) config.getProperty(PROPERTY_ADD_EXIST_ID);
+		if (option != null)
+		{defaultProperties.setProperty(EXistOutputKeys.ADD_EXIST_ID, option);}
 
-        boolean tagElements = true, tagAttributes = false;
+		boolean tagElements = true, tagAttributes = false;
 		if ((option =
-			(String) config.getProperty(PROPERTY_TAG_MATCHING_ELEMENTS))
-			!= null)
+				(String) config.getProperty(PROPERTY_TAG_MATCHING_ELEMENTS))
+				!= null)
 			tagElements = "yes".equals(option);
 		if ((option =
-			(String) config.getProperty(PROPERTY_TAG_MATCHING_ATTRIBUTES))
-			!= null)
+				(String) config.getProperty(PROPERTY_TAG_MATCHING_ATTRIBUTES))
+				!= null)
 			tagAttributes = "yes".equals(option);
 		if (tagElements && tagAttributes)
-			{option = "both";}
+		{option = "both";}
 		else if (tagElements)
-			{option = "elements";}
+		{option = "elements";}
 		else if (tagAttributes)
-			{option = "attributes";}
+		{option = "attributes";}
 		else
-			{option = "none";}
+		{option = "none";}
 		defaultProperties.setProperty(EXistOutputKeys.HIGHLIGHT_MATCHES, option);
 		defaultProperties.setProperty(GENERATE_DOC_EVENTS, "true");
 		outputProperties = new Properties(defaultProperties);
+	}
+	public Serializer(DBBroker broker, Configuration config, List<String> classes) {
+		this(broker, config);
+		customMatchListeners = new CustomMatchListenerFactory(broker, classes);
 	}
 
 	public void setProperties(Properties properties)
