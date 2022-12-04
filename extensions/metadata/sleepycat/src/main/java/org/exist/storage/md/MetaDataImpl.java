@@ -51,6 +51,10 @@ public class MetaDataImpl extends MetaData {
 	
 	protected static MetaDataImpl instance = null;
 
+	private static final boolean ENABLE_SYNC = Boolean.parseBoolean(System.getProperty("eXistDB.MetaData.enable-sync", "true"));
+	private static final long M15 = 1000 * 60 * 15;
+	private long next_sync = System.currentTimeMillis() + M15;
+
 	private Environment env;
     private EntityStore store;
     
@@ -123,7 +127,7 @@ public class MetaDataImpl extends MetaData {
 		MetaData.instance = this;
 
 		LOG.debug("done.");
-    }
+	}
     
     public String getId() {
         return MetaData.PREFIX;
@@ -577,8 +581,14 @@ public class MetaDataImpl extends MetaData {
 	}
 
 	public void sync() {
-		store.sync();
-		env.sync();
+		if (ENABLE_SYNC && next_sync < System.currentTimeMillis()) {
+			store.sync();
+			env.sync();
+
+			next_sync = System.currentTimeMillis() + M15;
+		} else {
+			env.flushLog(true);
+		}
 	}
 
 //	public void moveMetas(Metas metas, DocumentImpl doc) {
