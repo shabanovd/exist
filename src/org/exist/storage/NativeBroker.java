@@ -2699,7 +2699,7 @@ public class NativeBroker extends DBBroker {
                 }
                 */
 
-                removeResource(transaction, oldDoc);
+                removeResource(transaction, oldDoc, true);
             }
 
             boolean renameOnly = collection.getId() == destination.getId();
@@ -2755,11 +2755,11 @@ public class NativeBroker extends DBBroker {
         }
     }
 
-    public void removeResource(Txn tx, DocumentImpl doc) throws IOException, PermissionDeniedException {
+    public void removeResource(Txn tx, DocumentImpl doc, boolean freeDocId) throws IOException, PermissionDeniedException {
         if (doc instanceof BinaryDocument) {
             removeBinaryResource(tx, (BinaryDocument) doc);
         } else {
-            removeXMLResource(tx, doc);
+            removeXMLResource(tx, doc, freeDocId);
         }
     }
 
