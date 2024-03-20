@@ -454,10 +454,14 @@ public abstract class DBBroker extends Observable implements AutoCloseable {
      */
     public abstract boolean removeCollection(Txn txn, Collection collection) throws PermissionDeniedException, IOException, TriggerException;
 
+
     /**
      * Remove a document from the database.
      *
      */
+    public abstract void removeResource(Txn tx, DocumentImpl doc) throws IOException, PermissionDeniedException;
+
+    @Deprecated
     public abstract void removeResource(Txn tx, DocumentImpl doc, boolean freeDocId) throws IOException, PermissionDeniedException;
 
     /**
