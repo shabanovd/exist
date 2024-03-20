@@ -2755,6 +2755,10 @@ public class NativeBroker extends DBBroker {
         }
     }
 
+    public void removeResource(Txn tx, DocumentImpl doc) throws IOException, PermissionDeniedException {
+        removeResource(tx, doc, true);
+    }
+
     public void removeResource(Txn tx, DocumentImpl doc, boolean freeDocId) throws IOException, PermissionDeniedException {
         if (doc instanceof BinaryDocument) {
             removeBinaryResource(tx, (BinaryDocument) doc);
