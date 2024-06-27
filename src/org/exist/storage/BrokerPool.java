@@ -1793,19 +1793,29 @@ public class BrokerPool implements Database {
             this.notifyAll();
         }
     }
-    
     public void enterServiceMode(DBBroker broker) throws PermissionDeniedException {
+      enterServiceMode(broker, 0);
+    }
+
+    public boolean enterServiceMode(DBBroker broker, long timeout) throws PermissionDeniedException {
         if (!broker.getSubject().hasDbaRole()) {
             throw new PermissionDeniedException("Only users of group dba can switch the db to service mode");
         }
+
+        long ts = System.currentTimeMillis();
     
         serviceBroker = broker;
         synchronized (this) {
             while(!inServiceMode) {
+                if (System.currentTimeMillis() - ts > timeout) {
+                  return false;
+                }
                 if (activeBrokers.size() > 1) {
                     try {
-                        wait();
+                        wait(timeout);
                     } catch (final InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                      throw new RuntimeException(e);
                     }
                 } else {
                     inServiceMode = true;
@@ -1816,6 +1826,8 @@ public class BrokerPool implements Database {
         checkpoint = true;
         sync(broker, Sync.MAJOR_SYNC);
         checkpoint = false;
+
+        return true;
     }
     
     public void exitServiceMode(DBBroker broker) throws PermissionDeniedException {
