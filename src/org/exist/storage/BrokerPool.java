@@ -1808,6 +1808,7 @@ public class BrokerPool implements Database {
         synchronized (this) {
             while(!inServiceMode) {
                 if (System.currentTimeMillis() - ts > timeout) {
+                  serviceBroker = null;
                   return false;
                 }
                 if (activeBrokers.size() > 1) {
