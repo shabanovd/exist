@@ -34,8 +34,7 @@ public abstract class AbstractRestoreListener implements RestoreListener {
     private final List<Problem> problems = new ArrayList<Problem>();
     private String currentCollectionName;
     private String currentResourceName;
-    private List<Observable> observables;
-    
+
     private abstract class Problem {
         private final String message;
         public Problem(String message) {
@@ -101,14 +100,6 @@ public abstract class AbstractRestoreListener implements RestoreListener {
 
     @Override
     public void observe(Observable observable) {
-        
-        if(observables == null) {
-            observables = new ArrayList<Observable>();
-        }
-        
-        if(!observables.contains(observable)) {
-            observables.add(observable);
-        }
     }
     
     @Override
