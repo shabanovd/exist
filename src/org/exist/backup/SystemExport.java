@@ -115,6 +115,7 @@ public class SystemExport
     private boolean                 directAccess            = false;
     private ProcessMonitor.Monitor  monitor                 = null;
     private BackupHandler bh = null;
+    private final List<String> excludePrefixes;
 
     {
         defaultOutputProperties.setProperty( OutputKeys.INDENT, "no" );
@@ -132,17 +133,30 @@ public class SystemExport
 
     public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct, ChainOfReceiversFactory chainFactory )
     {
+            this(broker, callback, monitor, direct, chainFactory, new ArrayList<>());
+    }
+
+    public SystemExport(
+        DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor,
+        boolean direct, ChainOfReceiversFactory chainFactory,
+        List<String> excludePrefixes
+    ) {
         this.broker       = broker;
         this.callback     = callback;
         this.monitor      = monitor;
         this.directAccess = direct;
         this.chainFactory = chainFactory;
+        this.excludePrefixes = excludePrefixes;
 
         bh = broker.getDatabase().getPluginsManager().getBackupHandler(LOG);
     }
 
     public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct ) {
-        this(broker, callback, monitor, direct, null);
+        this(broker, callback, monitor, direct, new ArrayList<>());
+    }
+
+    public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct, List<String> excludePrefixes ) {
+        this(broker, callback, monitor, direct, null, excludePrefixes);
 
         List<String> list = (List<String>) broker.getConfiguration().getProperty(CONFIG_FILTERS);
         if (list != null) {
@@ -485,6 +499,14 @@ public class SystemExport
 //            callback.startCollection( current.getURI().toString() );
 //        }
 
+        String colUrl = current.getURI().toString();
+        for (String prefix : excludePrefixes) {
+            if (colUrl.startsWith(prefix)) {
+                reportError( "Exclude collection " + colUrl, null );
+                return;
+            }
+        }
+
         if( ( monitor != null ) && !monitor.proceed() ) {
             throw( new TerminatedException( "system export terminated by db" ) );
         }
@@ -513,7 +535,7 @@ public class SystemExport
                 attr.addAttribute( Namespaces.EXIST_NS, "created", "created", "CDATA", new DateTimeValue( new Date( current.getCreationTime() ) ).getStringValue() );
             }
             catch( final XPathException e ) {
-                e.printStackTrace();
+                // e.printStackTrace();
             }
             
             bh.backup(current, attr);
@@ -529,7 +551,7 @@ public class SystemExport
             final int docsCount = current.getDocumentCountNoLock(broker);
             int count     = 0;
 
-            for( final Iterator<DocumentImpl> i = current.iteratorNoLock( broker ); i.hasNext(); count++ ) {
+            main: for( final Iterator<DocumentImpl> i = current.iteratorNoLock( broker ); i.hasNext(); count++ ) {
                 final DocumentImpl doc = i.next();
 
                 if( isDamaged( doc, errorList ) ) {
@@ -540,11 +562,20 @@ public class SystemExport
                 if( doc.getFileURI().equalsInternal( CONTENTS_URI ) || doc.getFileURI().equalsInternal( LOST_URI ) ) {
                     continue; // skip __contents__.xml documents
                 }
+
+                String docUrl = doc.getURI().toString();
+                for (String prefix : excludePrefixes) {
+                    if (docUrl.startsWith(prefix)) {
+                        reportError( "Exclude document " + docUrl, null );
+                        continue main;
+                    }
+                }
+
                 exportDocument( bh, output, date, prevBackup, serializer, docsCount, count, doc );
                 docs.add( doc, false );
             }
 
-            for( final Iterator<XmldbURI> i = current.collectionIteratorNoLock(broker); i.hasNext(); ) {
+            main: for( final Iterator<XmldbURI> i = current.collectionIteratorNoLock(broker); i.hasNext(); ) {
                 final XmldbURI childUri = i.next();
 
                 if( childUri.equalsInternal( TEMP_COLLECTION ) ) {
@@ -555,6 +586,15 @@ public class SystemExport
                     reportError( "Skipping damaged child collection " + childUri, null );
                     continue;
                 }
+
+                String childColUrl = current.getURI().append(childUri).toString();
+                for (String prefix : excludePrefixes) {
+                    if (childColUrl.startsWith(prefix)) {
+                        reportError( "Exclude collection " + childColUrl, null );
+                        continue main;
+                    }
+                }
+
                 attr.clear();
                 attr.addAttribute( Namespaces.EXIST_NS, "name", "name", "CDATA", childUri.toString() );
                 attr.addAttribute( Namespaces.EXIST_NS, "filename", "filename", "CDATA", Backup.encode( URIUtils.urlDecodeUtf8( childUri.toString() ) ) );

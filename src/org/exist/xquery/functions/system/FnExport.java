@@ -19,6 +19,7 @@
  */
 package org.exist.xquery.functions.system;
 
+import java.util.ArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
@@ -45,212 +46,240 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 public class FnExport extends BasicFunction {
 
-	protected final static Logger logger = LogManager.getLogger(FnExport.class);
-	
-	protected final static QName NAME = 
-		new QName("export", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
-	
-	protected final static String DESCRIPTION =
-		"Export to backup the database or a section of the database (admin user only).";
+  protected final static Logger logger = LogManager.getLogger(FnExport.class);
 
-	protected final static FunctionParameterSequenceType DIRorFILE = 
-		new FunctionParameterSequenceType("dir-or-file", Type.STRING, Cardinality.EXACTLY_ONE,
-		"This is either a backup directory with the backup descriptor (__contents__.xml) or a backup ZIP file.");
+  protected final static QName NAME =
+      new QName("export", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
 
-	protected final static FunctionParameterSequenceType INCREMENTAL = 
-		new FunctionParameterSequenceType("incremental", Type.BOOLEAN, Cardinality.ZERO_OR_ONE,
-		"Flag to do incremental export.");
+  protected final static QName NAME_EXCLUDE =
+      new QName("export-silently-exclude", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
 
-	protected final static FunctionParameterSequenceType ZIP = 
-		new FunctionParameterSequenceType("zip", Type.BOOLEAN, Cardinality.ZERO_OR_ONE,
-		"Flag to do export to zip file.");
+  protected final static String DESCRIPTION =
+      "Export to backup the database or a section of the database (admin user only).";
 
-    protected final static FunctionParameterSequenceType LAST_BACKUP =
-        new FunctionParameterSequenceType("last-backup", Type.BOOLEAN, Cardinality.ZERO_OR_ONE,
-            "Flag to do 'last-backup'.");
+  protected final static FunctionParameterSequenceType DIRorFILE =
+      new FunctionParameterSequenceType("dir-or-file", Type.STRING, Cardinality.EXACTLY_ONE,
+          "This is either a backup directory with the backup descriptor (__contents__.xml) or a backup ZIP file.");
 
-	protected final static  FunctionReturnSequenceType RESULT =
-		new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results");
+  protected final static FunctionParameterSequenceType INCREMENTAL =
+      new FunctionParameterSequenceType("incremental", Type.BOOLEAN, Cardinality.ZERO_OR_ONE,
+          "Flag to do incremental export.");
 
-	public final static FunctionSignature signatures[] = {
-		new FunctionSignature(
-			NAME,
-			DESCRIPTION,
-			new SequenceType[] {
-				DIRorFILE,
-				INCREMENTAL,
-				ZIP
-			},
-			new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results")
-		),
-        new FunctionSignature(
-            NAME,
-            DESCRIPTION,
-            new SequenceType[] {
-                DIRorFILE,
-                INCREMENTAL,
-                ZIP,
-                LAST_BACKUP
-            },
-            new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results")
-        ),
-		new FunctionSignature(
-			new QName("export-silently", SystemModule.NAMESPACE_URI, SystemModule.PREFIX),
-			DESCRIPTION +
-			" Messagers from exporter reroute to logs.",
-			new SequenceType[] {
-				DIRorFILE,
-				INCREMENTAL,
-				ZIP
-			}, 
-			new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
-		),
-        new FunctionSignature(
-            new QName("export-silently", SystemModule.NAMESPACE_URI, SystemModule.PREFIX),
-            DESCRIPTION +
-                " Messagers from exporter reroute to logs.",
-            new SequenceType[] {
-                DIRorFILE,
-                INCREMENTAL,
-                ZIP,
-                LAST_BACKUP
-            },
-            new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
-        )
-	};
+  protected final static FunctionParameterSequenceType ZIP =
+      new FunctionParameterSequenceType("zip", Type.BOOLEAN, Cardinality.ZERO_OR_ONE,
+          "Flag to do export to zip file.");
 
-	public final static QName EXPORT_ELEMENT = new QName("export", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
+  protected final static FunctionParameterSequenceType LAST_BACKUP =
+      new FunctionParameterSequenceType("last-backup", Type.BOOLEAN, Cardinality.ZERO_OR_ONE,
+          "Flag to do 'last-backup'.");
 
-	public FnExport(XQueryContext context, FunctionSignature signature) {
-		super(context, signature);
-	}
+  protected final static FunctionParameterSequenceType EXCLUDE =
+      new FunctionParameterSequenceType("exclude", Type.STRING, Cardinality.ZERO_OR_MORE,
+          "The list of prefixes for paths to be excluded.");
+
+  protected final static  FunctionReturnSequenceType RESULT =
+      new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results");
+
+  public final static FunctionSignature signatures[] = {
+      new FunctionSignature(
+          NAME,
+          DESCRIPTION,
+          new SequenceType[] {
+              DIRorFILE,
+              INCREMENTAL,
+              ZIP
+          },
+          new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results")
+      ),
+      new FunctionSignature(
+          NAME,
+          DESCRIPTION,
+          new SequenceType[] {
+              DIRorFILE,
+              INCREMENTAL,
+              ZIP,
+              LAST_BACKUP
+          },
+          new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results")
+      ),
+      new FunctionSignature(
+          new QName("export-silently", SystemModule.NAMESPACE_URI, SystemModule.PREFIX),
+          DESCRIPTION + " Messages from exporter reroute to logs.",
+          new SequenceType[] {
+              DIRorFILE,
+              INCREMENTAL,
+              ZIP
+          },
+          new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
+      ),
+      new FunctionSignature(
+          new QName("export-silently", SystemModule.NAMESPACE_URI, SystemModule.PREFIX),
+          DESCRIPTION + " Messages from exporter reroute to logs.",
+          new SequenceType[] {
+              DIRorFILE,
+              INCREMENTAL,
+              ZIP,
+              LAST_BACKUP
+          },
+          new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
+      ),
+      new FunctionSignature(
+          NAME_EXCLUDE,
+          DESCRIPTION + " Messages from exporter reroute to logs.",
+          new SequenceType[] {
+              DIRorFILE,
+              EXCLUDE
+          },
+          new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
+      )
+  };
+
+  public final static QName EXPORT_ELEMENT = new QName("export", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
+
+  public FnExport(XQueryContext context, FunctionSignature signature) {
+    super(context, signature);
+  }
+
+  @Override
+  public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
+    if( !context.getSubject().hasDbaRole() )
+    {throw( new XPathException( this, "Permission denied, calling user '" + context.getSubject().getName() + "' must be a DBA to kill a running xquery" ) );}
+
+    final String dirOrFile = args[0].getStringValue();
+
+    boolean incremental  = false;
+    boolean zip = false;
+
+    Callback cb = null;
+    MemTreeBuilder builder = null;
+
+    ArrayList<String> excludePrefixes = new ArrayList<>();
+
+    if (NAME_EXCLUDE.equals( mySignature.getName() )) {
+      Sequence seq = args[1];
+      for (int i = 0; i < seq.getItemCount(); i++) {
+        excludePrefixes.add(seq.itemAt(i).getStringValue());
+      }
+    } else {
+      if (args[1].hasOne()) {
+        incremental = args[1].effectiveBooleanValue();
+      }
+      if (args[2].hasOne()) {
+        zip = args[2].effectiveBooleanValue();
+      }
+
+      if (NAME.equals(mySignature.getName())) {
+        builder = context.getDocumentBuilder();
+        builder.startDocument();
+        builder.startElement(EXPORT_ELEMENT, null);
+        cb = new Callback(builder);
+      }
+    }
+
+    try {
+      Path folder = Paths.get(dirOrFile);
+
+      if (args.length >= 4 && args[3].effectiveBooleanValue()) {
+
+        Path lastBackup = folder.resolve("last-backup");
+        Path prevBackup = folder.resolve("prev-backup");
+
+        if (Files.exists(lastBackup)) {
+
+          delete(prevBackup);
+
+          Files.move(lastBackup, prevBackup);
+
+          delete(lastBackup);
+        }
+      }
+
+      SystemExport export = new SystemExport(context.getBroker(), cb, null, true, excludePrefixes);
+      File backupFile = export.export(dirOrFile, incremental, zip, null);
+
+      if (backupFile != null && args.length >= 4 && args[3].effectiveBooleanValue()) {
+
+        Path lastBackup = folder.resolve("last-backup");
+
+        Files.move(backupFile.toPath(), lastBackup);
+      }
+
+
+    } catch (final Exception e) {
+      throw new XPathException(this, "restore failed with exception: " + e.getMessage(), e);
+    }
+    if (builder == null) {
+      return Sequence.EMPTY_SEQUENCE;
+    } else {
+      builder.endElement();
+      builder.endDocument();
+      return (NodeValue) builder.getDocument().getDocumentElement();
+    }
+  }
+
+  private static class Callback implements SystemExport.StatusCallback {
+
+    public final static QName COLLECTION_ELEMENT = new QName("collection", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
+    public final static QName RESOURCE_ELEMENT = new QName("resource", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
+    //        public final static QName INFO_ELEMENT = new QName("info", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
+//        public final static QName WARN_ELEMENT = new QName("warn", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
+    public final static QName ERROR_ELEMENT = new QName("error", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
+
+    private final MemTreeBuilder builder;
+
+    public Callback(MemTreeBuilder builder) {
+      this.builder = builder;
+    }
 
     @Override
-    public Sequence eval(Sequence[] args, Sequence contextSequence) throws XPathException {
-		if( !context.getSubject().hasDbaRole() )
-			{throw( new XPathException( this, "Permission denied, calling user '" + context.getSubject().getName() + "' must be a DBA to kill a running xquery" ) );}
-
-    	final String dirOrFile = args[0].getStringValue();
-        boolean incremental  = false;
-        if (args[1].hasOne())
-        	{incremental = args[1].effectiveBooleanValue();}
-        boolean zip = false;
-        if (args[2].hasOne())
-        	{zip = args[2].effectiveBooleanValue();}
-
-        Callback cb = null;
-        MemTreeBuilder builder = null;
-        if (NAME.equals( mySignature.getName() )) {
-            builder = context.getDocumentBuilder();
-            builder.startDocument();
-            builder.startElement(EXPORT_ELEMENT, null);
-            cb = new Callback(builder);
-        }
-        
-        try {
-            Path folder = Paths.get(dirOrFile);
-
-            if (args.length >= 4 && args[3].effectiveBooleanValue()) {
-
-                Path lastBackup = folder.resolve("last-backup");
-                Path prevBackup = folder.resolve("prev-backup");
-
-                if (Files.exists(lastBackup)) {
-
-                    delete(prevBackup);
-
-                    Files.move(lastBackup, prevBackup);
-
-                    delete(lastBackup);
-                }
-            }
-
-            SystemExport export = new SystemExport(context.getBroker(), cb, null, true);
-            File backupFile = export.export(dirOrFile, incremental, zip, null);
-
-            if (backupFile != null && args.length >= 4 && args[3].effectiveBooleanValue()) {
-
-                Path lastBackup = folder.resolve("last-backup");
-
-                Files.move(backupFile.toPath(), lastBackup);
-            }
-
-
-        } catch (final Exception e) {
-            throw new XPathException(this, "restore failed with exception: " + e.getMessage(), e);
-        }
-        if (builder == null) {
-        	return Sequence.EMPTY_SEQUENCE;
-        } else {
-	        builder.endElement();
-	        builder.endDocument();
-	        return (NodeValue) builder.getDocument().getDocumentElement();
-        }
-    }
-    
-    private static class Callback implements SystemExport.StatusCallback {
-
-        public final static QName COLLECTION_ELEMENT = new QName("collection", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
-        public final static QName RESOURCE_ELEMENT = new QName("resource", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
-//        public final static QName INFO_ELEMENT = new QName("info", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
-//        public final static QName WARN_ELEMENT = new QName("warn", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
-        public final static QName ERROR_ELEMENT = new QName("error", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
-	
-        private final MemTreeBuilder builder;
-        
-        public Callback(MemTreeBuilder builder) {
-        	this.builder = builder;			
-		}
-    	
-		@Override
-		public void startCollection(String path) throws TerminatedException {
-			if (builder == null) {
-				SystemExport.LOG.info("Collection "+path);
-			} else {
-	            builder.startElement(COLLECTION_ELEMENT, null);
-	            builder.characters(path);
-	            builder.endElement();
-			}
-		}
-
-		@Override
-		public void startDocument(String name, int current, int count) throws TerminatedException {
-			if (builder == null) {
-				SystemExport.LOG.info("Document "+name);
-			} else {
-	            builder.startElement(RESOURCE_ELEMENT, null);
-	            builder.characters(name);
-	            builder.endElement();
-			}
-		}
-
-		@Override
-		public void error(String message, Throwable exception) {
-			if (builder == null) {
-				SystemExport.LOG.error(message, exception);
-			} else {
-	            builder.startElement(ERROR_ELEMENT, null);
-	            builder.characters(message);
-	            builder.endElement();
-			}
-		}
+    public void startCollection(String path) throws TerminatedException {
+      if (builder == null) {
+        SystemExport.LOG.info("Collection "+path);
+      } else {
+        builder.startElement(COLLECTION_ELEMENT, null);
+        builder.characters(path);
+        builder.endElement();
+      }
     }
 
-    private static void delete(Path folder) throws IOException {
-        if (Files.notExists(folder)) return;
-
-        Files.walkFileTree(folder, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.deleteIfExists(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.deleteIfExists(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
+    @Override
+    public void startDocument(String name, int current, int count) throws TerminatedException {
+      if (builder == null) {
+        SystemExport.LOG.info("Document "+name);
+      } else {
+        builder.startElement(RESOURCE_ELEMENT, null);
+        builder.characters(name);
+        builder.endElement();
+      }
     }
+
+    @Override
+    public void error(String message, Throwable exception) {
+      if (builder == null) {
+        SystemExport.LOG.error(message, exception);
+      } else {
+        builder.startElement(ERROR_ELEMENT, null);
+        builder.characters(message);
+        builder.endElement();
+      }
+    }
+  }
+
+  private static void delete(Path folder) throws IOException {
+    if (Files.notExists(folder)) return;
+
+    Files.walkFileTree(folder, new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        Files.deleteIfExists(file);
+        return FileVisitResult.CONTINUE;
+      }
+
+      @Override
+      public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+        Files.deleteIfExists(dir);
+        return FileVisitResult.CONTINUE;
+      }
+    });
+  }
 }
