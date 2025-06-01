@@ -320,7 +320,13 @@ public class SystemExport
                 final CollectionCallback cb = new CollectionCallback(output, date, prevBackup, errorList, true);
                 broker.getCollectionsFailsafe(cb);
 
+                log.write("Start export of orphans");
+                log.newLine();
+
                 exportOrphans(output, cb.getDocs(), errorList);
+
+                log.write("Done");
+                log.newLine();
 
                 output.close();
                 return backupFile;
@@ -927,6 +933,14 @@ public class SystemExport
                     if( callback != null ) {
                         callback.startCollection( uri );
                     }
+
+                    for (String prefix : excludePrefixes) {
+                        if (uri.startsWith(prefix)) {
+                            reportError( "Exclude collection " + uri, null );
+                            return true;
+                        }
+                    }
+
                     final Collection        collection = new Collection(broker, XmldbURI.createInternal( uri ) );
                     final VariableByteInput istream    = store.getAsStream( pointer );
                     collection.read( broker, istream );
