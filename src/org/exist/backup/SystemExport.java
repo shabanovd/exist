@@ -116,6 +116,7 @@ public class SystemExport
     private ProcessMonitor.Monitor  monitor                 = null;
     private BackupHandler bh = null;
     private final List<String> excludePrefixes;
+    private final boolean doExportOrphans;
 
     {
         defaultOutputProperties.setProperty( OutputKeys.INDENT, "no" );
@@ -133,13 +134,14 @@ public class SystemExport
 
     public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct, ChainOfReceiversFactory chainFactory )
     {
-            this(broker, callback, monitor, direct, chainFactory, new ArrayList<>());
+            this(broker, callback, monitor, direct, chainFactory, new ArrayList<>(), true);
     }
 
     public SystemExport(
         DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor,
         boolean direct, ChainOfReceiversFactory chainFactory,
-        List<String> excludePrefixes
+        List<String> excludePrefixes,
+        boolean doExportOrphans
     ) {
         this.broker       = broker;
         this.callback     = callback;
@@ -147,16 +149,21 @@ public class SystemExport
         this.directAccess = direct;
         this.chainFactory = chainFactory;
         this.excludePrefixes = excludePrefixes;
+        this.doExportOrphans = doExportOrphans;
 
         bh = broker.getDatabase().getPluginsManager().getBackupHandler(LOG);
     }
 
     public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct ) {
-        this(broker, callback, monitor, direct, new ArrayList<>());
+        this(broker, callback, monitor, direct, new ArrayList<>(), true);
     }
 
-    public SystemExport( DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor, boolean direct, List<String> excludePrefixes ) {
-        this(broker, callback, monitor, direct, null, excludePrefixes);
+    public SystemExport(
+        DBBroker broker, StatusCallback callback, ProcessMonitor.Monitor monitor,
+        boolean direct, List<String> excludePrefixes,
+        boolean doExportOrphans
+    ) {
+        this(broker, callback, monitor, direct, null, excludePrefixes, doExportOrphans);
 
         List<String> list = (List<String>) broker.getConfiguration().getProperty(CONFIG_FILTERS);
         if (list != null) {
@@ -320,10 +327,12 @@ public class SystemExport
                 final CollectionCallback cb = new CollectionCallback(output, date, prevBackup, errorList, true);
                 broker.getCollectionsFailsafe(cb);
 
-                log.write("Start export of orphans");
-                log.newLine();
+                if (doExportOrphans) {
+                    log.write("Start export of orphans");
+                    log.newLine();
 
-                exportOrphans(output, cb.getDocs(), errorList);
+                    exportOrphans(output, cb.getDocs(), errorList);
+                }
 
                 log.write("Done");
                 log.newLine();

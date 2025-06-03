@@ -77,6 +77,10 @@ public class FnExport extends BasicFunction {
       new FunctionParameterSequenceType("exclude", Type.STRING, Cardinality.ZERO_OR_MORE,
           "The list of prefixes for paths to be excluded.");
 
+  protected final static FunctionParameterSequenceType ORPHANS =
+      new FunctionParameterSequenceType("orphans", Type.BOOLEAN, Cardinality.ONE,
+          "Export orphans or not.");
+
   protected final static  FunctionReturnSequenceType RESULT =
       new FunctionReturnSequenceType(Type.NODE, Cardinality.EXACTLY_ONE, "the export results");
 
@@ -128,6 +132,7 @@ public class FnExport extends BasicFunction {
           DESCRIPTION + " Messages from exporter reroute to logs.",
           new SequenceType[] {
               DIRorFILE,
+              ORPHANS,
               EXCLUDE
           },
           new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
@@ -155,8 +160,11 @@ public class FnExport extends BasicFunction {
 
     ArrayList<String> excludePrefixes = new ArrayList<>();
 
+    boolean doExportOrphans = true;
+
     if (NAME_EXCLUDE.equals( mySignature.getName() )) {
-      Sequence seq = args[1];
+      doExportOrphans = args[1].effectiveBooleanValue();
+      Sequence seq = args[2];
       for (int i = 0; i < seq.getItemCount(); i++) {
         excludePrefixes.add(seq.itemAt(i).getStringValue());
       }
@@ -194,7 +202,7 @@ public class FnExport extends BasicFunction {
         }
       }
 
-      SystemExport export = new SystemExport(context.getBroker(), cb, null, true, excludePrefixes);
+      SystemExport export = new SystemExport(context.getBroker(), cb, null, true, excludePrefixes, doExportOrphans);
       File backupFile = export.export(dirOrFile, incremental, zip, null);
 
       if (backupFile != null && args.length >= 4 && args[3].effectiveBooleanValue()) {
