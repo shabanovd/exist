@@ -387,6 +387,184 @@ public class SystemExport
         }
     }
 
+    public File exportByTraversing( String targetDir, XmldbURI startCollection, List<ErrorReport> errorList )
+    {
+        File backupFile = null;
+        Path backupFolder = null;
+        Throwable exception = null;
+
+        long startTs = System.currentTimeMillis();
+
+        File tmp;
+        try {
+            tmp = File.createTempFile("export", "log", new File(targetDir));
+        } catch (IOException e) {
+            reportError("A write error occurred while exporting data: '" + e.getMessage() + "'. Aborting export.", e);
+            return null;
+        }
+
+        try {
+            try (BufferedWriter log = Files.newBufferedWriter(tmp.toPath(), StandardCharsets.UTF_8)) {
+
+                callback = new StatusCallback() {
+                    String collectionPath = null;
+                    @Override
+                    public void startCollection(String path) throws TerminatedException {
+                        try {
+                            log.write("col ");
+                            log.write(path);
+                            log.newLine();
+                        } catch (IOException e) {
+                            //ignore
+                        }
+                        if (extCallback != null) extCallback.startCollection(path);
+
+                        collectionPath = path;
+                    }
+
+                    @Override
+                    public void startDocument(String name, int current, int count) throws TerminatedException {
+                        try {
+                            log.write("doc ");
+                            if (collectionPath != null) {
+                                log.write(collectionPath);
+                                log.write("/");
+                            }
+                            log.write(name);
+                            log.write(" ");
+                            log.write(Integer.toString(current));
+                            log.write("/");
+                            log.write(Integer.toString(count));
+                            log.newLine();
+                        } catch (IOException e) {
+                            //ignore
+                        }
+
+                        if (extCallback != null) extCallback.startDocument(name, current, count);
+                    }
+
+                    @Override
+                    public void error(String message, Throwable exception) {
+                        try {
+                            log.write("error: ");
+                            log.write(message);
+                            log.newLine();
+                        } catch (IOException e) {
+                            //ignore
+                        }
+
+                        if (extCallback != null) extCallback.error(message, exception);
+                    }
+                };
+
+                final BackupDirectory directory = new BackupDirectory(targetDir);
+
+                final Properties properties = new Properties();
+                int seqNr = 1;
+
+                properties.setProperty(BackupDescriptor.NUMBER_IN_SEQUENCE_PROP_NAME, Integer.toString(seqNr));
+                properties.setProperty(BackupDescriptor.INCREMENTAL_PROP_NAME, "no");
+
+                try {
+                    properties.setProperty(BackupDescriptor.DATE_PROP_NAME, new DateTimeValue(new Date()).getStringValue());
+                } catch (final XPathException ignore) {
+                }
+
+                backupFile = directory.createBackup(false, false);
+                backupFolder = directory.backupFolder(backupFile, false).toPath();
+
+                BackupWriter output = new FileSystemWriter(backupFile);
+                output.setProperties(properties);
+
+                broker.sync(Sync.MAJOR_SYNC);
+
+                final ArrayList<Collection> processing = new ArrayList<>();
+
+                processing.add(broker.getCollection(startCollection));
+
+                while (!processing.isEmpty()) {
+                    Collection collection = processing.remove(0);
+                    XmldbURI uri = collection.getURI();
+
+                    main: for(final Iterator<XmldbURI> i = collection.collectionIteratorNoLock(broker); i.hasNext(); ) {
+                        final XmldbURI childUri = i.next();
+
+                        try {
+                            XmldbURI current = uri.append(childUri);
+
+                            String colUrl = current.getURI().toString();
+                            for (String prefix : excludePrefixes) {
+                                if (colUrl.startsWith(prefix)) {
+                                    reportError( "Exclude collection " + colUrl, null );
+                                    continue main;
+                                }
+                            }
+
+                            final Collection child = broker.getCollection(uri.append(childUri));
+
+
+                            processing.add(child);
+                        } catch (Exception e) {
+                            callback.error("fail to get child collection '"+childUri+"' ", e);
+                        }
+                    }
+
+                    export( bh, collection, output, null, null, errorList, new DefaultDocumentSet() );
+                }
+
+                log.write("Done");
+                log.newLine();
+
+                output.close();
+                return backupFile;
+            }
+        } catch( final IOException e ) {
+            exception = e;
+            reportError( "A write error occurred while exporting data: '" + e.getMessage() + "'. Aborting export.", e );
+            return null;
+        }
+        catch( final TerminatedException e ) {
+            exception = e;
+            if (backupFile != null) {
+                backupFile.delete();
+            }
+            return null;
+        } catch (Throwable e) {
+            exception = e;
+            return null;
+        } finally {
+            if (backupFolder != null) {
+                long interval = System.currentTimeMillis() - startTs;
+
+                try (BufferedWriter w = Files.newBufferedWriter(backupFolder.resolve("info.txt"), StandardCharsets.UTF_8)) {
+                    w.write("backup started at ");
+                    w.write((new Date(startTs)).toString());
+                    w.write(". It took ");
+                    w.write(Long.toString(interval));
+                    w.write(" ms [");
+                    w.write(DurationFormatUtils.formatDurationWords(interval, true, true));
+                    w.write("] to finish.");
+                    w.newLine();
+
+                    if (exception != null) {
+                        w.write(exception.getMessage());
+                        w.newLine();
+                        w.write(ExceptionUtils.getStackTrace(exception));
+                        w.newLine();
+                    }
+                } catch (Exception e) {
+                    LOG.error(e.getMessage());
+                }
+
+                try {
+                    Files.move(tmp.toPath(), backupFolder.resolve("log.txt"));
+                } catch (IOException e) {
+                    LOG.error(e.getMessage());
+                }
+            }
+        }
+    }
+
 
     private void reportError( String message, Throwable e )
     {

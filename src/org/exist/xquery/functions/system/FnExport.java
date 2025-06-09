@@ -24,6 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.exist.dom.QName;
 import org.exist.memtree.MemTreeBuilder;
+import org.exist.xmldb.XmldbURI;
 import org.exist.xquery.BasicFunction;
 import org.exist.xquery.Cardinality;
 import org.exist.xquery.FunctionSignature;
@@ -54,12 +55,19 @@ public class FnExport extends BasicFunction {
   protected final static QName NAME_EXCLUDE =
       new QName("export-silently-exclude", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
 
+  protected final static QName NAME_CUSTOM =
+      new QName("export-custom", SystemModule.NAMESPACE_URI, SystemModule.PREFIX);
+
   protected final static String DESCRIPTION =
       "Export to backup the database or a section of the database (admin user only).";
 
   protected final static FunctionParameterSequenceType DIRorFILE =
       new FunctionParameterSequenceType("dir-or-file", Type.STRING, Cardinality.EXACTLY_ONE,
           "This is either a backup directory with the backup descriptor (__contents__.xml) or a backup ZIP file.");
+
+  protected final static FunctionParameterSequenceType COL =
+      new FunctionParameterSequenceType("collection", Type.STRING, Cardinality.EXACTLY_ONE,
+          "Collection to export.");
 
   protected final static FunctionParameterSequenceType INCREMENTAL =
       new FunctionParameterSequenceType("incremental", Type.BOOLEAN, Cardinality.ZERO_OR_ONE,
@@ -136,6 +144,17 @@ public class FnExport extends BasicFunction {
               EXCLUDE
           },
           new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
+      ),
+      new FunctionSignature(
+          NAME_CUSTOM,
+          DESCRIPTION + " Messages from exporter reroute to logs.",
+          new SequenceType[] {
+              DIRorFILE,
+              COL,
+              ORPHANS,
+              EXCLUDE
+          },
+          new FunctionReturnSequenceType(Type.BOOLEAN, Cardinality.EXACTLY_ONE, "the export results")
       )
   };
 
@@ -151,6 +170,7 @@ public class FnExport extends BasicFunction {
     {throw( new XPathException( this, "Permission denied, calling user '" + context.getSubject().getName() + "' must be a DBA to kill a running xquery" ) );}
 
     final String dirOrFile = args[0].getStringValue();
+    String startCol = "/db";
 
     boolean incremental  = false;
     boolean zip = false;
@@ -165,6 +185,13 @@ public class FnExport extends BasicFunction {
     if (NAME_EXCLUDE.equals( mySignature.getName() )) {
       doExportOrphans = args[1].effectiveBooleanValue();
       Sequence seq = args[2];
+      for (int i = 0; i < seq.getItemCount(); i++) {
+        excludePrefixes.add(seq.itemAt(i).getStringValue());
+      }
+    } else if (NAME_CUSTOM.equals( mySignature.getName() )) {
+      startCol = args[1].getStringValue();
+      doExportOrphans = args[2].effectiveBooleanValue();
+      Sequence seq = args[3];
       for (int i = 0; i < seq.getItemCount(); i++) {
         excludePrefixes.add(seq.itemAt(i).getStringValue());
       }
@@ -203,7 +230,13 @@ public class FnExport extends BasicFunction {
       }
 
       SystemExport export = new SystemExport(context.getBroker(), cb, null, true, excludePrefixes, doExportOrphans);
-      File backupFile = export.export(dirOrFile, incremental, zip, null);
+
+      File backupFile;
+      if (NAME_CUSTOM.equals( mySignature.getName() )) {
+        backupFile = export.exportByTraversing(dirOrFile, XmldbURI.createInternal(startCol), null);
+      } else {
+        backupFile = export.export(dirOrFile, incremental, zip, null);
+      }
 
       if (backupFile != null && args.length >= 4 && args[3].effectiveBooleanValue()) {
 

@@ -47,6 +47,7 @@ public class SystemModule extends AbstractInternalModule {
             new FunctionDef(FnExport.signatures[2], FnExport.class),
             new FunctionDef(FnExport.signatures[3], FnExport.class),
             new FunctionDef(FnExport.signatures[4], FnExport.class),
+            new FunctionDef(FnExport.signatures[5], FnExport.class),
             new FunctionDef(FnImport.signatures[0], FnImport.class),
             new FunctionDef(FnImport.signatures[1], FnImport.class),
             new FunctionDef(FnSnapshot.signatures[0], FnSnapshot.class),
