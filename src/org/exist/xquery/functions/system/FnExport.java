@@ -214,7 +214,7 @@ public class FnExport extends BasicFunction {
     try {
       Path folder = Paths.get(dirOrFile);
 
-      if (args.length >= 4 && args[3].effectiveBooleanValue()) {
+      if (!NAME_CUSTOM.equals(mySignature.getName()) && args.length >= 4 && args[3].effectiveBooleanValue()) {
 
         Path lastBackup = folder.resolve("last-backup");
         Path prevBackup = folder.resolve("prev-backup");
