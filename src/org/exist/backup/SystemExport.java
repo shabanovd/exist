@@ -486,6 +486,8 @@ public class SystemExport
                     Collection collection = processing.remove(0);
                     XmldbURI uri = collection.getURI();
 
+                    callback.startCollection(uri.toString());
+
                     main: for(final Iterator<XmldbURI> i = collection.collectionIteratorNoLock(broker); i.hasNext(); ) {
                         final XmldbURI childUri = i.next();
 
@@ -502,8 +504,7 @@ public class SystemExport
 
                             final Collection child = broker.getCollection(uri.append(childUri));
 
-
-                            processing.add(child);
+                            processing.add(0, child);
                         } catch (Exception e) {
                             callback.error("fail to get child collection '"+childUri+"' ", e);
                         }
