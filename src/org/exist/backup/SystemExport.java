@@ -478,13 +478,17 @@ public class SystemExport
 
                 broker.sync(Sync.MAJOR_SYNC);
 
-                final ArrayList<Collection> processing = new ArrayList<>();
+                final ArrayList<XmldbURI> processing = new ArrayList<>();
 
-                processing.add(broker.getCollection(startCollection));
+                processing.add(startCollection);
 
                 while (!processing.isEmpty()) {
-                    Collection collection = processing.remove(0);
-                    XmldbURI uri = collection.getURI();
+                    XmldbURI uri = processing.remove(0);
+                    Collection collection = broker.getCollection(uri);
+                    if (collection == null) {
+                        reportError("missing collection "+uri.toString(), null);
+                        continue;
+                    }
 
                     callback.startCollection(uri.toString());
 
@@ -502,9 +506,7 @@ public class SystemExport
                                 }
                             }
 
-                            final Collection child = broker.getCollection(uri.append(childUri));
-
-                            processing.add(0, child);
+                            processing.add(0, uri.append(childUri));
                         } catch (Exception e) {
                             callback.error("fail to get child collection '"+childUri+"' ", e);
                         }
@@ -520,6 +522,7 @@ public class SystemExport
                 return backupFile;
             }
         } catch( final IOException e ) {
+            LOG.error("export io exception:", e);
             exception = e;
             reportError( "A write error occurred while exporting data: '" + e.getMessage() + "'. Aborting export.", e );
             return null;
@@ -531,6 +534,7 @@ public class SystemExport
             }
             return null;
         } catch (Throwable e) {
+            LOG.error("export exception:", e);
             exception = e;
             return null;
         } finally {
