@@ -382,7 +382,7 @@ public class SystemImportHandler extends DefaultHandler {
 
         final EXistInputSource is = descriptor.getInputSource(filename);
         if(is == null) {
-            final String msg = "Failed to restore resource '" + name + "'\nfrom file '" + descriptor.getSymbolicPath( name, false ) + "'.\nReason: Unable to obtain its EXistInputSource";
+            final String msg = "Failed to restore resource '" + name + "' from file '" + descriptor.getSymbolicPath( filename, false ) + "'. Reason: Unable to obtain its EXistInputSource";
             listener.warn(msg);
             throw new RuntimeException(msg);
         }
