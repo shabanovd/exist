@@ -1284,7 +1284,8 @@ public class SystemExport
     }
 
     public static String filename( XmldbURI uri ) {
-        String name = Backup.encode( URIUtils.urlDecodeUtf8( uri ) );
+        // String name = Backup.encode( URIUtils.urlDecodeUtf8( uri ) );
+        String name = uri.toASCIIString();
 
         if (name.length() > 100) {
 
